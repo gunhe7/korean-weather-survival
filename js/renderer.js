@@ -6,6 +6,7 @@ window.RunRenderer = (function () {
   let particles = [];
   let dustPuffs = [];
   let floaters = [];
+  let pickupBursts = [];
 
   // ===================== PRELOAD ALL CHARACTER + DESIGN SPRITES =====================
   const CHAR_SPRITES = [
@@ -75,10 +76,56 @@ window.RunRenderer = (function () {
   function clearFloaters() {
     floaters = [];
     dustPuffs = [];
+    pickupBursts = [];
   }
 
   function spawnFloater(text, color, x, y) {
     floaters.push({ text, color, x, y, life: 0.95, maxLife: 0.95 });
+  }
+
+  function spawnPickupEffect(x, y, color = '#ffe55c', big = false) {
+    pickupBursts.push({
+      x,
+      y,
+      color,
+      big,
+      life: big ? 0.52 : 0.36,
+      maxLife: big ? 0.52 : 0.36
+    });
+  }
+
+  function drawPickupEffects(ctx, dt) {
+    for (let i = pickupBursts.length - 1; i >= 0; i--) {
+      const b = pickupBursts[i];
+      b.life -= dt;
+      if (b.life <= 0) {
+        pickupBursts.splice(i, 1);
+        continue;
+      }
+      const prog = 1 - b.life / b.maxLife;
+      const alpha = Math.max(0, 1 - prog);
+      const maxR = b.big ? 38 : 22;
+      const r = 6 + prog * maxR;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = b.big ? 3 : 2;
+      ctx.beginPath();
+      ctx.arc(Math.floor(b.x), Math.floor(b.y), r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const sparks = b.big ? 8 : 5;
+      ctx.fillStyle = b.color;
+      for (let k = 0; k < sparks; k++) {
+        const ang = (Math.PI * 2 * k) / sparks + prog * 1.4;
+        const sx = Math.floor(b.x + Math.cos(ang) * (r * 1.12));
+        const sy = Math.floor(b.y + Math.sin(ang) * (r * 1.12));
+        const sz = b.big ? 4 : 3;
+        ctx.fillRect(sx - 1, sy - 1, sz, sz);
+      }
+      ctx.restore();
+    }
   }
 
   function spawnDust(x, y, isStar = false) {
@@ -931,7 +978,35 @@ window.RunRenderer = (function () {
       if (spr) ctx.drawImage(spr, x - 15, y - 15, 30, 30);
     } else if (it.kind === 'umbrella_fever') {
       const spr = getSprite('orb_bolt');
+      ctx.fillStyle = 'rgba(255, 224, 92, 0.35)';
+      ctx.beginPath(); ctx.arc(x, y, 17, 0, Math.PI * 2); ctx.fill();
       if (spr) ctx.drawImage(spr, x - 15, y - 15, 30, 30);
+    } else if (it.kind === 'speed_boost') {
+      // Blazing Cyan-Gold Speed Boost Pickup!
+      const pulse = 15 + Math.sin(t * 14) * 2.5;
+      ctx.fillStyle = 'rgba(66, 226, 255, 0.36)';
+      ctx.beginPath(); ctx.arc(x, y, pulse, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#7ef6ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.stroke();
+      const spr = getSprite('orb_bolt');
+      if (spr) {
+        ctx.drawImage(spr, x - 13, y - 13, 26, 26);
+      } else {
+        ctx.fillStyle = '#ffe94d';
+        ctx.fillRect(x - 4, y - 8, 8, 16);
+      }
+    } else if (it.kind === 'shield_item') {
+      // Glowing Shield Pickup!
+      ctx.fillStyle = 'rgba(90, 200, 255, 0.34)';
+      ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill();
+      const spr = getSprite('spr_shield');
+      if (spr) {
+        ctx.drawImage(spr, x - 13, y - 14, 26, 28);
+      } else {
+        ctx.fillStyle = '#5cc8ff';
+        ctx.fillRect(x - 9, y - 10, 18, 20);
+      }
     } else if (it.kind === 'chest') {
       const spr = getSprite('ui_chest');
       if (spr) ctx.drawImage(spr, x - 16, y - 14, 32, 28);
@@ -1050,6 +1125,18 @@ window.RunRenderer = (function () {
     // Loyal Shiba Puppy Pet running right behind!
     drawPuppyPet(ctx, run.playerX - 42, run.petY, t);
 
+    // Speed Boost Cyan Sonic Streaks!
+    if (run.speedBoostTimer > 0) {
+      ctx.save();
+      for (let k = 0; k < 5; k++) {
+        const sy = Math.floor(run.playerY - 10 - k * 8);
+        const len = 24 + ((k * 13 + Math.floor(t * 90)) % 26);
+        ctx.fillStyle = k % 2 === 0 ? 'rgba(90, 238, 255, 0.75)' : 'rgba(255, 240, 120, 0.6)';
+        ctx.fillRect(Math.floor(run.playerX - 18 - len), sy, len, 3);
+      }
+      ctx.restore();
+    }
+
     // Runner Character
     drawCharacter(ctx, charDef, run.playerX, run.playerY, {
       sliding: run.sliding,
@@ -1067,6 +1154,9 @@ window.RunRenderer = (function () {
       running: true,
       scaleHeight: 50
     }, t);
+
+    // Item Pickup Ring & Sparkle Burst Animations!
+    drawPickupEffects(ctx, dt);
 
     // Active Weather Atmosphere & Smoothly Transitioning Particles
     drawParticles(ctx, W, H, run.seasonId, dt, t, run.weatherEvent, run.prevSeasonId, blend);
@@ -1115,6 +1205,7 @@ window.RunRenderer = (function () {
     clearFloaters,
     spawnFloater,
     spawnDust,
+    spawnPickupEffect,
     renderRunFrame,
     renderHomePreview
   };

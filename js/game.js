@@ -33,9 +33,14 @@
       bestScore: 0,
       bestYear: 1,
       bestDistanceM: 0,
+      totalCoinsEver: 0,
+      maxDodgeComboEver: 0,
       playCount: 0,
       attendance: { lastClaimDate: '', streak: 0 },
-      dailyMissions: { date: today, progress: { dist: 0, coins: 0, jumps: 0 }, claimed: {} }
+      dailyMissions: { date: today, progress: { dist: 0, coins: 0, jumps: 0 }, claimed: {} },
+      achievementsClaimed: {},
+      stageMilestonesClaimed: {},
+      audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 }
     };
 
     function parseKey(key) {
@@ -64,16 +69,22 @@
       upgrades: { ...def.upgrades, ...(raw.upgrades || {}) },
       boosters: { ...def.boosters, ...(raw.boosters || {}) },
       bestDistanceM: typeof raw.bestDistanceM === 'number' ? raw.bestDistanceM : 0,
+      totalCoinsEver: typeof raw.totalCoinsEver === 'number' ? raw.totalCoinsEver : 0,
+      maxDodgeComboEver: typeof raw.maxDodgeComboEver === 'number' ? raw.maxDodgeComboEver : 0,
       attendance: { ...def.attendance, ...(raw.attendance || {}) },
       dailyMissions: {
         date: today,
         progress: { dist: 0, coins: 0, jumps: 0, ...(rawMissions.progress || {}) },
         claimed: { ...(rawMissions.claimed || {}) }
-      }
+      },
+      achievementsClaimed: { ...(raw.achievementsClaimed || {}) },
+      stageMilestonesClaimed: { ...(raw.stageMilestonesClaimed || {}) },
+      audioSettings: { ...def.audioSettings, ...(raw.audioSettings || {}) }
     };
   }
 
   let save = loadSave();
+  SFX.applySettings(save.audioSettings);
 
   function ensureTodayMissions() {
     const today = getTodayKey();
@@ -115,6 +126,7 @@
     btnGoldShop: document.getElementById('btn-gold-shop'),
     uiGold: document.getElementById('ui-gold'),
     btnSoundGlobal: document.getElementById('btn-sound-global'),
+    btnOpenSettings: document.getElementById('btn-open-settings'),
 
     homeProfileAvatar: document.getElementById('home-profile-avatar'),
     homeCharLvMini: document.getElementById('home-char-lv-mini'),
@@ -132,6 +144,24 @@
     attModalDesc: document.getElementById('att-modal-desc'),
     attDaysGrid: document.getElementById('att-days-grid'),
     btnClaimAttendance: document.getElementById('btn-claim-attendance'),
+
+    btnOpenAchievements: document.getElementById('btn-open-achievements'),
+    homeAchCount: document.getElementById('home-ach-count'),
+    achDot: document.getElementById('ach-dot'),
+    achievementsOverlay: document.getElementById('achievements-overlay'),
+    btnCloseAchievements: document.getElementById('btn-close-achievements'),
+    achModalSummary: document.getElementById('ach-modal-summary'),
+    achList: document.getElementById('ach-list'),
+
+    settingsOverlay: document.getElementById('settings-overlay'),
+    btnCloseSettings: document.getElementById('btn-close-settings'),
+    chkBgmOn: document.getElementById('chk-bgm-on'),
+    rngBgmVol: document.getElementById('rng-bgm-vol'),
+    lblBgmVol: document.getElementById('lbl-bgm-vol'),
+    chkSfxOn: document.getElementById('chk-sfx-on'),
+    rngSfxVol: document.getElementById('rng-sfx-vol'),
+    lblSfxVol: document.getElementById('lbl-sfx-vol'),
+    btnToggleFullscreen: document.getElementById('btn-toggle-fullscreen'),
 
     homePreviewCanvas: document.getElementById('homePreviewCanvas'),
     homeCharLvBadge: document.getElementById('home-char-lv-badge'),
@@ -167,6 +197,21 @@
     charList: document.getElementById('char-list'),
     shopItemsList: document.getElementById('shop-items-list'),
 
+    navMissionDot: document.getElementById('nav-mission-dot'),
+    btnTabOpenAttendance: document.getElementById('btn-tab-open-attendance'),
+    tabMissionList: document.getElementById('tab-mission-list'),
+    tabAchSummary: document.getElementById('tab-ach-summary'),
+    tabAchList: document.getElementById('tab-ach-list'),
+
+    rankMyAvatar: document.getElementById('rank-my-avatar'),
+    rankMyPos: document.getElementById('rank-my-pos'),
+    rankMyScoreLine: document.getElementById('rank-my-score-line'),
+    rankStatYear: document.getElementById('rank-stat-year'),
+    rankStatCoins: document.getElementById('rank-stat-coins'),
+    rankStatCombo: document.getElementById('rank-stat-combo'),
+    rankStatDex: document.getElementById('rank-stat-dex'),
+    rankBoardList: document.getElementById('rank-board-list'),
+
     viewRun: document.getElementById('view-run'),
     runCanvasWrap: document.getElementById('run-canvas-wrap'),
     runCanvas: document.getElementById('runCanvas'),
@@ -196,24 +241,30 @@
     gearMaskBar: document.getElementById('gear-mask-bar'),
     gearMaskState: document.getElementById('gear-mask-state'),
     orbUiFever: document.getElementById('orb-ui-fever'),
+    orbUiSpeed: document.getElementById('orb-ui-speed'),
     orbUiMagnet: document.getElementById('orb-ui-magnet'),
     orbUiNorway: document.getElementById('orb-ui-norway'),
     orbUiShield: document.getElementById('orb-ui-shield'),
+    btnLandscapeRun: document.getElementById('btn-landscape-run'),
     btnPauseRun: document.getElementById('btn-pause-run'),
 
     pauseOverlay: document.getElementById('pause-overlay'),
     btnResumeRun: document.getElementById('btn-resume-run'),
+    btnPauseSettings: document.getElementById('btn-pause-settings'),
     btnQuitHome: document.getElementById('btn-quit-home'),
 
     gameoverOverlay: document.getElementById('gameover-overlay'),
     resNewBest: document.getElementById('res-new-best'),
     resScore: document.getElementById('res-score'),
+    resScoreCompare: document.getElementById('res-score-compare'),
     resDistCompare: document.getElementById('res-dist-compare'),
     resCause: document.getElementById('res-cause'),
+    resUnlockAlerts: document.getElementById('res-unlock-alerts'),
+    resSeasonBars: document.getElementById('res-season-bars'),
     resSurvived: document.getElementById('res-survived'),
     resGoldEarned: document.getElementById('res-gold-earned'),
     resCharName: document.getElementById('res-char-name'),
-    resGoldTotal: document.getElementById('res-gold-total'),
+    resComboStat: document.getElementById('res-combo-stat'),
     btnRetryRun: document.getElementById('btn-retry-run'),
     btnResultHome: document.getElementById('btn-result-home'),
 
@@ -298,11 +349,195 @@
     }
 
     renderAttendanceUI();
+    renderAchievementsUI();
+    renderSettingsUI();
     renderHomeCharStage();
     renderHomeSeasonPreview();
     renderDailyMissions();
     renderCharList();
     renderShopList();
+    renderRankingTab();
+    updateNavMissionDot();
+  }
+
+  function updateNavMissionDot() {
+    ensureTodayMissions();
+    const prog = save.dailyMissions.progress || {};
+    const claimed = save.dailyMissions.claimed || {};
+    const hasMissionClaim = DATA.DAILY_MISSIONS.some((m) => (prog[m.metric] || 0) >= m.target && !claimed[m.id]);
+    const hasAchClaim = DATA.ACHIEVEMENTS.some((a) => getAchievementMetricValue(a.metric) >= a.target && !(save.achievementsClaimed && save.achievementsClaimed[a.id]));
+    const hasAtt = canClaimAttendanceToday();
+    el.navMissionDot.classList.toggle('hidden', !(hasMissionClaim || hasAchClaim || hasAtt));
+  }
+
+  const RANK_RIVALS = [
+    { name: '노르웨이신봉자', charId: 'umbrella_master', score: 24500, dist: 2850, year: 4 },
+    { name: '태풍뚫는얼죽아', charId: 'iced_americano', score: 17800, dist: 2120, year: 3 },
+    { name: '한파패딩대장', charId: 'long_padding', score: 12400, dist: 1580, year: 3 },
+    { name: '풍류반팔충', charId: 'short_sleeve', score: 8600, dist: 1120, year: 2 },
+    { name: '산타코인부자', charId: 'fashionista', score: 5400, dist: 760, year: 2 },
+    { name: '구라청저격수', charId: 'basic', score: 3100, dist: 480, year: 1 },
+    { name: '장마침수서퍼', charId: 'umbrella_master', score: 1650, dist: 290, year: 1 },
+    { name: '우산뒤집힌민수', charId: 'basic', score: 750, dist: 140, year: 1 }
+  ];
+
+  function renderRankingTab() {
+    const myChar = getCharDef(save.selectedChar);
+    const myEntry = {
+      name: `나 (${myChar.name})`,
+      charId: myChar.id,
+      score: save.bestScore || 0,
+      dist: save.bestDistanceM || 0,
+      year: save.bestYear || 1,
+      isMe: true
+    };
+    const board = [...RANK_RIVALS, myEntry].sort((a, b) => b.score - a.score);
+    const myIdx = board.findIndex((r) => r.isMe);
+    const myRankNum = myIdx + 1;
+
+    el.rankMyAvatar.src = myChar.avatar;
+    el.rankMyPos.textContent = `${myRankNum}위`;
+    el.rankMyScoreLine.textContent = `최고 점수 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 거리 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
+    el.rankStatYear.textContent = `${save.bestYear || 1}년 차`;
+    el.rankStatCoins.textContent = `${(save.totalCoinsEver || 0).toLocaleString('ko-KR')}개`;
+    el.rankStatCombo.textContent = `${save.maxDodgeComboEver || 0}연속`;
+    el.rankStatDex.textContent = `${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
+
+    el.rankBoardList.innerHTML = '';
+    board.forEach((entry, idx) => {
+      const rank = idx + 1;
+      const chDef = getCharDef(entry.charId);
+      const row = document.createElement('div');
+      const topClass = rank === 1 ? ' top1' : (rank === 2 ? ' top2' : (rank === 3 ? ' top3' : ''));
+      const medal = rank === 1 ? '🥇' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : `${rank}`));
+      row.className = `rank-row${topClass}${entry.isMe ? ' me' : ''}`;
+      row.innerHTML = `
+        <div class="rank-medal">${medal}</div>
+        <img src="${chDef.avatar}" alt="" class="rank-row-avatar" />
+        <div class="rank-row-info">
+          <div class="rank-row-name">${entry.name}${entry.isMe ? ' <span class="item-badge equipped">ME</span>' : ''}</div>
+          <div class="rank-row-sub">${entry.year}년 차 · ${entry.dist.toLocaleString('ko-KR')}m</div>
+        </div>
+        <div class="rank-row-score">${entry.score.toLocaleString('ko-KR')}점</div>
+      `;
+      el.rankBoardList.appendChild(row);
+    });
+  }
+
+  function getAchievementMetricValue(metric) {
+    if (metric === 'bestDistanceM') return save.bestDistanceM || 0;
+    if (metric === 'totalCoinsEver') return save.totalCoinsEver || 0;
+    if (metric === 'bestYear') return save.bestYear || 1;
+    if (metric === 'maxDodgeComboEver') return save.maxDodgeComboEver || 0;
+    if (metric === 'unlockedCount') return save.unlockedChars.length;
+    return 0;
+  }
+
+  function renderAchievementsUI() {
+    let unlockedCount = 0;
+    let claimableCount = 0;
+    const containers = [el.achList, el.tabAchList].filter(Boolean);
+    containers.forEach((c) => { c.innerHTML = ''; });
+
+    DATA.ACHIEVEMENTS.forEach((ach) => {
+      const val = getAchievementMetricValue(ach.metric);
+      const isDone = val >= ach.target;
+      const isClaimed = Boolean(save.achievementsClaimed && save.achievementsClaimed[ach.id]);
+      if (isDone) unlockedCount += 1;
+      if (isDone && !isClaimed) claimableCount += 1;
+
+      const pct = Math.min(100, (val / ach.target) * 100);
+      containers.forEach((container) => {
+        const card = document.createElement('div');
+        card.className = `ach-card${isClaimed ? ' claimed' : (isDone ? ' ready' : '')}`;
+        card.innerHTML = `
+          <div class="ach-ico">${ach.icon}</div>
+          <div class="ach-meta">
+            <div class="ach-title">${ach.title}</div>
+            <div class="ach-desc">${ach.desc} (${Math.min(val, ach.target).toLocaleString('ko-KR')} / ${ach.target.toLocaleString('ko-KR')})</div>
+            <div class="ach-prog-track"><div class="ach-prog-fill" style="width: ${pct.toFixed(1)}%"></div></div>
+          </div>
+        `;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        if (isClaimed) {
+          btn.className = 'mission-claim-btn done';
+          btn.textContent = '수령 ✓';
+          btn.disabled = true;
+        } else if (isDone) {
+          btn.className = 'mission-claim-btn ready';
+          btn.textContent = `+${ach.rewardGold}G`;
+          btn.onclick = () => {
+            save.achievementsClaimed[ach.id] = true;
+            save.gold += ach.rewardGold;
+            SFX.reward();
+            persistSave();
+            refreshAllMenus();
+            showToast(`🏅 업적 [${ach.title}] 보상 +${ach.rewardGold}G 획득!`);
+          };
+        } else {
+          btn.className = 'mission-claim-btn pending';
+          btn.textContent = `+${ach.rewardGold}G`;
+          btn.disabled = true;
+        }
+        card.appendChild(btn);
+        container.appendChild(card);
+      });
+    });
+
+    el.homeAchCount.textContent = `${unlockedCount}/${DATA.ACHIEVEMENTS.length}`;
+    el.achDot.classList.toggle('hidden', claimableCount === 0);
+    el.achModalSummary.textContent = `달성 현황: ${unlockedCount} / ${DATA.ACHIEVEMENTS.length} (미수령 ${claimableCount}개)`;
+    if (el.tabAchSummary) {
+      el.tabAchSummary.textContent = `${unlockedCount} / ${DATA.ACHIEVEMENTS.length}`;
+    }
+  }
+
+  function renderSettingsUI() {
+    const st = SFX.getSettings();
+    el.btnSoundGlobal.textContent = SFX.isEnabled() ? '🔊' : '🔇';
+
+    el.chkBgmOn.classList.toggle('on', st.bgmOn);
+    el.chkBgmOn.textContent = st.bgmOn ? 'ON' : 'OFF';
+    const bgmPct = Math.round(st.bgmVol * 100);
+    el.rngBgmVol.value = String(bgmPct);
+    el.lblBgmVol.textContent = `${bgmPct}%`;
+
+    el.chkSfxOn.classList.toggle('on', st.sfxOn);
+    el.chkSfxOn.textContent = st.sfxOn ? 'ON' : 'OFF';
+    const sfxPct = Math.round(st.sfxVol * 100);
+    el.rngSfxVol.value = String(sfxPct);
+    el.lblSfxVol.textContent = `${sfxPct}%`;
+
+    const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    el.btnToggleFullscreen.textContent = isFs ? '📱 전체화면 종료' : '📱 가로 전체화면 전환';
+  }
+
+  async function toggleLandscapeFullscreen() {
+    SFX.click();
+    const docEl = document.documentElement;
+    const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    try {
+      if (isFs) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+        if (screen.orientation && screen.orientation.unlock) {
+          try { screen.orientation.unlock(); } catch {}
+        }
+        showToast('전체화면이 해제되었습니다.');
+      } else {
+        if (docEl.requestFullscreen) await docEl.requestFullscreen();
+        else if (docEl.webkitRequestFullscreen) await docEl.webkitRequestFullscreen();
+        if (screen.orientation && screen.orientation.lock) {
+          try { await screen.orientation.lock('landscape'); } catch {}
+        }
+        showToast('📱 가로 전체화면 모드! 폰을 가로로 돌려 쾌적하게 즐기세요!');
+      }
+    } catch {
+      showToast('📱 스마트폰을 가로로 돌리면 자동으로 가로 플레이 모드로 전환됩니다!');
+    }
+    setTimeout(renderSettingsUI, 150);
   }
 
   function renderAttendanceUI() {
@@ -373,7 +608,9 @@
     const claimed = save.dailyMissions.claimed || {};
     let doneCount = 0;
 
-    el.homeMissionList.innerHTML = '';
+    const containers = [el.homeMissionList, el.tabMissionList].filter(Boolean);
+    containers.forEach((c) => { c.innerHTML = ''; });
+
     DATA.DAILY_MISSIONS.forEach((m) => {
       const cur = Math.min(m.target, Math.floor(prog[m.metric] || 0));
       const pct = Math.min(100, (cur / m.target) * 100);
@@ -381,45 +618,47 @@
       const isClaimed = Boolean(claimed[m.id]);
       if (isClaimed) doneCount += 1;
 
-      const row = document.createElement('div');
-      row.className = 'mission-row';
-      row.innerHTML = `
-        <div class="mission-row-info">
-          <div class="mission-row-top">
-            <span>${m.title}</span>
-            <span class="mission-row-prog">${cur.toLocaleString('ko-KR')}/${m.target.toLocaleString('ko-KR')}${m.unit}</span>
+      containers.forEach((container) => {
+        const row = document.createElement('div');
+        row.className = 'mission-row';
+        row.innerHTML = `
+          <div class="mission-row-info">
+            <div class="mission-row-top">
+              <span>${m.title}</span>
+              <span class="mission-row-prog">${cur.toLocaleString('ko-KR')}/${m.target.toLocaleString('ko-KR')}${m.unit}</span>
+            </div>
+            <div class="mission-mini-track">
+              <div class="mission-mini-fill" style="width: ${pct.toFixed(1)}%"></div>
+            </div>
           </div>
-          <div class="mission-mini-track">
-            <div class="mission-mini-fill" style="width: ${pct.toFixed(1)}%"></div>
-          </div>
-        </div>
-      `;
+        `;
 
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      if (isClaimed) {
-        btn.className = 'mission-claim-btn done';
-        btn.textContent = '완료 ✓';
-        btn.disabled = true;
-      } else if (isDone) {
-        btn.className = 'mission-claim-btn ready';
-        btn.textContent = `수령 +${m.rewardGold}G`;
-        btn.onclick = () => {
-          save.dailyMissions.claimed[m.id] = true;
-          save.gold += m.rewardGold;
-          SFX.reward();
-          persistSave();
-          refreshAllMenus();
-          showToast(`🎉 미션 완료! +${m.rewardGold}G 획득!`);
-        };
-      } else {
-        btn.className = 'mission-claim-btn pending';
-        btn.textContent = `+${m.rewardGold}G`;
-        btn.disabled = true;
-      }
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        if (isClaimed) {
+          btn.className = 'mission-claim-btn done';
+          btn.textContent = '완료 ✓';
+          btn.disabled = true;
+        } else if (isDone) {
+          btn.className = 'mission-claim-btn ready';
+          btn.textContent = `수령 +${m.rewardGold}G`;
+          btn.onclick = () => {
+            save.dailyMissions.claimed[m.id] = true;
+            save.gold += m.rewardGold;
+            SFX.reward();
+            persistSave();
+            refreshAllMenus();
+            showToast(`🎉 미션 완료! +${m.rewardGold}G 획득!`);
+          };
+        } else {
+          btn.className = 'mission-claim-btn pending';
+          btn.textContent = `+${m.rewardGold}G`;
+          btn.disabled = true;
+        }
 
-      row.appendChild(btn);
-      el.homeMissionList.appendChild(row);
+        row.appendChild(btn);
+        container.appendChild(row);
+      });
     });
 
     el.homeMissionBadge.textContent = `${doneCount}/${DATA.DAILY_MISSIONS.length} 완료`;
@@ -776,12 +1015,16 @@
       coinsCollected: 0,
       jumpCount: 0,
       dodgeCombo: 0,
+      maxDodgeCombo: 0,
       elapsed: 0,
       year: 1,
       seasonIdx: 0,
       seasonId: 'spring',
       prevSeasonId: null,
       seasonTransition: 1,
+      seasonTime: { spring: 0, summer: 0, autumn: 0, winter: 0 },
+      stageMilestonesEarned: [],
+      lastHeartCount: -1,
       scroll: 0,
       baseSpeed: 188,
       speed: 188,
@@ -822,6 +1065,7 @@
       shield: hasShield,
       feverCharge: startFever > 0 ? 100 : 0,
       feverTimer: startFever,
+      speedBoostTimer: 0,
       magnetTimer: 0,
       norwayPermanent: norwayPerm,
       norwayTimer: 0,
@@ -862,9 +1106,25 @@
     el.pauseOverlay.classList.add('hidden');
     el.viewRun.classList.remove('hidden');
 
+    SFX.startBgm();
+    SFX.setBgmMode(startFever > 0 ? 'fever' : 'run');
     SFX.seasonUp();
     showRunBanner(`🌸 1년 차 봄 출발! (${ch.name} Lv.${stats.level})`, 2400);
     updateRunHud();
+  }
+
+  function checkStageMilestone(year, seasonIdx) {
+    if (!run || !DATA.STAGE_MILESTONES) return;
+    DATA.STAGE_MILESTONES.forEach((ms) => {
+      if (ms.year === year && ms.seasonIdx === seasonIdx && !save.stageMilestonesClaimed[ms.id]) {
+        save.stageMilestonesClaimed[ms.id] = true;
+        run.gold += ms.rewardGold;
+        run.stageMilestonesEarned.push(`${ms.label} (+${ms.rewardGold}G)`);
+        persistSave();
+        SFX.reward();
+        Renderer.spawnFloater(`🏆 ${ms.label} +${ms.rewardGold}G!`, '#ffe866', run.playerX + 26, run.playerY - 62);
+      }
+    });
   }
 
   function hasNorwayForecast() {
@@ -1114,15 +1374,19 @@
   function spawnUtilityPickup() {
     const r = Math.random();
     const y = Renderer.GROUND_Y - (Math.random() < 0.5 ? 28 : 74);
-    if (r < 0.22) {
+    if (r < 0.18) {
       run.items.push({ kind: 'norway', x: Renderer.W + 24, y });
-    } else if (r < 0.48) {
+    } else if (r < 0.38) {
       run.items.push({ kind: 'coffee', x: Renderer.W + 24, y });
-    } else if (r < 0.68) {
+    } else if (r < 0.54) {
       run.items.push({ kind: 'star', x: Renderer.W + 24, y });
-    } else if (r < 0.82) {
+    } else if (r < 0.67) {
       run.items.push({ kind: 'magnet', x: Renderer.W + 24, y });
-    } else if (r < 0.92) {
+    } else if (r < 0.80) {
+      run.items.push({ kind: 'speed_boost', x: Renderer.W + 24, y });
+    } else if (r < 0.88) {
+      run.items.push({ kind: 'shield_item', x: Renderer.W + 24, y });
+    } else if (r < 0.94) {
       run.items.push({ kind: 'umbrella_fever', x: Renderer.W + 24, y });
     } else {
       run.items.push({ kind: 'chest', x: Renderer.W + 24, y: Renderer.GROUND_Y - 16 });
@@ -1166,6 +1430,9 @@
     const upgradeScoreMult = 1 + save.upgrades.score * 0.12;
 
     run.elapsed += dt;
+    if (run.seasonTime && run.seasonId in run.seasonTime) {
+      run.seasonTime[run.seasonId] += dt;
+    }
 
     // Equal 4-season infinite cycle (15s * 4 = 60s per year)
     const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
@@ -1185,6 +1452,7 @@
       SFX.yearUp();
       showRunBanner(`🔥 ${run.year}년 차 진입! 기후 위기 상승! (+${yearGoldBonus}G)`, 2800);
       Renderer.spawnFloater(`${run.year}년 차 돌파!`, '#ffe55c', run.playerX + 40, run.playerY - 52);
+      checkStageMilestone(run.year, 0);
     } else if (newSeasonIdx !== run.seasonIdx) {
       run.prevSeasonId = run.seasonId;
       run.seasonTransition = 0;
@@ -1196,6 +1464,7 @@
       run.heatGauge = 0;
       SFX.seasonUp();
       showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] 전환 · ${sObj.weatherLabel}`, 2300);
+      checkStageMilestone(run.year, run.seasonIdx);
       // Immediately queue a forecast for the new season's weather!
       if (!run.pendingWeather) scheduleNextWeatherForecast();
     }
@@ -1222,6 +1491,7 @@
     // Timers
     if (run.invulnTimer > 0) run.invulnTimer = Math.max(0, run.invulnTimer - dt);
     if (run.magnetTimer > 0) run.magnetTimer = Math.max(0, run.magnetTimer - dt);
+    if (run.speedBoostTimer > 0) run.speedBoostTimer = Math.max(0, run.speedBoostTimer - dt);
     if (run.norwayTimer > 0) run.norwayTimer = Math.max(0, run.norwayTimer - dt);
     if (run.mudBlindTimer > 0) run.mudBlindTimer = Math.max(0, run.mudBlindTimer - dt);
     if (run.umbrellaBrokenTimer > 0) run.umbrellaBrokenTimer = Math.max(0, run.umbrellaBrokenTimer - dt);
@@ -1271,7 +1541,8 @@
     }
 
     // ---- MECHANIC 1: WEATHER-DRIVEN MOVEMENT SPEED & CHARACTER PASSIVES ----
-    const feverBoost = run.feverTimer > 0 ? 1.36 : 1.0;
+    const feverBoost = run.feverTimer > 0 ? 1.36 : (run.speedBoostTimer > 0 ? 1.32 : 1.0);
+    const boostScoreMult = run.speedBoostTimer > 0 ? 1.5 : 1.0;
     let weatherSpeedMult = 1.0;
     let iceScoreBonus = 1.0;
     if (run.umbrellaOn) weatherSpeedMult *= 0.84; // Umbrella air drag slows runner!
@@ -1293,7 +1564,7 @@
     run.speed = run.baseSpeed * diff.speedMult * feverBoost * weatherSpeedMult;
     run.scroll += run.speed * dt;
     run.distanceM = Math.floor(run.scroll / 14);
-    run.score += run.speed * dt * 0.16 * run.scoreMult * diff.scoreMult * upgradeScoreMult * iceScoreBonus;
+    run.score += run.speed * dt * 0.16 * run.scoreMult * diff.scoreMult * upgradeScoreMult * iceScoreBonus * boostScoreMult;
 
     // Gust Headwind Horizontal Push-Back vs Slide Push-Forward!
     if (run.weatherEvent === 'gust' && run.feverTimer <= 0) {
@@ -1561,6 +1832,7 @@
           run.coinsCollected += it.kind === 'big_coin' ? 3 : 1;
           run.score += gainedS;
           addFeverCharge(it.kind === 'big_coin' ? 10 : 2.5);
+          Renderer.spawnPickupEffect(it.x, it.y, '#ffe55c', it.kind === 'big_coin');
           if (it.kind === 'big_coin') {
             SFX.bigCoin();
             Renderer.spawnFloater(`+${gainedG}G!`, '#ffea59', it.x, it.y - 10);
@@ -1571,19 +1843,35 @@
           run.norwayTimer = 25.0;
           run.forecastIsFake = false;
           run.itemPoseTimer = 0.5;
-          SFX.yearUp();
+          SFX.norway();
+          Renderer.spawnPickupEffect(it.x, it.y, '#70e2ff', true);
           Renderer.spawnFloater('노르웨이 기상청 ON! (25초)', '#70e2ff', run.playerX + 16, run.playerY - 46);
           showRunBanner('🇳🇴 노르웨이 기상청 획득! 3초 전 100% 정확 예보!', 2300);
         } else if (it.kind === 'star') {
           run.score += Math.round(160 * run.scoreMult * upgradeScoreMult);
           addFeverCharge(24);
           SFX.bigCoin();
+          Renderer.spawnPickupEffect(it.x, it.y, '#ffe866', true);
           Renderer.spawnFloater('FEVER +24%!', '#ffe866', it.x, it.y - 10);
         } else if (it.kind === 'magnet') {
           run.magnetTimer = 6.0;
           run.itemPoseTimer = 0.45;
-          SFX.guard();
+          SFX.magnet();
+          Renderer.spawnPickupEffect(it.x, it.y, '#ff6e8a', true);
           Renderer.spawnFloater('자석 발동! (6초)', '#ff7d95', run.playerX + 12, run.playerY - 42);
+        } else if (it.kind === 'speed_boost') {
+          run.speedBoostTimer = 4.0;
+          run.itemPoseTimer = 0.45;
+          run.score += Math.round(140 * run.scoreMult * upgradeScoreMult);
+          SFX.speedBoost();
+          Renderer.spawnPickupEffect(it.x, it.y, '#59e8ff', true);
+          Renderer.spawnFloater('⚡ 스피드 부스트! (4초 무적 질주)', '#66f2ff', run.playerX + 16, run.playerY - 46);
+        } else if (it.kind === 'shield_item') {
+          run.shield = true;
+          run.itemPoseTimer = 0.45;
+          SFX.shieldUp();
+          Renderer.spawnPickupEffect(it.x, it.y, '#7ad8ff', true);
+          Renderer.spawnFloater('🛡️ 기상 보호막 획득!', '#8ce2ff', run.playerX + 12, run.playerY - 44);
         } else if (it.kind === 'chest') {
           const bonusG = Math.round(32 * run.goldMult);
           run.gold += bonusG;
@@ -1591,6 +1879,7 @@
           run.score += Math.round(250 * upgradeScoreMult);
           addFeverCharge(25);
           SFX.reward();
+          Renderer.spawnPickupEffect(it.x, it.y, '#ffd847', true);
           Renderer.spawnFloater(`보물상자 +${bonusG}G!`, '#ffe55c', it.x, it.y - 14);
         } else if (it.kind === 'coffee') {
           const healAmt = ch.icedBonus ? 24 : 14;
@@ -1600,6 +1889,7 @@
           run.score += Math.round(bonusSc * upgradeScoreMult);
           run.itemPoseTimer = 0.55;
           SFX.heal();
+          Renderer.spawnPickupEffect(it.x, it.y, '#70f59b', true);
           Renderer.spawnFloater(ch.icedBonus ? `얼죽아 회복 +${healAmt}!` : `포션 회복 +${healAmt}`, '#70f59b', run.playerX + 10, run.playerY - 40);
         } else if (it.kind === 'umbrella_fever') {
           run.feverCharge = 100;
@@ -1607,6 +1897,7 @@
           run.score += 180;
           run.itemPoseTimer = 0.55;
           SFX.feverStart();
+          Renderer.spawnPickupEffect(it.x, it.y, '#ffe55c', true);
           Renderer.spawnFloater('FEVER! 무적 질주!', '#ffe55c', run.playerX + 12, run.playerY - 44);
         }
         continue;
@@ -1668,11 +1959,13 @@
         pBox.y + pBox.h > oBox.y;
 
       if (overlap) {
-        if (run.feverTimer > 0) {
+        if (run.feverTimer > 0 || run.speedBoostTimer > 0) {
           run.obstacles.splice(i, 1);
-          run.score += Math.round(150 * run.scoreMult * upgradeScoreMult);
+          const bonusPts = run.feverTimer > 0 ? 150 : 120;
+          run.score += Math.round(bonusPts * run.scoreMult * upgradeScoreMult);
           SFX.guard();
-          Renderer.spawnFloater('돌파 +150!', '#ffe866', ob.x, ob.y);
+          Renderer.spawnPickupEffect(ob.x + ob.w / 2, ob.y + ob.h / 2, run.feverTimer > 0 ? '#ffe866' : '#59e8ff', false);
+          Renderer.spawnFloater(run.feverTimer > 0 ? '돌파 +150!' : '스피드 돌파 +120!', run.feverTimer > 0 ? '#ffe866' : '#6ef2ff', ob.x, ob.y);
           continue;
         } else if (ob.customDraw === 'smog_zone' && run.maskOn) {
           // KF94 Mask cleanly blocks fine-dust ground smog zones!
@@ -1690,6 +1983,7 @@
         if (!ob.passed && ob.x + ob.w < pBox.x - 4) {
           ob.passed = true;
           run.dodgeCombo += 1;
+          if (run.dodgeCombo > run.maxDodgeCombo) run.maxDodgeCombo = run.dodgeCombo;
           run.score += Math.round(15 * run.scoreMult * upgradeScoreMult);
           SFX.dodge();
           if (run.dodgeCombo > 0 && run.dodgeCombo % 5 === 0) {
@@ -1778,14 +2072,17 @@
     el.runScoreText.textContent = `${run.distanceM.toLocaleString('ko-KR')}m · ${Math.floor(run.score).toLocaleString('ko-KR')}점`;
     el.runGoldText.textContent = run.gold.toLocaleString('ko-KR');
 
-    // 5 Pixel Hearts (matching uploaded sheet!)
+    // 5 Pixel Hearts (DOM-cached so innerHTML only rebuilds when heart count changes!)
     const hpRatio = Math.max(0, Math.min(1, run.hp / run.maxHp));
     const filledHearts = run.hp <= 0 ? 0 : Math.max(1, Math.ceil(hpRatio * 5));
-    let heartHtml = '';
-    for (let i = 0; i < 5; i++) {
-      heartHtml += `<span class="heart-unit${i < filledHearts ? '' : ' empty'}">❤️</span>`;
+    if (run.lastHeartCount !== filledHearts) {
+      run.lastHeartCount = filledHearts;
+      let heartHtml = '';
+      for (let i = 0; i < 5; i++) {
+        heartHtml += `<span class="heart-unit${i < filledHearts ? '' : ' empty'}">❤️</span>`;
+      }
+      el.runHearts.innerHTML = heartHtml;
     }
-    el.runHearts.innerHTML = heartHtml;
     el.runHpText.textContent = `${Math.ceil(run.hp)}/${run.maxHp}`;
 
     // Rainbow FEVER Gauge
@@ -1875,12 +2172,14 @@
       el.gearMaskBar.style.width = '0%';
     }
 
-    // 4 Status Orbs + Full-Canvas FEVER Frame Pulse
+    // 5 Status Orbs + Full-Canvas FEVER Frame Pulse + Dynamic BGM Mode
     el.orbUiFever.classList.toggle('active', run.feverTimer > 0);
+    el.orbUiSpeed.classList.toggle('active', run.speedBoostTimer > 0);
     el.orbUiMagnet.classList.toggle('active', run.magnetTimer > 0 || run.feverTimer > 0);
     el.orbUiNorway.classList.toggle('active', isNorway);
     el.orbUiShield.classList.toggle('active', Boolean(run.shield));
     el.runCanvasWrap.classList.toggle('fever-active', run.feverTimer > 0);
+    SFX.setBgmMode(run.feverTimer > 0 ? 'fever' : 'run');
   }
 
   function finishRunGameOver() {
@@ -1888,42 +2187,101 @@
     run.dead = true;
     el.mudOverlay.classList.add('hidden');
     el.runCanvasWrap.classList.remove('fever-active');
+    SFX.setBgmMode('menu');
     SFX.fail();
+
+    // Snapshot pre-run achievements & missions to announce newly unlocked ones!
+    ensureTodayMissions();
+    const prevAchDone = new Set(
+      DATA.ACHIEVEMENTS.filter((a) => getAchievementMetricValue(a.metric) >= a.target).map((a) => a.id)
+    );
+    const prevMisDone = new Set(
+      DATA.DAILY_MISSIONS.filter((m) => (save.dailyMissions.progress[m.metric] || 0) >= m.target).map((m) => m.id)
+    );
 
     commitRunMissionProgress();
 
     const ch = getCharDef(run.charId);
     const finalScore = Math.floor(run.score);
     const finalDist = run.distanceM || 0;
+    const prevBestScore = save.bestScore || 0;
     const distGoldBonus = Math.floor(run.elapsed * 0.7);
     const totalGoldEarned = run.gold + distGoldBonus;
 
-    const isNewBest = finalScore > save.bestScore;
+    const isNewBest = finalScore > prevBestScore;
     const isNewDist = finalDist > (save.bestDistanceM || 0);
     if (isNewBest) save.bestScore = finalScore;
     if (isNewDist) save.bestDistanceM = finalDist;
     if (run.year > save.bestYear) save.bestYear = run.year;
+    save.totalCoinsEver = (save.totalCoinsEver || 0) + (run.coinsCollected || 0);
+    if ((run.maxDodgeCombo || 0) > (save.maxDodgeComboEver || 0)) {
+      save.maxDodgeComboEver = run.maxDodgeCombo;
+    }
     save.gold += totalGoldEarned;
     save.playCount += 1;
     persistSave();
 
+    // Detect newly completed Achievements, Daily Missions & Stage Milestones
+    const newUnlocks = [];
+    DATA.ACHIEVEMENTS.forEach((a) => {
+      if (!prevAchDone.has(a.id) && getAchievementMetricValue(a.metric) >= a.target) {
+        newUnlocks.push(`🏅 업적 달성: ${a.title} (+${a.rewardGold}G 수령 가능!)`);
+      }
+    });
+    DATA.DAILY_MISSIONS.forEach((m) => {
+      if (!prevMisDone.has(m.id) && (save.dailyMissions.progress[m.metric] || 0) >= m.target) {
+        newUnlocks.push(`📋 미션 완료: ${m.title} (+${m.rewardGold}G 수령 가능!)`);
+      }
+    });
+    if (run.stageMilestonesEarned && run.stageMilestonesEarned.length) {
+      run.stageMilestonesEarned.forEach((txt) => newUnlocks.push(`🏆 스테이지 보상: ${txt}`));
+    }
+
     const seasonName = DATA.SEASONS[run.seasonIdx].name;
     el.resNewBest.classList.toggle('hidden', !isNewBest);
     el.resScore.textContent = `${finalScore.toLocaleString('ko-KR')}점`;
+    if (isNewBest) {
+      const diffPts = finalScore - prevBestScore;
+      el.resScoreCompare.textContent = prevBestScore > 0
+        ? `🎉 개인 최고 기록 경신! (+${diffPts.toLocaleString('ko-KR')}점)`
+        : '🎉 첫 생존 기록 달성!';
+    } else {
+      const gap = prevBestScore - finalScore;
+      el.resScoreCompare.textContent = `개인 최고 ${prevBestScore.toLocaleString('ko-KR')}점 (${gap.toLocaleString('ko-KR')}점 차이)`;
+    }
+
     el.resDistCompare.textContent = isNewDist
       ? `생존 거리 ${finalDist.toLocaleString('ko-KR')}m · 🎉 최장 거리 신기록!`
       : `생존 거리 ${finalDist.toLocaleString('ko-KR')}m · 최고 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
     el.resCause.textContent = run.lastHitCause;
+
+    if (newUnlocks.length > 0) {
+      el.resUnlockAlerts.innerHTML = newUnlocks.join('<br />');
+      el.resUnlockAlerts.classList.remove('hidden');
+    } else {
+      el.resUnlockAlerts.classList.add('hidden');
+    }
+
+    // Per-Season Survival Time Breakdown!
+    const st = run.seasonTime || { spring: 0, summer: 0, autumn: 0, winter: 0 };
+    el.resSeasonBars.innerHTML = `
+      <div class="res-s-chip spring">🌸 봄<strong>${Math.round(st.spring || 0)}초</strong></div>
+      <div class="res-s-chip summer">☀️ 여름<strong>${Math.round(st.summer || 0)}초</strong></div>
+      <div class="res-s-chip autumn">🍁 가을<strong>${Math.round(st.autumn || 0)}초</strong></div>
+      <div class="res-s-chip winter">❄️ 겨울<strong>${Math.round(st.winter || 0)}초</strong></div>
+    `;
+
     el.resSurvived.textContent = `${run.year}년 차 ${seasonName} (${Math.floor(run.elapsed)}초)`;
-    el.resGoldEarned.textContent = `+${totalGoldEarned.toLocaleString('ko-KR')} G`;
+    el.resGoldEarned.textContent = `코인 ${run.coinsCollected || 0}개 · +${totalGoldEarned.toLocaleString('ko-KR')} G`;
     el.resCharName.textContent = `${ch.name} Lv.${run.charLevel || 1}`;
-    el.resGoldTotal.textContent = `${save.gold.toLocaleString('ko-KR')} G`;
+    el.resComboStat.textContent = `${run.maxDodgeCombo || 0}연속 · 보유 ${save.gold.toLocaleString('ko-KR')} G`;
 
     el.gameoverOverlay.classList.remove('hidden');
   }
 
   function exitRunToHome() {
     SFX.click();
+    SFX.setBgmMode('menu');
     if (run) commitRunMissionProgress();
     run = null;
     paused = false;
@@ -2014,11 +2372,13 @@
     });
 
     // 7-Day Attendance Reward Modal
-    el.btnOpenAttendance.addEventListener('click', () => {
+    function openAttendanceModal() {
       SFX.click();
       renderAttendanceUI();
       el.attendanceOverlay.classList.remove('hidden');
-    });
+    }
+    el.btnOpenAttendance.addEventListener('click', openAttendanceModal);
+    el.btnTabOpenAttendance.addEventListener('click', openAttendanceModal);
     el.btnCloseAttendance.addEventListener('click', () => {
       SFX.click();
       el.attendanceOverlay.classList.add('hidden');
@@ -2030,10 +2390,82 @@
     });
     el.btnClaimAttendance.addEventListener('click', claimAttendanceToday);
 
-    el.btnSoundGlobal.addEventListener('click', () => {
-      const on = SFX.toggle();
-      el.btnSoundGlobal.textContent = on ? '🔊' : '🔇';
+    // Achievements Modal
+    el.btnOpenAchievements.addEventListener('click', () => {
+      SFX.click();
+      renderAchievementsUI();
+      el.achievementsOverlay.classList.remove('hidden');
     });
+    el.btnCloseAchievements.addEventListener('click', () => {
+      SFX.click();
+      el.achievementsOverlay.classList.add('hidden');
+    });
+    el.achievementsOverlay.addEventListener('click', (e) => {
+      if (e.target === el.achievementsOverlay) {
+        el.achievementsOverlay.classList.add('hidden');
+      }
+    });
+
+    // Audio & Landscape Settings Modal
+    function openSettingsModal() {
+      SFX.click();
+      renderSettingsUI();
+      el.settingsOverlay.classList.remove('hidden');
+    }
+    el.btnOpenSettings.addEventListener('click', openSettingsModal);
+    el.btnPauseSettings.addEventListener('click', openSettingsModal);
+    el.btnCloseSettings.addEventListener('click', () => {
+      SFX.click();
+      el.settingsOverlay.classList.add('hidden');
+    });
+    el.settingsOverlay.addEventListener('click', (e) => {
+      if (e.target === el.settingsOverlay) {
+        el.settingsOverlay.classList.add('hidden');
+      }
+    });
+
+    function saveAudioState() {
+      save.audioSettings = SFX.getSettings();
+      persistSave();
+      renderSettingsUI();
+    }
+
+    el.chkBgmOn.addEventListener('click', () => {
+      SFX.toggleBgm();
+      SFX.click();
+      saveAudioState();
+    });
+    el.rngBgmVol.addEventListener('input', () => {
+      const v = Number(el.rngBgmVol.value) / 100;
+      SFX.applySettings({ bgmVol: v, bgmOn: v > 0 });
+      saveAudioState();
+    });
+    el.chkSfxOn.addEventListener('click', () => {
+      SFX.toggleSfx();
+      SFX.click();
+      saveAudioState();
+    });
+    el.rngSfxVol.addEventListener('input', () => {
+      const v = Number(el.rngSfxVol.value) / 100;
+      SFX.applySettings({ sfxVol: v, sfxOn: v > 0 });
+      saveAudioState();
+    });
+    el.btnToggleFullscreen.addEventListener('click', toggleLandscapeFullscreen);
+    el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
+
+    el.btnSoundGlobal.addEventListener('click', () => {
+      SFX.toggle();
+      saveAudioState();
+    });
+
+    // Auto-pause active run safely when switching apps / backgrounding browser tab!
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && run && run.active && !paused) {
+        paused = true;
+        el.pauseOverlay.classList.remove('hidden');
+      }
+    });
+    document.addEventListener('fullscreenchange', renderSettingsUI);
 
     el.btnPrevChar.addEventListener('click', () => {
       SFX.click();
@@ -2100,6 +2532,8 @@
       if (introLeaving || el.introOverlay.classList.contains('hidden')) return;
       introLeaving = true;
       SFX.introJingle();
+      SFX.startBgm();
+      SFX.setBgmMode('menu');
       el.introOverlay.classList.add('playing');
       setTimeout(() => {
         el.introOverlay.classList.add('leaving');

@@ -2139,3 +2139,917 @@ body {
 #run-canvas-wrap.fever-active {
   box-shadow: inset 0 0 0 3px #ffe252, 0 0 18px rgba(255, 224, 82, 0.65);
 }
+
+
+/* ================= STAGE 2~4: ACHIEVEMENTS, SETTINGS, GAME OVER & LANDSCAPE MODE ================= */
+.home-col-left,
+.home-col-right {
+  display: contents;
+}
+
+.mission-head-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ach-pill-btn {
+  position: relative;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1.5px solid #ffd54f;
+  background: linear-gradient(180deg, #4b3185, #2f1e59);
+  color: #fff2a8;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.ach-mini-dot {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ff3b30;
+  border: 1.5px solid #ffffff;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseDot 1.1s ease-in-out infinite;
+}
+
+/* Gear Pair & 5 Status Orbs */
+.gear-btn-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.status-orbs-row.five-orbs {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+
+.status-orbs-row.five-orbs .status-orb {
+  width: 22px;
+  height: 22px;
+}
+
+.pause-square-btn.rotate-btn {
+  background: linear-gradient(180deg, #4e90e0, #2c62b0);
+  font-size: 14px;
+}
+
+/* Scrollable Tall Modals (Achievements & Game Over) */
+.cr-modal-tall {
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-scroll-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(90dvh - 46px);
+}
+
+/* Achievements Modal */
+.ach-summary-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: #e1eefc;
+  border: 1.5px solid #b0cbed;
+  font-size: 12px;
+  font-weight: 800;
+  color: #163766;
+}
+
+.ach-hint {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #4a658a;
+}
+
+.ach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ach-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border-radius: 11px;
+  background: #ffffff;
+  border: 1.5px solid #c3d6eb;
+}
+
+.ach-card.ready {
+  background: #fff9de;
+  border-color: #f09e12;
+}
+
+.ach-card.claimed {
+  background: #eef7f1;
+  border-color: #82cca0;
+  opacity: 0.88;
+}
+
+.ach-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #e9f2fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ach-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.ach-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #162e54;
+}
+
+.ach-desc {
+  font-size: 11px;
+  color: #4c6280;
+  margin: 1px 0 4px;
+}
+
+.ach-prog-track {
+  height: 5px;
+  border-radius: 999px;
+  background: #d7e4f2;
+  overflow: hidden;
+}
+
+.ach-prog-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #43a6ff, #4be382);
+}
+
+/* Audio & Display Settings Modal */
+.setting-group {
+  background: #ffffff;
+  border: 1.5px solid #c3d6eb;
+  border-radius: 12px;
+  padding: 10px 11px;
+  margin-bottom: 9px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.setting-label {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #163059;
+}
+
+.toggle-pill {
+  min-width: 56px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid #596b85;
+  background: #8c9eb5;
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.toggle-pill.on {
+  border-color: #166634;
+  background: linear-gradient(180deg, #4be07d, #24a852);
+}
+
+.setting-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.setting-slider-row input[type="range"] {
+  flex: 1;
+  accent-color: #2f75d1;
+  height: 22px;
+}
+
+.vol-num {
+  min-width: 36px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 800;
+  color: #284b7d;
+}
+
+.setting-note {
+  margin: 7px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #4b6485;
+}
+
+.save-safe-note {
+  text-align: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #e6f7ec;
+  border: 1px solid #96d9ae;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1b6636;
+}
+
+/* Upgraded Game Over Report Styles */
+.res-score-compare {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #c46a00;
+  margin-top: 2px;
+}
+
+.res-unlock-alerts {
+  margin-bottom: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fff5cc, #ffe699);
+  border: 1.5px solid #e6a219;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b3900;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.res-season-box {
+  margin-bottom: 10px;
+  padding: 8px 9px;
+  border-radius: 11px;
+  background: #ffffff;
+  border: 1.5px solid #bfd2e8;
+}
+
+.res-season-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #4f6687;
+  margin-bottom: 6px;
+}
+
+.res-season-bars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.res-s-chip {
+  padding: 5px 4px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.res-s-chip.spring { background: #d95d8f; }
+.res-s-chip.summer { background: #269c57; }
+.res-s-chip.autumn { background: #d4741a; }
+.res-s-chip.winter { background: #2d82cc; }
+.res-s-chip strong { display: block; font-size: 12px; margin-top: 1px; }
+
+.hero-retry-btn {
+  padding: 13px 16px;
+  font-size: 18px;
+}
+
+/* Keyboard / Accessibility Focus Indicator */
+button:focus-visible,
+input:focus-visible {
+  outline: 2.5px solid #ffe45e;
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   MOBILE LANDSCAPE PLAY MODE (폰 가로 모드 완벽 대응!)
+   ========================================================================= */
+@media (orientation: landscape) and (max-height: 600px) {
+  #mobile-app {
+    width: 100vw;
+    max-width: 1040px;
+    height: 100dvh;
+    border-left: none;
+    border-right: none;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Compact Intro for Landscape Phones */
+  .intro-content {
+    gap: 8px;
+    padding: 10px 20px;
+  }
+  .intro-logo-img {
+    max-height: 44dvh;
+    width: auto;
+  }
+  .intro-tap-btn {
+    max-width: 280px;
+    padding: 9px 14px;
+  }
+
+  /* Compact Top Header */
+  #app-header {
+    padding: 4px 12px;
+    gap: 8px;
+  }
+  .res-pill {
+    height: 30px;
+    font-size: 12.5px;
+  }
+  .sq-hdr-btn {
+    width: 30px;
+    height: 28px;
+    font-size: 13px;
+  }
+
+  #tab-container {
+    padding: 5px 10px 6px;
+  }
+
+  /* Home Screen -> Balanced 2-Column Landscape Lobby! */
+  #view-home.active {
+    display: grid;
+    grid-template-columns: 1.08fr 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .home-col-left,
+  .home-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .cr-arena-stage {
+    aspect-ratio: 380 / 138;
+  }
+  .cr-arena-pedestal {
+    padding: 6px 8px 7px;
+  }
+  .char-passive-strip {
+    margin-bottom: 4px;
+  }
+  .home-stat-grid {
+    margin-bottom: 5px;
+  }
+  .season-hazard-line {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  .home-mission-card {
+    padding: 6px 8px;
+  }
+  .mission-row {
+    padding: 4px 6px;
+  }
+  .atlas-start-btn.hero-start-btn {
+    min-height: 48px;
+    padding: 7px 10px;
+  }
+  .atlas-start-btn.hero-start-btn .battle-main-txt {
+    font-size: 18px;
+  }
+  .atlas-sq-btn {
+    height: 48px;
+  }
+
+  /* 2-Column Shop & Character Cards in Landscape! */
+  .card-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  /* Compact Horizontal Bottom Navigation */
+  .nav-btn {
+    flex-direction: row;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+  .nav-atlas-ico {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* ========= ACTIVE RUNNER SCREEN: TRUE ARCADE LANDSCAPE LAYOUT ========= */
+  #view-run {
+    position: absolute;
+    inset: 0;
+    background: #13223d;
+  }
+
+  /* Floating Translucent Compact Top HUD */
+  #run-hud {
+    position: absolute;
+    top: 0;
+    left: env(safe-area-inset-left, 0px);
+    right: env(safe-area-inset-right, 0px);
+    z-index: 20;
+    padding: 4px 10px 4px;
+    background: linear-gradient(180deg, rgba(16, 29, 54, 0.88) 0%, rgba(16, 29, 54, 0.42) 85%, rgba(16, 29, 54, 0) 100%);
+    border-bottom: none;
+    gap: 3px;
+    pointer-events: none;
+  }
+  #run-hud button {
+    pointer-events: auto;
+  }
+
+  .run-hud-row {
+    gap: 7px;
+  }
+  .run-portrait-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+  .run-portrait-img {
+    width: 30px;
+    height: 32px;
+  }
+  .hearts-icons {
+    font-size: 13px;
+  }
+  .fever-bar-track {
+    height: 12px;
+  }
+  .fever-bar-text {
+    font-size: 9px;
+  }
+
+  .run-sub-strip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .season-exp-wrap {
+    max-width: 190px;
+    height: 14px;
+  }
+  .season-pill,
+  .score-num {
+    font-size: 10.5px;
+    padding: 1px 6px;
+  }
+
+  .forecast-strip {
+    align-self: center;
+    max-width: min(460px, 72vw);
+    padding: 2px 8px;
+    font-size: 10.5px;
+    background: rgba(12, 24, 46, 0.78);
+    border-radius: 999px;
+  }
+
+  /* Full-Height Crisp Game Canvas */
+  #run-canvas-wrap {
+    position: absolute;
+    inset: 0;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #2d558f 0%, #1c3259 75%, #162238 100%);
+  }
+
+  #runCanvas {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 450 / 270;
+    object-fit: contain;
+  }
+
+  .run-banner {
+    top: 74px;
+    font-size: 12px;
+    padding: 4px 12px;
+  }
+
+  /* Ergonomic Floating Thumb Overlay Controls (Bottom-Left JUMP | Bottom-Center GEAR | Bottom-Right SLIDE) */
+  #mobile-controls {
+    position: absolute;
+    left: env(safe-area-inset-left, 0px);
+    right: env(safe-area-inset-right, 0px);
+    bottom: 0;
+    z-index: 25;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: transparent;
+    border-top: none;
+    pointer-events: none;
+  }
+
+  #mobile-controls > * {
+    pointer-events: auto;
+  }
+
+  .ctrl-btn {
+    width: 118px;
+    min-height: 82px;
+    border-radius: 18px;
+    opacity: 0.9;
+    gap: 1px;
+  }
+  .ctrl-arrow { font-size: 24px; }
+  .ctrl-title { font-size: 15px; }
+  .ctrl-sub { font-size: 9.5px; }
+
+  .gear-toggle-col {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    border-radius: 14px;
+    background: rgba(14, 24, 46, 0.72);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(4px);
+  }
+
+  .gear-btn-pair {
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .gear-btn {
+    padding: 6px 8px;
+    min-width: 98px;
+    font-size: 11px;
+  }
+
+  .status-orbs-row.five-orbs {
+    gap: 5px;
+    padding: 0;
+  }
+
+  /* Landscape Modals Fit Cleanly Without Clipping */
+  .modal-overlay {
+    padding: 8px 14px;
+  }
+  .cr-modal {
+    width: min(460px, 92vw);
+    max-height: 92dvh;
+  }
+  .att-days-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .att-day-cell.day7 {
+    grid-column: span 1;
+  }
+}
+
+
+/* ================= UPLOADED 5-BUTTON PIXEL BOTTOM NAVIGATION BAR ================= */
+#bottom-nav.pixel-nav-bar {
+  position: relative;
+  z-index: 15;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.32fr 1fr 1fr;
+  align-items: end;
+  gap: 2px;
+  padding: 5px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, #253b63 0%, #15233d 65%, #0e172b 100%);
+  border-top: 3px solid #0c1426;
+  box-shadow: 0 -4px 14px rgba(5, 11, 24, 0.55), inset 0 2px 0 rgba(120, 178, 255, 0.28);
+  overflow: visible;
+}
+
+#bottom-nav.pixel-nav-bar .nav-btn {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 2px;
+  border: none;
+  border-right: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease;
+  overflow: visible;
+}
+
+#bottom-nav.pixel-nav-bar .nav-btn.active {
+  background: transparent;
+  box-shadow: none;
+  transform: translateY(-3px);
+}
+
+#bottom-nav.pixel-nav-bar .nav-btn.active::before,
+#bottom-nav.pixel-nav-bar .nav-btn.active::after {
+  display: none;
+  content: none;
+}
+
+#bottom-nav.pixel-nav-bar .nav-btn:active {
+  transform: translateY(-1px) scale(0.96);
+}
+
+.nav-spr-stack {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 74px;
+  height: 62px;
+}
+
+.nav-spr-stack.home-stack {
+  max-width: 104px;
+  height: 78px;
+  margin-top: -18px;
+}
+
+.nav-spr {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  image-rendering: pixelated;
+  pointer-events: none;
+  transition: opacity 0.08s ease;
+}
+
+.nav-spr.off { opacity: 1; }
+.nav-spr.on { opacity: 0; }
+
+#bottom-nav.pixel-nav-bar .nav-btn.active .nav-spr.off,
+#bottom-nav.pixel-nav-bar .nav-btn:active .nav-spr.off {
+  opacity: 0;
+}
+
+#bottom-nav.pixel-nav-bar .nav-btn.active .nav-spr.on,
+#bottom-nav.pixel-nav-bar .nav-btn:active .nav-spr.on {
+  opacity: 1;
+}
+
+.nav-notify-dot {
+  position: absolute;
+  top: 2px;
+  right: 8px;
+  z-index: 5;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #ff3b30;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+  animation: pulseDot 1.1s ease-in-out infinite;
+}
+
+/* ================= MISSIONS FULL TAB & RANKING TAB ================= */
+.mission-tab-block {
+  background: linear-gradient(180deg, #1d355e 0%, #142645 100%);
+  border: 2px solid #0d1a30;
+  border-radius: 14px;
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mission-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #ffe36e;
+}
+
+.rank-my-card {
+  background: linear-gradient(180deg, #274878 0%, #172e52 100%);
+  border: 2.5px solid #ffd54f;
+  border-radius: 15px;
+  padding: 10px 12px;
+  color: #ffffff;
+  box-shadow: 0 5px 0 rgba(8, 17, 34, 0.55);
+}
+
+.rank-my-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.rank-my-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #ffe078, #f29d24);
+  border: 2px solid #142642;
+  object-fit: contain;
+  image-rendering: pixelated;
+  padding: 2px;
+}
+
+.rank-my-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.rank-my-title strong {
+  color: #ffe45e;
+  font-size: 18px;
+}
+
+.rank-my-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #c2e0ff;
+  margin-top: 2px;
+}
+
+.rank-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.rank-stat-pill {
+  background: rgba(8, 18, 36, 0.55);
+  border: 1px solid rgba(155, 200, 255, 0.22);
+  border-radius: 9px;
+  padding: 5px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rank-stat-pill span {
+  font-size: 10px;
+  font-weight: 600;
+  color: #a9ccfa;
+}
+
+.rank-stat-pill strong {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffe87a;
+}
+
+.rank-board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-bottom: 8px;
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border-radius: 12px;
+  background: #f5f9ff;
+  border: 2px solid #132847;
+  color: #162e54;
+  box-shadow: 0 3px 0 rgba(9, 20, 38, 0.4);
+}
+
+.rank-row.me {
+  background: linear-gradient(180deg, #fff9d6, #ffebb0);
+  border-color: #eb980c;
+}
+
+.rank-medal {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #dceafd;
+  border: 1.5px solid #96b7e3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #1c3f73;
+  flex-shrink: 0;
+}
+
+.rank-row.top1 .rank-medal { background: #ffe054; border-color: #b86f00; color: #5c3100; }
+.rank-row.top2 .rank-medal { background: #e1ebf5; border-color: #7d96b3; color: #283f59; }
+.rank-row.top3 .rank-medal { background: #f2be91; border-color: #9e561b; color: #542806; }
+
+.rank-row-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #d8ebff;
+  border: 1.5px solid #759fd4;
+  object-fit: contain;
+  image-rendering: pixelated;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.rank-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rank-row-name {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #142a4d;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rank-row-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4f6685;
+}
+
+.rank-row-score {
+  text-align: right;
+  font-size: 14px;
+  font-weight: 900;
+  color: #16448a;
+  white-space: nowrap;
+}
+
+/* Landscape Compact Sizing for the 5-Button Pixel Nav Bar */
+@media (orientation: landscape) and (max-height: 600px) {
+  #bottom-nav.pixel-nav-bar {
+    padding: 3px 16px calc(4px + env(safe-area-inset-bottom, 0px));
+    max-width: 100%;
+  }
+
+  .nav-spr-stack {
+    max-width: 64px;
+    height: 46px;
+  }
+
+  .nav-spr-stack.home-stack {
+    max-width: 84px;
+    height: 58px;
+    margin-top: -14px;
+  }
+
+  .rank-board-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 7px;
+  }
+}

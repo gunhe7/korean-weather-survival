@@ -273,6 +273,29 @@ window.RUN_DATA = (function () {
     { day: 7, label: '500G + 보호막', gold: 500, booster: 'shield' }
   ];
 
+  // 업적 시스템 (10종 — 거리·코인·연도·회피·캐릭터 수집 보상!)
+  const ACHIEVEMENTS = [
+    { id: 'dist_500', icon: '🏃', title: '첫 걸음마', desc: '단일 주행 500m 도달', metric: 'bestDistanceM', target: 500, rewardGold: 100 },
+    { id: 'dist_1500', icon: '🏙️', title: '도심 마라토너', desc: '단일 주행 1,500m 도달', metric: 'bestDistanceM', target: 1500, rewardGold: 250 },
+    { id: 'dist_3000', icon: '🇰🇷', title: '대한민국 종주', desc: '단일 주행 3,000m 도달', metric: 'bestDistanceM', target: 3000, rewardGold: 500 },
+    { id: 'coins_200', icon: '🪙', title: '코인 수집가', desc: '누적 코인 200개 획득', metric: 'totalCoinsEver', target: 200, rewardGold: 150 },
+    { id: 'coins_1000', icon: '💰', title: '황금 만능주의', desc: '누적 코인 1,000개 획득', metric: 'totalCoinsEver', target: 1000, rewardGold: 400 },
+    { id: 'year_2', icon: '🗓️', title: '사계절 정복자', desc: '2년 차 이상 생존 돌파', metric: 'bestYear', target: 2, rewardGold: 250 },
+    { id: 'year_3', icon: '🔥', title: '기후 생존왕', desc: '3년 차 이상 생존 돌파', metric: 'bestYear', target: 3, rewardGold: 550 },
+    { id: 'dodge_10', icon: '⚡', title: '회피의 달인', desc: '장애물 10연속 회피 성공', metric: 'maxDodgeComboEver', target: 10, rewardGold: 200 },
+    { id: 'chars_3', icon: '👥', title: '동료 수집가', desc: '캐릭터 3종 이상 해금', metric: 'unlockedCount', target: 3, rewardGold: 300 },
+    { id: 'chars_6', icon: '👑', title: 'K-날씨 올컬렉터', desc: '캐릭터 6종 전체 수집 완료', metric: 'unlockedCount', target: 6, rewardGold: 800 }
+  ];
+
+  // 스테이지(연도/계절 최초 도달) 마일스톤 보상
+  const STAGE_MILESTONES = [
+    { id: 'y1_summer', year: 1, seasonIdx: 1, label: '첫 여름 돌파', rewardGold: 40 },
+    { id: 'y1_autumn', year: 1, seasonIdx: 2, label: '첫 가을 돌파', rewardGold: 50 },
+    { id: 'y1_winter', year: 1, seasonIdx: 3, label: '첫 겨울 돌파', rewardGold: 70 },
+    { id: 'y2_spring', year: 2, seasonIdx: 0, label: '첫 2년 차 진입', rewardGold: 150 },
+    { id: 'y3_spring', year: 3, seasonIdx: 0, label: '첫 3년 차 진입', rewardGold: 300 }
+  ];
+
   // 실시간 한국 기상 환경 변수 패턴 (조작감·물리·장비 연동)
   const WEATHER_EVENTS = {
     clear: {
@@ -389,6 +412,8 @@ window.RUN_DATA = (function () {
     BOOSTERS,
     DAILY_MISSIONS,
     ATTENDANCE_REWARDS,
+    ACHIEVEMENTS,
+    STAGE_MILESTONES,
     WEATHER_EVENTS,
     SEASON_WEATHER_POOL,
     OBSTACLES_BY_SEASON,

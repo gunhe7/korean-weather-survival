@@ -22,11 +22,11 @@
         <button id="btn-intro-enter" class="cr-gold-btn intro-tap-btn" type="button">
           ▶ 터치해서 시작하기!
         </button>
-        <div class="intro-sound-hint">🔊 터치 시 인트로 사운드와 함께 시작됩니다</div>
+        <div class="intro-sound-hint">🔊 터치 시 인트로 사운드와 함께 시작됩니다 · 가로/세로 모두 지원</div>
       </div>
     </div>
 
-    <!-- ================= TOP RESOURCE BAR (CLASH ROYALE CLEAN STYLE) ================= -->
+    <!-- ================= TOP RESOURCE BAR ================= -->
     <header id="app-header">
       <div class="res-pill trophy-pill" title="최고 기록">
         <span class="res-ico">🏆</span>
@@ -42,122 +42,130 @@
       </button>
 
       <div class="header-actions">
-        <button id="btn-replay-intro" class="sq-hdr-btn" type="button" title="인트로 로고 보기">🎬</button>
-        <button id="btn-sound-global" class="sq-hdr-btn" type="button" aria-label="효과음 토글">🔊</button>
+        <button id="btn-replay-intro" class="sq-hdr-btn" type="button" title="인트로 로고 보기" aria-label="인트로 보기">🎬</button>
+        <button id="btn-sound-global" class="sq-hdr-btn" type="button" title="빠른 음소거" aria-label="사운드 음소거 토글">🔊</button>
+        <button id="btn-open-settings" class="sq-hdr-btn" type="button" title="사운드 및 가로 화면 설정" aria-label="설정 열기">⚙️</button>
       </div>
     </header>
 
     <!-- ================= MAIN CONTENT AREA (TABS) ================= -->
     <main id="tab-container">
-      <!-- 1. RENEWED HOME SCREEN (CLASH ROYALE INSPIRED GAME LOBBY) -->
+      <!-- 1. RENEWED HOME SCREEN (PORTRAIT STACK & LANDSCAPE 2-COLUMN LOBBY) -->
       <section id="view-home" class="tab-view active">
-        <!-- Top Profile Banner + Daily Attendance Reward Button -->
-        <div class="cr-profile-row">
-          <div class="cr-banner-card">
-            <div class="cr-banner-avatar">
-              <img id="home-profile-avatar" src="assets/atlas/char_idle.png" alt="캐릭터" />
-              <span id="home-char-lv-mini" class="avatar-lv-tag">Lv.1</span>
-            </div>
-            <div class="cr-banner-text">
-              <div class="cr-banner-name" id="home-char-name">기본 모험가</div>
-              <div class="cr-banner-sub">
-                <span>🏆 <strong id="home-best-year">1년 차</strong></span>
-                <span class="dot-sep">·</span>
-                <span><strong id="home-best-dist">0m</strong></span>
-                <span class="dot-sep">·</span>
-                <span>체력 <strong id="home-char-hp">105</strong></span>
+        <div class="home-col-left">
+          <!-- Top Profile Banner + Daily Attendance Reward Button -->
+          <div class="cr-profile-row">
+            <div class="cr-banner-card">
+              <div class="cr-banner-avatar">
+                <img id="home-profile-avatar" src="assets/atlas/char_idle.png" alt="캐릭터" />
+                <span id="home-char-lv-mini" class="avatar-lv-tag">Lv.1</span>
+              </div>
+              <div class="cr-banner-text">
+                <div class="cr-banner-name" id="home-char-name">기본 모험가</div>
+                <div class="cr-banner-sub">
+                  <span>🏆 <strong id="home-best-year">1년 차</strong></span>
+                  <span class="dot-sep">·</span>
+                  <span><strong id="home-best-dist">0m</strong></span>
+                  <span class="dot-sep">·</span>
+                  <span>체력 <strong id="home-char-hp">105</strong></span>
+                </div>
               </div>
             </div>
+
+            <button id="btn-open-attendance" class="cr-pass-card attendance-btn" type="button" title="7일 연속 출석 보상 받기">
+              <span id="attendance-dot" class="notify-dot hidden">!</span>
+              <div class="cr-pass-top">🎁 출석 보상</div>
+              <div class="cr-pass-mid">
+                <span class="cr-pass-lv" id="home-att-streak">1일차</span>
+                <span class="cr-pass-status" id="home-att-status">보상 받기!</span>
+              </div>
+            </button>
           </div>
 
-          <button id="btn-open-attendance" class="cr-pass-card attendance-btn" type="button" title="7일 연속 출석 보상 받기">
-            <span id="attendance-dot" class="notify-dot hidden">!</span>
-            <div class="cr-pass-top">🎁 출석 보상</div>
-            <div class="cr-pass-mid">
-              <span class="cr-pass-lv" id="home-att-streak">1일차</span>
-              <span class="cr-pass-status" id="home-att-status">보상 받기!</span>
+          <!-- Center Character Diorama + Stats Visualization + Weather Preview -->
+          <div class="cr-arena-wrap">
+            <div class="cr-arena-stage">
+              <canvas id="homePreviewCanvas" width="380" height="180"></canvas>
+              <button id="btn-prev-char" class="stage-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
+              <button id="btn-next-char" class="stage-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
+              <span id="home-char-lv-badge" class="arena-lv-badge">Lv.1 / 5</span>
+              <span id="home-char-tier" class="arena-tier-badge">밸런스</span>
             </div>
-          </button>
+
+            <div class="cr-arena-pedestal">
+              <div class="char-passive-strip">
+                <span id="home-char-passive-name" class="passive-pill">균형 잡힌 생존가</span>
+                <span id="home-char-desc" class="passive-detail">사계절 약점 없이 균형 잡힌 능력치!</span>
+              </div>
+
+              <div class="home-stat-grid">
+                <div class="stat-bar-item">
+                  <div class="stat-bar-head"><span>❤️ 체력</span><strong id="stat-val-hp">105</strong></div>
+                  <div class="stat-bar-track"><div id="stat-fill-hp" class="stat-bar-fill hp" style="width: 55%"></div></div>
+                </div>
+                <div class="stat-bar-item">
+                  <div class="stat-bar-head"><span>🪙 골드</span><strong id="stat-val-gold">110%</strong></div>
+                  <div class="stat-bar-track"><div id="stat-fill-gold" class="stat-bar-fill gold" style="width: 55%"></div></div>
+                </div>
+                <div class="stat-bar-item">
+                  <div class="stat-bar-head"><span>⭐ 점수</span><strong id="stat-val-score">105%</strong></div>
+                  <div class="stat-bar-track"><div id="stat-fill-score" class="stat-bar-fill score" style="width: 55%"></div></div>
+                </div>
+              </div>
+
+              <div class="pedestal-seasons" role="tablist" aria-label="계절 기상 미리보기">
+                <button class="p-s spring active" data-season-idx="0" type="button">🌸 봄</button>
+                <button class="p-s summer" data-season-idx="1" type="button">☀️ 여름</button>
+                <button class="p-s autumn" data-season-idx="2" type="button">🍁 가을</button>
+                <button class="p-s winter" data-season-idx="3" type="button">❄️ 겨울</button>
+              </div>
+              <div id="home-season-hazards" class="season-hazard-line">🌸 봄 재난: 황사 구름 · 미세먼지 지대 · 꽃샘추위 · 나뭇가지</div>
+            </div>
+          </div>
         </div>
 
-        <!-- Center Character Diorama + Stats Visualization + Weather Preview -->
-        <div class="cr-arena-wrap">
-          <div class="cr-arena-stage">
-            <canvas id="homePreviewCanvas" width="380" height="180"></canvas>
-            <button id="btn-prev-char" class="stage-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
-            <button id="btn-next-char" class="stage-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
-            <span id="home-char-lv-badge" class="arena-lv-badge">Lv.1 / 5</span>
-            <span id="home-char-tier" class="arena-tier-badge">밸런스</span>
-          </div>
-
-          <div class="cr-arena-pedestal">
-            <!-- Character Passive Skill Pill -->
-            <div class="char-passive-strip">
-              <span id="home-char-passive-name" class="passive-pill">균형 잡힌 생존가</span>
-              <span id="home-char-desc" class="passive-detail">사계절 약점 없이 균형 잡힌 능력치!</span>
-            </div>
-
-            <!-- Visual Stat Bars (HP / Gold / Score) -->
-            <div class="home-stat-grid">
-              <div class="stat-bar-item">
-                <div class="stat-bar-head"><span>❤️ 체력</span><strong id="stat-val-hp">105</strong></div>
-                <div class="stat-bar-track"><div id="stat-fill-hp" class="stat-bar-fill hp" style="width: 55%"></div></div>
-              </div>
-              <div class="stat-bar-item">
-                <div class="stat-bar-head"><span>🪙 골드</span><strong id="stat-val-gold">110%</strong></div>
-                <div class="stat-bar-track"><div id="stat-fill-gold" class="stat-bar-fill gold" style="width: 55%"></div></div>
-              </div>
-              <div class="stat-bar-item">
-                <div class="stat-bar-head"><span>⭐ 점수</span><strong id="stat-val-score">105%</strong></div>
-                <div class="stat-bar-track"><div id="stat-fill-score" class="stat-bar-fill score" style="width: 55%"></div></div>
+        <div class="home-col-right">
+          <!-- Today's Daily Missions Card + Quick Achievements Button -->
+          <div class="home-mission-card">
+            <div class="mission-card-head">
+              <span class="mission-head-title">📋 오늘의 미션</span>
+              <div class="mission-head-right">
+                <span id="home-mission-badge" class="mission-count-badge">0/3 완료</span>
+                <button id="btn-open-achievements" class="ach-pill-btn" type="button" title="업적 보상 보기">
+                  🏅 업적 <span id="home-ach-count">0/10</span>
+                  <span id="ach-dot" class="ach-mini-dot hidden">!</span>
+                </button>
               </div>
             </div>
+            <div id="home-mission-list" class="home-mission-list"></div>
+          </div>
 
-            <!-- Interactive 4-Season Weather & Disaster Selector -->
-            <div class="pedestal-seasons" role="tablist" aria-label="계절 기상 미리보기">
-              <button class="p-s spring active" data-season-idx="0" type="button">🌸 봄</button>
-              <button class="p-s summer" data-season-idx="1" type="button">☀️ 여름</button>
-              <button class="p-s autumn" data-season-idx="2" type="button">🍁 가을</button>
-              <button class="p-s winter" data-season-idx="3" type="button">❄️ 겨울</button>
+          <!-- Start Preparation / Equipped Boosters Bar -->
+          <button id="btn-pass-shop" class="home-prep-bar" type="button" title="상점에서 출발 아이템 준비">
+            <div class="prep-left">
+              <span class="prep-title">🎒 출발 준비</span>
+              <span id="home-booster-summary" class="prep-chips">출발 아이템 없음 (상점에서 준비!)</span>
             </div>
-            <div id="home-season-hazards" class="season-hazard-line">🌸 봄 재난: 황사 구름 · 미세먼지 지대 · 꽃샘추위 · 나뭇가지</div>
-          </div>
-        </div>
-
-        <!-- Today's Daily Missions Card (Fills Lobby Space with Clear Goals & Rewards!) -->
-        <div class="home-mission-card">
-          <div class="mission-card-head">
-            <span class="mission-head-title">📋 오늘의 미션</span>
-            <span id="home-mission-badge" class="mission-count-badge">0/3 완료</span>
-          </div>
-          <div id="home-mission-list" class="home-mission-list"></div>
-        </div>
-
-        <!-- Start Preparation / Equipped Boosters Bar -->
-        <button id="btn-pass-shop" class="home-prep-bar" type="button" title="상점에서 출발 아이템 준비">
-          <div class="prep-left">
-            <span class="prep-title">🎒 출발 준비</span>
-            <span id="home-booster-summary" class="prep-chips">노르웨이 0 · 보호막 0 · 피버 0</span>
-          </div>
-          <span class="prep-cta">상점 ›</span>
-        </button>
-
-        <!-- Bottom Action Dock (Extra-Large Crisp Yellow Start Button!) -->
-        <div class="atlas-action-dock">
-          <button id="btn-dock-chars" class="atlas-sq-btn" type="button" title="캐릭터 도감 & 강화">
-            <img src="assets/atlas/btn_settings.png" alt="캐릭터" />
-            <span class="dock-badge" id="dock-owned-count">1/6</span>
+            <span class="prep-cta">상점 ›</span>
           </button>
 
-          <button id="btn-dock-shop" class="atlas-sq-btn" type="button" title="상점 강화">
-            <img src="assets/atlas/btn_scroll.png" alt="상점" />
-            <span class="dock-badge gold" id="dock-booster-count">0</span>
-          </button>
+          <!-- Bottom Action Dock (Extra-Large Crisp Yellow Start Button!) -->
+          <div class="atlas-action-dock">
+            <button id="btn-dock-chars" class="atlas-sq-btn" type="button" title="캐릭터 도감 & 강화" aria-label="캐릭터 탭 열기">
+              <img src="assets/atlas/btn_settings.png" alt="캐릭터" />
+              <span class="dock-badge" id="dock-owned-count">1/6</span>
+            </button>
 
-          <button id="btn-play-start" class="atlas-start-btn hero-start-btn" type="button">
-            <span class="battle-main-txt" id="btn-play-label">시작하기 ▶</span>
-            <span class="battle-sub-txt" id="btn-play-sub">기본 모험가 Lv.1 · 사계절 생존</span>
-          </button>
+            <button id="btn-dock-shop" class="atlas-sq-btn" type="button" title="상점 강화" aria-label="상점 탭 열기">
+              <img src="assets/atlas/btn_scroll.png" alt="상점" />
+              <span class="dock-badge gold" id="dock-booster-count">0</span>
+            </button>
+
+            <button id="btn-play-start" class="atlas-start-btn hero-start-btn" type="button">
+              <span class="battle-main-txt" id="btn-play-label">시작하기 ▶</span>
+              <span class="battle-sub-txt" id="btn-play-sub">기본 모험가 Lv.1 · 사계절 생존</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -182,7 +190,6 @@
           <p>캐릭터를 수집하고 레벨업해 계절별 고유 패시브를 강화하세요.</p>
         </div>
 
-        <!-- Collection Rate & Passive Bonus Card -->
         <div class="dex-summary-card">
           <div class="dex-top-row">
             <span class="dex-title">📖 캐릭터 도감 수집률</span>
@@ -196,21 +203,94 @@
 
         <div id="char-list" class="card-list"></div>
       </section>
+
+      <!-- 4. MISSIONS & ACHIEVEMENTS FULL TAB -->
+      <section id="view-missions" class="tab-view">
+        <div class="cr-panel-header">
+          <h2>미션 · 출석 · 업적</h2>
+          <p>일일 미션과 10종 업적을 달성해 골드와 출발 아이템을 받으세요.</p>
+        </div>
+
+        <div class="mission-tab-block">
+          <div class="mission-block-head">
+            <span>📋 오늘의 일일 미션</span>
+            <button id="btn-tab-open-attendance" class="ach-pill-btn" type="button">🎁 7일 출석 보상</button>
+          </div>
+          <div id="tab-mission-list" class="home-mission-list"></div>
+        </div>
+
+        <div class="mission-tab-block">
+          <div class="mission-block-head">
+            <span>🏅 K-날씨 업적 보상</span>
+            <span id="tab-ach-summary" class="mission-count-badge">0 / 10</span>
+          </div>
+          <div id="tab-ach-list" class="ach-list"></div>
+        </div>
+      </section>
+
+      <!-- 5. RANKING & PERSONAL RECORDS TAB -->
+      <section id="view-rank" class="tab-view">
+        <div class="cr-panel-header">
+          <h2>K-날씨 생존 랭킹</h2>
+          <p>최고 점수를 경신해 대한민국 극한 날씨 생존 순위를 올려보세요!</p>
+        </div>
+
+        <div class="rank-my-card">
+          <div class="rank-my-top">
+            <img id="rank-my-avatar" src="assets/atlas/char_idle.png" alt="내 캐릭터" class="rank-my-img" />
+            <div class="rank-my-meta">
+              <div class="rank-my-title">내 현재 순위 <strong id="rank-my-pos">-위</strong></div>
+              <div class="rank-my-sub" id="rank-my-score-line">최고 점수 0점 · 최장 거리 0m</div>
+            </div>
+          </div>
+          <div class="rank-stats-grid">
+            <div class="rank-stat-pill"><span>최고 연도</span><strong id="rank-stat-year">1년 차</strong></div>
+            <div class="rank-stat-pill"><span>누적 코인</span><strong id="rank-stat-coins">0개</strong></div>
+            <div class="rank-stat-pill"><span>최대 회피</span><strong id="rank-stat-combo">0연속</strong></div>
+            <div class="rank-stat-pill"><span>도감 수집</span><strong id="rank-stat-dex">1/6</strong></div>
+          </div>
+        </div>
+
+        <div id="rank-board-list" class="rank-board-list"></div>
+      </section>
     </main>
 
-    <!-- ================= BOTTOM NAVIGATION BAR ================= -->
-    <nav id="bottom-nav">
-      <button class="nav-btn" data-tab="shop" type="button">
-        <img src="assets/atlas/btn_scroll.png" alt="" class="nav-atlas-ico" />
-        <span class="nav-txt">상점</span>
+    <!-- ================= BOTTOM NAVIGATION BAR (UPLOADED 5-BUTTON PIXEL SPRITES!) ================= -->
+    <nav id="bottom-nav" class="pixel-nav-bar" aria-label="하단 메뉴바">
+      <button class="nav-btn" data-tab="shop" type="button" aria-label="상점">
+        <span class="nav-spr-stack">
+          <img src="assets/nav/nav_shop_off.png" alt="상점" class="nav-spr off" />
+          <img src="assets/nav/nav_shop_on.png" alt="" class="nav-spr on" aria-hidden="true" />
+        </span>
       </button>
-      <button class="nav-btn active" data-tab="home" type="button">
-        <img src="assets/atlas/btn_home.png" alt="" class="nav-atlas-ico" />
-        <span class="nav-txt">홈</span>
+
+      <button class="nav-btn" data-tab="missions" type="button" aria-label="미션">
+        <span id="nav-mission-dot" class="nav-notify-dot hidden">!</span>
+        <span class="nav-spr-stack">
+          <img src="assets/nav/nav_mission_off.png" alt="미션" class="nav-spr off" />
+          <img src="assets/nav/nav_mission_on.png" alt="" class="nav-spr on" aria-hidden="true" />
+        </span>
       </button>
-      <button class="nav-btn" data-tab="chars" type="button">
-        <img src="assets/atlas/btn_settings.png" alt="" class="nav-atlas-ico" />
-        <span class="nav-txt">캐릭터</span>
+
+      <button class="nav-btn nav-home-btn active" data-tab="home" type="button" aria-label="홈">
+        <span class="nav-spr-stack home-stack">
+          <img src="assets/nav/nav_home_off.png" alt="홈" class="nav-spr off" />
+          <img src="assets/nav/nav_home_on.png" alt="" class="nav-spr on" aria-hidden="true" />
+        </span>
+      </button>
+
+      <button class="nav-btn" data-tab="chars" type="button" aria-label="캐릭터">
+        <span class="nav-spr-stack">
+          <img src="assets/nav/nav_char_off.png" alt="캐릭터" class="nav-spr off" />
+          <img src="assets/nav/nav_char_on.png" alt="" class="nav-spr on" aria-hidden="true" />
+        </span>
+      </button>
+
+      <button class="nav-btn" data-tab="rank" type="button" aria-label="랭킹">
+        <span class="nav-spr-stack">
+          <img src="assets/nav/nav_rank_off.png" alt="랭킹" class="nav-spr off" />
+          <img src="assets/nav/nav_rank_on.png" alt="" class="nav-spr on" aria-hidden="true" />
+        </span>
       </button>
     </nav>
 
@@ -231,9 +311,69 @@
       </div>
     </div>
 
+    <!-- ================= ACHIEVEMENTS MODAL (10 ACHIEVEMENTS) ================= -->
+    <div id="achievements-overlay" class="modal-overlay hidden">
+      <div class="cr-modal cr-modal-tall">
+        <div class="cr-modal-bar">
+          <span>🏅 K-날씨 업적 &amp; 보상</span>
+          <button id="btn-close-achievements" class="modal-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div class="modal-body modal-scroll-body">
+          <div class="ach-summary-strip">
+            <span id="ach-modal-summary">달성 현황: 0 / 10</span>
+            <span class="ach-hint">달성한 업적은 바로 골드를 수령하세요!</span>
+          </div>
+          <div id="ach-list" class="ach-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= AUDIO & LANDSCAPE SETTINGS MODAL ================= -->
+    <div id="settings-overlay" class="modal-overlay hidden">
+      <div class="cr-modal">
+        <div class="cr-modal-bar">
+          <span>⚙️ 사운드 &amp; 화면 설정</span>
+          <button id="btn-close-settings" class="modal-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-group">
+            <div class="setting-row">
+              <label for="chk-bgm-on" class="setting-label">🎵 배경음 (BGM)</label>
+              <button id="chk-bgm-on" class="toggle-pill on" type="button">ON</button>
+            </div>
+            <div class="setting-slider-row">
+              <input id="rng-bgm-vol" type="range" min="0" max="100" value="45" aria-label="배경음 볼륨" />
+              <span id="lbl-bgm-vol" class="vol-num">45%</span>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-row">
+              <label for="chk-sfx-on" class="setting-label">🔊 효과음 (SFX)</label>
+              <button id="chk-sfx-on" class="toggle-pill on" type="button">ON</button>
+            </div>
+            <div class="setting-slider-row">
+              <input id="rng-sfx-vol" type="range" min="0" max="100" value="80" aria-label="효과음 볼륨" />
+              <span id="lbl-sfx-vol" class="vol-num">80%</span>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-row">
+              <span class="setting-label">📱 폰 가로 모드 / 전체화면</span>
+            </div>
+            <button id="btn-toggle-fullscreen" class="cr-blue-btn" type="button">📱 가로 전체화면 전환</button>
+            <p class="setting-note">스마트폰을 가로로 돌리면 자동으로 와이드 게임 화면 &amp; 양손 조작 모드로 전환됩니다!</p>
+          </div>
+
+          <div class="save-safe-note">💾 골드·캐릭터·도감·업적 데이터 자동 이중 백업 보호 중</div>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= ACTIVE RUNNER GAME SCREEN ================= -->
     <section id="view-run" class="hidden">
-      <!-- Top Indie Pixel HUD (5 Hearts + Circular Portrait + Rainbow FEVER Bar + Gold + Pause) -->
+      <!-- Top Indie Pixel HUD -->
       <div id="run-hud">
         <div class="run-hud-row">
           <div class="run-portrait-box">
@@ -257,6 +397,7 @@
               <img src="assets/design/item_coin.png" alt="G" class="coin-sprite sm" />
               <span id="run-gold-text">0</span>
             </div>
+            <button id="btn-landscape-run" class="pause-square-btn rotate-btn" type="button" title="가로 전체화면" aria-label="가로 전체화면 전환">⛶</button>
             <button id="btn-pause-run" class="pause-square-btn" type="button" aria-label="일시정지">❚❚</button>
           </div>
         </div>
@@ -273,7 +414,7 @@
           <span id="run-score-text" class="score-num">0m · 0점</span>
         </div>
 
-        <!-- Weather Forecast & Active Physics Strip (KMA Fake vs Norway Yr.no!) -->
+        <!-- Weather Forecast & Active Physics Strip -->
         <div id="run-forecast-bar" class="forecast-strip">
           <span id="fc-source-badge" class="fc-badge kma">📡 K-기상청</span>
           <span id="fc-message" class="fc-msg">맑음 (강수확률 0%)</span>
@@ -285,7 +426,7 @@
       <div id="run-canvas-wrap">
         <canvas id="runCanvas" width="450" height="270"></canvas>
 
-        <!-- Muddy Water Splash Blindness Overlay (when hit by passing car splash!) -->
+        <!-- Muddy Water Splash Blindness Overlay -->
         <div id="mud-splatter-overlay" class="mud-overlay hidden">
           <div class="mud-blob b1"></div>
           <div class="mud-blob b2"></div>
@@ -298,40 +439,43 @@
         <div id="run-banner" class="run-banner hidden">1년 차 봄 시작!</div>
       </div>
 
-      <!-- Mobile Ergonomic Controls + Umbrella & Mask Cooldown Toggle Deck -->
+      <!-- Mobile Ergonomic Controls (Portrait Deck / Landscape Thumb Overlay) -->
       <div id="mobile-controls">
-        <button id="btn-jump" class="ctrl-btn jump-btn" type="button">
+        <button id="btn-jump" class="ctrl-btn jump-btn" type="button" aria-label="점프">
           <span class="ctrl-gloss"></span>
           <span class="ctrl-arrow">⬆</span>
           <span class="ctrl-title">점프</span>
           <span class="ctrl-sub">2단 점프</span>
         </button>
 
-        <!-- Center Gear Toggle Buttons with Live Duration & Cooldown Fill Bars -->
+        <!-- Center Gear Toggle Buttons + 5 Status Orbs -->
         <div class="gear-toggle-col">
-          <button id="btn-toggle-umbrella" class="gear-btn" type="button" title="우산 펴기 (Q · 지속 6초 / 쿨타임 5초)">
-            <span id="gear-umbrella-bar" class="gear-cd-bar" style="width: 0%"></span>
-            <img src="assets/atlas/spr_umbrella.png" alt="우산" class="gear-spr-ico" />
-            <span class="gear-txt">우산</span>
-            <span id="gear-umbrella-state" class="gear-state">준비</span>
-          </button>
+          <div class="gear-btn-pair">
+            <button id="btn-toggle-umbrella" class="gear-btn" type="button" title="우산 펴기 (Q · 지속 6초 / 쿨타임 5초)">
+              <span id="gear-umbrella-bar" class="gear-cd-bar" style="width: 0%"></span>
+              <img src="assets/atlas/spr_umbrella.png" alt="우산" class="gear-spr-ico" />
+              <span class="gear-txt">우산</span>
+              <span id="gear-umbrella-state" class="gear-state">준비</span>
+            </button>
 
-          <button id="btn-toggle-mask" class="gear-btn" type="button" title="마스크 쓰기 (E · 지속 6초 / 쿨타임 5초)">
-            <span id="gear-mask-bar" class="gear-cd-bar" style="width: 0%"></span>
-            <span class="gear-ico">😷</span>
-            <span class="gear-txt">마스크</span>
-            <span id="gear-mask-state" class="gear-state">준비</span>
-          </button>
+            <button id="btn-toggle-mask" class="gear-btn" type="button" title="마스크 쓰기 (E · 지속 6초 / 쿨타임 5초)">
+              <span id="gear-mask-bar" class="gear-cd-bar" style="width: 0%"></span>
+              <span class="gear-ico">😷</span>
+              <span class="gear-txt">마스크</span>
+              <span id="gear-mask-state" class="gear-state">준비</span>
+            </button>
+          </div>
 
-          <div class="status-orbs-row">
+          <div class="status-orbs-row five-orbs">
             <div id="orb-ui-fever" class="status-orb" title="FEVER 무적"><img src="assets/design/orb_star.png" alt="피버" /></div>
+            <div id="orb-ui-speed" class="status-orb" title="스피드 부스트"><img src="assets/design/orb_bolt.png" alt="스피드" /></div>
             <div id="orb-ui-magnet" class="status-orb" title="자석"><img src="assets/design/orb_magnet.png" alt="자석" /></div>
             <div id="orb-ui-norway" class="status-orb" title="노르웨이 기상청"><span class="orb-emoji">🇳🇴</span></div>
             <div id="orb-ui-shield" class="status-orb" title="보호막"><img src="assets/atlas/spr_shield.png" alt="보호막" /></div>
           </div>
         </div>
 
-        <button id="btn-slide" class="ctrl-btn slide-btn" type="button">
+        <button id="btn-slide" class="ctrl-btn slide-btn" type="button" aria-label="슬라이드">
           <span class="ctrl-gloss"></span>
           <span class="ctrl-arrow">⬇</span>
           <span class="ctrl-title">슬라이드</span>
@@ -347,33 +491,46 @@
             <p class="modal-msg">잠시 숨을 고르며 한국 날씨를 피하는 중입니다.<br /><small>PC 단축키: Space/↑ 점프 · ↓ 슬라이드 · Q 우산 · E 마스크</small></p>
             <div class="modal-actions col">
               <button id="btn-resume-run" class="cr-gold-btn" type="button">▶ 계속 달리기</button>
+              <button id="btn-pause-settings" class="cr-blue-btn" type="button">⚙️ 사운드 &amp; 가로 설정</button>
               <button id="btn-quit-home" class="cr-blue-btn" type="button">🏠 홈으로 돌아가기</button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Game Over Result Modal -->
+      <!-- Upgraded Game Over Result Modal -->
       <div id="gameover-overlay" class="modal-overlay hidden">
-        <div class="cr-modal">
+        <div class="cr-modal cr-modal-tall">
           <div class="cr-modal-bar">
-            <span>생존 결과</span>
+            <span>생존 결과 리포트</span>
             <span id="res-new-best" class="new-best-tag hidden">NEW BEST!</span>
           </div>
-          <div class="modal-body">
+          <div class="modal-body modal-scroll-body">
             <div class="res-score-box">
               <div class="res-score-label">최종 점수</div>
               <div id="res-score" class="res-score-value">0</div>
+              <div id="res-score-compare" class="res-score-compare">최고 기록 0점</div>
               <div id="res-dist-compare" class="res-dist-compare">생존 거리 0m · 최고 0m</div>
             </div>
+
             <p id="res-cause" class="res-cause">극한 한국 날씨에 쓰러졌습니다!</p>
+
+            <!-- New Achievement / Mission Alerts -->
+            <div id="res-unlock-alerts" class="res-unlock-alerts hidden"></div>
+
+            <!-- Per-Season Survival Breakdown -->
+            <div class="res-season-box">
+              <div class="res-season-title">계절별 생존 시간</div>
+              <div id="res-season-bars" class="res-season-bars"></div>
+            </div>
+
             <div class="res-grid">
               <div class="res-cell">
                 <span>생존 기록</span>
                 <strong id="res-survived">1년 차 봄 (0초)</strong>
               </div>
               <div class="res-cell">
-                <span>획득 골드</span>
+                <span>획득 코인 · 골드</span>
                 <strong id="res-gold-earned" class="gold-text">+0 G</strong>
               </div>
               <div class="res-cell">
@@ -381,12 +538,13 @@
                 <strong id="res-char-name">기본 모험가</strong>
               </div>
               <div class="res-cell">
-                <span>보유 골드</span>
-                <strong id="res-gold-total" class="gold-text">0 G</strong>
+                <span>최대 연속 회피</span>
+                <strong id="res-combo-stat">0연속 · 보유 0 G</strong>
               </div>
             </div>
-            <div class="modal-actions">
-              <button id="btn-retry-run" class="cr-gold-btn" type="button">🔄 다시 달리기</button>
+
+            <div class="modal-actions col">
+              <button id="btn-retry-run" class="cr-gold-btn hero-retry-btn" type="button">🔄 다시 도전하기!</button>
               <button id="btn-result-home" class="cr-blue-btn" type="button">🏠 홈으로 돌아가기</button>
             </div>
           </div>
