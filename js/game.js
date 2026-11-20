@@ -76,7 +76,7 @@
     btnNextChar: document.getElementById('btn-next-char'),
 
     btnDockChars: document.getElementById('btn-dock-chars'),
-    dockCharThumb: document.getElementById('dock-char-thumb'),
+    speechCharImg: document.getElementById('speech-char-img'),
     dockOwnedCount: document.getElementById('dock-owned-count'),
     btnPlayStart: document.getElementById('btn-play-start'),
     btnPlayLabel: document.getElementById('btn-play-label'),
@@ -109,8 +109,10 @@
     btnJump: document.getElementById('btn-jump'),
     btnSlide: document.getElementById('btn-slide'),
     btnToggleUmbrella: document.getElementById('btn-toggle-umbrella'),
+    gearUmbrellaBar: document.getElementById('gear-umbrella-bar'),
     gearUmbrellaState: document.getElementById('gear-umbrella-state'),
     btnToggleMask: document.getElementById('btn-toggle-mask'),
+    gearMaskBar: document.getElementById('gear-mask-bar'),
     gearMaskState: document.getElementById('gear-mask-state'),
     orbUiFever: document.getElementById('orb-ui-fever'),
     orbUiMagnet: document.getElementById('orb-ui-magnet'),
@@ -193,7 +195,7 @@
     const unlocked = isCharUnlocked(ch.id);
 
     el.homeProfileAvatar.src = ch.avatar;
-    el.dockCharThumb.src = getCharDef(save.selectedChar).avatar;
+    el.speechCharImg.src = ch.avatar;
     el.homeCharTier.textContent = unlocked ? ch.tier : `🔒 ${ch.price}G`;
     el.homeCharName.textContent = ch.name;
     el.homeCharHp.textContent = getMaxHp(ch);
@@ -201,7 +203,7 @@
 
     if (unlocked) {
       el.btnPlayStart.disabled = false;
-      el.btnPlayLabel.textContent = '달리기 시작!';
+      el.btnPlayLabel.textContent = '시작하기 ▶';
       el.btnPlaySub.textContent = `${ch.name} · 사계절 무한 생존`;
     } else {
       el.btnPlayStart.disabled = save.gold < ch.price;
@@ -410,6 +412,10 @@
   }
 
   // ===================== RUNNER ENGINE (WEATHER PHYSICS + GEAR + FORECAST) =====================
+  const GEAR_DURATION = 6.0;
+  const GEAR_COOLDOWN = 5.0;
+  const UMBRELLA_BROKEN_CD = 7.0;
+
   function startRun() {
     const ch = getCharDef(save.selectedChar);
     const maxHp = getMaxHp(ch);
@@ -432,6 +438,7 @@
       hp: maxHp,
       maxHp,
       score: 0,
+      distanceM: 0,
       gold: 0,
       elapsed: 0,
       year: 1,
@@ -457,10 +464,15 @@
       iceSlipTimer: 0,
       gliding: false,
 
-      // Strategic Gear Toggles (3rd Button Gimmick!)
+      // Strategic Gear Toggles with Duration & Cooldown
       umbrellaOn: false,
+      umbrellaActiveTimer: 0,
+      umbrellaCooldown: 0,
       umbrellaBrokenTimer: 0,
       maskOn: false,
+      maskActiveTimer: 0,
+      maskCooldown: 0,
+      weatherTickTimer: 1.5,
 
       // Buffs & Timers
       invulnTimer: 0,
@@ -493,7 +505,7 @@
       passingCarCd: 5.5,
 
       // Obstacles & Collectibles
-      obstacleCd: 1.3,
+      obstacleCd: 1.5,
       itemCd: 2.6,
       obstacles: [],
       items: [],
@@ -519,37 +531,69 @@
     if (!run || !run.active || paused) return;
     if (run.umbrellaBrokenTimer > 0) {
       SFX.hit();
-      Renderer.spawnFloater(`우산 수리 중 (${Math.ceil(run.umbrellaBrokenTimer)}초)`, '#ff9e9e', run.playerX + 10, run.playerY - 42);
+      Renderer.spawnFloater(`우산 파손 수리 중 (${Math.ceil(run.umbrellaBrokenTimer)}초)`, '#ff9e9e', run.playerX + 10, run.playerY - 42);
       return;
     }
-    run.umbrellaOn = !run.umbrellaOn;
-    SFX.click();
-    Renderer.spawnFloater(run.umbrellaOn ? '우산 펴기! (폭우 방어)' : '우산 접기', '#8ce0ff', run.playerX + 10, run.playerY - 42);
+    if (!run.umbrellaOn && run.umbrellaCooldown > 0) {
+      SFX.hit();
+      Renderer.spawnFloater(`우산 쿨타임 (${Math.ceil(run.umbrellaCooldown)}초)`, '#ffcb7a', run.playerX + 10, run.playerY - 42);
+      return;
+    }
 
-    // Immediate danger if opened during a roaring wind gust!
-    if (run.umbrellaOn && run.weatherEvent === 'gust') {
-      breakUmbrellaByGust();
+    if (run.umbrellaOn) {
+      run.umbrellaOn = false;
+      run.umbrellaActiveTimer = 0;
+      run.umbrellaCooldown = GEAR_COOLDOWN;
+      SFX.click();
+      Renderer.spawnFloater(`우산 접기 (쿨타임 ${GEAR_COOLDOWN}초)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
+    } else {
+      run.umbrellaOn = true;
+      run.umbrellaActiveTimer = GEAR_DURATION;
+      SFX.click();
+      Renderer.spawnFloater(`우산 ON! (${GEAR_DURATION}초 지속)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
+
+      // Immediate danger if opened during a roaring wind gust!
+      if (run.weatherEvent === 'gust') {
+        breakUmbrellaByGust();
+      }
     }
     updateRunHud();
   }
 
   function breakUmbrellaByGust() {
     run.umbrellaOn = false;
-    run.umbrellaBrokenTimer = 5.0;
+    run.umbrellaActiveTimer = 0;
+    run.umbrellaBrokenTimer = UMBRELLA_BROKEN_CD;
+    run.umbrellaCooldown = UMBRELLA_BROKEN_CD;
     run.hitPoseTimer = 0.5;
     SFX.umbrellaBreak();
-    const dmg = 16;
+    const dmg = 14;
     run.hp = Math.max(0, run.hp - dmg);
     run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 강풍 속에 우산을 펴다 뒤집혀 쓰러졌습니다!`;
     Renderer.spawnFloater(`강풍에 우산 파손!! -${dmg}`, '#ff5c5c', run.playerX + 16, run.playerY - 48);
-    showRunBanner('💨 돌풍에 우산이 뒤집혔습니다!! (5초 사용 불가)', 2200);
+    showRunBanner(`💨 돌풍에 우산이 뒤집혔습니다!! (${UMBRELLA_BROKEN_CD}초 사용 불가)`, 2200);
   }
 
   function toggleMask() {
     if (!run || !run.active || paused) return;
-    run.maskOn = !run.maskOn;
-    SFX.click();
-    Renderer.spawnFloater(run.maskOn ? 'KF94 마스크 ON' : '마스크 OFF', '#a6ffcf', run.playerX + 10, run.playerY - 42);
+    if (!run.maskOn && run.maskCooldown > 0) {
+      SFX.hit();
+      Renderer.spawnFloater(`마스크 쿨타임 (${Math.ceil(run.maskCooldown)}초)`, '#ffcb7a', run.playerX + 10, run.playerY - 42);
+      return;
+    }
+
+    if (run.maskOn) {
+      run.maskOn = false;
+      run.maskActiveTimer = 0;
+      run.maskCooldown = GEAR_COOLDOWN;
+      SFX.click();
+      Renderer.spawnFloater(`마스크 벗기 (쿨타임 ${GEAR_COOLDOWN}초)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
+    } else {
+      run.maskOn = true;
+      run.maskActiveTimer = GEAR_DURATION;
+      SFX.click();
+      Renderer.spawnFloater(`KF94 마스크 ON! (${GEAR_DURATION}초 지속)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
+    }
     updateRunHud();
   }
 
@@ -624,6 +668,7 @@
     run.pendingWeather = null;
     run.weatherEventTimer = 8.5 + Math.random() * 2.5;
     run.forecastIsFake = false;
+    run.weatherTickTimer = 1.6; // Fair reaction grace before unprotected severe weather ticks!
 
     const evDef = DATA.WEATHER_EVENTS[nextW];
     if (wasFake) {
@@ -654,7 +699,7 @@
     const startX = Renderer.W + (preset.warn ? 48 : 22);
     let y = Renderer.GROUND_Y - preset.h;
     if (preset.lane === 'air') {
-      y = Renderer.GROUND_Y - 24 - preset.h;
+      y = Renderer.GROUND_Y - 20 - preset.h;
     }
 
     run.obstacles.push({
@@ -798,6 +843,31 @@
       run.feverCharge = (run.feverTimer / 4.5) * 100;
     }
 
+    // Umbrella & Mask Active Duration + Cooldown Timers
+    if (run.umbrellaOn) {
+      run.umbrellaActiveTimer = Math.max(0, run.umbrellaActiveTimer - dt);
+      if (run.umbrellaActiveTimer <= 0) {
+        run.umbrellaOn = false;
+        run.umbrellaCooldown = GEAR_COOLDOWN;
+        SFX.click();
+        Renderer.spawnFloater(`우산 종료 (쿨타임 ${GEAR_COOLDOWN}초)`, '#9fd9ff', run.playerX + 10, run.playerY - 42);
+      }
+    } else if (run.umbrellaCooldown > 0) {
+      run.umbrellaCooldown = Math.max(0, run.umbrellaCooldown - dt);
+    }
+
+    if (run.maskOn) {
+      run.maskActiveTimer = Math.max(0, run.maskActiveTimer - dt);
+      if (run.maskActiveTimer <= 0) {
+        run.maskOn = false;
+        run.maskCooldown = GEAR_COOLDOWN;
+        SFX.click();
+        Renderer.spawnFloater(`마스크 종료 (쿨타임 ${GEAR_COOLDOWN}초)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
+      }
+    } else if (run.maskCooldown > 0) {
+      run.maskCooldown = Math.max(0, run.maskCooldown - dt);
+    }
+
     // Ice Road slide inertia
     if (run.iceSlideInertia > 0) {
       run.iceSlideInertia = Math.max(0, run.iceSlideInertia - dt);
@@ -822,6 +892,7 @@
 
     run.speed = run.baseSpeed * diff.speedMult * feverBoost * weatherSpeedMult;
     run.scroll += run.speed * dt;
+    run.distanceM = Math.floor(run.scroll / 14);
     run.score += run.speed * dt * 0.16 * ch.scoreMult * diff.scoreMult * upgradeScoreMult;
 
     // Gust Headwind Horizontal Push-Back vs Slide Push-Forward!
@@ -909,24 +980,9 @@
       if (f.x + f.w < -60) run.features.splice(i, 1);
     }
 
-    // ---- ACTIVE WEATHER DAMAGE & GEAR MITIGATION ----
-    const seasonObj = DATA.SEASONS[run.seasonIdx];
-    let drain = 1.9 + (run.year - 1) * 0.2 + seasonObj.drainBonus;
-    if (ch.summerImmune && seasonObj.id === 'summer') drain -= seasonObj.drainBonus;
-    if (ch.winterResist && seasonObj.id === 'winter') drain -= seasonObj.drainBonus * ch.winterResist;
-
-    // Mask stamina drain trade-off (+75% base drain while worn!)
-    if (run.maskOn) drain *= 1.75;
-
-    // Weather-specific hazards mitigated by Umbrella / Mask / Shade!
+    // ---- ACTIVE WEATHER DAMAGE & GEAR MITIGATION (NO PASSIVE HP DRAIN!) ----
     if (run.feverTimer <= 0) {
-      if (run.weatherEvent === 'rain' && !run.umbrellaOn) {
-        const rainMult = ch.rainWindResist ? (1 - ch.rainWindResist) : 1;
-        drain += 4.2 * rainMult;
-      }
-      if (run.weatherEvent === 'dust' && !run.maskOn) {
-        drain += 4.8;
-      }
+      // Summer Heat Gauge (only builds in active heatwave outside shade)
       if (run.weatherEvent === 'heat' && !ch.summerImmune) {
         if (inShade) {
           run.heatGauge = Math.max(0, run.heatGauge - 46 * dt);
@@ -936,21 +992,53 @@
             Renderer.spawnFloater('그늘 밟기! 냉각', '#7ae8ff', run.playerX + 8, run.playerY - 42);
           }
         } else {
-          run.heatGauge = Math.min(100, run.heatGauge + 17 * dt);
-          if (run.heatGauge >= 100) {
-            drain += 5.5;
+          run.heatGauge = Math.min(100, run.heatGauge + 16 * dt);
+        }
+      } else {
+        run.heatGauge = Math.max(0, run.heatGauge - 24 * dt);
+      }
+
+      // Explicit discrete weather hazard ticks ONLY when unprotected in severe weather!
+      const unprotectedRain = run.weatherEvent === 'rain' && !run.umbrellaOn;
+      const unprotectedDust = run.weatherEvent === 'dust' && !run.maskOn;
+      const unprotectedHeat = run.weatherEvent === 'heat' && !ch.summerImmune && run.heatGauge >= 100;
+
+      if (unprotectedRain || unprotectedDust || unprotectedHeat) {
+        run.weatherTickTimer -= dt;
+        if (run.weatherTickTimer <= 0) {
+          run.weatherTickTimer = 1.35;
+          if (unprotectedRain) {
+            const rainMult = ch.rainWindResist ? (1 - ch.rainWindResist) : 1;
+            const dmg = Math.max(2, Math.round(5 * rainMult));
+            run.hp = Math.max(0, run.hp - dmg);
+            run.hitPoseTimer = 0.25;
+            run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 국지성 폭우를 우산 없이 맞다 쓰러졌습니다!`;
+            SFX.hit();
+            Renderer.spawnFloater(`폭우 피격! -${dmg} (우산!)`, '#6ec6ff', run.playerX + 8, run.playerY - 44);
+          } else if (unprotectedDust) {
+            const dmg = 5;
+            run.hp = Math.max(0, run.hp - dmg);
+            run.hitPoseTimer = 0.25;
+            run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 초미세먼지에 마스크 없이 노출되어 쓰러졌습니다!`;
+            SFX.hit();
+            Renderer.spawnFloater(`미세먼지! -${dmg} (마스크!)`, '#ffd966', run.playerX + 8, run.playerY - 44);
+          } else if (unprotectedHeat) {
+            const dmg = 6;
+            run.hp = Math.max(0, run.hp - dmg);
+            run.hitPoseTimer = 0.25;
             run.lastHitCause = `${run.year}년 차 여름 폭염, 그늘을 놓쳐 열사병으로 쓰러졌습니다!`;
+            SFX.hit();
+            Renderer.spawnFloater(`열사병! -${dmg} (그늘!)`, '#ff8052', run.playerX + 8, run.playerY - 44);
           }
         }
       } else {
-        run.heatGauge = Math.max(0, run.heatGauge - 22 * dt);
+        // Safely protected or clear weather -> ZERO HP loss, reset grace timer!
+        run.weatherTickTimer = 1.2;
       }
     } else {
-      drain = 0;
       run.heatGauge = Math.max(0, run.heatGauge - 40 * dt);
+      run.weatherTickTimer = 1.2;
     }
-
-    run.hp = Math.max(0, run.hp - drain * dt);
 
     // ---- PASSING CAR SPLASH EVENT (RAIN / FLOOD) ----
     if (run.passingCar) {
@@ -995,8 +1083,8 @@
     run.obstacleCd -= dt;
     if (run.obstacleCd <= 0) {
       spawnObstacleWave();
-      const baseInterval = 1.52 / diff.spawnRateMult;
-      run.obstacleCd = Math.max(0.72, baseInterval + (Math.random() - 0.4) * 0.35);
+      const baseInterval = 1.72 / diff.spawnRateMult;
+      run.obstacleCd = Math.max(0.86, baseInterval + (Math.random() - 0.35) * 0.36);
     }
 
     run.itemCd -= dt;
@@ -1019,12 +1107,12 @@
       run.convStoreCd = 16.0 + Math.random() * 5.0;
     }
 
-    // ---- COLLECTIBLES & OBSTACLE COLLISIONS ----
+    // ---- COLLECTIBLES & OBSTACLE COLLISIONS (FORGIVING TIGHT CORE HITBOXES) ----
     const pBox = {
-      x: run.playerX - 9,
-      y: run.sliding ? run.playerY - 16 : run.playerY - 34,
-      w: 18,
-      h: run.sliding ? 16 : 34
+      x: run.playerX - 5,
+      y: run.sliding ? run.playerY - 11 : run.playerY - 28,
+      w: 10,
+      h: run.sliding ? 9 : 24
     };
 
     function addFeverCharge(amount) {
@@ -1121,11 +1209,15 @@
       const ob = run.obstacles[i];
       ob.x -= (run.speed + ob.extraSpeed) * dt;
 
+      // Forgiving inset hitbox so grazing visual edges never causes unfair hits!
+      const padX = Math.round(ob.w * 0.28);
+      const padTop = Math.round(ob.h * 0.34);
+      const padBot = ob.lane === 'air' ? Math.round(ob.h * 0.10) : Math.round(ob.h * 0.16);
       const oBox = {
-        x: ob.x + 5,
-        y: ob.y + 5,
-        w: Math.max(8, ob.w - 10),
-        h: Math.max(8, ob.h - 10)
+        x: ob.x + padX,
+        y: ob.y + padTop,
+        w: Math.max(8, ob.w - padX * 2),
+        h: Math.max(8, ob.h - padTop - padBot)
       };
 
       const overlap =
@@ -1197,7 +1289,7 @@
 
     const finalDmg = Math.max(5, Math.round(dmg));
     run.hp = Math.max(0, run.hp - finalDmg);
-    run.invulnTimer = 1.15 + save.upgrades.defense * 0.08;
+    run.invulnTimer = 1.5 + save.upgrades.defense * 0.08;
     run.hitPoseTimer = 0.42;
     run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, '${ob.name}'에 부딪혀 쓰러졌습니다!`;
 
@@ -1211,25 +1303,25 @@
 
     el.runYearNum.textContent = `${run.year}Y`;
     el.runSeasonLabel.textContent = `${run.year}년 차 ${seasonObj.name}`;
-    el.runScoreText.textContent = `${Math.floor(run.score).toLocaleString('ko-KR')}점`;
+    el.runScoreText.textContent = `${run.distanceM.toLocaleString('ko-KR')}m · ${Math.floor(run.score).toLocaleString('ko-KR')}점`;
     el.runGoldText.textContent = run.gold.toLocaleString('ko-KR');
 
-    // 4 Pixel Hearts
+    // 5 Pixel Hearts (matching uploaded sheet!)
     const hpRatio = Math.max(0, Math.min(1, run.hp / run.maxHp));
-    const filledHearts = run.hp <= 0 ? 0 : Math.max(1, Math.ceil(hpRatio * 4));
+    const filledHearts = run.hp <= 0 ? 0 : Math.max(1, Math.ceil(hpRatio * 5));
     let heartHtml = '';
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       heartHtml += `<span class="heart-unit${i < filledHearts ? '' : ' empty'}">❤️</span>`;
     }
     el.runHearts.innerHTML = heartHtml;
     el.runHpText.textContent = `${Math.ceil(run.hp)}/${run.maxHp}`;
 
-    // Golden FEVER Gauge
+    // Rainbow FEVER Gauge
     const feverPct = Math.max(0, Math.min(100, run.feverCharge));
     el.runFeverFill.style.width = `${feverPct.toFixed(1)}%`;
     el.runFeverText.textContent = run.feverTimer > 0
-      ? `FEVER! ${run.feverTimer.toFixed(1)}s`
-      : `FEVER ${Math.floor(feverPct)}%`;
+      ? `★ FEVER! ${run.feverTimer.toFixed(1)}s`
+      : `★ FEVER ${Math.floor(feverPct)}%`;
 
     const yearPct = ((run.elapsed % DATA.YEAR_DURATION) / DATA.YEAR_DURATION) * 100;
     el.runYearFill.style.width = `${yearPct.toFixed(1)}%`;
@@ -1277,15 +1369,39 @@
       el.mudOverlay.classList.add('hidden');
     }
 
-    // 3rd Button Gear Toggle States (Umbrella & Mask)
+    // Umbrella & Mask Toggle Buttons with Active Duration & Cooldown Fill Bars
+    const umbBroken = run.umbrellaBrokenTimer > 0;
+    const umbCd = !umbBroken && !run.umbrellaOn && run.umbrellaCooldown > 0;
     el.btnToggleUmbrella.classList.toggle('on', run.umbrellaOn);
-    el.btnToggleUmbrella.classList.toggle('broken', run.umbrellaBrokenTimer > 0);
-    el.gearUmbrellaState.textContent = run.umbrellaBrokenTimer > 0
-      ? `${Math.ceil(run.umbrellaBrokenTimer)}s`
-      : (run.umbrellaOn ? 'ON' : 'OFF');
+    el.btnToggleUmbrella.classList.toggle('broken', umbBroken);
+    el.btnToggleUmbrella.classList.toggle('cooldown', umbCd);
+    if (umbBroken) {
+      el.gearUmbrellaState.textContent = `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`;
+      el.gearUmbrellaBar.style.width = `${((run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD) * 100).toFixed(1)}%`;
+    } else if (run.umbrellaOn) {
+      el.gearUmbrellaState.textContent = `${run.umbrellaActiveTimer.toFixed(1)}s`;
+      el.gearUmbrellaBar.style.width = `${((run.umbrellaActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
+    } else if (umbCd) {
+      el.gearUmbrellaState.textContent = `쿨 ${Math.ceil(run.umbrellaCooldown)}s`;
+      el.gearUmbrellaBar.style.width = `${((run.umbrellaCooldown / GEAR_COOLDOWN) * 100).toFixed(1)}%`;
+    } else {
+      el.gearUmbrellaState.textContent = '준비';
+      el.gearUmbrellaBar.style.width = '0%';
+    }
 
+    const maskCd = !run.maskOn && run.maskCooldown > 0;
     el.btnToggleMask.classList.toggle('on', run.maskOn);
-    el.gearMaskState.textContent = run.maskOn ? 'ON' : 'OFF';
+    el.btnToggleMask.classList.toggle('cooldown', maskCd);
+    if (run.maskOn) {
+      el.gearMaskState.textContent = `${run.maskActiveTimer.toFixed(1)}s`;
+      el.gearMaskBar.style.width = `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
+    } else if (maskCd) {
+      el.gearMaskState.textContent = `쿨 ${Math.ceil(run.maskCooldown)}s`;
+      el.gearMaskBar.style.width = `${((run.maskCooldown / GEAR_COOLDOWN) * 100).toFixed(1)}%`;
+    } else {
+      el.gearMaskState.textContent = '준비';
+      el.gearMaskBar.style.width = '0%';
+    }
 
     // 4 Status Orbs
     el.orbUiFever.classList.toggle('active', run.feverTimer > 0);

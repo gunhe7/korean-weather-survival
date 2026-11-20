@@ -26,6 +26,13 @@ window.RunRenderer = (function () {
     'ui_chest', 'ui_fever', 'pet_dog'
   ];
 
+  const ATLAS_SPRITES = [
+    'char_idle', 'char_run_0', 'char_run_1', 'char_run_2', 'char_run_3', 'char_run_4', 'char_run_5',
+    'char_slide', 'char_jump_0', 'char_jump_1',
+    'dog_run_0', 'dog_run_1', 'dog_run_2', 'dog_run_3',
+    'spr_umbrella', 'spr_shield'
+  ];
+
   const sprites = {};
 
   CHAR_SPRITES.forEach((key) => {
@@ -37,6 +44,12 @@ window.RunRenderer = (function () {
   DESIGN_SPRITES.forEach((key) => {
     const img = new Image();
     img.src = `assets/design/${key}.png`;
+    sprites[key] = img;
+  });
+
+  ATLAS_SPRITES.forEach((key) => {
+    const img = new Image();
+    img.src = `assets/atlas/${key}.png`;
     sprites[key] = img;
   });
 
@@ -434,35 +447,37 @@ window.RunRenderer = (function () {
     }
   }
 
-  // ===================== SHIBA PUPPY COMPANION PET =====================
-  function drawPuppyPet(ctx, x, y, t) {
-    const dog = getSprite('pet_dog');
+  // ===================== 4-FRAME ANIMATED SHIBA PUPPY COMPANION PET =====================
+  function drawPuppyPet(ctx, x, y, t, customH = 30) {
+    const frame = Math.floor(t * 10) % 4;
+    const dog = getSprite(`dog_run_${frame}`) || getSprite('pet_dog');
     if (!dog) return;
-    const hop = Math.abs(Math.sin(t * 14 + 0.8)) * 4;
-    const h = 30;
+    const hop = Math.abs(Math.sin(t * 12 + 0.8)) * 2.5;
+    const h = customH;
     const w = Math.round(h * (dog.naturalWidth / dog.naturalHeight));
-    // Ground shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-    ctx.fillRect(Math.floor(x - w * 0.35), Math.floor(GROUND_Y - 1), Math.floor(w * 0.7), 3);
+    ctx.fillRect(Math.floor(x - w * 0.35), Math.floor(y - 1), Math.floor(w * 0.7), 3);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(dog, Math.floor(x - w / 2), Math.floor(y - h - hop), w, h);
   }
 
   // ===================== UPLOADED PIXEL K-CHARACTER SPRITE RENDERER =====================
   function pickCharacterSprite(charDef, opts, t) {
-    if (charDef.useFullMotions) {
-      if (opts.hitPoseTimer > 0) return getSprite('motion_hit');
-      if (opts.sliding) return getSprite('motion_hit');
-      if (opts.inAir) return getSprite('motion_jump');
-      if (opts.winPoseTimer > 0) return getSprite('motion_win');
-      if (opts.itemPoseTimer > 0) return getSprite('motion_item');
-      if (opts.running) {
-        const frame = Math.floor(t * 9) % 2;
-        return getSprite(frame === 0 ? 'motion_run' : 'motion_walk');
+    if (charDef.useAtlasRun) {
+      if (opts.sliding) return getSprite('char_slide') || getSprite('motion_hit');
+      if (opts.hitPoseTimer > 0) return getSprite('char_slide') || getSprite('motion_hit');
+      if (opts.inAir) {
+        return getSprite(Math.floor(t * 8) % 2 === 0 ? 'char_jump_0' : 'char_jump_1') || getSprite('motion_jump');
       }
-      return getSprite('motion_idle');
+      if (opts.winPoseTimer > 0) return getSprite('motion_win') || getSprite('char_jump_1');
+      if (opts.itemPoseTimer > 0) return getSprite('motion_item') || getSprite('char_jump_0');
+      if (opts.running) {
+        const frame = Math.floor(t * 11) % 6;
+        return getSprite(`char_run_${frame}`) || getSprite('motion_run');
+      }
+      return getSprite('char_idle') || getSprite('motion_idle');
     }
-    return getSprite(charDef.spriteKey) || getSprite('motion_idle');
+    return getSprite(charDef.spriteKey) || getSprite('char_idle');
   }
 
   function drawCharacter(ctx, charDef, x, y, opts, t) {
@@ -500,18 +515,21 @@ window.RunRenderer = (function () {
       ctx.stroke();
     }
 
-    // Umbrella canopy when 우비 소년 glides OR when Umbrella Toggle is ON!
+    // Uploaded Rainbow Umbrella sprite when 우비 소년 glides OR Umbrella Toggle is ON!
     const showUmbrella = (col.umbrella && gliding) || umbrellaOn;
     if (showUmbrella) {
-      const uy = cy - (sliding ? 26 : scaleHeight) - 6;
-      ctx.fillStyle = '#2d3a4f';
-      ctx.fillRect(cx + 8, uy - 10, 2, 28);
-      ctx.fillStyle = '#2672d9';
-      ctx.fillRect(cx - 18, uy - 14, 40, 7);
-      ctx.fillRect(cx - 12, uy - 19, 28, 6);
-      ctx.fillStyle = '#ffd447';
-      ctx.fillRect(cx - 4, uy - 18, 12, 3);
-    } else if (umbrellaBrokenTimer > 3.6) {
+      const umbSpr = getSprite('spr_umbrella');
+      const uy = cy - (sliding ? 22 : scaleHeight) - 12;
+      if (umbSpr) {
+        const uh = 34;
+        const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 4), Math.floor(uy - 12), uw, uh);
+      } else {
+        ctx.fillStyle = '#2672d9';
+        ctx.fillRect(cx - 18, uy - 10, 40, 7);
+      }
+    } else if (umbrellaBrokenTimer > 5.6) {
       // Flipped broken umbrella brief comedy animation!
       const uy = cy - scaleHeight - 8;
       ctx.fillStyle = '#3c4759';
@@ -536,14 +554,12 @@ window.RunRenderer = (function () {
       const drawW = Math.round(targetH * ratio);
       const drawH = targetH;
 
-      const bob = running && !inAir && !sliding ? Math.abs(Math.sin(t * 16)) * 3.5 : 0;
+      const bob = running && !inAir && !sliding ? (charDef.useAtlasRun ? Math.abs(Math.sin(t * 14)) * 1.8 : Math.abs(Math.sin(t * 16)) * 3.5) : 0;
       let rot = 0;
-      if (!charDef.useFullMotions) {
+      if (!charDef.useAtlasRun) {
         if (sliding) rot = -0.32;
         else if (inAir) rot = gliding ? 0.05 : -0.14;
         else if (running) rot = 0.08 + Math.sin(t * 16) * 0.06;
-      } else if (sliding) {
-        rot = 0.04;
       }
 
       ctx.save();
@@ -780,15 +796,9 @@ window.RunRenderer = (function () {
     ctx.imageSmoothingEnabled = false;
     const seasonIdx = Math.floor(t / 6) % 4;
     const seasonId = window.RUN_DATA.SEASONS[seasonIdx].id;
-    drawBackground(ctx, pw, ph, gy, seasonId, t * 44, t);
-    const dog = getSprite('pet_dog');
-    if (dog) {
-      const hop = Math.abs(Math.sin(t * 14 + 0.8)) * 4;
-      const dh = 38;
-      const dw = Math.round(dh * (dog.naturalWidth / dog.naturalHeight));
-      ctx.drawImage(dog, Math.floor(pw / 2 - 58 - dw / 2), Math.floor(gy + 2 - dh - hop), dw, dh);
-    }
-    drawCharacter(ctx, charDef, pw / 2 + 10, gy + 2, {
+    drawBackground(ctx, pw, ph, gy, seasonId, t * 48, t);
+    drawPuppyPet(ctx, pw / 2 - 58, gy + 2, t, 38);
+    drawCharacter(ctx, charDef, pw / 2 + 12, gy + 2, {
       sliding: false,
       inAir: false,
       gliding: false,
@@ -796,7 +806,7 @@ window.RunRenderer = (function () {
       shield: false,
       feverTimer: 0,
       running: true,
-      scaleHeight: 74
+      scaleHeight: 72
     }, t);
     drawParticles(ctx, pw, ph, seasonId, 0.016, t, 'clear');
   }

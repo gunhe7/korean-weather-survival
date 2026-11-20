@@ -53,8 +53,8 @@ window.RUN_DATA = (function () {
       tier: '기본',
       icon: '🎒',
       spriteKey: 'basic',
-      avatar: 'assets/sprites/motion_idle.png',
-      useFullMotions: true,
+      avatar: 'assets/atlas/char_idle.png',
+      useAtlasRun: true,
       price: 0,
       baseHp: 100,
       goldMult: 1.1,
@@ -200,7 +200,7 @@ window.RUN_DATA = (function () {
     {
       id: 'shield',
       name: '기상 보호막',
-      icon: 'assets/design/orb_potion.png',
+      icon: 'assets/atlas/spr_shield.png',
       price: 80,
       desc: '다음 달리기에서 첫 장애물 충돌 1회를 피해 없이 완전 방어합니다!'
     },

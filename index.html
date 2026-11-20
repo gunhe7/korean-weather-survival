@@ -16,7 +16,7 @@
           <img id="intro-logo-img" src="assets/logo.png" alt="한국 날씨에서 살아남기" class="intro-logo-img" />
         </div>
         <div class="intro-sub-row">
-          <img src="assets/sprites/motion_run.png" alt="" class="intro-char-mini" />
+          <img src="assets/atlas/char_run_0.png" alt="" class="intro-char-mini" />
           <span class="intro-tagline">사계절 극한 기상 재난 생존 러너</span>
         </div>
         <button id="btn-intro-enter" class="cr-gold-btn intro-tap-btn" type="button">
@@ -55,7 +55,7 @@
         <div class="cr-profile-row">
           <div class="cr-banner-card">
             <div class="cr-banner-avatar">
-              <img id="home-profile-avatar" src="assets/sprites/motion_idle.png" alt="캐릭터" />
+              <img id="home-profile-avatar" src="assets/atlas/char_idle.png" alt="캐릭터" />
             </div>
             <div class="cr-banner-text">
               <div class="cr-banner-name" id="home-char-name">기본 모험가</div>
@@ -95,32 +95,32 @@
           </div>
         </div>
 
-        <!-- Active Weather Mechanics Quick Pill Strip -->
-        <div class="cr-feature-card">
-          <div class="cr-feature-head">날씨 생존 핵심 기믹</div>
-          <div class="cr-feature-grid">
-            <div class="feat-chip">☂️ 우산 토글<small>폭우방어·강풍주의</small></div>
-            <div class="feat-chip">😷 마스크 토글<small>먼지차단·체력소모</small></div>
-            <div class="feat-chip">🌳 그늘·편의점<small>체온냉각·지형활용</small></div>
-            <div class="feat-chip">🇳🇴 노르웨이<small>3초전 정확예보</small></div>
+        <!-- Active Weather Mechanics Speech Bubble (matching uploaded sheet!) -->
+        <div class="atlas-speech-card">
+          <div class="speech-portrait">
+            <img id="speech-char-img" src="assets/atlas/char_idle.png" alt="캐릭터" />
+          </div>
+          <div class="speech-bubble">
+            <div class="speech-main">"오늘도 무사히 버텨볼까?"</div>
+            <div class="speech-sub">☂️ 우산(Q) · 😷 마스크(E) 쿨타임 관리 · 🌳 그늘 · 🇳🇴 노르웨이 예보</div>
           </div>
         </div>
 
-        <!-- Clash Royale Iconic Bottom CTA Dock (Deck Card + Giant Gold Battle Button + Record Badge) -->
-        <div class="cr-battle-dock">
-          <button id="btn-dock-chars" class="cr-dock-side deck-btn" type="button" title="캐릭터 변경">
-            <img id="dock-char-thumb" src="assets/sprites/motion_idle.png" alt="캐릭터" />
+        <!-- Bottom Action Dock (exact uploaded pixel button design!) -->
+        <div class="atlas-action-dock">
+          <button id="btn-dock-chars" class="atlas-sq-btn" type="button" title="캐릭터 변경">
+            <img src="assets/atlas/btn_settings.png" alt="캐릭터" />
             <span class="dock-badge" id="dock-owned-count">1/6</span>
           </button>
 
-          <button id="btn-play-start" class="cr-gold-btn cr-battle-btn" type="button">
-            <span class="battle-main-txt" id="btn-play-label">달리기 시작!</span>
-            <span class="battle-sub-txt" id="btn-play-sub">사계절 무한 생존</span>
+          <button id="btn-dock-shop" class="atlas-sq-btn" type="button" title="상점 강화">
+            <img src="assets/atlas/btn_scroll.png" alt="상점" />
+            <span class="dock-badge gold" id="dock-booster-count">0</span>
           </button>
 
-          <button id="btn-dock-shop" class="cr-dock-side trophy-btn" type="button" title="상점 강화">
-            <img src="assets/design/ui_chest.png" alt="상점" />
-            <span class="dock-badge gold" id="dock-booster-count">0</span>
+          <button id="btn-play-start" class="atlas-start-btn" type="button">
+            <span class="battle-main-txt" id="btn-play-label">시작하기 ▶</span>
+            <span class="battle-sub-txt" id="btn-play-sub">기본 모험가 · 사계절 무한 생존</span>
           </button>
         </div>
       </section>
@@ -149,29 +149,29 @@
       </section>
     </main>
 
-    <!-- ================= BOTTOM NAVIGATION BAR (CLASH ROYALE STYLE) ================= -->
+    <!-- ================= BOTTOM NAVIGATION BAR (UPLOADED PIXEL BUTTON ICONS) ================= -->
     <nav id="bottom-nav">
       <button class="nav-btn" data-tab="shop" type="button">
-        <span class="nav-ico">🏪</span>
+        <img src="assets/atlas/btn_scroll.png" alt="" class="nav-atlas-ico" />
         <span class="nav-txt">상점</span>
       </button>
       <button class="nav-btn active" data-tab="home" type="button">
-        <span class="nav-ico">🏠</span>
+        <img src="assets/atlas/btn_home.png" alt="" class="nav-atlas-ico" />
         <span class="nav-txt">홈</span>
       </button>
       <button class="nav-btn" data-tab="chars" type="button">
-        <span class="nav-ico">👤</span>
+        <img src="assets/atlas/btn_settings.png" alt="" class="nav-atlas-ico" />
         <span class="nav-txt">캐릭터</span>
       </button>
     </nav>
 
     <!-- ================= ACTIVE RUNNER GAME SCREEN ================= -->
     <section id="view-run" class="hidden">
-      <!-- Top Indie Pixel HUD (Portrait + Hearts + Golden FEVER Bar + Gold + Pause) -->
+      <!-- Top Indie Pixel HUD (5 Hearts + Circular Portrait + Rainbow FEVER Bar + Gold + Pause) -->
       <div id="run-hud">
         <div class="run-hud-row">
           <div class="run-portrait-box">
-            <img id="run-portrait-img" src="assets/sprites/motion_idle.png" alt="캐릭터" class="run-portrait-img" />
+            <img id="run-portrait-img" src="assets/atlas/char_idle.png" alt="캐릭터" class="run-portrait-img" />
             <span id="run-year-num" class="portrait-yr-badge">1Y</span>
           </div>
 
@@ -180,9 +180,9 @@
               <div id="run-hearts" class="hearts-icons" aria-label="체력 하트"></div>
               <span id="run-hp-text" class="hp-mini-num">100/100</span>
             </div>
-            <div class="fever-bar-track" title="별과 코인을 모아 FEVER 발동!">
-              <div id="run-fever-fill" class="fever-bar-fill" style="width: 0%"></div>
-              <span id="run-fever-text" class="fever-bar-text">FEVER 0%</span>
+            <div class="fever-bar-track rainbow" title="별과 코인을 모아 FEVER 발동!">
+              <div id="run-fever-fill" class="fever-bar-fill rainbow-fill" style="width: 0%"></div>
+              <span id="run-fever-text" class="fever-bar-text">★ FEVER 0%</span>
             </div>
           </div>
 
@@ -195,7 +195,7 @@
           </div>
         </div>
 
-        <!-- Score + 4-Season Cycle Progress -->
+        <!-- Score + Distance (m) + 4-Season Cycle Progress -->
         <div class="run-sub-strip">
           <span id="run-season-label" class="season-pill">1년 차 봄</span>
           <div class="season-exp-wrap">
@@ -204,7 +204,7 @@
             </div>
             <div id="run-year-fill" class="season-exp-fill" style="width: 0%"></div>
           </div>
-          <span id="run-score-text" class="score-num">0점</span>
+          <span id="run-score-text" class="score-num">0m · 0점</span>
         </div>
 
         <!-- Weather Forecast & Active Physics Strip (KMA Fake vs Norway Yr.no!) -->
@@ -232,7 +232,7 @@
         <div id="run-banner" class="run-banner hidden">1년 차 봄 시작!</div>
       </div>
 
-      <!-- Mobile Ergonomic Controls + 3rd Strategic Gear Toggle Deck (Umbrella & Mask!) -->
+      <!-- Mobile Ergonomic Controls + Umbrella & Mask Cooldown Toggle Deck -->
       <div id="mobile-controls">
         <button id="btn-jump" class="ctrl-btn jump-btn" type="button">
           <span class="ctrl-gloss"></span>
@@ -241,25 +241,27 @@
           <span class="ctrl-sub">2단 점프</span>
         </button>
 
-        <!-- Center Gear Toggle Buttons (3rd Button Gimmick: Umbrella Q + Mask E) -->
+        <!-- Center Gear Toggle Buttons with Live Duration & Cooldown Fill Bars -->
         <div class="gear-toggle-col">
-          <button id="btn-toggle-umbrella" class="gear-btn" type="button" title="우산 펴기/접기 (단축키 Q)">
-            <span class="gear-ico">☂️</span>
+          <button id="btn-toggle-umbrella" class="gear-btn" type="button" title="우산 펴기 (Q · 지속 6초 / 쿨타임 5초)">
+            <span id="gear-umbrella-bar" class="gear-cd-bar" style="width: 0%"></span>
+            <img src="assets/atlas/spr_umbrella.png" alt="우산" class="gear-spr-ico" />
             <span class="gear-txt">우산</span>
-            <span id="gear-umbrella-state" class="gear-state">OFF</span>
+            <span id="gear-umbrella-state" class="gear-state">준비</span>
           </button>
 
-          <button id="btn-toggle-mask" class="gear-btn" type="button" title="마스크 쓰기/벗기 (단축키 E)">
+          <button id="btn-toggle-mask" class="gear-btn" type="button" title="마스크 쓰기 (E · 지속 6초 / 쿨타임 5초)">
+            <span id="gear-mask-bar" class="gear-cd-bar" style="width: 0%"></span>
             <span class="gear-ico">😷</span>
             <span class="gear-txt">마스크</span>
-            <span id="gear-mask-state" class="gear-state">OFF</span>
+            <span id="gear-mask-state" class="gear-state">준비</span>
           </button>
 
           <div class="status-orbs-row">
             <div id="orb-ui-fever" class="status-orb" title="FEVER 무적"><img src="assets/design/orb_star.png" alt="피버" /></div>
             <div id="orb-ui-magnet" class="status-orb" title="자석"><img src="assets/design/orb_magnet.png" alt="자석" /></div>
             <div id="orb-ui-norway" class="status-orb" title="노르웨이 기상청"><span class="orb-emoji">🇳🇴</span></div>
-            <div id="orb-ui-shield" class="status-orb" title="보호막"><img src="assets/design/orb_potion.png" alt="보호막" /></div>
+            <div id="orb-ui-shield" class="status-orb" title="보호막"><img src="assets/atlas/spr_shield.png" alt="보호막" /></div>
           </div>
         </div>
 
