@@ -509,56 +509,20 @@
         </div>
       </div>
 
-      <!-- Upgraded Game Over Result Modal -->
-      <div id="gameover-overlay" class="modal-overlay hidden">
-        <div class="cr-modal cr-modal-tall">
-          <div class="cr-modal-bar">
-            <span>생존 결과 리포트</span>
-            <span id="res-new-best" class="new-best-tag hidden">NEW BEST!</span>
+      <!-- Clean Game Over Overlay (Uploaded Scoreboard + Home Button Only!) -->
+      <div id="gameover-overlay" class="modal-overlay gameover-clean-overlay hidden">
+        <div class="gameover-clean-stack">
+          <div class="res-score-banner" aria-label="최종 점수">
+            <img src="assets/ui/result_score_bar.png" alt="점수판" class="res-score-bg" />
+            <span id="res-score" class="res-score-num">0점</span>
           </div>
-          <div class="modal-body modal-scroll-body">
-            <div class="res-score-box">
-              <div class="res-score-label">최종 점수</div>
-              <div id="res-score" class="res-score-value">0</div>
-              <div id="res-score-compare" class="res-score-compare">최고 기록 0점</div>
-              <div id="res-dist-compare" class="res-dist-compare">생존 거리 0m · 최고 0m</div>
-            </div>
 
-            <p id="res-cause" class="res-cause">극한 한국 날씨에 쓰러졌습니다!</p>
-
-            <!-- New Achievement / Mission Alerts -->
-            <div id="res-unlock-alerts" class="res-unlock-alerts hidden"></div>
-
-            <!-- Per-Season Survival Breakdown -->
-            <div class="res-season-box">
-              <div class="res-season-title">계절별 생존 시간</div>
-              <div id="res-season-bars" class="res-season-bars"></div>
-            </div>
-
-            <div class="res-grid">
-              <div class="res-cell">
-                <span>생존 기록</span>
-                <strong id="res-survived">1년 차 봄 (0초)</strong>
-              </div>
-              <div class="res-cell">
-                <span>획득 코인 · 골드</span>
-                <strong id="res-gold-earned" class="gold-text">+0 G</strong>
-              </div>
-              <div class="res-cell">
-                <span>출격 캐릭터</span>
-                <strong id="res-char-name">기본 모험가</strong>
-              </div>
-              <div class="res-cell">
-                <span>최대 연속 회피</span>
-                <strong id="res-combo-stat">0연속 · 보유 0 G</strong>
-              </div>
-            </div>
-
-            <div class="modal-actions col">
-              <button id="btn-retry-run" class="cr-gold-btn hero-retry-btn" type="button">🔄 다시 도전하기!</button>
-              <button id="btn-result-home" class="cr-blue-btn" type="button">🏠 홈으로 돌아가기</button>
-            </div>
-          </div>
+          <button id="btn-result-home" class="res-home-img-btn" type="button" aria-label="홈으로 가기">
+            <span class="res-home-img-wrap">
+              <img src="assets/ui/btn_home_up.png" alt="홈으로 가기" class="res-home-img up" />
+              <img src="assets/ui/btn_home_down.png" alt="" class="res-home-img down" aria-hidden="true" />
+            </span>
+          </button>
         </div>
       </div>
     </section>

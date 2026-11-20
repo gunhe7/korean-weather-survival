@@ -249,18 +249,7 @@
     btnQuitHome: document.getElementById('btn-quit-home'),
 
     gameoverOverlay: document.getElementById('gameover-overlay'),
-    resNewBest: document.getElementById('res-new-best'),
     resScore: document.getElementById('res-score'),
-    resScoreCompare: document.getElementById('res-score-compare'),
-    resDistCompare: document.getElementById('res-dist-compare'),
-    resCause: document.getElementById('res-cause'),
-    resUnlockAlerts: document.getElementById('res-unlock-alerts'),
-    resSeasonBars: document.getElementById('res-season-bars'),
-    resSurvived: document.getElementById('res-survived'),
-    resGoldEarned: document.getElementById('res-gold-earned'),
-    resCharName: document.getElementById('res-char-name'),
-    resComboStat: document.getElementById('res-combo-stat'),
-    btnRetryRun: document.getElementById('btn-retry-run'),
     btnResultHome: document.getElementById('btn-result-home'),
 
     globalToast: document.getElementById('global-toast')
@@ -2207,28 +2196,16 @@
     el.runCanvasWrap.classList.remove('fever-active');
     SFX.setBgmMode('menu');
 
-    // Snapshot pre-run achievements & missions to announce newly unlocked ones!
     ensureTodayMissions();
-    const prevAchDone = new Set(
-      DATA.ACHIEVEMENTS.filter((a) => getAchievementMetricValue(a.metric) >= a.target).map((a) => a.id)
-    );
-    const prevMisDone = new Set(
-      DATA.DAILY_MISSIONS.filter((m) => (save.dailyMissions.progress[m.metric] || 0) >= m.target).map((m) => m.id)
-    );
-
     commitRunMissionProgress();
 
-    const ch = getCharDef(run.charId);
     const finalScore = Math.floor(run.score);
     const finalDist = run.distanceM || 0;
-    const prevBestScore = save.bestScore || 0;
     const distGoldBonus = Math.floor(run.elapsed * 0.7);
     const totalGoldEarned = run.gold + distGoldBonus;
 
-    const isNewBest = finalScore > prevBestScore;
-    const isNewDist = finalDist > (save.bestDistanceM || 0);
-    if (isNewBest) save.bestScore = finalScore;
-    if (isNewDist) save.bestDistanceM = finalDist;
+    if (finalScore > (save.bestScore || 0)) save.bestScore = finalScore;
+    if (finalDist > (save.bestDistanceM || 0)) save.bestDistanceM = finalDist;
     if (run.year > save.bestYear) save.bestYear = run.year;
     save.totalCoinsEver = (save.totalCoinsEver || 0) + (run.coinsCollected || 0);
     if ((run.maxDodgeCombo || 0) > (save.maxDodgeComboEver || 0)) {
@@ -2238,61 +2215,7 @@
     save.playCount += 1;
     persistSave();
 
-    // Detect newly completed Achievements, Daily Missions & Stage Milestones
-    const newUnlocks = [];
-    DATA.ACHIEVEMENTS.forEach((a) => {
-      if (!prevAchDone.has(a.id) && getAchievementMetricValue(a.metric) >= a.target) {
-        newUnlocks.push(`🏅 업적 달성: ${a.title} (+${a.rewardGold}G 수령 가능!)`);
-      }
-    });
-    DATA.DAILY_MISSIONS.forEach((m) => {
-      if (!prevMisDone.has(m.id) && (save.dailyMissions.progress[m.metric] || 0) >= m.target) {
-        newUnlocks.push(`📋 미션 완료: ${m.title} (+${m.rewardGold}G 수령 가능!)`);
-      }
-    });
-    if (run.stageMilestonesEarned && run.stageMilestonesEarned.length) {
-      run.stageMilestonesEarned.forEach((txt) => newUnlocks.push(`🏆 스테이지 보상: ${txt}`));
-    }
-
-    const seasonName = DATA.SEASONS[run.seasonIdx].name;
-    el.resNewBest.classList.toggle('hidden', !isNewBest);
     el.resScore.textContent = `${finalScore.toLocaleString('ko-KR')}점`;
-    if (isNewBest) {
-      const diffPts = finalScore - prevBestScore;
-      el.resScoreCompare.textContent = prevBestScore > 0
-        ? `🎉 개인 최고 기록 경신! (+${diffPts.toLocaleString('ko-KR')}점)`
-        : '🎉 첫 생존 기록 달성!';
-    } else {
-      const gap = prevBestScore - finalScore;
-      el.resScoreCompare.textContent = `개인 최고 ${prevBestScore.toLocaleString('ko-KR')}점 (${gap.toLocaleString('ko-KR')}점 차이)`;
-    }
-
-    el.resDistCompare.textContent = isNewDist
-      ? `생존 거리 ${finalDist.toLocaleString('ko-KR')}m · 🎉 최장 거리 신기록!`
-      : `생존 거리 ${finalDist.toLocaleString('ko-KR')}m · 최고 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
-    el.resCause.textContent = run.lastHitCause;
-
-    if (newUnlocks.length > 0) {
-      el.resUnlockAlerts.innerHTML = newUnlocks.join('<br />');
-      el.resUnlockAlerts.classList.remove('hidden');
-    } else {
-      el.resUnlockAlerts.classList.add('hidden');
-    }
-
-    // Per-Season Survival Time Breakdown!
-    const st = run.seasonTime || { spring: 0, summer: 0, autumn: 0, winter: 0 };
-    el.resSeasonBars.innerHTML = `
-      <div class="res-s-chip spring">🌸 봄<strong>${Math.round(st.spring || 0)}초</strong></div>
-      <div class="res-s-chip summer">☀️ 여름<strong>${Math.round(st.summer || 0)}초</strong></div>
-      <div class="res-s-chip autumn">🍁 가을<strong>${Math.round(st.autumn || 0)}초</strong></div>
-      <div class="res-s-chip winter">❄️ 겨울<strong>${Math.round(st.winter || 0)}초</strong></div>
-    `;
-
-    el.resSurvived.textContent = `${run.year}년 차 ${seasonName} (${Math.floor(run.elapsed)}초)`;
-    el.resGoldEarned.textContent = `코인 ${run.coinsCollected || 0}개 · +${totalGoldEarned.toLocaleString('ko-KR')} G`;
-    el.resCharName.textContent = `${ch.name} Lv.${run.charLevel || 1}`;
-    el.resComboStat.textContent = `${run.maxDodgeCombo || 0}연속 · 보유 ${save.gold.toLocaleString('ko-KR')} G`;
-
     el.gameoverOverlay.classList.remove('hidden');
   }
 
@@ -2548,11 +2471,11 @@
     });
 
     el.btnQuitHome.addEventListener('click', exitRunToHome);
+    el.btnResultHome.addEventListener('pointerdown', () => el.btnResultHome.classList.add('pressed'));
+    el.btnResultHome.addEventListener('pointerup', () => el.btnResultHome.classList.remove('pressed'));
+    el.btnResultHome.addEventListener('pointercancel', () => el.btnResultHome.classList.remove('pressed'));
+    el.btnResultHome.addEventListener('pointerleave', () => el.btnResultHome.classList.remove('pressed'));
     el.btnResultHome.addEventListener('click', exitRunToHome);
-    el.btnRetryRun.addEventListener('click', () => {
-      SFX.click();
-      startRun();
-    });
 
     // Pure Splash Intro (Seoul Winter BG + Logo Only: Auto-Enters & Tap-to-Skip!)
     let introLeaving = false;

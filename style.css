@@ -4658,3 +4658,130 @@ input:focus-visible {
     height: 38px;
   }
 }
+
+/* ================= CLEAN GAME OVER OVERLAY (SCOREBOARD + HOME BUTTON ONLY) ================= */
+.gameover-clean-overlay {
+  background: rgba(8, 18, 42, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.gameover-clean-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 12px;
+  animation: logoPopIn 0.34s cubic-bezier(0.22, 1.28, 0.36, 1) forwards;
+}
+
+.res-score-banner {
+  position: relative;
+  width: clamp(290px, 56vw, 450px);
+  aspect-ratio: 995 / 261;
+  filter: drop-shadow(0 10px 24px rgba(4, 10, 28, 0.68));
+  user-select: none;
+}
+
+.res-score-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+.res-score-num {
+  position: absolute;
+  left: 21%;
+  width: 68%;
+  top: 36%;
+  height: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: clamp(22px, 4.4vw, 35px);
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.6px;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow:
+    -2px -2px 0 #091638,
+     2px -2px 0 #091638,
+    -2px  2px 0 #091638,
+     2px  2px 0 #091638,
+     0px  4px 0 #091638;
+}
+
+.res-home-img-btn {
+  position: relative;
+  width: clamp(190px, 34vw, 255px);
+  aspect-ratio: 699 / 255;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  filter: drop-shadow(0 8px 18px rgba(4, 10, 28, 0.62));
+  transition: transform 0.07s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.res-home-img-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.res-home-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.res-home-img.up {
+  opacity: 1;
+}
+
+.res-home-img.down {
+  opacity: 0;
+}
+
+.res-home-img-btn.pressed .res-home-img.up,
+.res-home-img-btn:active .res-home-img.up {
+  opacity: 0;
+}
+
+.res-home-img-btn.pressed .res-home-img.down,
+.res-home-img-btn:active .res-home-img.down {
+  opacity: 1;
+}
+
+.res-home-img-btn.pressed,
+.res-home-img-btn:active {
+  transform: translateY(3px) scale(0.97);
+}
+
+@media (max-height: 440px) {
+  .gameover-clean-stack {
+    gap: 12px;
+  }
+
+  .res-score-banner {
+    width: clamp(260px, 52vw, 360px);
+  }
+
+  .res-score-num {
+    font-size: clamp(20px, 4vw, 28px);
+  }
+
+  .res-home-img-btn {
+    width: clamp(168px, 30vw, 210px);
+  }
+}
