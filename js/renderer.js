@@ -17,13 +17,8 @@ window.RunRenderer = (function () {
   ];
 
   const DESIGN_SPRITES = [
-    'obs_dirt_block', 'obs_crate', 'obs_stone_block', 'obs_ice_block', 'obs_spikes',
-    'obs_fence', 'obs_barricade', 'obs_ice_spikes', 'obs_storm_cloud', 'obs_snowman',
-    'obs_fire', 'obs_mace', 'obs_warning_sign', 'obs_tornado', 'obs_meteor',
     'item_coin', 'item_coin_side', 'item_star',
     'orb_star', 'orb_magnet', 'orb_bolt', 'orb_potion',
-    'tile_grass', 'tile_stone', 'tile_ice',
-    'tree_green', 'tree_snow', 'prop_lamp',
     'ui_chest', 'ui_fever', 'pet_dog'
   ];
 
@@ -32,6 +27,21 @@ window.RunRenderer = (function () {
     'char_slide', 'char_jump_0', 'char_jump_1',
     'dog_run_0', 'dog_run_1', 'dog_run_2', 'dog_run_3',
     'spr_umbrella', 'spr_shield'
+  ];
+
+  const WORLD_SPRITES = [
+    'sp_cherry_tree', 'sp_flower_bush', 'sp_dust_cloud', 'sp_smog_cloud', 'sp_smog_city',
+    'sp_rain_cloud', 'sp_thunder_cloud', 'sp_shower_cloud', 'sp_sun',
+    'sp_spring_tile', 'sp_flower_patch', 'sp_flood_wave1', 'sp_flood_barricade', 'sp_flood_wave2',
+    'sp_puddle', 'sp_red_umbrella', 'sp_traffic_cone', 'sp_warning_sign', 'sp_stump',
+    'sp_summer_tree', 'sp_watermelon', 'sp_icecream', 'sp_gust_wind', 'sp_heat_waves',
+    'sp_heat_mound', 'sp_cactus', 'sp_palm_tree', 'sp_beach_ball', 'sp_parasol',
+    'sp_autumn_tree', 'sp_falling_leaves', 'sp_leaf_pile', 'sp_tornado', 'sp_fence',
+    'sp_fallen_tree', 'sp_tilted_lamp', 'sp_red_car', 'sp_road_sign', 'sp_rock',
+    'sp_winter_tree', 'sp_snowman', 'sp_snow_pile', 'sp_ice_spikes', 'sp_ice_tile',
+    'sp_snowflake', 'sp_icicles', 'sp_snow_cloud', 'sp_ice_crystal', 'sp_snow_rock',
+    'sp_mace', 'sp_spike_strip', 'sp_spike_stump', 'sp_spring_pad', 'sp_barricade',
+    'sp_crate', 'sp_hazard_barrel', 'sp_green_bush', 'sp_metal_box', 'sp_siren_post'
   ];
 
   const sprites = {};
@@ -51,6 +61,12 @@ window.RunRenderer = (function () {
   ATLAS_SPRITES.forEach((key) => {
     const img = new Image();
     img.src = `assets/atlas/${key}.png`;
+    sprites[key] = img;
+  });
+
+  WORLD_SPRITES.forEach((key) => {
+    const img = new Image();
+    img.src = `assets/world/${key}.png`;
     sprites[key] = img;
   });
 
@@ -227,68 +243,73 @@ window.RunRenderer = (function () {
     ctx.fillStyle = '#ff6b6b';
     ctx.fillRect(tx - 1, ty - 50, 2, 3);
 
-    // Pastel Korean City Skyline Silhouette (far parallax)
-    const cityOff = Math.floor(scroll * 0.16) % 240;
-    for (let rep = -1; rep < 4; rep++) {
-      const bx = rep * 240 - cityOff;
-      drawPastelBuilding(ctx, bx + 12, groundY - 72, 36, 72, '#9db4de');
-      drawPastelBuilding(ctx, bx + 54, groundY - 90, 42, 90, '#91aad6');
-      drawPastelBuilding(ctx, bx + 110, groundY - 64, 34, 64, '#a4bae0');
-      drawPastelBuilding(ctx, bx + 166, groundY - 82, 44, 82, '#8fa6d4');
+    // Blazing Summer Sun sprite from uploaded sheet!
+    if (seasonId === 'summer' && !isStormy) {
+      const sunSpr = getSprite('sp_sun');
+      if (sunSpr) {
+        const sSz = 42 + Math.round(Math.sin(t * 3) * 2);
+        ctx.drawImage(sunSpr, w - 66, 12, sSz, sSz);
+      }
     }
 
-    // Midground Pixel Pine Trees & Streetlamps from uploaded tileset!
+    // Far Korean Skyline using uploaded sp_smog_city silhouette!
+    const smogCitySpr = getSprite('sp_smog_city');
+    if (smogCitySpr) {
+      const cityOff = Math.floor(scroll * 0.16) % 160;
+      ctx.save();
+      ctx.globalAlpha = weatherEvent === 'dust' ? 0.72 : 0.42;
+      for (let rep = -1; rep < 5; rep++) {
+        const bx = rep * 160 - cityOff;
+        ctx.drawImage(smogCitySpr, Math.floor(bx), groundY - 82, 110, 84);
+      }
+      ctx.restore();
+    }
+
+    // Midground Seasonal Trees, Bushes & Street Props strictly from uploaded sheet!
     const treeSpr = getSprite(season.tree);
-    const lampSpr = getSprite('prop_lamp');
-    const propOff = Math.floor(scroll * 0.55) % 260;
+    const treeAltSpr = getSprite(season.treeAlt || season.tree);
+    const bushSpr = getSprite(season.bush);
+    const propSpr = getSprite(season.prop);
+    const propOff = Math.floor(scroll * 0.55) % 280;
     for (let rep = -1; rep <= 3; rep++) {
-      const px = rep * 260 - propOff;
+      const px = rep * 280 - propOff;
       if (treeSpr) {
-        const th = seasonId === 'winter' ? 54 : 42;
+        const th = 58;
         const tw = Math.round(th * (treeSpr.naturalWidth / treeSpr.naturalHeight));
-        ctx.drawImage(treeSpr, Math.floor(px + 20), Math.floor(groundY - th + 3), tw, th);
-        ctx.drawImage(treeSpr, Math.floor(px + 135), Math.floor(groundY - Math.round(th * 0.82) + 3), Math.round(tw * 0.82), Math.round(th * 0.82));
+        ctx.drawImage(treeSpr, Math.floor(px + 14), Math.floor(groundY - th + 4), tw, th);
       }
-      if (lampSpr) {
-        const lh = 48;
-        const lw = Math.round(lh * (lampSpr.naturalWidth / lampSpr.naturalHeight));
-        ctx.drawImage(lampSpr, Math.floor(px + 92), Math.floor(groundY - lh + 2), lw, lh);
+      if (bushSpr) {
+        const bh = 26;
+        const bw = Math.round(bh * (bushSpr.naturalWidth / bushSpr.naturalHeight));
+        ctx.drawImage(bushSpr, Math.floor(px + 94), Math.floor(groundY - bh + 3), bw, bh);
+      }
+      if (treeAltSpr) {
+        const th2 = 50;
+        const tw2 = Math.round(th2 * (treeAltSpr.naturalWidth / treeAltSpr.naturalHeight));
+        ctx.drawImage(treeAltSpr, Math.floor(px + 154), Math.floor(groundY - th2 + 4), tw2, th2);
+      }
+      if (propSpr) {
+        const ph = season.prop === 'sp_flower_patch' ? 24 : 44;
+        const pw = Math.round(ph * (propSpr.naturalWidth / propSpr.naturalHeight));
+        ctx.drawImage(propSpr, Math.floor(px + 228), Math.floor(groundY - ph + 3), pw, ph);
       }
     }
 
-    // Tiled Pixel Ground (using extracted tile_grass / tile_stone / tile_ice!)
-    const tileSpr = getSprite(season.tile) || getSprite('tile_grass');
-    const tileW = 36;
+    // Tiled Pixel Ground strictly from uploaded sheet (sp_spring_tile / sp_metal_box / sp_ice_tile)!
+    const tileSpr = getSprite(season.tile) || getSprite('sp_spring_tile');
+    const tileW = 46;
     const tileH = 34;
     const tileOff = Math.floor(scroll) % tileW;
 
-    // Deep underground soil/ice base below tile row (smooth transition!)
     ctx.fillStyle = lerpHex(prevSeason.groundBase || '#57392c', season.groundBase || '#57392c', f);
     ctx.fillRect(0, groundY, w, h - groundY);
 
     if (tileSpr) {
       for (let gx = -tileOff; gx < w + tileW; gx += tileW) {
-        ctx.drawImage(tileSpr, Math.floor(gx), groundY - 2, tileW, tileH);
+        ctx.drawImage(tileSpr, Math.floor(gx), groundY - 3, tileW, tileH);
       }
-      // Second dark brick sub-layer to fill bottom cleanly
-      ctx.fillStyle = 'rgba(20, 18, 36, 0.35)';
-      ctx.fillRect(0, groundY + tileH - 3, w, h - (groundY + tileH - 3));
-    } else {
-      ctx.fillStyle = '#5fc256';
-      ctx.fillRect(0, groundY - 2, w, 6);
-      ctx.fillStyle = '#85553b';
-      ctx.fillRect(0, groundY + 4, w, h - groundY);
-    }
-  }
-
-  function drawPastelBuilding(ctx, x, y, w, h, col) {
-    ctx.fillStyle = col;
-    ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = 'rgba(235, 245, 255, 0.45)';
-    for (let r = 0; r < Math.floor((h - 14) / 11); r++) {
-      for (let c = 0; c < 3; c++) {
-        ctx.fillRect(x + 5 + c * 10, y + 8 + r * 11, 6, 5);
-      }
+      ctx.fillStyle = 'rgba(18, 16, 32, 0.35)';
+      ctx.fillRect(0, groundY + tileH - 4, w, h - (groundY + tileH - 4));
     }
   }
 
@@ -400,113 +421,78 @@ window.RunRenderer = (function () {
     });
   }
 
-  // ===================== KOREAN STREET INTERACTIVE FEATURES =====================
+  // ===================== KOREAN STREET INTERACTIVE FEATURES (100% UPLOADED SPRITES!) =====================
   function drawStreetFeatures(ctx, run, t) {
-    // 1. Rising Floodwater Layer during 장마 침수 구간!
+    // 1. Rising Floodwater Waves strictly using uploaded sp_flood_wave1 / sp_flood_wave2!
     if (run.weatherEvent === 'flood') {
-      const wave = Math.sin(t * 7) * 2;
-      ctx.fillStyle = 'rgba(42, 118, 198, 0.58)';
-      ctx.fillRect(0, GROUND_Y - 15 + wave, W, 22);
-      ctx.fillStyle = 'rgba(180, 232, 255, 0.75)';
-      for (let wx = 0; wx < W; wx += 36) {
-        const ox = Math.floor((wx - (run.scroll * 0.8) % 36));
-        ctx.fillRect(ox, GROUND_Y - 15 + wave, 18, 2);
+      const waveY = Math.round(Math.sin(t * 7) * 2);
+      ctx.fillStyle = 'rgba(34, 110, 198, 0.45)';
+      ctx.fillRect(0, GROUND_Y - 12 + waveY, W, 18);
+      const wSpr = getSprite('sp_flood_wave2') || getSprite('sp_flood_wave1');
+      if (wSpr) {
+        const wOff = Math.floor(run.scroll * 0.75) % 58;
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        for (let wx = -wOff; wx < W + 60; wx += 58) {
+          ctx.drawImage(wSpr, Math.floor(wx), GROUND_Y - 22 + waveY, 54, 26);
+        }
+        ctx.restore();
       }
     }
 
     (run.features || []).forEach((f) => {
       const x = Math.floor(f.x);
-      if (f.kind === 'conv_store') {
-        // K-24 Convenience Store (AC/Heating chance when passing!)
-        const sy = GROUND_Y - 66;
-        ctx.fillStyle = '#e8f1fa';
-        ctx.fillRect(x, sy, f.w, 66);
-        ctx.fillStyle = '#25b865'; ctx.fillRect(x, sy, f.w, 5);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(x, sy + 5, f.w, 5);
-        ctx.fillStyle = '#ff8b24'; ctx.fillRect(x, sy + 10, f.w, 4);
-        ctx.fillStyle = '#1b5eb8'; ctx.fillRect(x + 28, sy + 1, 44, 12);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '800 9px "Paperlogy", sans-serif';
-        ctx.fillText('K-24', x + 39, sy + 10);
-        // Glass windows
-        ctx.fillStyle = '#a4dbfa';
-        ctx.fillRect(x + 8, sy + 20, 44, 34);
-        // Sliding Automatic Door (opens when triggered!)
-        const doorOpen = f.triggered ? 12 : 0;
-        ctx.fillStyle = f.triggered ? (run.seasonId === 'winter' ? '#ffcf6e' : '#7ae8ff') : '#5d9bd4';
-        ctx.fillRect(x + 58, sy + 20, 32, 46);
-        ctx.fillStyle = '#d4edff';
-        ctx.fillRect(x + 58, sy + 20, 15 - doorOpen, 46);
-        ctx.fillRect(x + 75 + doorOpen, sy + 20, 15 - doorOpen, 46);
-        // Cool AC / Warm Heater air burst lines when door opens!
-        if (f.triggered) {
-          ctx.fillStyle = run.seasonId === 'winter' ? 'rgba(255, 195, 75, 0.85)' : 'rgba(115, 240, 255, 0.85)';
-          for (let k = 0; k < 4; k++) {
-            ctx.fillRect(x + 52 - k * 8, sy + 28 + k * 8, 16, 3);
-          }
+      ctx.imageSmoothingEnabled = false;
+
+      if (f.kind === 'spring_pad') {
+        // Bouncy Red Spring Jump Pad (sp_spring_pad)!
+        const spr = getSprite('sp_spring_pad');
+        const bounceH = f.triggered ? 44 : 36;
+        if (spr) {
+          ctx.drawImage(spr, x + 4, GROUND_Y - bounceH, 36, bounceH);
         }
-      } else if (f.kind === 'shade_tree') {
-        // Cool dark-blue shade pool on sidewalk + big tree overhead
-        ctx.fillStyle = 'rgba(20, 52, 108, 0.36)';
-        ctx.fillRect(x, GROUND_Y - 12, f.w, 16);
-        ctx.fillStyle = '#6e4933';
-        ctx.fillRect(x + f.w / 2 - 5, GROUND_Y - 56, 10, 56);
-        ctx.fillStyle = '#258a45';
-        ctx.fillRect(x - 6, GROUND_Y - 94, f.w + 12, 44);
-        ctx.fillStyle = '#47c96b';
-        ctx.fillRect(x + 4, GROUND_Y - 102, f.w - 8, 28);
+      } else if (f.kind === 'cool_spot') {
+        // Cooling Parasol Rest Spot (sp_parasol + sp_watermelon / sp_icecream)!
+        ctx.fillStyle = 'rgba(20, 52, 108, 0.34)';
+        ctx.fillRect(x, GROUND_Y - 10, f.w, 12);
+        const pSpr = getSprite('sp_parasol');
+        const treatSpr = getSprite(run.seasonId === 'summer' ? 'sp_watermelon' : 'sp_icecream');
+        if (pSpr) ctx.drawImage(pSpr, x + 6, GROUND_Y - 62, 60, 62);
+        if (treatSpr && !f.triggered) {
+          const bob = Math.round(Math.sin(t * 7) * 3);
+          ctx.drawImage(treatSpr, x + 48, GROUND_Y - 30 + bob, 24, 24);
+        }
+      } else if (f.kind === 'shade_tree' || f.kind === 'shade_palm' || f.kind === 'shade_parasol') {
+        // Summer Shade Hopping strictly using sp_summer_tree / sp_palm_tree / sp_parasol!
+        ctx.fillStyle = 'rgba(18, 48, 104, 0.36)';
+        ctx.fillRect(x - 2, GROUND_Y - 11, f.w + 4, 14);
+        const sprKey = f.kind === 'shade_palm' ? 'sp_palm_tree' : (f.kind === 'shade_parasol' ? 'sp_parasol' : 'sp_summer_tree');
+        const spr = getSprite(sprKey);
+        if (spr) {
+          const sh = f.kind === 'shade_parasol' ? 62 : 84;
+          const sw = Math.round(sh * (spr.naturalWidth / spr.naturalHeight));
+          ctx.drawImage(spr, Math.floor(x + (f.w - sw) / 2), GROUND_Y - sh + 4, sw, sh);
+        }
         ctx.fillStyle = '#a8ecff';
         ctx.font = '800 9px "Paperlogy", sans-serif';
-        ctx.fillText('그늘', x + f.w / 2 - 10, GROUND_Y - 2);
-      } else if (f.kind === 'bus_stop') {
-        // Bus Shelter with shaded ground AND jumpable roof platform!
-        ctx.fillStyle = 'rgba(20, 52, 108, 0.38)';
-        ctx.fillRect(x, GROUND_Y - 12, f.w, 16);
-        ctx.fillStyle = '#475b78';
-        ctx.fillRect(x + 4, GROUND_Y - 46, 4, 46);
-        ctx.fillRect(x + f.w - 8, GROUND_Y - 46, 4, 46);
-        ctx.fillStyle = 'rgba(185, 226, 255, 0.55)';
-        ctx.fillRect(x + 8, GROUND_Y - 42, f.w - 16, 30);
-        // Roof platform
-        ctx.fillStyle = '#2463b8';
-        ctx.fillRect(x - 4, f.platformY, f.w + 8, 8);
-        ctx.fillStyle = '#8cc7ff';
-        ctx.fillRect(x - 2, f.platformY, f.w + 4, 3);
-      } else if (f.kind === 'truck_shade') {
-        // Moving Korean Cargo Truck casting cool mobile shade!
-        ctx.fillStyle = 'rgba(20, 52, 108, 0.42)';
-        ctx.fillRect(x - 10, GROUND_Y - 14, f.w + 20, 18);
-        // Truck cab & cargo box in background lane
-        ctx.fillStyle = '#edf3fa';
-        ctx.fillRect(x + 22, GROUND_Y - 54, f.w - 22, 36);
-        ctx.fillStyle = '#2d76d6';
-        ctx.fillRect(x, GROUND_Y - 44, 24, 26);
-        ctx.fillStyle = '#9be0ff';
-        ctx.fillRect(x + 3, GROUND_Y - 40, 12, 11);
-        ctx.fillStyle = '#262b36';
-        ctx.beginPath(); ctx.arc(x + 14, GROUND_Y - 16, 7, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + f.w - 16, GROUND_Y - 16, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillText('그늘', x + Math.floor(f.w / 2) - 10, GROUND_Y - 1);
       } else if (f.kind === 'car_roof') {
-        // Submerged sedan roof platform during flood!
-        const py = f.platformY;
-        ctx.fillStyle = '#d94c4c';
-        ctx.fillRect(x, py + 12, f.w, 16);
-        ctx.fillStyle = '#f26b6b';
-        ctx.fillRect(x + 12, py, f.w - 24, 14);
-        ctx.fillStyle = '#b5e8ff';
-        ctx.fillRect(x + 16, py + 3, f.w - 32, 9);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(x + 12, py, f.w - 24, 3);
-      } else if (f.kind === 'bench') {
-        // Dry park bench platform during flood!
-        const py = f.platformY;
-        ctx.fillStyle = '#47362b';
-        ctx.fillRect(x + 6, py + 6, 5, 20);
-        ctx.fillRect(x + f.w - 11, py + 6, 5, 20);
-        ctx.fillStyle = '#c47b3d';
-        ctx.fillRect(x, py, f.w, 8);
-        ctx.fillStyle = '#f0a860';
-        ctx.fillRect(x, py, f.w, 3);
+        // Flooded Red Car Platform strictly using sp_red_car!
+        const spr = getSprite('sp_red_car');
+        if (spr) {
+          ctx.drawImage(spr, x + 4, f.platformY - 6, f.w - 8, GROUND_Y - f.platformY + 8);
+        }
+      } else if (f.kind === 'crate_plat' || f.kind === 'metal_plat') {
+        // Dry Crate / Metal Box Platform during Flood strictly using sp_crate / sp_metal_box!
+        const spr = getSprite(f.kind === 'metal_plat' ? 'sp_metal_box' : 'sp_crate');
+        if (spr) {
+          const tiles = Math.max(1, Math.round(f.w / 34));
+          const tw = Math.floor(f.w / tiles);
+          const th = GROUND_Y - f.platformY + 4;
+          for (let k = 0; k < tiles; k++) {
+            ctx.drawImage(spr, x + k * tw, f.platformY, tw, th);
+          }
+        }
       }
     });
   }
@@ -525,21 +511,11 @@ window.RunRenderer = (function () {
       ctx.fillText('물벼락 주의! 점프!', W - 114, GROUND_Y - 48);
     } else if (car.phase === 'pass') {
       const x = Math.floor(car.x);
-      // Speeding Korean sedan
-      ctx.fillStyle = '#2f3d57';
-      ctx.fillRect(x, GROUND_Y - 26, 76, 18);
-      ctx.fillStyle = '#4b6187';
-      ctx.fillRect(x + 14, GROUND_Y - 38, 44, 14);
-      ctx.fillStyle = '#a6dcff';
-      ctx.fillRect(x + 18, GROUND_Y - 35, 16, 9);
-      ctx.fillRect(x + 38, GROUND_Y - 35, 16, 9);
-      ctx.fillStyle = '#ffe873';
-      ctx.fillRect(x, GROUND_Y - 22, 6, 5);
-      // Towering muddy water splash wave!
-      ctx.fillStyle = 'rgba(130, 92, 46, 0.85)';
-      ctx.fillRect(x + 10, GROUND_Y - 52, 54, 48);
-      ctx.fillStyle = 'rgba(196, 160, 110, 0.9)';
-      ctx.fillRect(x + 16, GROUND_Y - 58, 40, 14);
+      const carSpr = getSprite('sp_red_car');
+      const waveSpr = getSprite('sp_flood_wave1') || getSprite('sp_flood_wave2');
+      ctx.imageSmoothingEnabled = false;
+      if (waveSpr) ctx.drawImage(waveSpr, x + 16, GROUND_Y - 48, 62, 46);
+      if (carSpr) ctx.drawImage(carSpr, x, GROUND_Y - 46, 56, 48);
     }
   }
 
@@ -738,179 +714,10 @@ window.RunRenderer = (function () {
     ctx.globalAlpha = 1;
   }
 
-  // ===================== DESIGN SHEET & CUSTOM SEASONAL OBSTACLES =====================
-  function drawCustomObstacle(ctx, ob, x, y, t) {
-    const kind = ob.customDraw;
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-
-    if (kind === 'smog_zone') {
-      // Billowing yellow-brown fine-dust smog mound on sidewalk!
-      const bob = Math.sin(t * 7 + ob.x * 0.05) * 2;
-      ctx.fillStyle = 'rgba(138, 116, 44, 0.92)';
-      ctx.fillRect(x + 2, y + 10 + bob, ob.w - 4, ob.h - 10);
-      ctx.fillRect(x + 8, y + 3 + bob, ob.w - 16, 12);
-      ctx.fillStyle = 'rgba(218, 190, 78, 0.92)';
-      ctx.fillRect(x + 6, y + 8 + bob, ob.w - 12, 12);
-      ctx.fillRect(x + 14, y + 1 + bob, ob.w - 28, 10);
-      ctx.fillStyle = '#33290e';
-      ctx.font = '900 9px "Paperlogy", sans-serif';
-      ctx.fillText('PM2.5', x + 9, y + 20 + bob);
-    } else if (kind === 'flying_branch') {
-      // Spinning windblown spring branch with pink cherry blossoms!
-      ctx.translate(x + ob.w / 2, y + ob.h / 2);
-      ctx.rotate(-t * 4.5);
-      ctx.fillStyle = '#5c3b24';
-      ctx.fillRect(-ob.w / 2 + 2, -4, ob.w - 4, 8);
-      ctx.fillRect(-6, -12, 6, 10);
-      ctx.fillStyle = '#3d2414';
-      ctx.fillRect(-ob.w / 2 + 2, 2, ob.w - 4, 3);
-      ctx.fillStyle = '#ff9ec4';
-      ctx.fillRect(-ob.w / 2 + 4, -9, 8, 7);
-      ctx.fillRect(-4, -14, 9, 7);
-      ctx.fillRect(8, -8, 8, 7);
-      ctx.fillStyle = '#ffe2ee';
-      ctx.fillRect(-2, -12, 4, 3);
-      ctx.fillRect(10, -6, 4, 3);
-    } else if (kind === 'hot_asphalt') {
-      // Blazing red-orange heatwave cracked asphalt + rising flames!
-      ctx.fillStyle = '#2d2833';
-      ctx.fillRect(x, y + ob.h - 12, ob.w, 12);
-      ctx.fillStyle = '#ff5722';
-      ctx.fillRect(x + 4, y + ob.h - 11, ob.w - 8, 4);
-      for (let k = 0; k < 4; k++) {
-        const fh = 10 + Math.floor(Math.abs(Math.sin(t * 14 + k * 1.4)) * 14);
-        const fx = x + 5 + k * 10;
-        ctx.fillStyle = '#ff6a1a';
-        ctx.fillRect(fx, y + ob.h - 12 - fh, 8, fh);
-        ctx.fillStyle = '#ffd633';
-        ctx.fillRect(fx + 2, y + ob.h - 12 - Math.floor(fh * 0.65), 4, Math.floor(fh * 0.65));
-      }
-    } else if (kind === 'lightning_strike') {
-      // Summer Lightning Bolt: telegraph column first, then vivid pixel strike!
-      const cx = x + ob.w / 2;
-      // Dark thundercloud overhead
-      ctx.fillStyle = '#2f384f';
-      ctx.fillRect(cx - 22, y - 10, 44, 16);
-      ctx.fillRect(cx - 14, y - 16, 28, 8);
-      if (ob.strikeTimer > 0) {
-        const blink = Math.floor(t * 18) % 2 === 0;
-        ctx.fillStyle = blink ? 'rgba(255, 235, 92, 0.35)' : 'rgba(255, 110, 60, 0.22)';
-        ctx.fillRect(cx - 9, y + 6, 18, ob.h - 6);
-        ctx.fillStyle = blink ? '#ffe84d' : '#ff5938';
-        ctx.fillRect(cx - 11, GROUND_Y - 18, 22, 16);
-        ctx.fillStyle = '#141226';
-        ctx.font = '900 11px "Paperlogy", sans-serif';
-        ctx.fillText('⚡', cx - 6, GROUND_Y - 6);
-      } else {
-        // Active jagged lightning strike!
-        ctx.fillStyle = 'rgba(255, 245, 150, 0.42)';
-        ctx.fillRect(cx - 13, y + 4, 26, ob.h - 4);
-        ctx.fillStyle = '#fff9c4';
-        for (let sy = 4; sy < ob.h - 4; sy += 14) {
-          const zig = ((sy / 14) % 2 === 0 ? -5 : 5);
-          ctx.fillRect(cx + zig - 4, y + sy, 8, 16);
-        }
-        ctx.fillStyle = '#ffe033';
-        ctx.fillRect(cx - 14, GROUND_Y - 8, 28, 8);
-      }
-    } else if (kind === 'flying_umbrella') {
-      // Tumbling flipped umbrella blown by summer storm wind!
-      ctx.translate(x + ob.w / 2, y + ob.h / 2);
-      ctx.rotate(-t * 5.2);
-      ctx.fillStyle = '#141226';
-      ctx.fillRect(-16, -2, 32, 4);
-      ctx.fillStyle = '#e84545';
-      ctx.fillRect(-16, -13, 10, 12);
-      ctx.fillRect(6, -13, 10, 12);
-      ctx.fillStyle = '#ff7b54';
-      ctx.fillRect(-8, -7, 16, 7);
-      ctx.fillStyle = '#73829e';
-      ctx.fillRect(-2, -14, 4, 26);
-      ctx.fillRect(-2, 10, 8, 3);
-    } else if (kind === 'flying_sign') {
-      // Iconic Korean neon street signboard tumbling through typhoon!
-      ctx.translate(x + ob.w / 2, y + ob.h / 2);
-      ctx.rotate(Math.sin(t * 9) * 0.28);
-      ctx.fillStyle = '#161426';
-      ctx.fillRect(-ob.w / 2, -ob.h / 2, ob.w, ob.h);
-      ctx.fillStyle = ob.signColor || '#ff4757';
-      ctx.fillRect(-ob.w / 2 + 3, -ob.h / 2 + 3, ob.w - 6, ob.h - 6);
-      ctx.fillStyle = '#fff59d';
-      ctx.font = '900 12px "Paperlogy", "Malgun Gothic", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(ob.signText || '치킨', 0, 5);
-      ctx.textAlign = 'left';
-    } else if (kind === 'leaf_pile') {
-      // Layered orange/red/gold pixel autumn leaf mound!
-      ctx.fillStyle = '#a63e1b';
-      ctx.fillRect(x + 2, y + 12, ob.w - 4, ob.h - 12);
-      ctx.fillStyle = '#e06d1f';
-      ctx.fillRect(x + 6, y + 6, ob.w - 12, ob.h - 8);
-      ctx.fillStyle = '#ffae2b';
-      ctx.fillRect(x + 12, y + 1, ob.w - 24, 12);
-      ctx.fillStyle = '#ffe066';
-      ctx.fillRect(x + 10, y + 11, 6, 4);
-      ctx.fillRect(x + 24, y + 8, 7, 4);
-      ctx.fillRect(x + 18, y + 18, 6, 4);
-    } else if (kind === 'falling_tree') {
-      // Autumn street tree tilting forward in the typhoon wind!
-      const tilt = Math.min(0.42, Math.max(0, (W - ob.x) / W) * 0.5);
-      ctx.translate(x + ob.w / 2, y + ob.h);
-      ctx.rotate(-tilt);
-      ctx.fillStyle = '#5e3c23';
-      ctx.fillRect(-6, -ob.h + 14, 12, ob.h - 14);
-      ctx.fillStyle = '#d9532f';
-      ctx.fillRect(-20, -ob.h, 40, 26);
-      ctx.fillStyle = '#ff9233';
-      ctx.fillRect(-15, -ob.h - 5, 30, 16);
-      ctx.fillStyle = '#ffd24d';
-      ctx.fillRect(-8, -ob.h - 2, 12, 8);
-    } else if (kind === 'snow_pile') {
-      // Chunky white & ice-blue winter snowbank mound!
-      ctx.fillStyle = '#8ebce8';
-      ctx.fillRect(x + 2, y + 12, ob.w - 4, ob.h - 12);
-      ctx.fillStyle = '#d8efff';
-      ctx.fillRect(x + 6, y + 6, ob.w - 12, ob.h - 8);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 11, y + 1, ob.w - 22, 13);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 8, y + 10, 8, 5);
-      ctx.fillRect(x + 26, y + 12, 9, 5);
-    } else if (kind === 'falling_icicle') {
-      // Sharp cyan-white pixel icicle falling from the top!
-      if (y < 46) {
-        const blink = Math.floor(t * 16) % 2 === 0;
-        ctx.fillStyle = blink ? '#ff4757' : '#38c8ff';
-        ctx.fillRect(x + 4, 8, ob.w - 8, 16);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 11px sans-serif';
-        ctx.fillText('!', x + ob.w / 2 - 2, 20);
-      }
-      ctx.fillStyle = '#2d7dc4';
-      ctx.beginPath();
-      ctx.moveTo(x + 2, y);
-      ctx.lineTo(x + ob.w - 2, y);
-      ctx.lineTo(x + ob.w / 2, y + ob.h);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#9be8ff';
-      ctx.beginPath();
-      ctx.moveTo(x + 6, y + 2);
-      ctx.lineTo(x + ob.w - 8, y + 2);
-      ctx.lineTo(x + ob.w / 2, y + ob.h - 5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 8, y + 4, 4, 14);
-    }
-
-    ctx.restore();
-  }
-
+  // ===================== UPLOADED SEASONAL SHEET OBSTACLES ONLY =====================
   function drawObstacle(ctx, ob, t) {
     // Right-edge warning badge before fast flying aerial obstacle enters
-    if (ob.warn && ob.x > W - 18 && ob.lane !== 'lightning' && ob.lane !== 'icicle') {
+    if (ob.warn && ob.x > W - 18 && ob.lane !== 'icicle') {
       const wy = Math.floor(ob.y + ob.h / 2);
       const blink = Math.floor(t * 14) % 2 === 0;
       ctx.fillStyle = blink ? '#e83a3a' : '#ff9914';
@@ -933,26 +740,31 @@ window.RunRenderer = (function () {
       y += Math.round(Math.sin(t * 9 + ob.x * 0.04) * 3);
     }
 
-    if (ob.customDraw) {
-      drawCustomObstacle(ctx, ob, x, y, t);
-      return;
+    // Top warning indicator while winter icicles hang before dropping
+    if (ob.lane === 'icicle' && y < 38) {
+      const blink = Math.floor(t * 16) % 2 === 0;
+      ctx.fillStyle = blink ? '#ff4757' : '#38c8ff';
+      ctx.fillRect(x + Math.floor(ob.w / 2) - 9, 4, 18, 16);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', x + Math.floor(ob.w / 2), 16);
+      ctx.textAlign = 'left';
     }
 
     const spr = getSprite(ob.sprite);
     if (spr) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      if (ob.sprite === 'obs_mace' || ob.sprite === 'obs_meteor') {
+      if (ob.sprite === 'sp_mace' || ob.sprite === 'sp_snowflake' || ob.sprite === 'sp_red_umbrella') {
         ctx.translate(x + ob.w / 2, y + ob.h / 2);
-        ctx.rotate(-t * (ob.sprite === 'obs_mace' ? 5.5 : 3.2));
+        const spd = ob.sprite === 'sp_mace' ? -5.5 : (ob.sprite === 'sp_snowflake' ? -3.4 : Math.sin(t * 7) * 0.35);
+        ctx.rotate(ob.sprite === 'sp_red_umbrella' ? spd : t * spd);
         ctx.drawImage(spr, -ob.w / 2, -ob.h / 2, ob.w, ob.h);
       } else {
         ctx.drawImage(spr, x, y, ob.w, ob.h);
       }
       ctx.restore();
-    } else {
-      ctx.fillStyle = '#ff6b6b';
-      ctx.fillRect(x, y, ob.w, ob.h);
     }
   }
 

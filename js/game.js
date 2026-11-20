@@ -1365,20 +1365,13 @@
     }
   }
 
-  // ===================== SPAWNERS (OBSTACLES / ITEMS / K-STREET FEATURES) =====================
-  const SIGN_LABELS = [
-    { text: '치킨', color: '#ff4757' },
-    { text: '카페', color: '#2f80ed' },
-    { text: '분식', color: '#f2994a' },
-    { text: 'PC방', color: '#8e44ad' }
-  ];
-
+  // ===================== SPAWNERS (100% UPLOADED SHEET OBSTACLES & STRUCTURES) =====================
   function spawnObstacleWave() {
     const diff = DATA.getYearDifficulty(run.year);
     const pool = DATA.OBSTACLES_BY_SEASON[run.seasonId];
     const preset = pool[Math.floor(Math.random() * pool.length)];
 
-    // During flood, prefer air/lightning obstacles & leave ground room for car roof / bench platforming!
+    // During flood, leave ground room for submerged car / box platforming!
     if (run.weatherEvent === 'flood' && preset.lane === 'low' && Math.random() < 0.55) {
       return;
     }
@@ -1389,23 +1382,11 @@
 
     if (preset.lane === 'air') {
       y = Renderer.GROUND_Y - 20 - preset.h;
-    } else if (preset.lane === 'lightning') {
-      startX = Renderer.W - 36;
-      y = Renderer.GROUND_Y - preset.h;
-      extra.strikeTimer = preset.strikeDelay || 0.72;
-      extra.strikeActiveTimer = 0.45;
-      extra.thunderPlayed = false;
     } else if (preset.lane === 'icicle') {
       startX = Renderer.W + 24;
       y = 8;
       extra.falling = false;
       extra.vy = 0;
-    }
-
-    if (preset.customDraw === 'flying_sign') {
-      const pick = SIGN_LABELS[Math.floor(Math.random() * SIGN_LABELS.length)];
-      extra.signText = pick.text;
-      extra.signColor = pick.color;
     }
 
     run.obstacles.push({
@@ -1434,7 +1415,6 @@
         run.items.push({ kind: 'coin', x: startX - 10 + i * 22, y: Renderer.GROUND_Y - 11 });
       }
     } else {
-      // Lightning / Icicle: guiding coins along a safe low/mid line
       for (let i = 0; i < 3; i++) {
         run.items.push({ kind: 'coin', x: startX + 36 + i * 22, y: Renderer.GROUND_Y - 22 });
       }
@@ -1465,30 +1445,39 @@
 
   function spawnStreetFeature() {
     if (run.weatherEvent === 'flood') {
-      // Spawn dry submerged car roof or park bench to hop across!
-      const isCar = Math.random() < 0.55;
-      const w = isCar ? 82 : 64;
-      const platformY = isCar ? Renderer.GROUND_Y - 28 : Renderer.GROUND_Y - 24;
-      run.features.push({ kind: isCar ? 'car_roof' : 'bench', x: Renderer.W + 30, w, platformY, isPlatform: true });
-      // Guiding coins right above the dry platform!
+      // Spawn dry submerged red car or crate/metal platform strictly from uploaded sheet!
+      const r = Math.random();
+      const kind = r < 0.48 ? 'car_roof' : (r < 0.76 ? 'crate_plat' : 'metal_plat');
+      const w = kind === 'car_roof' ? 76 : 68;
+      const platformY = kind === 'car_roof' ? Renderer.GROUND_Y - 30 : Renderer.GROUND_Y - 26;
+      run.features.push({ kind, x: Renderer.W + 30, w, platformY, isPlatform: true });
       for (let i = 0; i < 3; i++) {
-        run.items.push({ kind: 'coin', x: Renderer.W + 45 + i * 24, y: platformY - 16 });
+        run.items.push({ kind: 'coin', x: Renderer.W + 42 + i * 22, y: platformY - 16 });
       }
     } else if (run.weatherEvent === 'heat') {
-      // Summer Shade Hopping: Street Tree Shade -> Bus Stop Roof -> Moving Cargo Truck Shade!
+      // Summer Shade Hopping strictly using sp_summer_tree / sp_palm_tree / sp_parasol!
       const r = Math.random();
-      if (r < 0.38) {
-        run.features.push({ kind: 'shade_tree', x: Renderer.W + 30, w: 76, isShade: true });
-      } else if (r < 0.72) {
-        run.features.push({ kind: 'bus_stop', x: Renderer.W + 30, w: 86, platformY: Renderer.GROUND_Y - 46, isPlatform: true, isShade: true });
+      if (r < 0.36) {
+        run.features.push({ kind: 'shade_tree', x: Renderer.W + 30, w: 74, isShade: true });
+      } else if (r < 0.70) {
+        run.features.push({ kind: 'shade_parasol', x: Renderer.W + 30, w: 72, isShade: true });
       } else {
-        run.features.push({ kind: 'truck_shade', x: Renderer.W + 30, w: 94, extraSpeed: 28, isShade: true });
+        run.features.push({ kind: 'shade_palm', x: Renderer.W + 30, w: 76, isShade: true });
       }
     }
   }
 
   function spawnConvenienceStore() {
-    run.features.push({ kind: 'conv_store', x: Renderer.W + 40, w: 98, triggered: false });
+    // Spawn either a bouncy Red Spring Jump Pad (sp_spring_pad) or Cooling Parasol Spot (sp_parasol)!
+    if (Math.random() < 0.55) {
+      run.features.push({ kind: 'spring_pad', x: Renderer.W + 40, w: 44, triggered: false });
+      for (let i = 0; i < 5; i++) {
+        const arc = Math.sin((i / 4) * Math.PI) * 95;
+        run.items.push({ kind: i === 2 ? 'big_coin' : 'coin', x: Renderer.W + 64 + i * 24, y: Renderer.GROUND_Y - 36 - arc });
+      }
+    } else {
+      run.features.push({ kind: 'cool_spot', x: Renderer.W + 40, w: 78, triggered: false, isShade: true });
+    }
   }
 
   // ===================== MAIN RUN UPDATE =====================
@@ -1704,8 +1693,21 @@
       const f = run.features[i];
       f.x -= (run.speed + (f.extraSpeed || 0)) * dt;
 
-      // Convenience Store AC / Heating Chance! (Cooling + Score + FEVER — NO HP healing!)
-      if (f.kind === 'conv_store' && !f.triggered && run.playerX >= f.x + 25 && run.playerX <= f.x + f.w - 8) {
+      // Red Spring Jump Pad (sp_spring_pad) -> High Bounce + Score + FEVER!
+      if (f.kind === 'spring_pad' && !f.triggered && run.playerX >= f.x - 4 && run.playerX <= f.x + f.w + 4 && run.playerY >= Renderer.GROUND_Y - 26) {
+        f.triggered = true;
+        run.vy = -495;
+        run.jumpsLeft = 1;
+        run.onPlatform = false;
+        run.score += Math.round(120 * run.scoreMult * upgradeScoreMult);
+        if (run.feverTimer <= 0) run.feverCharge = Math.min(100, run.feverCharge + 12);
+        SFX.doubleJump();
+        Renderer.spawnPickupEffect(f.x + 22, Renderer.GROUND_Y - 18, '#ff7675', true);
+        Renderer.spawnFloater('스프링 점프! +120 · 피버+12%', '#ffe36e', run.playerX + 14, run.playerY - 46);
+      }
+
+      // Cooling Parasol Spot (sp_parasol + watermelon/icecream) -> Heat Cooling + Score + FEVER (NO HP healing!)
+      if (f.kind === 'cool_spot' && !f.triggered && run.playerX >= f.x + 12 && run.playerX <= f.x + f.w - 4) {
         f.triggered = true;
         run.heatGauge = Math.max(0, run.heatGauge - 60);
         run.score += Math.round(150 * run.scoreMult * upgradeScoreMult);
@@ -1713,8 +1715,8 @@
           run.feverCharge = Math.min(100, run.feverCharge + 12);
         }
         SFX.acChime();
-        const isWin = run.seasonId === 'winter';
-        Renderer.spawnFloater(isWin ? '편의점 온풍기! 점수+150 · 피버+12%' : '편의점 에어컨! 열기 냉각 · 피버+12%', '#70f2ff', run.playerX + 18, run.playerY - 48);
+        Renderer.spawnPickupEffect(f.x + 42, Renderer.GROUND_Y - 28, '#70f2ff', true);
+        Renderer.spawnFloater('파라솔 쿨링! 점수+150 · 피버+12%', '#70f2ff', run.playerX + 18, run.playerY - 48);
       }
 
       if (f.isShade && run.playerX >= f.x - 8 && run.playerX <= f.x + f.w + 8) {
