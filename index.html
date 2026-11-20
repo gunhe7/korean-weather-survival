@@ -8,21 +8,10 @@
 </head>
 <body>
   <div id="mobile-app">
-    <!-- ================= GAME LAUNCH INTRO OVERLAY (LOGO + SOUND) ================= -->
-    <div id="intro-overlay" role="button" tabindex="0" aria-label="화면을 터치해 게임 시작">
-      <div class="intro-bg-glow"></div>
-      <div class="intro-content">
-        <div class="intro-logo-wrap">
-          <img id="intro-logo-img" src="assets/logo.png" alt="한국 날씨에서 살아남기" class="intro-logo-img" />
-        </div>
-        <div class="intro-sub-row">
-          <img src="assets/chars/yellow_run_0.png" alt="" class="intro-char-mini" />
-          <span class="intro-tagline">사계절 극한 기상 재난 생존 러너</span>
-        </div>
-        <button id="btn-intro-enter" class="cr-gold-btn intro-tap-btn" type="button">
-          ▶ 터치해서 시작하기!
-        </button>
-        <div class="intro-sound-hint">🔊 터치 시 인트로 사운드와 함께 시작됩니다 · 가로/세로 모두 지원</div>
+    <!-- ================= GAME LAUNCH INTRO OVERLAY (UPLOADED BG + LOGO ONLY) ================= -->
+    <div id="intro-overlay" role="button" tabindex="0" aria-label="한국 날씨에서 살아남기 인트로">
+      <div class="intro-logo-wrap">
+        <img id="intro-logo-img" src="assets/logo.png" alt="한국 날씨에서 살아남기" class="intro-logo-img" />
       </div>
     </div>
 
@@ -50,36 +39,54 @@
 
     <!-- ================= MAIN CONTENT AREA (TABS) ================= -->
     <main id="tab-container">
-      <!-- 1. CLEAN HOME SCREEN (CHARACTER SELECTOR + PLAY BUTTON ONLY!) -->
+      <!-- 1. BRAWL STARS STYLE HOME SCREEN (OPEN PEDESTAL CHARACTER SELECT + PLAY BUTTON) -->
       <section id="view-home" class="tab-view active">
-        <div class="home-clean-lobby">
-          <!-- Clean Character Selector Card -->
-          <div class="home-char-box">
-            <div id="home-hero-stage" class="home-hero-stage tier-basic">
-              <div class="home-hero-glow"></div>
-              <span id="home-char-lv-badge" class="arena-lv-badge">Lv.1 / 5</span>
-              <span id="home-char-tier" class="arena-tier-badge">밸런스</span>
-              <button id="btn-prev-char" class="stage-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
-              <button id="btn-home-char-info" class="home-hero-btn" type="button" title="캐릭터 능력 보기">
-                <img id="home-hero-img" src="assets/chars/port_yellow.png" alt="선택 캐릭터" class="home-hero-img" />
-              </button>
-              <button id="btn-next-char" class="stage-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
+        <div class="bs-home-lobby">
+          <!-- Center Open-Lobby Brawl Stars Character Showcase -->
+          <div id="home-hero-stage" class="bs-home-stage tier-basic">
+            <div class="bs-spotlight"></div>
+
+            <!-- Overhead Brawl Power & Nameplate -->
+            <div class="bs-overhead">
+              <div class="bs-overhead-pills">
+                <span id="home-char-lv-badge" class="bs-power-tag">POWER 1</span>
+                <span id="home-char-tier" class="bs-tier-tag">밸런스</span>
+              </div>
+              <div id="home-char-name" class="bs-hero-name">기본 모험가</div>
             </div>
 
-            <div class="home-char-bar">
-              <div class="home-char-title-row">
-                <span id="home-char-name" class="home-char-title">기본 모험가</span>
-                <button id="btn-home-char-detail" class="home-detail-chip" type="button">능력 보기 ›</button>
-              </div>
-              <div id="home-char-strip" class="home-char-strip" role="listbox" aria-label="캐릭터 선택"></div>
+            <!-- Standing Hero on Glowing 3D Circular Pedestal -->
+            <div class="bs-podium-row">
+              <button id="btn-prev-char" class="bs-side-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
+
+              <button id="btn-home-char-info" class="bs-podium-btn" type="button" title="캐릭터 능력 보기">
+                <img id="home-hero-img" src="assets/chars/port_yellow.png" alt="선택 캐릭터" class="bs-hero-img" />
+                <div class="bs-podium-ring">
+                  <div class="bs-podium-inner"></div>
+                </div>
+              </button>
+
+              <button id="btn-next-char" class="bs-side-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
             </div>
           </div>
 
-          <!-- Clean Big Yellow Play Button -->
-          <div class="home-play-wrap">
-            <button id="btn-play-start" class="atlas-start-btn hero-start-btn home-play-cta" type="button">
-              <span class="battle-main-txt" id="btn-play-label">▶ 플레이</span>
-              <span class="battle-sub-txt" id="btn-play-sub">기본 모험가 Lv.1</span>
+          <!-- Brawl Stars Slanted Bottom Action Controls (Character Select + Play) -->
+          <div class="bs-home-actions">
+            <button id="btn-home-brawlers" class="bs-brawler-btn" type="button" aria-label="캐릭터 선택">
+              <span class="bs-btn-inner">
+                <img id="home-brawler-mini" src="assets/chars/port_yellow.png" alt="" class="bs-mini-avatar" />
+                <span class="bs-brawler-txt">
+                  <span class="bs-brawler-lbl">캐릭터</span>
+                  <span id="home-brawler-count" class="bs-brawler-cnt">1 / 6</span>
+                </span>
+              </span>
+            </button>
+
+            <button id="btn-play-start" class="bs-play-btn" type="button">
+              <span class="bs-btn-inner bs-play-inner">
+                <span class="bs-play-main" id="btn-play-label">플레이</span>
+                <span class="bs-play-sub" id="btn-play-sub">기본 모험가 Lv.1</span>
+              </span>
             </button>
           </div>
         </div>

@@ -120,7 +120,6 @@
   // ===================== DOM REFERENCES =====================
   const el = {
     introOverlay: document.getElementById('intro-overlay'),
-    btnIntroEnter: document.getElementById('btn-intro-enter'),
     btnReplayIntro: document.getElementById('btn-replay-intro'),
     headerBestScore: document.getElementById('header-best-score'),
     btnGoldShop: document.getElementById('btn-gold-shop'),
@@ -152,11 +151,12 @@
     homeHeroStage: document.getElementById('home-hero-stage'),
     homeHeroImg: document.getElementById('home-hero-img'),
     btnHomeCharInfo: document.getElementById('btn-home-char-info'),
-    btnHomeCharDetail: document.getElementById('btn-home-char-detail'),
     homeCharName: document.getElementById('home-char-name'),
     homeCharLvBadge: document.getElementById('home-char-lv-badge'),
     homeCharTier: document.getElementById('home-char-tier'),
-    homeCharStrip: document.getElementById('home-char-strip'),
+    btnHomeBrawlers: document.getElementById('btn-home-brawlers'),
+    homeBrawlerMini: document.getElementById('home-brawler-mini'),
+    homeBrawlerCount: document.getElementById('home-brawler-count'),
     btnPrevChar: document.getElementById('btn-prev-char'),
     btnNextChar: document.getElementById('btn-next-char'),
 
@@ -626,48 +626,25 @@
     const stats = getCharStats(ch);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
 
-    el.homeHeroStage.className = `home-hero-stage ${tierCls}${unlocked ? '' : ' locked'}`;
+    el.homeHeroStage.className = `bs-home-stage ${tierCls}${unlocked ? '' : ' locked'}`;
     el.homeHeroImg.src = ch.avatar;
     el.homeHeroImg.alt = ch.name;
-    el.homeCharLvBadge.textContent = unlocked ? `Lv.${stats.level} / ${DATA.MAX_CHAR_LEVEL}` : '잠금';
+    el.homeCharLvBadge.textContent = unlocked ? `POWER ${stats.level}` : '잠금';
     el.homeCharTier.textContent = unlocked ? ch.tier : `🔒 ${ch.price.toLocaleString('ko-KR')}G`;
     el.homeCharName.textContent = ch.name;
 
-    // 6-character quick selector strip right inside the Home Character Selector!
-    el.homeCharStrip.innerHTML = '';
-    DATA.CHARACTERS.forEach((c, idx) => {
-      const cUnlocked = isCharUnlocked(c.id);
-      const isFocused = idx === previewCharIdx;
-      const isEquipped = save.selectedChar === c.id;
-      const tile = document.createElement('button');
-      tile.type = 'button';
-      tile.className = `home-strip-slot${isFocused ? ' active' : ''}${isEquipped ? ' equipped' : ''}${cUnlocked ? '' : ' locked'}`;
-      tile.setAttribute('aria-label', `${c.name} 선택`);
-      tile.setAttribute('aria-selected', isFocused ? 'true' : 'false');
-      tile.innerHTML = `
-        <img src="${c.avatar}" alt="${c.name}" class="home-strip-img" />
-        ${cUnlocked ? (isEquipped ? '<span class="strip-eq-dot">✓</span>' : '') : '<span class="strip-lock-ico">🔒</span>'}
-      `;
-      tile.onclick = () => {
-        SFX.click();
-        previewCharIdx = idx;
-        if (cUnlocked) {
-          save.selectedChar = c.id;
-          persistSave();
-        }
-        renderHomeCharStage();
-      };
-      el.homeCharStrip.appendChild(tile);
-    });
+    // Brawl Stars Bottom-Left Character Switcher Badge
+    el.homeBrawlerMini.src = ch.avatar;
+    el.homeBrawlerCount.textContent = `${save.unlockedChars.length} / ${DATA.CHARACTERS.length}`;
 
     if (unlocked) {
       el.btnPlayStart.disabled = false;
-      el.btnPlayLabel.textContent = '▶ 플레이';
+      el.btnPlayLabel.textContent = '플레이';
       el.btnPlaySub.textContent = `${ch.name} Lv.${stats.level}`;
     } else {
       el.btnPlayStart.disabled = save.gold < ch.price;
-      el.btnPlayLabel.textContent = `🔓 ${ch.price.toLocaleString('ko-KR')}G 해금`;
-      el.btnPlaySub.textContent = `${ch.name} 구매 후 바로 플레이`;
+      el.btnPlayLabel.textContent = `${ch.price.toLocaleString('ko-KR')}G 해금`;
+      el.btnPlaySub.textContent = `${ch.name} 구매 후 플레이`;
     }
   }
 
@@ -2409,7 +2386,7 @@
 
     el.btnGoldShop.addEventListener('click', () => switchTab('shop'));
     el.btnHomeCharInfo.addEventListener('click', () => openCharDetail(previewCharIdx));
-    el.btnHomeCharDetail.addEventListener('click', () => openCharDetail(previewCharIdx));
+    el.btnHomeBrawlers.addEventListener('click', () => switchTab('chars'));
 
     // 7-Day Attendance Reward Modal (accessible from Missions Tab)
     function openAttendanceModal() {
@@ -2572,23 +2549,35 @@
       startRun();
     });
 
-    // Intro Logo + Sound Interaction
+    // Pure Splash Intro (Seoul Winter BG + Logo Only: Auto-Enters & Tap-to-Skip!)
     let introLeaving = false;
-    function enterFromIntro() {
+    let introAutoTimer = null;
+
+    function scheduleIntroAutoDismiss() {
+      if (introAutoTimer) clearTimeout(introAutoTimer);
+      introAutoTimer = setTimeout(() => {
+        enterFromIntro(true);
+      }, 2200);
+    }
+
+    function enterFromIntro(isAuto = false) {
       if (introLeaving || el.introOverlay.classList.contains('hidden')) return;
       introLeaving = true;
-      SFX.introJingle();
-      SFX.startBgm();
-      SFX.setBgmMode('menu');
-      el.introOverlay.classList.add('playing');
+      if (introAutoTimer) {
+        clearTimeout(introAutoTimer);
+        introAutoTimer = null;
+      }
+      if (!isAuto) {
+        SFX.introJingle();
+        SFX.startBgm();
+        SFX.setBgmMode('menu');
+      }
+      el.introOverlay.classList.add('leaving');
       setTimeout(() => {
-        el.introOverlay.classList.add('leaving');
-        setTimeout(() => {
-          el.introOverlay.classList.add('hidden');
-          el.introOverlay.classList.remove('playing', 'leaving');
-          introLeaving = false;
-        }, 540);
-      }, 600);
+        el.introOverlay.classList.add('hidden');
+        el.introOverlay.classList.remove('playing', 'leaving');
+        introLeaving = false;
+      }, 520);
     }
 
     function replayIntro() {
@@ -2596,14 +2585,16 @@
       introLeaving = false;
       el.introOverlay.classList.remove('hidden', 'playing', 'leaving');
       SFX.introJingle();
+      scheduleIntroAutoDismiss();
     }
 
-    el.introOverlay.addEventListener('click', enterFromIntro);
-    el.btnIntroEnter.addEventListener('click', (e) => {
-      e.stopPropagation();
-      enterFromIntro();
-    });
+    el.introOverlay.addEventListener('click', () => enterFromIntro(false));
     el.btnReplayIntro.addEventListener('click', replayIntro);
+    window.addEventListener('pointerdown', () => {
+      SFX.startBgm();
+      if (!run || !run.active) SFX.setBgmMode('menu');
+    }, { once: true });
+    scheduleIntroAutoDismiss();
 
     // Desktop Keyboard Controls (Space/↑ Jump, ↓ Slide, Q Umbrella, E Mask, Esc Pause)
     window.addEventListener('keydown', (e) => {
