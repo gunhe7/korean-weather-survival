@@ -46,7 +46,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd3';
+  const CHAR_ASSET_VER = '20261121hd4';
 
   CHAR_SHEET_SKINS.forEach((sk) => {
     CHAR_ANIM_STATES.forEach((st) => {
@@ -83,7 +83,7 @@ window.RunRenderer = (function () {
 
   WORLD_SPRITES.forEach((key) => {
     const img = new Image();
-    img.src = `assets/world/${key}.png`;
+    img.src = `assets/world/${key}.png?v=${CHAR_ASSET_VER}`;
     sprites[key] = img;
   });
 
@@ -459,7 +459,8 @@ window.RunRenderer = (function () {
 
     (run.features || []).forEach((f) => {
       const x = Math.floor(f.x);
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
       if (f.kind === 'spring_pad') {
         // Bouncy Red Spring Jump Pad (sp_spring_pad)!
@@ -530,7 +531,8 @@ window.RunRenderer = (function () {
       const x = Math.floor(car.x);
       const carSpr = getSprite('sp_red_car');
       const waveSpr = getSprite('sp_flood_wave1') || getSprite('sp_flood_wave2');
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       if (waveSpr) ctx.drawImage(waveSpr, x + 16, GROUND_Y - 48, 62, 46);
       if (carSpr) ctx.drawImage(carSpr, x, GROUND_Y - 46, 56, 48);
     }
@@ -804,7 +806,8 @@ window.RunRenderer = (function () {
     const spr = getSprite(ob.sprite);
     if (spr) {
       ctx.save();
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       if (ob.sprite === 'sp_mace' || ob.sprite === 'sp_snowflake' || ob.sprite === 'sp_red_umbrella') {
         ctx.translate(x + ob.w / 2, y + ob.h / 2);
         const spd = ob.sprite === 'sp_mace' ? -5.5 : (ob.sprite === 'sp_snowflake' ? -3.4 : Math.sin(t * 7) * 0.35);
@@ -959,7 +962,8 @@ window.RunRenderer = (function () {
 
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // Camera Screen Shake on Hit / Lightning / Umbrella Break!
     if (run.shakeTimer > 0) {
