@@ -1,0 +1,7 @@
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+deploy.bat
+auto_deploy.ps1
+자동배포_감시시작.bat
