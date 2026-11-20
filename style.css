@@ -4094,20 +4094,81 @@ input:focus-visible {
   border-right: 3px solid #0c1429;
 }
 
-/* Compact 5-Button Pixel Bottom Menu Bar Centered in Landscape */
+/* Compact 5-Button Pixel Bottom Menu Bar -> Apple Floating Center Island Dock! */
+#tab-container {
+  padding: 4px 14px 6px;
+}
+
+#view-shop,
+#view-chars,
+#view-missions,
+#view-rank {
+  padding-bottom: 84px;
+}
+
+#view-home.active {
+  padding: 0 12px 0;
+}
+
+.bs-home-stage {
+  padding: 0 0 62px;
+}
+
+.bs-home-actions {
+  bottom: 10px;
+}
+
 #bottom-nav.pixel-nav-bar {
-  height: 62px;
-  padding: 0 14px 4px;
+  position: absolute;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 25;
+  width: auto;
+  height: auto;
+  display: inline-grid;
+  grid-template-columns: 58px 58px 76px 58px 58px;
+  align-items: end;
   justify-content: center;
-  gap: 12px;
+  gap: 5px;
+  padding: 5px 12px 6px;
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(37, 59, 99, 0.82) 0%, rgba(21, 35, 61, 0.9) 62%, rgba(14, 23, 43, 0.94) 100%);
+  backdrop-filter: blur(16px) saturate(1.45);
+  -webkit-backdrop-filter: blur(16px) saturate(1.45);
+  border: 2.5px solid rgba(138, 198, 255, 0.44);
+  box-shadow:
+    0 12px 28px rgba(4, 10, 26, 0.62),
+    0 0 0 2px rgba(10, 18, 36, 0.82),
+    inset 0 1.5px 0 rgba(210, 236, 255, 0.42);
+  overflow: visible;
 }
 
 #bottom-nav.pixel-nav-bar .nav-btn {
-  flex: 0 1 112px;
+  width: 100%;
+  flex: none;
+  padding: 0;
 }
 
 #bottom-nav.pixel-nav-bar .nav-btn.nav-home-btn {
-  flex: 0 1 132px;
+  width: 100%;
+  flex: none;
+}
+
+#bottom-nav.pixel-nav-bar .nav-spr-stack {
+  max-width: 58px;
+  height: 48px;
+}
+
+#bottom-nav.pixel-nav-bar .nav-spr-stack.home-stack {
+  max-width: 76px;
+  height: 60px;
+  margin-top: -14px;
+}
+
+#bottom-nav.pixel-nav-bar .nav-notify-dot {
+  top: 0;
+  right: 2px;
 }
 
 /* 2. TRUE COOKIE RUN 16:9 WIDESCREEN RUNNER SCREEN */
@@ -4408,34 +4469,82 @@ input:focus-visible {
     padding: 4px 12px 2px;
   }
 
+  #tab-container {
+    padding: 3px 12px 4px;
+  }
+
+  #view-shop,
+  #view-chars,
+  #view-missions,
+  #view-rank {
+    padding-bottom: 68px;
+  }
+
   #bottom-nav.pixel-nav-bar {
-    height: 52px;
-    padding: 0 10px 2px;
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    grid-template-columns: 48px 48px 64px 48px 48px;
+    gap: 4px;
+    padding: 4px 10px 5px;
+    border-radius: 22px;
+  }
+
+  #bottom-nav.pixel-nav-bar .nav-spr-stack {
+    max-width: 48px;
+    height: 40px;
+  }
+
+  #bottom-nav.pixel-nav-bar .nav-spr-stack.home-stack {
+    max-width: 64px;
+    height: 50px;
+    margin-top: -12px;
+  }
+
+  .bs-home-stage {
+    padding: 0 0 46px;
   }
 
   .bs-hero-img {
-    width: 108px;
-    height: 108px;
+    width: 96px;
+    height: 96px;
   }
 
   .bs-podium-ring {
-    width: 136px;
-    height: 32px;
-    margin-top: -14px;
+    width: 126px;
+    height: 28px;
+    margin-top: -12px;
   }
 
   .bs-hero-name {
-    font-size: 19px;
+    font-size: 18px;
+  }
+
+  .bs-home-actions {
+    bottom: 6px;
   }
 
   .bs-brawler-btn {
-    min-width: 130px;
-    min-height: 52px;
+    min-width: 120px;
+    min-height: 48px;
+    padding: 4px 8px;
+  }
+
+  .bs-mini-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .bs-brawler-lbl {
+    font-size: 13px;
   }
 
   .bs-play-btn {
-    min-width: 176px;
-    min-height: 58px;
+    min-width: 158px;
+    min-height: 52px;
+    padding: 6px 12px;
+  }
+
+  .bs-play-main {
+    font-size: 21px;
   }
 
   #run-hud {
