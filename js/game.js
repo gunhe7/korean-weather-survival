@@ -112,6 +112,7 @@
   let currentShopSubtab = 'upgrades';
   let previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === save.selectedChar));
   let selectedHomeSeasonIdx = 0;
+  let detailCharIdx = null;
 
   // ===================== ACTIVE RUN STATE =====================
   let run = null;
@@ -211,6 +212,29 @@
     rankStatCombo: document.getElementById('rank-stat-combo'),
     rankStatDex: document.getElementById('rank-stat-dex'),
     rankBoardList: document.getElementById('rank-board-list'),
+
+    charDetailOverlay: document.getElementById('char-detail-overlay'),
+    btnCloseCharDetail: document.getElementById('btn-close-char-detail'),
+    btnDetailPrev: document.getElementById('btn-detail-prev'),
+    btnDetailNext: document.getElementById('btn-detail-next'),
+    detailHeroStage: document.getElementById('detail-hero-stage'),
+    detailCharTier: document.getElementById('detail-char-tier'),
+    detailCharName: document.getElementById('detail-char-name'),
+    detailCharLv: document.getElementById('detail-char-lv'),
+    detailEquippedPill: document.getElementById('detail-equipped-pill'),
+    detailCharImg: document.getElementById('detail-char-img'),
+    detailCharDesc: document.getElementById('detail-char-desc'),
+    detailStatHp: document.getElementById('detail-stat-hp'),
+    detailFillHp: document.getElementById('detail-fill-hp'),
+    detailStatGold: document.getElementById('detail-stat-gold'),
+    detailFillGold: document.getElementById('detail-fill-gold'),
+    detailStatScore: document.getElementById('detail-stat-score'),
+    detailFillScore: document.getElementById('detail-fill-score'),
+    detailPassiveIco: document.getElementById('detail-passive-ico'),
+    detailPassiveName: document.getElementById('detail-passive-name'),
+    detailPassiveDesc: document.getElementById('detail-passive-desc'),
+    btnDetailSub: document.getElementById('btn-detail-sub'),
+    btnDetailMain: document.getElementById('btn-detail-main'),
 
     viewRun: document.getElementById('view-run'),
     runCanvasWrap: document.getElementById('run-canvas-wrap'),
@@ -358,6 +382,7 @@
     renderShopList();
     renderRankingTab();
     updateNavMissionDot();
+    if (detailCharIdx !== null) renderCharDetailModal();
   }
 
   function updateNavMissionDot() {
@@ -716,6 +741,100 @@
     showToast(`⬆️ ${ch.name} Lv.${nextLv} 성장 완료! (골드/점수 +5%${gotHeart})`);
   }
 
+  function openCharDetail(idx) {
+    SFX.click();
+    detailCharIdx = ((idx % DATA.CHARACTERS.length) + DATA.CHARACTERS.length) % DATA.CHARACTERS.length;
+    renderCharDetailModal();
+    el.charDetailOverlay.classList.remove('hidden');
+  }
+
+  function closeCharDetail() {
+    SFX.click();
+    detailCharIdx = null;
+    el.charDetailOverlay.classList.add('hidden');
+  }
+
+  function renderCharDetailModal() {
+    if (detailCharIdx === null) return;
+    const ch = DATA.CHARACTERS[detailCharIdx] || DATA.CHARACTERS[0];
+    const unlocked = isCharUnlocked(ch.id);
+    const selected = save.selectedChar === ch.id;
+    const stats = getCharStats(ch);
+    const isMaxLv = stats.level >= DATA.MAX_CHAR_LEVEL;
+    const lvPrice = DATA.getCharLevelPrice(stats.level);
+    const tierCls = `tier-${ch.auraType || 'basic'}`;
+
+    el.detailHeroStage.className = `brawl-hero-stage ${tierCls}`;
+    el.detailCharTier.textContent = ch.tier;
+    el.detailCharName.textContent = ch.name;
+    el.detailCharLv.textContent = unlocked
+      ? `POWER Lv.${stats.level} / ${DATA.MAX_CHAR_LEVEL}`
+      : `🔒 ${ch.price.toLocaleString('ko-KR')}G 필요`;
+    el.detailEquippedPill.classList.toggle('hidden', !selected);
+    el.detailCharImg.src = ch.avatar;
+    el.detailCharDesc.textContent = ch.desc;
+
+    el.detailStatHp.textContent = `${stats.maxHp}칸`;
+    el.detailFillHp.style.width = `${Math.min(100, Math.round((stats.maxHp / 12) * 100))}%`;
+    el.detailStatGold.textContent = `${Math.round(stats.goldMult * 100)}%`;
+    el.detailFillGold.style.width = `${Math.min(100, Math.round(((stats.goldMult - 0.7) / 1.0) * 100))}%`;
+    el.detailStatScore.textContent = `${Math.round(stats.scoreMult * 100)}%`;
+    el.detailFillScore.style.width = `${Math.min(100, Math.round(((stats.scoreMult - 0.7) / 1.0) * 100))}%`;
+
+    el.detailPassiveIco.textContent = ch.icon || '★';
+    el.detailPassiveName.textContent = ch.passiveName;
+    el.detailPassiveDesc.textContent = ch.passiveDesc;
+
+    if (unlocked) {
+      if (isMaxLv) {
+        el.btnDetailSub.className = 'item-action-btn done';
+        el.btnDetailSub.textContent = '레벨 MAX';
+        el.btnDetailSub.disabled = true;
+        el.btnDetailSub.onclick = null;
+      } else {
+        el.btnDetailSub.className = 'item-action-btn purple';
+        el.btnDetailSub.textContent = `⬆️ Lv.${stats.level + 1} (${lvPrice}G)`;
+        el.btnDetailSub.disabled = save.gold < lvPrice;
+        el.btnDetailSub.onclick = () => levelUpCharacter(ch);
+      }
+
+      if (selected) {
+        el.btnDetailMain.className = 'item-action-btn done brawl-main-cta';
+        el.btnDetailMain.textContent = '✓ 현재 장착 중';
+        el.btnDetailMain.disabled = true;
+        el.btnDetailMain.onclick = null;
+      } else {
+        el.btnDetailMain.className = 'cr-gold-btn brawl-main-cta';
+        el.btnDetailMain.textContent = '▶ 선택하기';
+        el.btnDetailMain.disabled = false;
+        el.btnDetailMain.onclick = () => {
+          SFX.click();
+          save.selectedChar = ch.id;
+          previewCharIdx = detailCharIdx;
+          persistSave();
+          refreshAllMenus();
+          showToast(`${ch.name} 캐릭터를 장착했습니다!`);
+        };
+      }
+    } else {
+      el.btnDetailSub.className = 'item-action-btn ghost';
+      el.btnDetailSub.textContent = '👁️ 로비 미리보기';
+      el.btnDetailSub.disabled = false;
+      el.btnDetailSub.onclick = () => {
+        SFX.click();
+        previewCharIdx = detailCharIdx;
+        closeCharDetail();
+        switchTab('home');
+        showToast(`${ch.name} 로비 미리보기!`);
+      };
+
+      el.btnDetailMain.className = 'cr-gold-btn brawl-main-cta';
+      el.btnDetailMain.textContent = `🔓 ${ch.price.toLocaleString('ko-KR')}G 해금`;
+      el.btnDetailMain.disabled = save.gold < ch.price;
+      el.btnDetailMain.onclick = () => buyCharacter(ch, detailCharIdx);
+    }
+  }
+
   function renderCharList() {
     const ownedCount = save.unlockedChars.length;
     const totalCount = DATA.CHARACTERS.length;
@@ -730,86 +849,25 @@
       const unlocked = isCharUnlocked(ch.id);
       const selected = save.selectedChar === ch.id;
       const stats = getCharStats(ch);
-      const isMaxLv = stats.level >= DATA.MAX_CHAR_LEVEL;
-      const lvPrice = DATA.getCharLevelPrice(stats.level);
+      const tierCls = `tier-${ch.auraType || 'basic'}`;
 
-      const card = document.createElement('div');
-      card.className = `item-card char-card-rich${selected ? ' selected' : ''}`;
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = `brawl-card${selected ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
+      card.setAttribute('aria-label', `${ch.name} 능력치 상세 보기`);
       card.innerHTML = `
-        <div class="char-card-top">
-          <div class="item-avatar"><img src="${ch.avatar}" alt="${ch.name}" class="item-avatar-img" /></div>
-          <div class="item-meta">
-            <div class="item-title-row">
-              <span class="item-name">${ch.name}</span>
-              <span class="item-badge">${unlocked ? `Lv.${stats.level}` : '🔒 미해금'}</span>
-              <span class="item-badge">${ch.tier}</span>
-              ${selected ? '<span class="item-badge equipped">장착 중</span>' : ''}
-            </div>
-            <div class="item-desc">${ch.desc}</div>
-          </div>
+        <div class="brawl-card-stage ${tierCls}">
+          <span class="brawl-lv-chip">${unlocked ? `Lv.${stats.level}` : `🔒 ${ch.price}G`}</span>
+          ${selected ? '<span class="brawl-eq-chip">장착 중</span>' : ''}
+          <img src="${ch.avatar}" alt="${ch.name}" class="brawl-card-img" />
+          <span class="brawl-tap-hint">터치해 능력 보기</span>
         </div>
-        <div class="char-passive-box"><strong>고유 패시브 · ${ch.passiveName}:</strong> ${ch.passiveDesc}</div>
-        <div class="char-mini-stats">
-          <div class="char-mini-stat-pill">❤️ 체력 ${stats.maxHp}칸</div>
-          <div class="char-mini-stat-pill">🪙 골드 ${Math.round(stats.goldMult * 100)}%</div>
-          <div class="char-mini-stat-pill">⭐ 점수 ${Math.round(stats.scoreMult * 100)}%</div>
+        <div class="brawl-nameplate">
+          <span class="brawl-name">${ch.name}</span>
+          <span class="brawl-tier-mini">${ch.tier}</span>
         </div>
       `;
-
-      const actRow = document.createElement('div');
-      actRow.className = 'char-card-actions';
-
-      const mainBtn = document.createElement('button');
-      mainBtn.type = 'button';
-      if (selected) {
-        mainBtn.className = 'item-action-btn done';
-        mainBtn.textContent = '장착 완료';
-        mainBtn.disabled = true;
-      } else if (unlocked) {
-        mainBtn.className = 'item-action-btn blue';
-        mainBtn.textContent = '캐릭터 선택';
-        mainBtn.onclick = () => {
-          SFX.click();
-          save.selectedChar = ch.id;
-          previewCharIdx = idx;
-          persistSave();
-          refreshAllMenus();
-          showToast(`${ch.name} 캐릭터를 장착했습니다!`);
-        };
-      } else {
-        mainBtn.className = 'item-action-btn ghost';
-        mainBtn.textContent = '👁️ 미리보기';
-        mainBtn.onclick = () => {
-          SFX.click();
-          previewCharIdx = idx;
-          switchTab('home');
-          showToast(`${ch.name} 능력치 & 애니메이션 미리보기!`);
-        };
-      }
-
-      const subBtn = document.createElement('button');
-      subBtn.type = 'button';
-      if (unlocked) {
-        if (isMaxLv) {
-          subBtn.className = 'item-action-btn done';
-          subBtn.textContent = '레벨 MAX';
-          subBtn.disabled = true;
-        } else {
-          subBtn.className = 'item-action-btn purple';
-          subBtn.textContent = `⬆️ Lv.${stats.level + 1} (${lvPrice}G)`;
-          subBtn.disabled = save.gold < lvPrice;
-          subBtn.onclick = () => levelUpCharacter(ch);
-        }
-      } else {
-        subBtn.className = 'item-action-btn';
-        subBtn.textContent = `🔓 ${ch.price} G 해금`;
-        subBtn.disabled = save.gold < ch.price;
-        subBtn.onclick = () => buyCharacter(ch, idx);
-      }
-
-      actRow.appendChild(mainBtn);
-      actRow.appendChild(subBtn);
-      card.appendChild(actRow);
+      card.onclick = () => openCharDetail(idx);
       el.charList.appendChild(card);
     });
   }
@@ -2420,6 +2478,18 @@
       if (e.target === el.achievementsOverlay) {
         el.achievementsOverlay.classList.add('hidden');
       }
+    });
+
+    // Brawl Stars Character Detail Modal
+    el.btnCloseCharDetail.addEventListener('click', closeCharDetail);
+    el.charDetailOverlay.addEventListener('click', (e) => {
+      if (e.target === el.charDetailOverlay) closeCharDetail();
+    });
+    el.btnDetailPrev.addEventListener('click', () => {
+      if (detailCharIdx !== null) openCharDetail(detailCharIdx - 1);
+    });
+    el.btnDetailNext.addEventListener('click', () => {
+      if (detailCharIdx !== null) openCharDetail(detailCharIdx + 1);
     });
 
     // Audio & Landscape Settings Modal

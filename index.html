@@ -183,11 +183,11 @@
         <div id="shop-items-list" class="card-list"></div>
       </section>
 
-      <!-- 3. CHARACTERS & COLLECTION DEX SCREEN -->
+      <!-- 3. CHARACTERS & COLLECTION DEX SCREEN (BRAWL STARS STYLE GRID!) -->
       <section id="view-chars" class="tab-view">
         <div class="cr-panel-header">
-          <h2>캐릭터 도감 &amp; 성장</h2>
-          <p>캐릭터를 수집하고 레벨업해 계절별 고유 패시브를 강화하세요.</p>
+          <h2>캐릭터 선택 &amp; 도감</h2>
+          <p>캐릭터를 터치해 고유 능력과 스탯을 확인하고 성장시키세요.</p>
         </div>
 
         <div class="dex-summary-card">
@@ -201,7 +201,7 @@
           <div id="dex-bonus-text" class="dex-bonus-note">현재 도감 효과: 전체 점수 +0% (캐릭터 추가 해금당 +3%)</div>
         </div>
 
-        <div id="char-list" class="card-list"></div>
+        <div id="char-list" class="brawl-char-grid"></div>
       </section>
 
       <!-- 4. MISSIONS & ACHIEVEMENTS FULL TAB -->
@@ -367,6 +367,70 @@
           </div>
 
           <div class="save-safe-note">💾 골드·캐릭터·도감·업적 데이터 자동 이중 백업 보호 중</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= BRAWL STARS STYLE CHARACTER DETAIL MODAL ================= -->
+    <div id="char-detail-overlay" class="modal-overlay hidden">
+      <div class="brawl-detail-modal">
+        <div class="brawl-detail-header">
+          <div class="brawl-head-left">
+            <span id="detail-char-tier" class="brawl-tier-pill">밸런스</span>
+            <h3 id="detail-char-name" class="brawl-detail-name">기본 모험가</h3>
+          </div>
+          <button id="btn-close-char-detail" class="modal-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+
+        <div class="brawl-detail-body modal-scroll-body">
+          <!-- Hero Showcase Stage with Left/Right Switch Arrows -->
+          <div id="detail-hero-stage" class="brawl-hero-stage tier-basic">
+            <div class="brawl-hero-burst"></div>
+            <span id="detail-char-lv" class="brawl-power-pill">POWER Lv.1 / 5</span>
+            <span id="detail-equipped-pill" class="brawl-equipped-pill hidden">장착 중</span>
+            <button id="btn-detail-prev" class="brawl-nav-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
+            <img id="detail-char-img" src="assets/atlas/char_idle.png" alt="캐릭터" class="brawl-hero-img" />
+            <button id="btn-detail-next" class="brawl-nav-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
+          </div>
+
+          <div class="brawl-detail-info">
+            <p id="detail-char-desc" class="brawl-bio-text">노란 후드를 쓴 한국 날씨 생존 기본 러너!</p>
+
+            <!-- Brawl Stars Style Stat Bars -->
+            <div class="brawl-stats-panel">
+              <div class="brawl-stat-row">
+                <span class="brawl-stat-lbl">❤️ 체력</span>
+                <div class="brawl-stat-track"><div id="detail-fill-hp" class="brawl-stat-fill hp" style="width: 50%"></div></div>
+                <strong id="detail-stat-hp" class="brawl-stat-val">5칸</strong>
+              </div>
+              <div class="brawl-stat-row">
+                <span class="brawl-stat-lbl">🪙 골드</span>
+                <div class="brawl-stat-track"><div id="detail-fill-gold" class="brawl-stat-fill gold" style="width: 55%"></div></div>
+                <strong id="detail-stat-gold" class="brawl-stat-val">110%</strong>
+              </div>
+              <div class="brawl-stat-row">
+                <span class="brawl-stat-lbl">⭐ 점수</span>
+                <div class="brawl-stat-track"><div id="detail-fill-score" class="brawl-stat-fill score" style="width: 52%"></div></div>
+                <strong id="detail-stat-score" class="brawl-stat-val">105%</strong>
+              </div>
+            </div>
+
+            <!-- Star Power Style Passive Skill Card -->
+            <div class="brawl-passive-card">
+              <div id="detail-passive-ico" class="brawl-passive-badge">🎒</div>
+              <div class="brawl-passive-text">
+                <div class="brawl-passive-kicker">★ 고유 특수 능력</div>
+                <div id="detail-passive-name" class="brawl-passive-title">균형 잡힌 생존가</div>
+                <div id="detail-passive-desc" class="brawl-passive-desc">사계절 약점 없이 균형 잡힌 능력치!</div>
+              </div>
+            </div>
+
+            <!-- Bottom Actions: Level Up / Preview + Select / Unlock -->
+            <div class="brawl-detail-actions">
+              <button id="btn-detail-sub" class="item-action-btn purple" type="button">⬆️ Lv.2 (140G)</button>
+              <button id="btn-detail-main" class="cr-gold-btn brawl-main-cta" type="button">▶ 선택하기</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
