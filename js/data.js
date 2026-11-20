@@ -78,39 +78,19 @@ window.RUN_DATA = (function () {
     }
   ];
 
-  // 6종 K-날씨 캐릭터 (하트 체력제 + 7단계 풀 애니메이션 + 고유 패시브 + 레벨 성장)
+  // 5종 K-날씨 캐릭터 (하트 체력제 + 7단계 풀 애니메이션 + 고유 패시브 + 레벨 성장)
   const CHARACTERS = [
-    {
-      id: 'basic',
-      name: '기본 모험가',
-      tier: '밸런스',
-      icon: '🎒',
-      spriteKey: 'yellow_idle_0',
-      animSkin: 'yellow',
-      animFrames: 3,
-      avatar: 'assets/chars/port_yellow.png',
-      auraType: 'basic',
-      price: 0,
-      baseHp: 5,
-      goldMult: 1.1,
-      scoreMult: 1.05,
-      passiveName: '균형 잡힌 생존가',
-      passiveDesc: '기본 체력 5하트! 사계절 약점 없이 균형 잡힌 속도 · 골드 +10%, 점수 +5%',
-      desc: '노란 후드를 쓴 한국 날씨 생존 기본 러너! 균형 잡힌 능력치와 7단계 풀 모션 적용.',
-      tag: '균형형 · 5하트 · 골드 +10%',
-      colors: { top: '#f5b82e', outer: '#e09a14', pants: '#2c3a54', shoes: '#f0f4fa', hat: null }
-    },
     {
       id: 'umbrella_master',
       name: '우비 소년',
       tier: '장마 특화',
       icon: '☂️',
-      spriteKey: 'yellow_idle_1',
+      spriteKey: 'yellow_idle_0',
       animSkin: 'yellow',
       animFrames: 3,
       avatar: 'assets/chars/port_yellow.png',
       auraType: 'raincoat',
-      price: 350,
+      price: 0,
       baseHp: 5,
       goldMult: 1.15,
       scoreMult: 1.12,
@@ -119,8 +99,8 @@ window.RUN_DATA = (function () {
       canGlide: true,
       passiveName: '방수 우비 & 우산 활강',
       passiveDesc: '빗물 내성(+1.5초 여유), 침수 물저항 완화, 공중 점프 꾹 눌러 우산 활강!',
-      desc: '장마와 폭우에 최강! 침수 구간에서도 빠르게 달리고 우산으로 활강합니다.',
-      tag: '빗물 내성 · 침수 특화 · 활강',
+      desc: '노란 우비를 쓴 기본 생존 러너! 장마와 폭우에 강하고 공중에서 우산으로 활강합니다.',
+      tag: '기본 · 빗물 내성 · 침수 특화 · 활강',
       colors: { top: '#f2c738', outer: '#e0ad1f', pants: '#2b3d57', shoes: '#f2c738', hat: null, umbrella: true }
     },
     {
@@ -133,7 +113,7 @@ window.RUN_DATA = (function () {
       animFrames: 2,
       avatar: 'assets/chars/port_blue.png',
       auraType: 'padding',
-      price: 550,
+      price: 350,
       baseHp: 6,
       goldMult: 1.05,
       scoreMult: 1.1,
@@ -154,7 +134,7 @@ window.RUN_DATA = (function () {
       animFrames: 2,
       avatar: 'assets/chars/port_hanbok.png',
       auraType: 'hanbok',
-      price: 750,
+      price: 650,
       baseHp: 5,
       goldMult: 1.15,
       scoreMult: 1.25,
@@ -175,7 +155,7 @@ window.RUN_DATA = (function () {
       animFrames: 2,
       avatar: 'assets/chars/port_skier.png',
       auraType: 'skier',
-      price: 1050,
+      price: 950,
       baseHp: 5,
       goldMult: 1.12,
       scoreMult: 1.18,
@@ -197,7 +177,7 @@ window.RUN_DATA = (function () {
       animFrames: 2,
       avatar: 'assets/chars/port_santa.png',
       auraType: 'santa',
-      price: 1450,
+      price: 1350,
       baseHp: 5,
       goldMult: 1.45,
       scoreMult: 1.2,
@@ -304,7 +284,7 @@ window.RUN_DATA = (function () {
     { id: 'year_3', icon: '🔥', title: '기후 생존왕', desc: '3년 차 이상 생존 돌파', metric: 'bestYear', target: 3, rewardGold: 550 },
     { id: 'dodge_10', icon: '⚡', title: '회피의 달인', desc: '장애물 10연속 회피 성공', metric: 'maxDodgeComboEver', target: 10, rewardGold: 200 },
     { id: 'chars_3', icon: '👥', title: '동료 수집가', desc: '캐릭터 3종 이상 해금', metric: 'unlockedCount', target: 3, rewardGold: 300 },
-    { id: 'chars_6', icon: '👑', title: 'K-날씨 올컬렉터', desc: '캐릭터 6종 전체 수집 완료', metric: 'unlockedCount', target: 6, rewardGold: 800 }
+    { id: 'chars_6', icon: '👑', title: 'K-날씨 올컬렉터', desc: '캐릭터 5종 전체 수집 완료', metric: 'unlockedCount', target: 5, rewardGold: 800 }
   ];
 
   // 스테이지(연도/계절 최초 도달) 마일스톤 보상

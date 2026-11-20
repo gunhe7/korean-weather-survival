@@ -25,8 +25,8 @@
     const today = getTodayKey();
     const def = {
       gold: 150,
-      unlockedChars: ['basic'],
-      selectedChar: 'basic',
+      unlockedChars: ['umbrella_master'],
+      selectedChar: 'umbrella_master',
       charLevels: createDefaultCharLevels(),
       upgrades: { hp: 0, magnet: 0, defense: 0, score: 0 },
       boosters: { norway: 0, shield: 0, boost: 0 },
@@ -57,14 +57,25 @@
     const raw = parseKey(SAVE_KEY) || parseKey(SAVE_BACKUP_KEY);
     if (!raw) return def;
 
+    const validIds = new Set(DATA.CHARACTERS.map((c) => c.id));
     const mergedLevels = { ...createDefaultCharLevels(), ...(raw.charLevels || {}) };
+    if (raw.charLevels && raw.charLevels.basic > (mergedLevels.umbrella_master || 1)) {
+      mergedLevels.umbrella_master = raw.charLevels.basic;
+    }
+    delete mergedLevels.basic;
+
+    const rawUnlocked = Array.isArray(raw.unlockedChars) ? raw.unlockedChars.filter((id) => validIds.has(id)) : [];
+    if (!rawUnlocked.includes('umbrella_master')) rawUnlocked.unshift('umbrella_master');
+    const migratedSelected = validIds.has(raw.selectedChar) ? raw.selectedChar : 'umbrella_master';
+
     const rawMissions = raw.dailyMissions && raw.dailyMissions.date === today ? raw.dailyMissions : def.dailyMissions;
 
     return {
       ...def,
       ...raw,
       gold: typeof raw.gold === 'number' && Number.isFinite(raw.gold) ? Math.max(0, Math.floor(raw.gold)) : def.gold,
-      unlockedChars: Array.isArray(raw.unlockedChars) && raw.unlockedChars.length ? raw.unlockedChars : ['basic'],
+      unlockedChars: rawUnlocked,
+      selectedChar: migratedSelected,
       charLevels: mergedLevels,
       upgrades: { ...def.upgrades, ...(raw.upgrades || {}) },
       boosters: { ...def.boosters, ...(raw.boosters || {}) },
@@ -340,9 +351,9 @@
     { name: '한파패딩대장', charId: 'long_padding', score: 12400, dist: 1580, year: 3 },
     { name: '풍류반팔충', charId: 'short_sleeve', score: 8600, dist: 1120, year: 2 },
     { name: '산타코인부자', charId: 'fashionista', score: 5400, dist: 760, year: 2 },
-    { name: '구라청저격수', charId: 'basic', score: 3100, dist: 480, year: 1 },
+    { name: '구라청저격수', charId: 'long_padding', score: 3100, dist: 480, year: 1 },
     { name: '장마침수서퍼', charId: 'umbrella_master', score: 1650, dist: 290, year: 1 },
-    { name: '우산뒤집힌민수', charId: 'basic', score: 750, dist: 140, year: 1 }
+    { name: '우산뒤집힌민수', charId: 'umbrella_master', score: 750, dist: 140, year: 1 }
   ];
 
   function renderRankingTab() {
