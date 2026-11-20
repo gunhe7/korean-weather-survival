@@ -7,6 +7,20 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- ================= LANDSCAPE-ONLY ROTATE PROMPT OVERLAY ================= -->
+  <div id="rotate-overlay" aria-live="polite">
+    <div class="rotate-card">
+      <div class="rotate-phone-ico" aria-hidden="true">📱</div>
+      <h2>가로 모드로 돌려주세요!</h2>
+      <p>한국 날씨에서 살아남기는<br />가로 화면 전용 쿠키런 스타일 게임입니다.</p>
+      <button id="btn-rotate-fullscreen" class="bs-play-btn rotate-fs-btn" type="button">
+        <span class="bs-btn-inner">
+          <span class="bs-play-main rotate-btn-txt">⛶ 가로 전체화면 시작</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
   <div id="mobile-app">
     <!-- ================= GAME LAUNCH INTRO OVERLAY (UPLOADED BG + LOGO ONLY) ================= -->
     <div id="intro-overlay" role="button" tabindex="0" aria-label="한국 날씨에서 살아남기 인트로">
@@ -283,10 +297,10 @@
 
           <div class="setting-group">
             <div class="setting-row">
-              <span class="setting-label">📱 폰 가로 모드 / 전체화면</span>
+              <span class="setting-label">📱 가로 전체화면 모드</span>
             </div>
             <button id="btn-toggle-fullscreen" class="cr-blue-btn" type="button">📱 가로 전체화면 전환</button>
-            <p class="setting-note">스마트폰을 가로로 돌리면 자동으로 와이드 게임 화면 &amp; 양손 조작 모드로 전환됩니다!</p>
+            <p class="setting-note">이 게임은 가로 화면 전용으로 제작되었습니다. 전체화면으로 더욱 넓게 즐겨보세요!</p>
           </div>
 
           <div class="save-safe-note">💾 골드·캐릭터·도감·업적 데이터 자동 이중 백업 보호 중</div>
@@ -409,9 +423,9 @@
         </div>
       </div>
 
-      <!-- 2D Cookie Run Pixel Stage -->
+      <!-- 2D Cookie Run 16:9 Widescreen Pixel Stage -->
       <div id="run-canvas-wrap">
-        <canvas id="runCanvas" width="450" height="270"></canvas>
+        <canvas id="runCanvas" width="560" height="315"></canvas>
 
         <!-- Muddy Water Splash Blindness Overlay -->
         <div id="mud-splatter-overlay" class="mud-overlay hidden">
@@ -426,33 +440,31 @@
         <div id="run-banner" class="run-banner hidden">1년 차 봄 시작!</div>
       </div>
 
-      <!-- Mobile Ergonomic Controls (Portrait Deck / Landscape Thumb Overlay) -->
-      <div id="mobile-controls">
-        <button id="btn-jump" class="ctrl-btn jump-btn" type="button" aria-label="점프">
-          <span class="ctrl-gloss"></span>
-          <span class="ctrl-arrow">⬆</span>
-          <span class="ctrl-title">점프</span>
-          <span class="ctrl-sub">2단 점프</span>
-        </button>
-
-        <!-- Center Gear Toggle Buttons + 5 Status Orbs -->
-        <div class="gear-toggle-col">
-          <div class="gear-btn-pair">
-            <button id="btn-toggle-umbrella" class="gear-btn" type="button" title="우산 펴기 (Q · 지속 6초 / 쿨타임 5초)">
+      <!-- Cookie Run Style Landscape Thumb Controls (Small Umbrella/Mask ABOVE Jump/Slide!) -->
+      <div id="mobile-controls" class="cookie-controls">
+        <!-- Left Thumb Stack: Small Umbrella ON TOP + Big Jump BELOW -->
+        <div class="ctrl-stack left">
+          <button id="btn-toggle-umbrella" class="img-ctrl-btn gear-img-btn" type="button" aria-label="우산 토글" title="우산 펴기 (Q · 지속 6초 / 쿨타임 5초)">
+            <span class="ctrl-img-wrap">
+              <img src="assets/ctrl/btn_umbrella_up.png" alt="우산" class="ctrl-img up" />
+              <img src="assets/ctrl/btn_umbrella_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
+            </span>
+            <span class="gear-mini-pill">
               <span id="gear-umbrella-bar" class="gear-cd-bar" style="width: 0%"></span>
-              <img src="assets/atlas/spr_umbrella.png" alt="우산" class="gear-spr-ico" />
-              <span class="gear-txt">우산</span>
-              <span id="gear-umbrella-state" class="gear-state">준비</span>
-            </button>
+              <span id="gear-umbrella-state" class="gear-state">우산</span>
+            </span>
+          </button>
 
-            <button id="btn-toggle-mask" class="gear-btn" type="button" title="마스크 쓰기 (E · 지속 6초 / 쿨타임 5초)">
-              <span id="gear-mask-bar" class="gear-cd-bar" style="width: 0%"></span>
-              <span class="gear-ico">😷</span>
-              <span class="gear-txt">마스크</span>
-              <span id="gear-mask-state" class="gear-state">준비</span>
-            </button>
-          </div>
+          <button id="btn-jump" class="img-ctrl-btn main-img-btn" type="button" aria-label="점프">
+            <span class="ctrl-img-wrap">
+              <img src="assets/ctrl/btn_jump_up.png" alt="점프" class="ctrl-img up" />
+              <img src="assets/ctrl/btn_jump_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
+            </span>
+          </button>
+        </div>
 
+        <!-- Bottom Center Buff Orbs -->
+        <div class="ctrl-center-orbs">
           <div class="status-orbs-row five-orbs">
             <div id="orb-ui-fever" class="status-orb" title="FEVER 무적"><img src="assets/design/orb_star.png" alt="피버" /></div>
             <div id="orb-ui-speed" class="status-orb" title="스피드 부스트"><img src="assets/design/orb_bolt.png" alt="스피드" /></div>
@@ -462,12 +474,26 @@
           </div>
         </div>
 
-        <button id="btn-slide" class="ctrl-btn slide-btn" type="button" aria-label="슬라이드">
-          <span class="ctrl-gloss"></span>
-          <span class="ctrl-arrow">⬇</span>
-          <span class="ctrl-title">슬라이드</span>
-          <span class="ctrl-sub">강풍 돌파</span>
-        </button>
+        <!-- Right Thumb Stack: Small Mask ON TOP + Big Slide BELOW -->
+        <div class="ctrl-stack right">
+          <button id="btn-toggle-mask" class="img-ctrl-btn gear-img-btn" type="button" aria-label="마스크 토글" title="마스크 쓰기 (E · 지속 6초 / 쿨타임 5초)">
+            <span class="ctrl-img-wrap">
+              <img src="assets/ctrl/btn_mask_up.png" alt="마스크" class="ctrl-img up" />
+              <img src="assets/ctrl/btn_mask_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
+            </span>
+            <span class="gear-mini-pill">
+              <span id="gear-mask-bar" class="gear-cd-bar" style="width: 0%"></span>
+              <span id="gear-mask-state" class="gear-state">마스크</span>
+            </span>
+          </button>
+
+          <button id="btn-slide" class="img-ctrl-btn main-img-btn" type="button" aria-label="슬라이드">
+            <span class="ctrl-img-wrap">
+              <img src="assets/ctrl/btn_slide_up.png" alt="슬라이드" class="ctrl-img up" />
+              <img src="assets/ctrl/btn_slide_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
+            </span>
+          </button>
+        </div>
       </div>
 
       <!-- Pause Modal -->

@@ -51,13 +51,84 @@ body {
   display: none !important;
 }
 
-/* ================= CLASH ROYALE STYLE ROYAL-BLUE DIAMOND APP SHELL ================= */
+/* ================= LANDSCAPE-ONLY ROTATE OVERLAY ================= */
+#rotate-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background-color: var(--cr-blue-2);
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.065) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.065) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.08) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.08) 75%);
+  background-size: 46px 46px;
+  background-position: 0 0, 0 23px, 23px -23px, -23px 0;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.rotate-card {
+  width: min(330px, 92vw);
+  padding: 26px 20px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(20, 42, 78, 0.94) 0%, rgba(12, 26, 52, 0.96) 100%);
+  border: 3px solid #ffe052;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.rotate-phone-ico {
+  font-size: 54px;
+  line-height: 1;
+  animation: rotatePhoneAnim 2s ease-in-out infinite;
+}
+
+@keyframes rotatePhoneAnim {
+  0%, 15% { transform: rotate(0deg); }
+  50%, 75% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.rotate-card h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 900;
+  color: #ffe866;
+  text-shadow: 0 2px 0 #0b1429;
+}
+
+.rotate-card p {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #d6ecff;
+  line-height: 1.5;
+}
+
+.rotate-fs-btn {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 4px;
+}
+
+.rotate-btn-txt {
+  font-size: 16px !important;
+}
+
+/* ================= LANDSCAPE-ONLY 16:9 ROYAL-BLUE DIAMOND APP SHELL ================= */
 #mobile-app {
   position: relative;
-  width: 100%;
-  max-width: 450px;
+  width: 100vw;
+  max-width: none;
   height: 100dvh;
-  max-height: 860px;
+  max-height: none;
   display: flex;
   flex-direction: column;
   /* Signature Clash Royale Diagonal Diamond Tile Backdrop */
@@ -73,11 +144,24 @@ body {
   overflow: hidden;
 }
 
-@media (min-width: 500px) {
+@media (min-width: 960px) and (min-height: 620px) {
   #mobile-app {
-    height: min(94dvh, 840px);
+    width: min(96vw, 980px);
+    height: auto;
+    aspect-ratio: 16 / 9;
+    max-height: 92dvh;
     border: 3px solid #2b4e7d;
     border-radius: 22px;
+  }
+}
+
+/* Enforce Landscape-Only: Show Rotate Prompt on Portrait Devices! */
+@media (orientation: portrait) {
+  #mobile-app {
+    display: none !important;
+  }
+  #rotate-overlay {
+    display: flex;
   }
 }
 
@@ -3920,5 +4004,458 @@ input:focus-visible {
 
   .bs-play-main {
     font-size: 24px;
+  }
+}
+
+/* ================= PERMANENT LANDSCAPE-ONLY OVERHAUL + COOKIE RUN RUNNER ================= */
+/* 1. Landscape-Native Lobby, Tabs & Modals (Both Desktop 16:9 & Mobile Landscape!) */
+#app-header {
+  padding: 6px 14px 4px;
+}
+
+#tab-container {
+  padding: 4px 14px 6px;
+}
+
+/* Brawl Stars Landscape Lobby: Hero Center + Left Brawler Button + Right PLAY Button */
+#view-home.active {
+  display: flex;
+  padding: 0 12px 6px;
+}
+
+.bs-home-lobby {
+  position: relative;
+  justify-content: center;
+  gap: 0;
+}
+
+.bs-home-stage {
+  padding: 0 0 10px;
+}
+
+.bs-podium-row {
+  max-width: 420px;
+}
+
+.bs-home-actions {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  max-width: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  pointer-events: none;
+  padding: 0;
+}
+
+.bs-brawler-btn,
+.bs-play-btn {
+  pointer-events: auto;
+}
+
+.bs-brawler-btn {
+  min-width: 152px;
+  min-height: 60px;
+}
+
+.bs-play-btn {
+  min-width: 210px;
+  min-height: 68px;
+}
+
+/* Multi-Column Landscape Tabs (Shop, Characters, Missions, Ranking) */
+.card-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+
+.brawl-char-grid {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.brawl-detail-modal {
+  width: min(650px, 92vw);
+}
+
+.brawl-detail-body {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  align-items: stretch;
+}
+
+.brawl-hero-stage {
+  height: auto;
+  min-height: 230px;
+  border-bottom: none;
+  border-right: 3px solid #0c1429;
+}
+
+/* Compact 5-Button Pixel Bottom Menu Bar Centered in Landscape */
+#bottom-nav.pixel-nav-bar {
+  height: 62px;
+  padding: 0 14px 4px;
+  justify-content: center;
+  gap: 12px;
+}
+
+#bottom-nav.pixel-nav-bar .nav-btn {
+  flex: 0 1 112px;
+}
+
+#bottom-nav.pixel-nav-bar .nav-btn.nav-home-btn {
+  flex: 0 1 132px;
+}
+
+/* 2. TRUE COOKIE RUN 16:9 WIDESCREEN RUNNER SCREEN */
+#view-run {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: block;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2768c7 0%, #5da8f5 72%, #24385c 100%);
+}
+
+#run-canvas-wrap {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+#runCanvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: 16 / 9 !important;
+  object-fit: contain;
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* Sleek Cookie Run Floating Top HUD Overlay */
+#run-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 22;
+  padding: 6px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left));
+  background: linear-gradient(180deg, rgba(10, 22, 46, 0.84) 0%, rgba(10, 22, 46, 0.42) 68%, rgba(10, 22, 46, 0) 100%);
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+
+#run-hud button {
+  pointer-events: auto;
+}
+
+#run-hud .run-hud-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#run-hud .run-hp-wrap {
+  max-width: 290px;
+}
+
+#run-hud .run-sub-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(12, 24, 48, 0.56);
+}
+
+#run-hud .season-exp-wrap {
+  max-width: 240px;
+}
+
+#run-hud .forecast-strip {
+  align-self: center;
+  max-width: min(500px, 88%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(11, 24, 48, 0.78);
+  border: 1.5px solid rgba(130, 198, 255, 0.45);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.32);
+}
+
+/* 3. COOKIE RUN THUMB CONTROLS: UPLOADED GLOSSY BLUE CIRCLE BUTTONS!
+   Left Stack: Small Umbrella ABOVE Big Jump | Right Stack: Small Mask ABOVE Big Slide */
+#mobile-controls.cookie-controls {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 26;
+  display: block !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+#mobile-controls.cookie-controls > * {
+  pointer-events: none !important;
+}
+
+#mobile-controls.cookie-controls .img-ctrl-btn {
+  pointer-events: auto !important;
+}
+
+.ctrl-stack {
+  position: absolute;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.ctrl-stack.left {
+  left: max(16px, env(safe-area-inset-left));
+}
+
+.ctrl-stack.right {
+  right: max(16px, env(safe-area-inset-right));
+}
+
+.img-ctrl-btn {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.06s ease, filter 0.12s ease;
+}
+
+/* Big Cookie Run Jump & Slide Circle Buttons */
+.img-ctrl-btn.main-img-btn {
+  width: clamp(80px, 21vh, 108px);
+  height: clamp(80px, 21vh, 108px);
+  filter: drop-shadow(0 5px 10px rgba(6, 18, 44, 0.55));
+}
+
+/* Smaller Umbrella & Mask Circle Buttons Directly Above Jump & Slide */
+.img-ctrl-btn.gear-img-btn {
+  width: clamp(48px, 12.8vh, 62px);
+  height: clamp(48px, 12.8vh, 62px);
+  margin-bottom: 10px;
+  filter: drop-shadow(0 4px 8px rgba(6, 18, 44, 0.52));
+}
+
+.ctrl-img-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ctrl-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.ctrl-img.up {
+  opacity: 1;
+}
+
+.ctrl-img.down {
+  opacity: 0;
+}
+
+/* Exact Press-Down / Release Moment Image Swap on ALL 4 Buttons! */
+.img-ctrl-btn.pressed .ctrl-img.up {
+  opacity: 0;
+}
+
+.img-ctrl-btn.pressed .ctrl-img.down {
+  opacity: 1;
+}
+
+.img-ctrl-btn.pressed {
+  transform: translateY(2px) scale(0.96);
+}
+
+/* Active / Cooldown / Broken Visual Feedback on Small Umbrella & Mask Buttons */
+.img-ctrl-btn.gear-img-btn.on {
+  filter: drop-shadow(0 0 10px rgba(90, 242, 255, 0.98)) drop-shadow(0 4px 8px rgba(6, 18, 44, 0.55));
+}
+
+.img-ctrl-btn.gear-img-btn.cooldown {
+  filter: grayscale(0.55) brightness(0.76) drop-shadow(0 3px 6px rgba(6, 18, 44, 0.45));
+}
+
+.img-ctrl-btn.gear-img-btn.broken {
+  filter: sepia(0.7) hue-rotate(-45deg) saturate(2.2) brightness(0.86) drop-shadow(0 0 8px rgba(255, 72, 72, 0.9));
+}
+
+.gear-mini-pill {
+  position: absolute;
+  bottom: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 48px;
+  height: 16px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(11, 24, 48, 0.88);
+  border: 1.5px solid #4faeff;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.gear-mini-pill .gear-cd-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(74, 212, 255, 0.48);
+  transition: width 0.1s linear;
+}
+
+.img-ctrl-btn.gear-img-btn.on .gear-mini-pill {
+  border-color: #6df6ff;
+  background: rgba(10, 52, 86, 0.92);
+}
+
+.img-ctrl-btn.gear-img-btn.on .gear-mini-pill .gear-cd-bar {
+  background: rgba(60, 232, 165, 0.65);
+}
+
+.img-ctrl-btn.gear-img-btn.cooldown .gear-mini-pill {
+  border-color: #829ab8;
+}
+
+.img-ctrl-btn.gear-img-btn.broken .gear-mini-pill {
+  border-color: #ff5c5c;
+  background: rgba(88, 14, 22, 0.94);
+}
+
+.img-ctrl-btn.gear-img-btn.broken .gear-mini-pill .gear-cd-bar {
+  background: rgba(255, 86, 86, 0.55);
+}
+
+.gear-mini-pill .gear-state {
+  position: relative;
+  z-index: 2;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.85);
+}
+
+/* Bottom Center Status Orbs */
+.ctrl-center-orbs {
+  position: absolute;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(10, 22, 46, 0.62);
+  border: 1.5px solid rgba(132, 198, 255, 0.35);
+  pointer-events: none;
+}
+
+/* Short Mobile Landscape Phones (height <= 440px, e.g., iPhone / Galaxy landscape) */
+@media (max-height: 440px) {
+  #app-header {
+    padding: 4px 12px 2px;
+  }
+
+  #bottom-nav.pixel-nav-bar {
+    height: 52px;
+    padding: 0 10px 2px;
+  }
+
+  .bs-hero-img {
+    width: 108px;
+    height: 108px;
+  }
+
+  .bs-podium-ring {
+    width: 136px;
+    height: 32px;
+    margin-top: -14px;
+  }
+
+  .bs-hero-name {
+    font-size: 19px;
+  }
+
+  .bs-brawler-btn {
+    min-width: 130px;
+    min-height: 52px;
+  }
+
+  .bs-play-btn {
+    min-width: 176px;
+    min-height: 58px;
+  }
+
+  #run-hud {
+    padding: 4px max(10px, env(safe-area-inset-right)) 4px max(10px, env(safe-area-inset-left));
+    gap: 3px;
+  }
+
+  .ctrl-stack {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+
+  .img-ctrl-btn.main-img-btn {
+    width: 78px;
+    height: 78px;
+  }
+
+  .img-ctrl-btn.gear-img-btn {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 8px;
   }
 }

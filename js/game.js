@@ -119,6 +119,7 @@
 
   // ===================== DOM REFERENCES =====================
   const el = {
+    btnRotateFullscreen: document.getElementById('btn-rotate-fullscreen'),
     introOverlay: document.getElementById('intro-overlay'),
     btnReplayIntro: document.getElementById('btn-replay-intro'),
     headerBestScore: document.getElementById('header-best-score'),
@@ -1016,9 +1017,9 @@
       baseSpeed: 188,
       speed: 188,
 
-      // Player physics
-      basePlayerX: 98,
-      playerX: 98,
+      // Player physics (16:9 Cookie Run widescreen framing)
+      basePlayerX: 132,
+      playerX: 132,
       playerY: Renderer.GROUND_Y,
       currentFloorY: Renderer.GROUND_Y,
       onPlatform: false,
@@ -2173,7 +2174,7 @@
       el.gearUmbrellaState.textContent = `쿨 ${Math.ceil(run.umbrellaCooldown)}s`;
       el.gearUmbrellaBar.style.width = `${((run.umbrellaCooldown / effGearCd) * 100).toFixed(1)}%`;
     } else {
-      el.gearUmbrellaState.textContent = '준비';
+      el.gearUmbrellaState.textContent = '우산';
       el.gearUmbrellaBar.style.width = '0%';
     }
 
@@ -2187,7 +2188,7 @@
       el.gearMaskState.textContent = `쿨 ${Math.ceil(run.maskCooldown)}s`;
       el.gearMaskBar.style.width = `${((run.maskCooldown / effGearCd) * 100).toFixed(1)}%`;
     } else {
-      el.gearMaskState.textContent = '준비';
+      el.gearMaskState.textContent = '마스크';
       el.gearMaskBar.style.width = '0%';
     }
 
@@ -2475,6 +2476,18 @@
     });
     el.btnToggleFullscreen.addEventListener('click', toggleLandscapeFullscreen);
     el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
+    el.btnRotateFullscreen.addEventListener('click', toggleLandscapeFullscreen);
+
+    // Auto-pause run safely if user rotates phone back into portrait!
+    const portraitMq = window.matchMedia('(orientation: portrait)');
+    const handleOrientationCheck = () => {
+      if (portraitMq.matches && run && run.active && !paused) {
+        paused = true;
+        el.pauseOverlay.classList.remove('hidden');
+      }
+    };
+    if (portraitMq.addEventListener) portraitMq.addEventListener('change', handleOrientationCheck);
+    else window.addEventListener('resize', handleOrientationCheck);
 
     el.btnSoundGlobal.addEventListener('click', () => {
       SFX.toggle();
@@ -2523,11 +2536,11 @@
       startRun();
     });
 
-    // Runner Controls + Gear Toggles (3rd button gimmick!)
+    // Runner Controls + Gear Toggles (All 4 use crisp Up/Down sprite swap on press & release!)
     bindControlButton(el.btnJump, doJumpPress, doJumpRelease);
     bindControlButton(el.btnSlide, doSlideStart, doSlideEnd);
-    el.btnToggleUmbrella.addEventListener('click', toggleUmbrella);
-    el.btnToggleMask.addEventListener('click', toggleMask);
+    bindControlButton(el.btnToggleUmbrella, toggleUmbrella, () => {});
+    bindControlButton(el.btnToggleMask, toggleMask, () => {});
 
     el.btnPauseRun.addEventListener('click', () => {
       if (!run || !run.active) return;
@@ -2617,9 +2630,11 @@
         doSlideStart();
       } else if (e.code === 'KeyQ') {
         e.preventDefault();
+        el.btnToggleUmbrella.classList.add('pressed');
         toggleUmbrella();
       } else if (e.code === 'KeyE') {
         e.preventDefault();
+        el.btnToggleMask.classList.add('pressed');
         toggleMask();
       } else if (e.code === 'Escape') {
         paused = !paused;
@@ -2635,6 +2650,10 @@
       } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
         el.btnSlide.classList.remove('pressed');
         doSlideEnd();
+      } else if (e.code === 'KeyQ') {
+        el.btnToggleUmbrella.classList.remove('pressed');
+      } else if (e.code === 'KeyE') {
+        el.btnToggleMask.classList.remove('pressed');
       }
     });
   }

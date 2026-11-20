@@ -1,7 +1,7 @@
 window.RunRenderer = (function () {
-  const W = 450;
-  const H = 270;
-  const GROUND_Y = 224;
+  const W = 560;
+  const H = 315;
+  const GROUND_Y = 258;
 
   let particles = [];
   let dustPuffs = [];
@@ -988,7 +988,7 @@ window.RunRenderer = (function () {
     run.obstacles.forEach((ob) => drawObstacle(ctx, ob, t));
 
     // Loyal Shiba Puppy Pet running right behind!
-    drawPuppyPet(ctx, run.playerX - 42, run.petY, t);
+    drawPuppyPet(ctx, run.playerX - 46, run.petY, t, 32);
 
     // Runner Character (Full 7-State Animation: Idle, Run, Jump, Fall, Slide, Hurt, Die!)
     drawCharacter(ctx, charDef, run.playerX, run.playerY, {
@@ -1009,7 +1009,7 @@ window.RunRenderer = (function () {
       itemPoseTimer: run.itemPoseTimer || 0,
       winPoseTimer: run.winPoseTimer || 0,
       running: !run.dead && !run.dying,
-      scaleHeight: 50
+      scaleHeight: 54
     }, t);
 
     // Item Pickup Ring & Sparkle Burst Animations!
