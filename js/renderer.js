@@ -46,7 +46,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121v2';
+  const CHAR_ASSET_VER = '20261121hd3';
 
   CHAR_SHEET_SKINS.forEach((sk) => {
     CHAR_ANIM_STATES.forEach((st) => {
@@ -948,7 +948,17 @@ window.RunRenderer = (function () {
   // ===================== PUBLIC RENDERERS =====================
   let dustTimer = 0;
   function renderRunFrame(ctx, run, charDef, dt, t) {
+    // True Hi-DPI Retina Backing Store (2x ~ 3x: 1120x630 ~ 1680x945 physical pixels!)
+    const dpr = Math.min(3, Math.max(2, Math.round(window.devicePixelRatio || 2)));
+    const targetW = W * dpr;
+    const targetH = H * dpr;
+    if (ctx.canvas.width !== targetW || ctx.canvas.height !== targetH) {
+      ctx.canvas.width = targetW;
+      ctx.canvas.height = targetH;
+    }
+
     ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = false;
 
     // Camera Screen Shake on Hit / Lightning / Umbrella Break!
