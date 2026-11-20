@@ -1061,6 +1061,8 @@
 
     run = {
       active: true,
+      dying: false,
+      deathAnimTimer: 0,
       dead: false,
       missionsCommitted: false,
       charId: ch.id,
@@ -2086,11 +2088,27 @@
     }
 
     if (run.hp <= 0) {
-      finishRunGameOver();
+      updateRunHud();
+      startDyingSequence();
       return;
     }
 
     updateRunHud();
+  }
+
+  function startDyingSequence() {
+    run.active = false;
+    run.dying = true;
+    run.dead = true;
+    run.deathAnimTimer = 0.58;
+    run.sliding = false;
+    run.umbrellaOn = false;
+    run.maskOn = false;
+    el.mudOverlay.classList.add('hidden');
+    el.runCanvasWrap.classList.remove('fever-active');
+    SFX.setBgmMode('menu');
+    SFX.fail();
+    triggerCameraShake(8, 0.3);
   }
 
   function handleObstacleHit(ob, ch) {
@@ -2260,11 +2278,11 @@
 
   function finishRunGameOver() {
     run.active = false;
+    run.dying = false;
     run.dead = true;
     el.mudOverlay.classList.add('hidden');
     el.runCanvasWrap.classList.remove('fever-active');
     SFX.setBgmMode('menu');
-    SFX.fail();
 
     // Snapshot pre-run achievements & missions to announce newly unlocked ones!
     ensureTodayMissions();
@@ -2379,9 +2397,23 @@
     if (run && !el.viewRun.classList.contains('hidden')) {
       if (run.active && !paused) {
         updateRun(dt);
+      } else if (run.dying && !paused) {
+        // Brief dramatic collapse animation on the ground before Result Modal appears!
+        if (run.shakeTimer > 0) run.shakeTimer = Math.max(0, run.shakeTimer - dt);
+        if (run.hitFlashTimer > 0) run.hitFlashTimer = Math.max(0, run.hitFlashTimer - dt);
+        const floorY = run.currentFloorY || Renderer.GROUND_Y;
+        if (run.playerY < floorY) {
+          run.vy = (run.vy || 0) + 1250 * dt;
+          run.playerY = Math.min(floorY, run.playerY + run.vy * dt);
+        }
+        run.deathAnimTimer -= dt;
+        if (run.deathAnimTimer <= 0) {
+          finishRunGameOver();
+        }
       }
       if (run) {
-        Renderer.renderRunFrame(runCtx, run, getCharDef(run.charId), paused || !run.active ? 0 : dt, t);
+        const animDt = paused || (!run.active && !run.dying) ? 0 : dt;
+        Renderer.renderRunFrame(runCtx, run, getCharDef(run.charId), animDt, t);
       }
     } else if (currentTab === 'home') {
       const previewChar = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];

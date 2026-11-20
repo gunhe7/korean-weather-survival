@@ -8,13 +8,16 @@ window.RunRenderer = (function () {
   let floaters = [];
   let pickupBursts = [];
 
-  // ===================== PRELOAD ALL CHARACTER + DESIGN SPRITES =====================
-  const CHAR_SPRITES = [
-    'motion_idle', 'motion_walk', 'motion_run', 'motion_jump',
-    'motion_hit', 'motion_item', 'motion_win',
-    'skin_basic', 'skin_raincoat', 'skin_padding',
-    'skin_hanbok', 'skin_santa', 'skin_skier'
+  // ===================== PRELOAD ALL CHARACTER + DESIGN + WORLD SPRITES =====================
+  const CHAR_SHEET_SKINS = [
+    { id: 'yellow', frames: 3 },
+    { id: 'blue', frames: 2 },
+    { id: 'hanbok', frames: 2 },
+    { id: 'skier', frames: 2 },
+    { id: 'santa', frames: 2 }
   ];
+  const CHAR_ANIM_STATES = ['idle', 'run', 'jump', 'fall', 'slide', 'hurt', 'die'];
+  const CHAR_VFX_SPRITES = ['fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring'];
 
   const DESIGN_SPRITES = [
     'item_coin', 'item_coin_side', 'item_star',
@@ -23,8 +26,6 @@ window.RunRenderer = (function () {
   ];
 
   const ATLAS_SPRITES = [
-    'char_idle', 'char_run_0', 'char_run_1', 'char_run_2', 'char_run_3', 'char_run_4', 'char_run_5',
-    'char_slide', 'char_jump_0', 'char_jump_1',
     'dog_run_0', 'dog_run_1', 'dog_run_2', 'dog_run_3',
     'spr_umbrella', 'spr_shield'
   ];
@@ -46,9 +47,24 @@ window.RunRenderer = (function () {
 
   const sprites = {};
 
-  CHAR_SPRITES.forEach((key) => {
+  CHAR_SHEET_SKINS.forEach((sk) => {
+    CHAR_ANIM_STATES.forEach((st) => {
+      for (let f = 0; f < sk.frames; f++) {
+        const key = `${sk.id}_${st}_${f}`;
+        const img = new Image();
+        img.src = `assets/chars/${key}.png`;
+        sprites[key] = img;
+      }
+    });
+    const pKey = `port_${sk.id}`;
+    const pImg = new Image();
+    pImg.src = `assets/chars/${pKey}.png`;
+    sprites[pKey] = pImg;
+  });
+
+  CHAR_VFX_SPRITES.forEach((key) => {
     const img = new Image();
-    img.src = `assets/sprites/${key}.png`;
+    img.src = `assets/chars/${key}.png`;
     sprites[key] = img;
   });
 
@@ -533,65 +549,106 @@ window.RunRenderer = (function () {
     ctx.drawImage(dog, Math.floor(x - w / 2), Math.floor(y - h - hop), w, h);
   }
 
-  // ===================== UPLOADED PIXEL K-CHARACTER SPRITE RENDERER =====================
+  // ===================== UPLOADED 7-STATE PIXEL K-CHARACTER SPRITE RENDERER =====================
   function pickCharacterSprite(charDef, opts, t) {
-    if (charDef.useAtlasRun) {
-      if (opts.sliding) return getSprite('char_slide') || getSprite('motion_hit');
-      if (opts.hitPoseTimer > 0) return getSprite('char_slide') || getSprite('motion_hit');
-      if (opts.inAir) {
-        return getSprite(Math.floor(t * 8) % 2 === 0 ? 'char_jump_0' : 'char_jump_1') || getSprite('motion_jump');
-      }
-      if (opts.winPoseTimer > 0) return getSprite('motion_win') || getSprite('char_jump_1');
-      if (opts.itemPoseTimer > 0) return getSprite('motion_item') || getSprite('char_jump_0');
-      if (opts.running) {
-        const frame = Math.floor(t * 11) % 6;
-        return getSprite(`char_run_${frame}`) || getSprite('motion_run');
-      }
-      return getSprite('char_idle') || getSprite('motion_idle');
+    const skin = charDef.animSkin || 'yellow';
+    const n = charDef.animFrames || 2;
+
+    if (opts.dead) {
+      const prog = opts.deathProgress !== undefined ? opts.deathProgress : 1;
+      const frame = Math.min(n - 1, Math.floor(Math.max(0, prog) * n));
+      return getSprite(`${skin}_die_${frame}`) || getSprite(`${skin}_die_0`);
     }
-    return getSprite(charDef.spriteKey) || getSprite('char_idle');
+    if (opts.hitPoseTimer > 0) {
+      const frame = Math.floor(t * 11) % n;
+      return getSprite(`${skin}_hurt_${frame}`) || getSprite(`${skin}_hurt_0`);
+    }
+    if (opts.sliding) {
+      const frame = Math.floor(t * 10) % n;
+      return getSprite(`${skin}_slide_${frame}`) || getSprite(`${skin}_slide_0`);
+    }
+    if (opts.inAir) {
+      const state = (opts.vy !== undefined && opts.vy < 0) ? 'jump' : 'fall';
+      const frame = Math.floor(t * 9) % n;
+      return getSprite(`${skin}_${state}_${frame}`) || getSprite(`${skin}_${state}_0`);
+    }
+    if (opts.running) {
+      const fps = n >= 3 ? 10 : 8.5;
+      const frame = Math.floor(t * fps) % n;
+      return getSprite(`${skin}_run_${frame}`) || getSprite(`${skin}_run_0`);
+    }
+    const idleFrame = Math.floor(t * 3.5) % n;
+    return getSprite(`${skin}_idle_${idleFrame}`) || getSprite(`${skin}_idle_0`);
   }
 
   function drawCharacter(ctx, charDef, x, y, opts, t) {
     const {
       sliding, inAir, gliding, invulnTimer, shield, feverTimer, running,
+      dead = false, speedBoostTimer = 0,
       umbrellaOn = false, maskOn = false, umbrellaBrokenTimer = 0,
       scaleHeight = 52
     } = opts;
 
-    if (invulnTimer > 0 && Math.floor(t * 20) % 2 === 0) {
+    if (!dead && invulnTimer > 0 && Math.floor(t * 20) % 2 === 0) {
       ctx.globalAlpha = 0.45;
     }
 
     const col = charDef.colors || {};
     const cx = Math.floor(x);
     const cy = Math.floor(y);
+    const isProne = sliding || dead;
 
     if (!inAir) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-      ctx.fillRect(cx - (sliding ? 18 : 13), cy - 1, sliding ? 36 : 26, 4);
+      ctx.fillRect(cx - (isProne ? 20 : 14), cy - 1, isProne ? 40 : 28, 4);
     }
 
-    // Fever rainbow aura / Shield ring
-    if (feverTimer > 0) {
+    // Uploaded Golden / Blue Dash VFX streaks behind character during FEVER or Speed Boost!
+    if (!dead && (feverTimer > 0 || speedBoostTimer > 0)) {
+      const dashSpr = getSprite(feverTimer > 0 ? 'fx_dash_gold' : 'fx_dash_blue');
+      if (dashSpr) {
+        const pulse = 0.92 + Math.sin(t * 24) * 0.1;
+        const dh = Math.round((isProne ? 26 : 34) * pulse);
+        const dw = Math.round(dh * (dashSpr.naturalWidth / dashSpr.naturalHeight));
+        ctx.save();
+        ctx.globalAlpha = 0.88;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(dashSpr, Math.floor(cx - dw - 2), Math.floor(cy - (isProne ? 22 : scaleHeight * 0.56) - dh / 2), dw, dh);
+        ctx.restore();
+      }
+    }
+
+    // Fever rainbow aura / Uploaded glowing Shield Ring VFX!
+    if (!dead && feverTimer > 0) {
       ctx.strokeStyle = Math.floor(t * 14) % 2 === 0 ? '#ffe85c' : '#63e8ff';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(cx, cy - (sliding ? 13 : scaleHeight * 0.48), sliding ? 24 : scaleHeight * 0.56, 0, Math.PI * 2);
+      ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 24 : scaleHeight * 0.56, 0, Math.PI * 2);
       ctx.stroke();
-    } else if (shield) {
-      ctx.strokeStyle = 'rgba(110, 220, 255, 0.92)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(cx, cy - (sliding ? 13 : scaleHeight * 0.48), sliding ? 23 : scaleHeight * 0.54, 0, Math.PI * 2);
-      ctx.stroke();
+    } else if (!dead && shield) {
+      const ringSpr = getSprite('fx_shield_ring');
+      if (ringSpr) {
+        const pulse = 1 + Math.sin(t * 8) * 0.05;
+        const rSz = Math.round((isProne ? 48 : scaleHeight * 1.18) * pulse);
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(ringSpr, Math.floor(cx - rSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - rSz / 2), rSz, rSz);
+        ctx.restore();
+      } else {
+        ctx.strokeStyle = 'rgba(110, 220, 255, 0.92)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 23 : scaleHeight * 0.54, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
 
     // Uploaded Rainbow Umbrella sprite when 우비 소년 glides OR Umbrella Toggle is ON!
-    const showUmbrella = (col.umbrella && gliding) || umbrellaOn;
+    const showUmbrella = !dead && ((col.umbrella && gliding) || umbrellaOn);
     if (showUmbrella) {
       const umbSpr = getSprite('spr_umbrella');
-      const uy = cy - (sliding ? 22 : scaleHeight) - 12;
+      const uy = cy - (isProne ? 24 : scaleHeight) - 10;
       if (umbSpr) {
         const uh = 34;
         const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
@@ -601,7 +658,7 @@ window.RunRenderer = (function () {
         ctx.fillStyle = '#2672d9';
         ctx.fillRect(cx - 18, uy - 10, 40, 7);
       }
-    } else if (umbrellaBrokenTimer > 5.6) {
+    } else if (!dead && umbrellaBrokenTimer > 5.6) {
       // Flipped broken umbrella brief comedy animation!
       const uy = cy - scaleHeight - 8;
       ctx.fillStyle = '#3c4759';
@@ -612,7 +669,7 @@ window.RunRenderer = (function () {
       ctx.fillRect(cx - 6, uy - 7, 18, 5);
     }
 
-    if (sliding) {
+    if (sliding && !dead) {
       ctx.fillStyle = 'rgba(255, 245, 230, 0.85)';
       const dustShift = Math.floor((t * 48) % 8);
       ctx.fillRect(cx - 26 - dustShift, cy - 5, 11, 4);
@@ -620,10 +677,9 @@ window.RunRenderer = (function () {
     }
 
     // Character-Specific Unique Animated Aura / Running Trail!
-    if (running && charDef.auraType) {
+    if (running && !dead && charDef.auraType) {
       const aura = charDef.auraType;
       if (aura === 'skier') {
-        // Icy crystal glide sparks under ski boots!
         for (let k = 0; k < 3; k++) {
           const ox = ((t * 58 + k * 14) % 28);
           const oy = Math.sin(t * 9 + k * 2) * 5;
@@ -631,21 +687,18 @@ window.RunRenderer = (function () {
           ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - 6 + oy), 4, 2);
         }
       } else if (aura === 'raincoat') {
-        // Waterproof cyan droplet ring sparkles
         for (let k = 0; k < 3; k++) {
           const ang = t * 4.5 + k * 2.1;
           ctx.fillStyle = '#70e4ff';
           ctx.fillRect(Math.floor(cx + Math.cos(ang) * 18), Math.floor(cy - scaleHeight * 0.45 + Math.sin(ang) * 12), 3, 3);
         }
       } else if (aura === 'padding') {
-        // Warm crimson-gold thermal defense shimmer
-        ctx.strokeStyle = `rgba(255, 130, 90, ${(0.35 + Math.sin(t * 7) * 0.2).toFixed(2)})`;
+        ctx.strokeStyle = `rgba(115, 200, 255, ${(0.35 + Math.sin(t * 7) * 0.2).toFixed(2)})`;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(cx, cy - scaleHeight * 0.46, scaleHeight * 0.48, 0, Math.PI * 2);
         ctx.stroke();
       } else if (aura === 'hanbok') {
-        // Traditional breeze ribbon petals (gold + sky blue)
         for (let k = 0; k < 3; k++) {
           const ox = ((t * 44 + k * 16) % 32);
           const oy = Math.sin(t * 7 + k * 2.4) * 9;
@@ -653,7 +706,6 @@ window.RunRenderer = (function () {
           ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - scaleHeight * 0.5 + oy), 4, 3);
         }
       } else if (aura === 'santa') {
-        // Sparkling golden coin/star confetti trail!
         for (let k = 0; k < 4; k++) {
           const ox = ((t * 52 + k * 12) % 34);
           const oy = Math.cos(t * 8 + k * 1.7) * 10;
@@ -665,50 +717,45 @@ window.RunRenderer = (function () {
 
     const spr = pickCharacterSprite(charDef, opts, t);
     if (spr) {
-      const targetH = sliding ? Math.round(scaleHeight * 0.56) : scaleHeight;
+      // Prone poses (Slide & Die) are naturally horizontal (~66x52 vs ~60x78 standing):
+      // 0.67 height keeps head & body scale pixel-consistent across every animation state!
+      const targetH = isProne ? Math.round(scaleHeight * 0.67) : scaleHeight;
       const ratio = spr.naturalWidth / spr.naturalHeight;
       const drawW = Math.round(targetH * ratio);
       const drawH = targetH;
 
-      const bob = running && !inAir && !sliding ? (charDef.useAtlasRun ? Math.abs(Math.sin(t * 14)) * 1.8 : Math.abs(Math.sin(t * 16)) * 3.5) : 0;
-      let rot = 0;
-      if (!charDef.useAtlasRun) {
-        if (sliding) rot = -0.32;
-        else if (inAir) rot = gliding ? 0.05 : -0.14;
-        else if (running) rot = 0.08 + Math.sin(t * 16) * 0.06;
-      }
+      const bob = running && !dead && !inAir && !sliding ? Math.abs(Math.sin(t * 14)) * 2.0 : 0;
 
       ctx.save();
       ctx.translate(cx, Math.floor(cy - bob));
-      if (rot !== 0) ctx.rotate(rot);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(spr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
 
       // White KF94 Mask overlay when Mask Toggle is ON!
-      if (maskOn) {
-        const my = sliding ? Math.floor(-drawH * 0.42) : Math.floor(-drawH * 0.44);
+      if (maskOn && !dead) {
+        const my = sliding ? Math.floor(-drawH * 0.34) : Math.floor(-drawH * 0.44);
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(Math.floor(drawW * 0.02), my, 12, 7);
+        ctx.fillRect(Math.floor(drawW * 0.04), my, 12, 7);
         ctx.strokeStyle = '#9bb8d4';
         ctx.lineWidth = 1;
-        ctx.strokeRect(Math.floor(drawW * 0.02), my, 12, 7);
+        ctx.strokeRect(Math.floor(drawW * 0.04), my, 12, 7);
       }
 
-      if (col.coffeeCup && !sliding) {
+      if (col.coffeeCup && !isProne) {
         ctx.fillStyle = 'rgba(225, 248, 255, 0.95)';
-        ctx.fillRect(Math.floor(drawW * 0.34), Math.floor(-drawH * 0.52), 7, 10);
+        ctx.fillRect(Math.floor(drawW * 0.36), Math.floor(-drawH * 0.50), 7, 10);
         ctx.fillStyle = '#4a2c16';
-        ctx.fillRect(Math.floor(drawW * 0.34) + 1, Math.floor(-drawH * 0.52) + 3, 5, 6);
+        ctx.fillRect(Math.floor(drawW * 0.36) + 1, Math.floor(-drawH * 0.50) + 3, 5, 6);
         ctx.fillStyle = '#9ce8ff';
-        ctx.fillRect(Math.floor(drawW * 0.34) + 1, Math.floor(-drawH * 0.52) + 2, 2, 2);
+        ctx.fillRect(Math.floor(drawW * 0.36) + 1, Math.floor(-drawH * 0.50) + 2, 2, 2);
         ctx.fillStyle = '#24c464';
-        ctx.fillRect(Math.floor(drawW * 0.34) + 3, Math.floor(-drawH * 0.52) - 4, 2, 5);
+        ctx.fillRect(Math.floor(drawW * 0.36) + 3, Math.floor(-drawH * 0.50) - 4, 2, 5);
       }
 
       ctx.restore();
     } else {
       ctx.fillStyle = col.top || '#f5b82e';
-      ctx.fillRect(cx - 10, cy - (sliding ? 18 : 36), 20, sliding ? 18 : 36);
+      ctx.fillRect(cx - 10, cy - (isProne ? 18 : 36), 20, isProne ? 18 : 36);
     }
 
     ctx.globalAlpha = 1;
@@ -920,7 +967,7 @@ window.RunRenderer = (function () {
     drawPassingCar(ctx, run.passingCar, t);
 
     // Emit cute running dust & FEVER stars!
-    if (dt > 0) {
+    if (dt > 0 && !run.dead && !run.dying) {
       dustTimer -= dt;
       if (dustTimer <= 0) {
         dustTimer = run.feverTimer > 0 ? 0.05 : 0.14;
@@ -943,33 +990,25 @@ window.RunRenderer = (function () {
     // Loyal Shiba Puppy Pet running right behind!
     drawPuppyPet(ctx, run.playerX - 42, run.petY, t);
 
-    // Speed Boost Cyan Sonic Streaks!
-    if (run.speedBoostTimer > 0) {
-      ctx.save();
-      for (let k = 0; k < 5; k++) {
-        const sy = Math.floor(run.playerY - 10 - k * 8);
-        const len = 24 + ((k * 13 + Math.floor(t * 90)) % 26);
-        ctx.fillStyle = k % 2 === 0 ? 'rgba(90, 238, 255, 0.75)' : 'rgba(255, 240, 120, 0.6)';
-        ctx.fillRect(Math.floor(run.playerX - 18 - len), sy, len, 3);
-      }
-      ctx.restore();
-    }
-
-    // Runner Character
+    // Runner Character (Full 7-State Animation: Idle, Run, Jump, Fall, Slide, Hurt, Die!)
     drawCharacter(ctx, charDef, run.playerX, run.playerY, {
       sliding: run.sliding,
       inAir: run.playerY < (run.currentFloorY || GROUND_Y) - 1,
+      vy: run.vy || 0,
       gliding: run.gliding,
       invulnTimer: run.invulnTimer,
       shield: run.shield,
       feverTimer: run.feverTimer,
+      speedBoostTimer: run.speedBoostTimer || 0,
+      dead: Boolean(run.dead),
+      deathProgress: run.dying ? (1 - Math.max(0, run.deathAnimTimer || 0) / 0.58) : 1,
       umbrellaOn: run.umbrellaOn,
       maskOn: run.maskOn,
       umbrellaBrokenTimer: run.umbrellaBrokenTimer || 0,
       hitPoseTimer: run.hitPoseTimer || 0,
       itemPoseTimer: run.itemPoseTimer || 0,
       winPoseTimer: run.winPoseTimer || 0,
-      running: true,
+      running: !run.dead && !run.dying,
       scaleHeight: 50
     }, t);
 
