@@ -107,6 +107,23 @@ window.SFX = (function () {
     },
     fail() {
       [392, 349, 311, 246].forEach((f, i) => tone(f, 0.15, 'sawtooth', 0.055, i * 0.11));
+    },
+    umbrellaBreak() {
+      tone(440, 0.06, 'sawtooth', 0.08, 0);
+      tone(220, 0.14, 'sawtooth', 0.08, 0.06);
+      tone(140, 0.16, 'square', 0.07, 0.14);
+    },
+    splash() {
+      slideTone(260, 120, 0.16, 'sawtooth', 0.07);
+    },
+    acChime() {
+      // Iconic K-convenience store door entry chime! (ding-dong!)
+      tone(880, 0.11, 'sine', 0.07, 0);
+      tone(659.25, 0.18, 'sine', 0.07, 0.11);
+    },
+    fakeAlert() {
+      tone(740, 0.09, 'square', 0.06, 0);
+      tone(587, 0.12, 'square', 0.06, 0.10);
     }
   };
 })();

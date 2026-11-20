@@ -191,6 +191,13 @@ window.RUN_DATA = (function () {
   // 1회용 출발 부스터
   const BOOSTERS = [
     {
+      id: 'norway',
+      name: '노르웨이 기상청 (Yr.no)',
+      icon: 'assets/design/orb_star.png',
+      price: 90,
+      desc: '구라청 훼이크 완전 제거! 다가올 폭우·돌풍·빙판·미세먼지를 3초 전 100% 정확히 예고합니다!'
+    },
+    {
       id: 'shield',
       name: '기상 보호막',
       icon: 'assets/design/orb_potion.png',
@@ -205,6 +212,45 @@ window.RUN_DATA = (function () {
       desc: '시작 후 4.5초간 FEVER 무적 질주 + 코인 자석 자동 발동!'
     }
   ];
+
+  // 실시간 한국 기상 환경 변수 패턴 (조작감·물리·장비 연동)
+  const WEATHER_EVENTS = {
+    clear: {
+      id: 'clear', label: '맑음 (평온)', kmaFake: '맑음 (강수확률 0%)',
+      norwayWarn: '쾌청한 구간 (잠시 휴식)', color: '#63d8ff'
+    },
+    dust: {
+      id: 'dust', label: '초미세먼지 경보!', kmaFake: '미세먼지 좋음 · 나들이 최적',
+      norwayWarn: '초미세먼지 습격! [마스크 ON]', color: '#e6c24c'
+    },
+    gust: {
+      id: 'gust', label: '태풍·강풍 맞바람!', kmaFake: '바람 잔잔 (풍속 1m/s)',
+      norwayWarn: '강풍 돌풍! [우산 접기 · 슬라이드]', color: '#a6e4ff'
+    },
+    rain: {
+      id: 'rain', label: '국지성 폭우!', kmaFake: '맑음 (강수확률 0%)',
+      norwayWarn: '국지성 폭우! [우산 ON · 물벼락 주의]', color: '#5cb3ff'
+    },
+    flood: {
+      id: 'flood', label: '장마 침수 구간!', kmaFake: '약한 이슬비 예상',
+      norwayWarn: '도로 침수! [차 지붕·벤치 밟기]', color: '#3b82d6'
+    },
+    heat: {
+      id: 'heat', label: '폭염 땡볕 경보!', kmaFake: '선선한 초여름 날씨',
+      norwayWarn: '폭염 땡볕! [그늘·버스정류장 밟기]', color: '#ff8a3d'
+    },
+    ice_road: {
+      id: 'ice_road', label: '겨울 빙판길!', kmaFake: '도로 건조 · 쾌적',
+      norwayWarn: '빙판길 결빙! [슬라이드 가속 주의]', color: '#8ee8ff'
+    }
+  };
+
+  const SEASON_WEATHER_POOL = {
+    spring: ['dust', 'gust', 'rain'],
+    summer: ['heat', 'rain', 'flood'],
+    autumn: ['gust', 'rain', 'clear'],
+    winter: ['ice_road', 'gust', 'dust']
+  };
 
   // 계절별 한국 날씨 장애물 (보내주신 디자인 시트 스프라이트 100% 연동!)
   // lane: 'low' (1단 점프), 'tall' (2단 점프), 'air' (슬라이드 통과!)
@@ -259,6 +305,8 @@ window.RUN_DATA = (function () {
     CHARACTERS,
     UPGRADES,
     BOOSTERS,
+    WEATHER_EVENTS,
+    SEASON_WEATHER_POOL,
     OBSTACLES_BY_SEASON,
     getYearDifficulty,
     getUpgradePrice

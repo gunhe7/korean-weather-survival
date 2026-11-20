@@ -219,25 +219,68 @@ window.RunRenderer = (function () {
     }
   }
 
-  function drawParticles(ctx, w, h, seasonId, dt, t) {
+  function drawParticles(ctx, w, h, seasonId, dt, t, weatherEvent = 'clear') {
+    // Active weather atmosphere tint & gust streaks
+    if (weatherEvent === 'dust') {
+      ctx.fillStyle = 'rgba(205, 174, 72, 0.24)';
+      ctx.fillRect(0, 0, w, h);
+    } else if (weatherEvent === 'heat') {
+      ctx.fillStyle = 'rgba(255, 130, 35, 0.14)';
+      ctx.fillRect(0, 0, w, h);
+      // Blazing diagonal sun rays
+      ctx.fillStyle = 'rgba(255, 240, 160, 0.16)';
+      for (let i = 0; i < 4; i++) {
+        const rx = ((i * 130 - t * 25) % (w + 100) + (w + 100)) % (w + 100) - 50;
+        ctx.beginPath();
+        ctx.moveTo(rx, 0);
+        ctx.lineTo(rx + 26, 0);
+        ctx.lineTo(rx - 30, h);
+        ctx.lineTo(rx - 56, h);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (weatherEvent === 'gust') {
+      ctx.fillStyle = 'rgba(210, 238, 255, 0.52)';
+      for (let i = 0; i < 7; i++) {
+        const gx = ((i * 85 - t * 340) % (w + 90) + (w + 90)) % (w + 90) - 70;
+        const gy = 34 + (i * 29) % (GROUND_Y - 40);
+        ctx.fillRect(Math.floor(gx), gy, 44 + (i % 3) * 14, 2);
+      }
+    } else if (weatherEvent === 'ice_road') {
+      ctx.fillStyle = 'rgba(135, 228, 255, 0.42)';
+      ctx.fillRect(0, GROUND_Y - 3, w, 12);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.68)';
+      for (let i = 0; i < 8; i++) {
+        const ix = ((i * 68 - t * 110) % (w + 40) + (w + 40)) % (w + 40) - 20;
+        ctx.fillRect(Math.floor(ix), GROUND_Y - 1, 14, 2);
+      }
+    }
+
+    const heavyRain = weatherEvent === 'rain' || weatherEvent === 'flood';
+    const heavyDust = weatherEvent === 'dust';
+
     particles.forEach((p) => {
-      if (seasonId === 'summer') {
-        p.x -= 95 * dt * p.v;
-        p.y += 225 * dt * p.v;
-        ctx.fillStyle = 'rgba(210, 236, 255, 0.78)';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 1, 9);
-      } else if (seasonId === 'winter') {
-        p.x -= (48 + Math.sin(t * 2 + p.p) * 18) * dt;
-        p.y += 50 * dt * p.v;
+      if (heavyRain || seasonId === 'summer') {
+        p.x -= (heavyRain ? 135 : 95) * dt * p.v;
+        p.y += (heavyRain ? 275 : 225) * dt * p.v;
+        ctx.fillStyle = heavyRain ? 'rgba(185, 228, 255, 0.9)' : 'rgba(210, 236, 255, 0.65)';
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), heavyRain ? 2 : 1, heavyRain ? 12 : 9);
+      } else if (heavyDust) {
+        p.x -= 110 * dt * p.v;
+        p.y += Math.sin(t * 4 + p.p) * 16 * dt;
+        ctx.fillStyle = 'rgba(235, 198, 75, 0.85)';
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 3, 3);
+      } else if (seasonId === 'winter' || weatherEvent === 'ice_road') {
+        p.x -= (52 + Math.sin(t * 2 + p.p) * 18) * dt;
+        p.y += 52 * dt * p.v;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.s + 1, p.s + 1);
-      } else if (seasonId === 'autumn') {
-        p.x -= 115 * dt * p.v;
+      } else if (seasonId === 'autumn' || weatherEvent === 'gust') {
+        p.x -= (weatherEvent === 'gust' ? 220 : 115) * dt * p.v;
         p.y += (30 + Math.sin(t * 4 + p.p) * 18) * dt;
         ctx.fillStyle = p.s === 1 ? '#ff9638' : '#ffd24d';
         ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 3, 2);
       } else {
-        // Spring sakura petals + subtle dust
         p.x -= 64 * dt * p.v;
         p.y += (26 + Math.sin(t * 3 + p.p) * 14) * dt;
         ctx.fillStyle = p.s === 1 ? '#ffc4dc' : 'rgba(255, 240, 175, 0.85)';
@@ -246,6 +289,149 @@ window.RunRenderer = (function () {
       if (p.y > h) { p.y = -6; p.x = Math.random() * (w + 60); }
       if (p.x < -10) { p.x = w + 10; p.y = Math.random() * h; }
     });
+  }
+
+  // ===================== KOREAN STREET INTERACTIVE FEATURES =====================
+  function drawStreetFeatures(ctx, run, t) {
+    // 1. Rising Floodwater Layer during 장마 침수 구간!
+    if (run.weatherEvent === 'flood') {
+      const wave = Math.sin(t * 7) * 2;
+      ctx.fillStyle = 'rgba(42, 118, 198, 0.58)';
+      ctx.fillRect(0, GROUND_Y - 15 + wave, W, 22);
+      ctx.fillStyle = 'rgba(180, 232, 255, 0.75)';
+      for (let wx = 0; wx < W; wx += 36) {
+        const ox = Math.floor((wx - (run.scroll * 0.8) % 36));
+        ctx.fillRect(ox, GROUND_Y - 15 + wave, 18, 2);
+      }
+    }
+
+    (run.features || []).forEach((f) => {
+      const x = Math.floor(f.x);
+      if (f.kind === 'conv_store') {
+        // K-24 Convenience Store (AC/Heating chance when passing!)
+        const sy = GROUND_Y - 66;
+        ctx.fillStyle = '#e8f1fa';
+        ctx.fillRect(x, sy, f.w, 66);
+        ctx.fillStyle = '#25b865'; ctx.fillRect(x, sy, f.w, 5);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(x, sy + 5, f.w, 5);
+        ctx.fillStyle = '#ff8b24'; ctx.fillRect(x, sy + 10, f.w, 4);
+        ctx.fillStyle = '#1b5eb8'; ctx.fillRect(x + 28, sy + 1, 44, 12);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 9px "Paperlogy", sans-serif';
+        ctx.fillText('K-24', x + 39, sy + 10);
+        // Glass windows
+        ctx.fillStyle = '#a4dbfa';
+        ctx.fillRect(x + 8, sy + 20, 44, 34);
+        // Sliding Automatic Door (opens when triggered!)
+        const doorOpen = f.triggered ? 12 : 0;
+        ctx.fillStyle = f.triggered ? (run.seasonId === 'winter' ? '#ffcf6e' : '#7ae8ff') : '#5d9bd4';
+        ctx.fillRect(x + 58, sy + 20, 32, 46);
+        ctx.fillStyle = '#d4edff';
+        ctx.fillRect(x + 58, sy + 20, 15 - doorOpen, 46);
+        ctx.fillRect(x + 75 + doorOpen, sy + 20, 15 - doorOpen, 46);
+        // Cool AC / Warm Heater air burst lines when door opens!
+        if (f.triggered) {
+          ctx.fillStyle = run.seasonId === 'winter' ? 'rgba(255, 195, 75, 0.85)' : 'rgba(115, 240, 255, 0.85)';
+          for (let k = 0; k < 4; k++) {
+            ctx.fillRect(x + 52 - k * 8, sy + 28 + k * 8, 16, 3);
+          }
+        }
+      } else if (f.kind === 'shade_tree') {
+        // Cool dark-blue shade pool on sidewalk + big tree overhead
+        ctx.fillStyle = 'rgba(20, 52, 108, 0.36)';
+        ctx.fillRect(x, GROUND_Y - 12, f.w, 16);
+        ctx.fillStyle = '#6e4933';
+        ctx.fillRect(x + f.w / 2 - 5, GROUND_Y - 56, 10, 56);
+        ctx.fillStyle = '#258a45';
+        ctx.fillRect(x - 6, GROUND_Y - 94, f.w + 12, 44);
+        ctx.fillStyle = '#47c96b';
+        ctx.fillRect(x + 4, GROUND_Y - 102, f.w - 8, 28);
+        ctx.fillStyle = '#a8ecff';
+        ctx.font = '800 9px "Paperlogy", sans-serif';
+        ctx.fillText('그늘', x + f.w / 2 - 10, GROUND_Y - 2);
+      } else if (f.kind === 'bus_stop') {
+        // Bus Shelter with shaded ground AND jumpable roof platform!
+        ctx.fillStyle = 'rgba(20, 52, 108, 0.38)';
+        ctx.fillRect(x, GROUND_Y - 12, f.w, 16);
+        ctx.fillStyle = '#475b78';
+        ctx.fillRect(x + 4, GROUND_Y - 46, 4, 46);
+        ctx.fillRect(x + f.w - 8, GROUND_Y - 46, 4, 46);
+        ctx.fillStyle = 'rgba(185, 226, 255, 0.55)';
+        ctx.fillRect(x + 8, GROUND_Y - 42, f.w - 16, 30);
+        // Roof platform
+        ctx.fillStyle = '#2463b8';
+        ctx.fillRect(x - 4, f.platformY, f.w + 8, 8);
+        ctx.fillStyle = '#8cc7ff';
+        ctx.fillRect(x - 2, f.platformY, f.w + 4, 3);
+      } else if (f.kind === 'truck_shade') {
+        // Moving Korean Cargo Truck casting cool mobile shade!
+        ctx.fillStyle = 'rgba(20, 52, 108, 0.42)';
+        ctx.fillRect(x - 10, GROUND_Y - 14, f.w + 20, 18);
+        // Truck cab & cargo box in background lane
+        ctx.fillStyle = '#edf3fa';
+        ctx.fillRect(x + 22, GROUND_Y - 54, f.w - 22, 36);
+        ctx.fillStyle = '#2d76d6';
+        ctx.fillRect(x, GROUND_Y - 44, 24, 26);
+        ctx.fillStyle = '#9be0ff';
+        ctx.fillRect(x + 3, GROUND_Y - 40, 12, 11);
+        ctx.fillStyle = '#262b36';
+        ctx.beginPath(); ctx.arc(x + 14, GROUND_Y - 16, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + f.w - 16, GROUND_Y - 16, 7, 0, Math.PI * 2); ctx.fill();
+      } else if (f.kind === 'car_roof') {
+        // Submerged sedan roof platform during flood!
+        const py = f.platformY;
+        ctx.fillStyle = '#d94c4c';
+        ctx.fillRect(x, py + 12, f.w, 16);
+        ctx.fillStyle = '#f26b6b';
+        ctx.fillRect(x + 12, py, f.w - 24, 14);
+        ctx.fillStyle = '#b5e8ff';
+        ctx.fillRect(x + 16, py + 3, f.w - 32, 9);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x + 12, py, f.w - 24, 3);
+      } else if (f.kind === 'bench') {
+        // Dry park bench platform during flood!
+        const py = f.platformY;
+        ctx.fillStyle = '#47362b';
+        ctx.fillRect(x + 6, py + 6, 5, 20);
+        ctx.fillRect(x + f.w - 11, py + 6, 5, 20);
+        ctx.fillStyle = '#c47b3d';
+        ctx.fillRect(x, py, f.w, 8);
+        ctx.fillStyle = '#f0a860';
+        ctx.fillRect(x, py, f.w, 3);
+      }
+    });
+  }
+
+  function drawPassingCar(ctx, car, t) {
+    if (!car) return;
+    if (car.phase === 'warn') {
+      const blink = Math.floor(t * 14) % 2 === 0;
+      ctx.fillStyle = blink ? '#d93232' : '#ff9814';
+      ctx.fillRect(W - 122, GROUND_Y - 64, 114, 24);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(W - 122, GROUND_Y - 64, 114, 24);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 11px "Paperlogy", sans-serif';
+      ctx.fillText('물벼락 주의! 점프!', W - 114, GROUND_Y - 48);
+    } else if (car.phase === 'pass') {
+      const x = Math.floor(car.x);
+      // Speeding Korean sedan
+      ctx.fillStyle = '#2f3d57';
+      ctx.fillRect(x, GROUND_Y - 26, 76, 18);
+      ctx.fillStyle = '#4b6187';
+      ctx.fillRect(x + 14, GROUND_Y - 38, 44, 14);
+      ctx.fillStyle = '#a6dcff';
+      ctx.fillRect(x + 18, GROUND_Y - 35, 16, 9);
+      ctx.fillRect(x + 38, GROUND_Y - 35, 16, 9);
+      ctx.fillStyle = '#ffe873';
+      ctx.fillRect(x, GROUND_Y - 22, 6, 5);
+      // Towering muddy water splash wave!
+      ctx.fillStyle = 'rgba(130, 92, 46, 0.85)';
+      ctx.fillRect(x + 10, GROUND_Y - 52, 54, 48);
+      ctx.fillStyle = 'rgba(196, 160, 110, 0.9)';
+      ctx.fillRect(x + 16, GROUND_Y - 58, 40, 14);
+    }
   }
 
   // ===================== SHIBA PUPPY COMPANION PET =====================
@@ -282,6 +468,7 @@ window.RunRenderer = (function () {
   function drawCharacter(ctx, charDef, x, y, opts, t) {
     const {
       sliding, inAir, gliding, invulnTimer, shield, feverTimer, running,
+      umbrellaOn = false, maskOn = false, umbrellaBrokenTimer = 0,
       scaleHeight = 52
     } = opts;
 
@@ -313,15 +500,26 @@ window.RunRenderer = (function () {
       ctx.stroke();
     }
 
-    // Umbrella canopy when 우비 소년 glides in midair
-    if (col.umbrella && gliding) {
+    // Umbrella canopy when 우비 소년 glides OR when Umbrella Toggle is ON!
+    const showUmbrella = (col.umbrella && gliding) || umbrellaOn;
+    if (showUmbrella) {
+      const uy = cy - (sliding ? 26 : scaleHeight) - 6;
       ctx.fillStyle = '#2d3a4f';
-      ctx.fillRect(cx + 8, cy - scaleHeight - 16, 2, 34);
+      ctx.fillRect(cx + 8, uy - 10, 2, 28);
       ctx.fillStyle = '#2672d9';
-      ctx.fillRect(cx - 18, cy - scaleHeight - 20, 40, 7);
-      ctx.fillRect(cx - 12, cy - scaleHeight - 25, 28, 6);
+      ctx.fillRect(cx - 18, uy - 14, 40, 7);
+      ctx.fillRect(cx - 12, uy - 19, 28, 6);
       ctx.fillStyle = '#ffd447';
-      ctx.fillRect(cx - 4, cy - scaleHeight - 24, 12, 3);
+      ctx.fillRect(cx - 4, uy - 18, 12, 3);
+    } else if (umbrellaBrokenTimer > 3.6) {
+      // Flipped broken umbrella brief comedy animation!
+      const uy = cy - scaleHeight - 8;
+      ctx.fillStyle = '#3c4759';
+      ctx.fillRect(cx + 8, uy - 6, 2, 22);
+      ctx.fillStyle = '#e05252';
+      ctx.fillRect(cx - 12, uy - 14, 6, 10);
+      ctx.fillRect(cx + 12, uy - 14, 6, 10);
+      ctx.fillRect(cx - 6, uy - 7, 18, 5);
     }
 
     if (sliding) {
@@ -353,6 +551,16 @@ window.RunRenderer = (function () {
       if (rot !== 0) ctx.rotate(rot);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(spr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
+
+      // White KF94 Mask overlay when Mask Toggle is ON!
+      if (maskOn) {
+        const my = sliding ? Math.floor(-drawH * 0.42) : Math.floor(-drawH * 0.44);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(Math.floor(drawW * 0.02), my, 12, 7);
+        ctx.strokeStyle = '#9bb8d4';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(Math.floor(drawW * 0.02), my, 12, 7);
+      }
 
       if (col.coffeeCup && !sliding) {
         ctx.fillStyle = 'rgba(225, 248, 255, 0.95)';
@@ -450,6 +658,21 @@ window.RunRenderer = (function () {
     } else if (it.kind === 'chest') {
       const spr = getSprite('ui_chest');
       if (spr) ctx.drawImage(spr, x - 16, y - 14, 32, 28);
+    } else if (it.kind === 'norway') {
+      // Glowing Norwegian Meteorological Institute (Yr.no) Badge!
+      ctx.fillStyle = 'rgba(102, 217, 255, 0.35)';
+      ctx.beginPath(); ctx.arc(x, y, 17, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ba0c2f';
+      ctx.fillRect(x - 12, y - 9, 24, 18);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x - 6, y - 9, 5, 18);
+      ctx.fillRect(x - 12, y - 2, 24, 5);
+      ctx.fillStyle = '#00205b';
+      ctx.fillRect(x - 5, y - 9, 3, 18);
+      ctx.fillRect(x - 12, y - 1, 24, 3);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x - 12, y - 9, 24, 18);
     }
   }
 
@@ -475,10 +698,10 @@ window.RunRenderer = (function () {
       const fx = Math.max(54, Math.min(W - 54, Math.floor(f.x)));
       const fy = Math.max(22, Math.floor(f.y - prog * 28));
       ctx.globalAlpha = Math.min(1, f.life * 2.2);
-      ctx.font = 'bold 13px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+      ctx.font = '800 13px "Paperlogy", "Malgun Gothic", sans-serif';
       ctx.textAlign = 'center';
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#191430';
+      ctx.lineWidth = 3.2;
+      ctx.strokeStyle = '#142038';
       ctx.strokeText(f.text, fx, fy);
       ctx.fillStyle = f.color;
       ctx.fillText(f.text, fx, fy);
@@ -492,6 +715,12 @@ window.RunRenderer = (function () {
   function renderRunFrame(ctx, run, charDef, dt, t) {
     ctx.imageSmoothingEnabled = false;
     drawBackground(ctx, W, H, GROUND_Y, run.seasonId, run.scroll, t);
+
+    // Interactive Korean Street Terrain (Convenience Store, Shade Zones, Flood Platforms!)
+    drawStreetFeatures(ctx, run, t);
+
+    // Passing Car Water Splash Event
+    drawPassingCar(ctx, run.passingCar, t);
 
     // Emit cute running dust & FEVER stars!
     if (dt > 0) {
@@ -520,11 +749,14 @@ window.RunRenderer = (function () {
     // Runner Character
     drawCharacter(ctx, charDef, run.playerX, run.playerY, {
       sliding: run.sliding,
-      inAir: run.playerY < GROUND_Y - 1,
+      inAir: run.playerY < (run.currentFloorY || GROUND_Y) - 1,
       gliding: run.gliding,
       invulnTimer: run.invulnTimer,
       shield: run.shield,
       feverTimer: run.feverTimer,
+      umbrellaOn: run.umbrellaOn,
+      maskOn: run.maskOn,
+      umbrellaBrokenTimer: run.umbrellaBrokenTimer || 0,
       hitPoseTimer: run.hitPoseTimer || 0,
       itemPoseTimer: run.itemPoseTimer || 0,
       winPoseTimer: run.winPoseTimer || 0,
@@ -532,8 +764,8 @@ window.RunRenderer = (function () {
       scaleHeight: 50
     }, t);
 
-    // Weather particles
-    drawParticles(ctx, W, H, run.seasonId, dt, t);
+    // Active Weather Atmosphere & Particles
+    drawParticles(ctx, W, H, run.seasonId, dt, t, run.weatherEvent);
 
     // FEVER! Pixel Ribbon Banner when active
     if (run.feverTimer > 0) {
@@ -544,16 +776,15 @@ window.RunRenderer = (function () {
   }
 
   function renderHomePreview(ctx, charDef, t) {
-    const pw = 380, ph = 175, gy = 146;
+    const pw = 380, ph = 190, gy = 158;
     ctx.imageSmoothingEnabled = false;
     const seasonIdx = Math.floor(t / 6) % 4;
     const seasonId = window.RUN_DATA.SEASONS[seasonIdx].id;
     drawBackground(ctx, pw, ph, gy, seasonId, t * 44, t);
-    // Cute Shiba Puppy accompanying on Home Screen too!
     const dog = getSprite('pet_dog');
     if (dog) {
       const hop = Math.abs(Math.sin(t * 14 + 0.8)) * 4;
-      const dh = 36;
+      const dh = 38;
       const dw = Math.round(dh * (dog.naturalWidth / dog.naturalHeight));
       ctx.drawImage(dog, Math.floor(pw / 2 - 58 - dw / 2), Math.floor(gy + 2 - dh - hop), dw, dh);
     }
@@ -565,9 +796,9 @@ window.RunRenderer = (function () {
       shield: false,
       feverTimer: 0,
       running: true,
-      scaleHeight: 72
+      scaleHeight: 74
     }, t);
-    drawParticles(ctx, pw, ph, seasonId, 0.016, t);
+    drawParticles(ctx, pw, ph, seasonId, 0.016, t, 'clear');
   }
 
   return {
