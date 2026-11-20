@@ -121,11 +121,9 @@
   const el = {
     btnRotateFullscreen: document.getElementById('btn-rotate-fullscreen'),
     introOverlay: document.getElementById('intro-overlay'),
-    btnReplayIntro: document.getElementById('btn-replay-intro'),
     headerBestScore: document.getElementById('header-best-score'),
     btnGoldShop: document.getElementById('btn-gold-shop'),
     uiGold: document.getElementById('ui-gold'),
-    btnSoundGlobal: document.getElementById('btn-sound-global'),
     btnOpenSettings: document.getElementById('btn-open-settings'),
 
     attendanceOverlay: document.getElementById('attendance-overlay'),
@@ -471,7 +469,6 @@
 
   function renderSettingsUI() {
     const st = SFX.getSettings();
-    el.btnSoundGlobal.textContent = SFX.isEnabled() ? '🔊' : '🔇';
 
     el.chkBgmOn.classList.toggle('on', st.bgmOn);
     el.chkBgmOn.textContent = st.bgmOn ? 'ON' : 'OFF';
@@ -2489,11 +2486,6 @@
     if (portraitMq.addEventListener) portraitMq.addEventListener('change', handleOrientationCheck);
     else window.addEventListener('resize', handleOrientationCheck);
 
-    el.btnSoundGlobal.addEventListener('click', () => {
-      SFX.toggle();
-      saveAudioState();
-    });
-
     // Auto-pause active run safely when switching apps / backgrounding browser tab!
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && run && run.active && !paused) {
@@ -2593,16 +2585,7 @@
       }, 520);
     }
 
-    function replayIntro() {
-      if (run && run.active) return;
-      introLeaving = false;
-      el.introOverlay.classList.remove('hidden', 'playing', 'leaving');
-      SFX.introJingle();
-      scheduleIntroAutoDismiss();
-    }
-
     el.introOverlay.addEventListener('click', () => enterFromIntro(false));
-    el.btnReplayIntro.addEventListener('click', replayIntro);
     window.addEventListener('pointerdown', () => {
       SFX.startBgm();
       if (!run || !run.active) SFX.setBgmMode('menu');

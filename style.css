@@ -4612,6 +4612,38 @@ input:focus-visible {
      0px    2px   0 #0a1738;
 }
 
+/* ================= TOP-RIGHT UPLOADED GLOSSY SETTINGS GEAR BUTTON ================= */
+.hdr-gear-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 3px 6px rgba(6, 16, 38, 0.52));
+  transition: transform 0.14s ease, filter 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hdr-gear-btn:hover {
+  transform: rotate(18deg) scale(1.05);
+}
+
+.hdr-gear-btn:active {
+  transform: rotate(35deg) scale(0.92);
+}
+
+.hdr-gear-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
 @media (max-height: 440px) {
   .best-score-banner {
     width: clamp(134px, 21vw, 160px);
@@ -4619,5 +4651,10 @@ input:focus-visible {
 
   .best-score-val {
     font-size: 12px;
+  }
+
+  .hdr-gear-btn {
+    width: 38px;
+    height: 38px;
   }
 }
