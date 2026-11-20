@@ -4,39 +4,93 @@
   const Renderer = window.RunRenderer;
 
   const SAVE_KEY = 'kr_weather_runner_save_v1';
+  const SAVE_BACKUP_KEY = 'kr_weather_runner_save_v1_backup';
 
-  // ===================== PERSISTENT SAVE DATA =====================
+  function getTodayKey() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function createDefaultCharLevels() {
+    const lv = {};
+    DATA.CHARACTERS.forEach((c) => { lv[c.id] = 1; });
+    return lv;
+  }
+
+  // ===================== PERSISTENT SAVE DATA (SAFE MIGRATION + BACKUP) =====================
   function loadSave() {
+    const today = getTodayKey();
     const def = {
       gold: 150,
       unlockedChars: ['basic'],
       selectedChar: 'basic',
+      charLevels: createDefaultCharLevels(),
       upgrades: { hp: 0, magnet: 0, defense: 0, score: 0 },
       boosters: { norway: 0, shield: 0, boost: 0 },
       bestScore: 0,
       bestYear: 1,
-      playCount: 0
+      bestDistanceM: 0,
+      playCount: 0,
+      attendance: { lastClaimDate: '', streak: 0 },
+      dailyMissions: { date: today, progress: { dist: 0, coins: 0, jumps: 0 }, claimed: {} }
     };
-    try {
-      const raw = JSON.parse(localStorage.getItem(SAVE_KEY));
-      if (!raw) return def;
-      return {
-        ...def,
-        ...raw,
-        unlockedChars: Array.isArray(raw.unlockedChars) && raw.unlockedChars.length ? raw.unlockedChars : ['basic'],
-        upgrades: { ...def.upgrades, ...(raw.upgrades || {}) },
-        boosters: { ...def.boosters, ...(raw.boosters || {}) }
-      };
-    } catch {
-      return def;
+
+    function parseKey(key) {
+      try {
+        const str = localStorage.getItem(key);
+        if (!str) return null;
+        const parsed = JSON.parse(str);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch {
+        return null;
+      }
     }
+
+    const raw = parseKey(SAVE_KEY) || parseKey(SAVE_BACKUP_KEY);
+    if (!raw) return def;
+
+    const mergedLevels = { ...createDefaultCharLevels(), ...(raw.charLevels || {}) };
+    const rawMissions = raw.dailyMissions && raw.dailyMissions.date === today ? raw.dailyMissions : def.dailyMissions;
+
+    return {
+      ...def,
+      ...raw,
+      gold: typeof raw.gold === 'number' && Number.isFinite(raw.gold) ? Math.max(0, Math.floor(raw.gold)) : def.gold,
+      unlockedChars: Array.isArray(raw.unlockedChars) && raw.unlockedChars.length ? raw.unlockedChars : ['basic'],
+      charLevels: mergedLevels,
+      upgrades: { ...def.upgrades, ...(raw.upgrades || {}) },
+      boosters: { ...def.boosters, ...(raw.boosters || {}) },
+      bestDistanceM: typeof raw.bestDistanceM === 'number' ? raw.bestDistanceM : 0,
+      attendance: { ...def.attendance, ...(raw.attendance || {}) },
+      dailyMissions: {
+        date: today,
+        progress: { dist: 0, coins: 0, jumps: 0, ...(rawMissions.progress || {}) },
+        claimed: { ...(rawMissions.claimed || {}) }
+      }
+    };
   }
 
   let save = loadSave();
 
+  function ensureTodayMissions() {
+    const today = getTodayKey();
+    if (!save.dailyMissions || save.dailyMissions.date !== today) {
+      save.dailyMissions = {
+        date: today,
+        progress: { dist: 0, coins: 0, jumps: 0 },
+        claimed: {}
+      };
+    }
+  }
+
   function persistSave() {
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+      const json = JSON.stringify(save);
+      localStorage.setItem(SAVE_KEY, json);
+      localStorage.setItem(SAVE_BACKUP_KEY, json);
     } catch {
       // ignore storage errors
     }
@@ -46,6 +100,7 @@
   let currentTab = 'home';
   let currentShopSubtab = 'upgrades';
   let previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === save.selectedChar));
+  let selectedHomeSeasonIdx = 0;
 
   // ===================== ACTIVE RUN STATE =====================
   let run = null;
@@ -62,21 +117,43 @@
     btnSoundGlobal: document.getElementById('btn-sound-global'),
 
     homeProfileAvatar: document.getElementById('home-profile-avatar'),
+    homeCharLvMini: document.getElementById('home-char-lv-mini'),
     homeCharName: document.getElementById('home-char-name'),
     homeBestYear: document.getElementById('home-best-year'),
+    homeBestDist: document.getElementById('home-best-dist'),
     homeCharHp: document.getElementById('home-char-hp'),
-    homePlayCount: document.getElementById('home-play-count'),
-    homeBoosterSummary: document.getElementById('home-booster-summary'),
-    btnPassShop: document.getElementById('btn-pass-shop'),
+
+    btnOpenAttendance: document.getElementById('btn-open-attendance'),
+    attendanceDot: document.getElementById('attendance-dot'),
+    homeAttStreak: document.getElementById('home-att-streak'),
+    homeAttStatus: document.getElementById('home-att-status'),
+    attendanceOverlay: document.getElementById('attendance-overlay'),
+    btnCloseAttendance: document.getElementById('btn-close-attendance'),
+    attModalDesc: document.getElementById('att-modal-desc'),
+    attDaysGrid: document.getElementById('att-days-grid'),
+    btnClaimAttendance: document.getElementById('btn-claim-attendance'),
 
     homePreviewCanvas: document.getElementById('homePreviewCanvas'),
+    homeCharLvBadge: document.getElementById('home-char-lv-badge'),
     homeCharTier: document.getElementById('home-char-tier'),
+    homeCharPassiveName: document.getElementById('home-char-passive-name'),
     homeCharDesc: document.getElementById('home-char-desc'),
+    statValHp: document.getElementById('stat-val-hp'),
+    statFillHp: document.getElementById('stat-fill-hp'),
+    statValGold: document.getElementById('stat-val-gold'),
+    statFillGold: document.getElementById('stat-fill-gold'),
+    statValScore: document.getElementById('stat-val-score'),
+    statFillScore: document.getElementById('stat-fill-score'),
+    homeSeasonHazards: document.getElementById('home-season-hazards'),
     btnPrevChar: document.getElementById('btn-prev-char'),
     btnNextChar: document.getElementById('btn-next-char'),
 
+    homeMissionBadge: document.getElementById('home-mission-badge'),
+    homeMissionList: document.getElementById('home-mission-list'),
+    homeBoosterSummary: document.getElementById('home-booster-summary'),
+    btnPassShop: document.getElementById('btn-pass-shop'),
+
     btnDockChars: document.getElementById('btn-dock-chars'),
-    speechCharImg: document.getElementById('speech-char-img'),
     dockOwnedCount: document.getElementById('dock-owned-count'),
     btnPlayStart: document.getElementById('btn-play-start'),
     btnPlayLabel: document.getElementById('btn-play-label'),
@@ -84,10 +161,14 @@
     btnDockShop: document.getElementById('btn-dock-shop'),
     dockBoosterCount: document.getElementById('dock-booster-count'),
 
+    dexRateText: document.getElementById('dex-rate-text'),
+    dexBarFill: document.getElementById('dex-bar-fill'),
+    dexBonusText: document.getElementById('dex-bonus-text'),
     charList: document.getElementById('char-list'),
     shopItemsList: document.getElementById('shop-items-list'),
 
     viewRun: document.getElementById('view-run'),
+    runCanvasWrap: document.getElementById('run-canvas-wrap'),
     runCanvas: document.getElementById('runCanvas'),
     runPortraitImg: document.getElementById('run-portrait-img'),
     runYearNum: document.getElementById('run-year-num'),
@@ -127,6 +208,7 @@
     gameoverOverlay: document.getElementById('gameover-overlay'),
     resNewBest: document.getElementById('res-new-best'),
     resScore: document.getElementById('res-score'),
+    resDistCompare: document.getElementById('res-dist-compare'),
     resCause: document.getElementById('res-cause'),
     resSurvived: document.getElementById('res-survived'),
     resGoldEarned: document.getElementById('res-gold-earned'),
@@ -150,8 +232,28 @@
     return save.unlockedChars.includes(id);
   }
 
+  function getCharLevel(id) {
+    return Math.max(1, Math.min(DATA.MAX_CHAR_LEVEL, (save.charLevels && save.charLevels[id]) || 1));
+  }
+
+  function getCharStats(charDef) {
+    return DATA.getCharEffectiveStats(charDef, getCharLevel(charDef.id), save.upgrades, save.unlockedChars.length);
+  }
+
   function getMaxHp(charDef) {
-    return charDef.baseHp + save.upgrades.hp * 14;
+    return getCharStats(charDef).maxHp;
+  }
+
+  function canClaimAttendanceToday() {
+    return !save.attendance || save.attendance.lastClaimDate !== getTodayKey();
+  }
+
+  function getNextAttendanceDayIndex() {
+    const streak = (save.attendance && save.attendance.streak) || 0;
+    if (canClaimAttendanceToday()) {
+      return streak % DATA.ATTENDANCE_REWARDS.length;
+    }
+    return Math.max(0, (streak - 1) % DATA.ATTENDANCE_REWARDS.length);
   }
 
   let toastTimer = null;
@@ -170,78 +272,262 @@
     bannerTimer = setTimeout(() => el.runBanner.classList.add('hidden'), ms);
   }
 
-  // ===================== HOME / CHARS / SHOP UI RENDER =====================
+  // ===================== HOME / MISSIONS / ATTENDANCE / CHARS / SHOP UI RENDER =====================
   function refreshAllMenus() {
+    ensureTodayMissions();
     el.uiGold.textContent = save.gold.toLocaleString('ko-KR');
     el.headerBestScore.textContent = save.bestScore.toLocaleString('ko-KR');
     el.homeBestYear.textContent = `${save.bestYear}년 차`;
-    el.homePlayCount.textContent = `${save.playCount}회`;
+    el.homeBestDist.textContent = `${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
 
-    const totalBoosters = (save.boosters.norway || 0) + (save.boosters.shield || 0) + (save.boosters.boost || 0);
+    const norwayN = save.boosters.norway || 0;
+    const shieldN = save.boosters.shield || 0;
+    const boostN = save.boosters.boost || 0;
+    const totalBoosters = norwayN + shieldN + boostN;
     el.dockBoosterCount.textContent = totalBoosters;
     el.dockOwnedCount.textContent = `${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
 
-    if (save.boosters.norway > 0) el.homeBoosterSummary.textContent = '🇳🇴 노르웨이 ON';
-    else if (totalBoosters > 0) el.homeBoosterSummary.textContent = `출발 버프 ${totalBoosters}개`;
-    else el.homeBoosterSummary.textContent = '상점에서 준비';
+    if (totalBoosters > 0) {
+      const parts = [];
+      if (norwayN > 0) parts.push(`🇳🇴노르웨이 ${norwayN}`);
+      if (shieldN > 0) parts.push(`🛡️보호막 ${shieldN}`);
+      if (boostN > 0) parts.push(`⚡피버 ${boostN}`);
+      el.homeBoosterSummary.textContent = parts.join(' · ');
+    } else {
+      el.homeBoosterSummary.textContent = '출발 아이템 없음 (상점에서 준비!)';
+    }
 
+    renderAttendanceUI();
     renderHomeCharStage();
+    renderHomeSeasonPreview();
+    renderDailyMissions();
     renderCharList();
     renderShopList();
   }
 
-  function renderHomeCharStage() {
-    const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
-    const unlocked = isCharUnlocked(ch.id);
+  function renderAttendanceUI() {
+    const claimable = canClaimAttendanceToday();
+    const dayIdx = getNextAttendanceDayIndex();
+    const dayNum = dayIdx + 1;
+    el.attendanceDot.classList.toggle('hidden', !claimable);
+    el.homeAttStreak.textContent = `${dayNum}일차`;
+    el.homeAttStatus.textContent = claimable ? '보상 받기!' : '출석 완료';
 
-    el.homeProfileAvatar.src = ch.avatar;
-    el.speechCharImg.src = ch.avatar;
-    el.homeCharTier.textContent = unlocked ? ch.tier : `🔒 ${ch.price}G`;
-    el.homeCharName.textContent = ch.name;
-    el.homeCharHp.textContent = getMaxHp(ch);
-    el.homeCharDesc.textContent = ch.desc;
+    el.attDaysGrid.innerHTML = '';
+    const claimedDays = claimable ? dayIdx : dayIdx + 1;
+    DATA.ATTENDANCE_REWARDS.forEach((rw, idx) => {
+      const cell = document.createElement('div');
+      const isClaimed = idx < claimedDays;
+      const isToday = claimable && idx === dayIdx;
+      cell.className = `att-day-cell${idx === 6 ? ' day7' : ''}${isClaimed ? ' claimed' : ''}${isToday ? ' today' : ''}`;
+      const ico = isClaimed ? '✅' : (rw.booster === 'norway' ? '🇳🇴' : rw.booster === 'shield' ? '🛡️' : rw.booster === 'boost' ? '⚡' : '🪙');
+      cell.innerHTML = `
+        <span class="att-day-num">${rw.day}일차</span>
+        <span class="att-day-ico">${ico}</span>
+        <span class="att-day-val">${rw.label}</span>
+      `;
+      el.attDaysGrid.appendChild(cell);
+    });
 
-    if (unlocked) {
-      el.btnPlayStart.disabled = false;
-      el.btnPlayLabel.textContent = '시작하기 ▶';
-      el.btnPlaySub.textContent = `${ch.name} · 사계절 무한 생존`;
+    if (claimable) {
+      const rw = DATA.ATTENDANCE_REWARDS[dayIdx];
+      el.attModalDesc.textContent = `오늘(${rw.day}일차) 출석 보상: ${rw.label} (+${rw.gold}G)`;
+      el.btnClaimAttendance.disabled = false;
+      el.btnClaimAttendance.textContent = `🎁 ${rw.day}일차 출석 보상 받기!`;
     } else {
-      el.btnPlayStart.disabled = save.gold < ch.price;
-      el.btnPlayLabel.textContent = `🔒 ${ch.price.toLocaleString('ko-KR')}G 해금`;
-      el.btnPlaySub.textContent = `${ch.name} 즉시 구매`;
+      el.attModalDesc.textContent = '오늘 출석 보상을 이미 받았습니다! 내일 또 방문해 주세요.';
+      el.btnClaimAttendance.disabled = true;
+      el.btnClaimAttendance.textContent = '✅ 오늘 출석 완료';
     }
   }
 
-  function renderCharList() {
-    el.charList.innerHTML = '';
-    DATA.CHARACTERS.forEach((ch, idx) => {
-      const unlocked = isCharUnlocked(ch.id);
-      const selected = save.selectedChar === ch.id;
+  function claimAttendanceToday() {
+    if (!canClaimAttendanceToday()) return;
+    const dayIdx = getNextAttendanceDayIndex();
+    const rw = DATA.ATTENDANCE_REWARDS[dayIdx];
+    save.gold += rw.gold;
+    if (rw.booster) {
+      save.boosters[rw.booster] = (save.boosters[rw.booster] || 0) + 1;
+    }
+    save.attendance = {
+      lastClaimDate: getTodayKey(),
+      streak: ((save.attendance && save.attendance.streak) || 0) + 1
+    };
+    SFX.reward();
+    persistSave();
+    refreshAllMenus();
+    showToast(`🎁 ${rw.day}일차 출석 보상 수령! (${rw.label})`);
+  }
 
-      const card = document.createElement('div');
-      card.className = `item-card${selected ? ' selected' : ''}`;
-      card.innerHTML = `
-        <div class="item-avatar"><img src="${ch.avatar}" alt="${ch.name}" class="item-avatar-img" /></div>
-        <div class="item-meta">
-          <div class="item-title-row">
-            <span class="item-name">${ch.name}</span>
-            <span class="item-badge">${ch.tier}</span>
-            ${selected ? '<span class="item-badge equipped">장착 중</span>' : ''}
+  function renderHomeSeasonPreview() {
+    const s = DATA.SEASONS[selectedHomeSeasonIdx] || DATA.SEASONS[0];
+    document.querySelectorAll('.pedestal-seasons .p-s').forEach((btn) => {
+      btn.classList.toggle('active', Number(btn.dataset.seasonIdx) === selectedHomeSeasonIdx);
+    });
+    el.homeSeasonHazards.textContent = `${s.icon} ${s.name} 재난: ${s.hazards}`;
+  }
+
+  function renderDailyMissions() {
+    ensureTodayMissions();
+    const prog = save.dailyMissions.progress || {};
+    const claimed = save.dailyMissions.claimed || {};
+    let doneCount = 0;
+
+    el.homeMissionList.innerHTML = '';
+    DATA.DAILY_MISSIONS.forEach((m) => {
+      const cur = Math.min(m.target, Math.floor(prog[m.metric] || 0));
+      const pct = Math.min(100, (cur / m.target) * 100);
+      const isDone = cur >= m.target;
+      const isClaimed = Boolean(claimed[m.id]);
+      if (isClaimed) doneCount += 1;
+
+      const row = document.createElement('div');
+      row.className = 'mission-row';
+      row.innerHTML = `
+        <div class="mission-row-info">
+          <div class="mission-row-top">
+            <span>${m.title}</span>
+            <span class="mission-row-prog">${cur.toLocaleString('ko-KR')}/${m.target.toLocaleString('ko-KR')}${m.unit}</span>
           </div>
-          <div class="item-desc">${ch.desc}</div>
+          <div class="mission-mini-track">
+            <div class="mission-mini-fill" style="width: ${pct.toFixed(1)}%"></div>
+          </div>
         </div>
       `;
 
       const btn = document.createElement('button');
       btn.type = 'button';
-      if (selected) {
-        btn.className = 'item-action-btn done';
-        btn.textContent = '장착 완료';
+      if (isClaimed) {
+        btn.className = 'mission-claim-btn done';
+        btn.textContent = '완료 ✓';
         btn.disabled = true;
-      } else if (unlocked) {
-        btn.className = 'item-action-btn blue';
-        btn.textContent = '선택';
+      } else if (isDone) {
+        btn.className = 'mission-claim-btn ready';
+        btn.textContent = `수령 +${m.rewardGold}G`;
         btn.onclick = () => {
+          save.dailyMissions.claimed[m.id] = true;
+          save.gold += m.rewardGold;
+          SFX.reward();
+          persistSave();
+          refreshAllMenus();
+          showToast(`🎉 미션 완료! +${m.rewardGold}G 획득!`);
+        };
+      } else {
+        btn.className = 'mission-claim-btn pending';
+        btn.textContent = `+${m.rewardGold}G`;
+        btn.disabled = true;
+      }
+
+      row.appendChild(btn);
+      el.homeMissionList.appendChild(row);
+    });
+
+    el.homeMissionBadge.textContent = `${doneCount}/${DATA.DAILY_MISSIONS.length} 완료`;
+  }
+
+  function renderHomeCharStage() {
+    const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
+    const unlocked = isCharUnlocked(ch.id);
+    const stats = getCharStats(ch);
+
+    el.homeProfileAvatar.src = ch.avatar;
+    el.homeCharLvMini.textContent = unlocked ? `Lv.${stats.level}` : '잠금';
+    el.homeCharLvBadge.textContent = unlocked ? `Lv.${stats.level} / ${DATA.MAX_CHAR_LEVEL}` : '👁️ 능력 미리보기';
+    el.homeCharTier.textContent = unlocked ? ch.tier : `🔒 ${ch.price}G`;
+    el.homeCharName.textContent = ch.name;
+    el.homeCharHp.textContent = stats.maxHp;
+    el.homeCharPassiveName.textContent = ch.passiveName;
+    el.homeCharDesc.textContent = ch.passiveDesc;
+
+    // Animated Stat Bars (Visual Comparison!)
+    el.statValHp.textContent = `${stats.maxHp}`;
+    el.statFillHp.style.width = `${Math.min(100, Math.round((stats.maxHp / 235) * 100))}%`;
+    el.statValGold.textContent = `${Math.round(stats.goldMult * 100)}%`;
+    el.statFillGold.style.width = `${Math.min(100, Math.round(((stats.goldMult - 0.7) / 1.0) * 100))}%`;
+    el.statValScore.textContent = `${Math.round(stats.scoreMult * 100)}%`;
+    el.statFillScore.style.width = `${Math.min(100, Math.round(((stats.scoreMult - 0.7) / 1.0) * 100))}%`;
+
+    if (unlocked) {
+      el.btnPlayStart.disabled = false;
+      el.btnPlayLabel.textContent = '시작하기 ▶';
+      el.btnPlaySub.textContent = `${ch.name} Lv.${stats.level} · 사계절 생존 출발`;
+    } else {
+      el.btnPlayStart.disabled = save.gold < ch.price;
+      el.btnPlayLabel.textContent = `🔒 ${ch.price.toLocaleString('ko-KR')}G 해금`;
+      el.btnPlaySub.textContent = `${ch.name} 즉시 구매 후 플레이`;
+    }
+  }
+
+  function levelUpCharacter(ch) {
+    if (!isCharUnlocked(ch.id)) return;
+    const curLv = getCharLevel(ch.id);
+    if (curLv >= DATA.MAX_CHAR_LEVEL) return;
+    const price = DATA.getCharLevelPrice(curLv);
+    if (save.gold < price) {
+      showToast(`골드가 부족합니다! (필요: ${price}G)`);
+      return;
+    }
+    save.gold -= price;
+    save.charLevels[ch.id] = curLv + 1;
+    SFX.levelUp();
+    persistSave();
+    refreshAllMenus();
+    showToast(`⬆️ ${ch.name} Lv.${curLv + 1} 성장 완료! (체력+8, 골드/점수+4%)`);
+  }
+
+  function renderCharList() {
+    const ownedCount = save.unlockedChars.length;
+    const totalCount = DATA.CHARACTERS.length;
+    const ratePct = Math.round((ownedCount / totalCount) * 100);
+    const dexBonusPct = Math.max(0, ownedCount - 1) * 3;
+    el.dexRateText.textContent = `${ownedCount} / ${totalCount} (${ratePct}%)`;
+    el.dexBarFill.style.width = `${ratePct}%`;
+    el.dexBonusText.textContent = `현재 도감 효과: 전체 점수 +${dexBonusPct}% (캐릭터 추가 해금당 +3%)`;
+
+    el.charList.innerHTML = '';
+    DATA.CHARACTERS.forEach((ch, idx) => {
+      const unlocked = isCharUnlocked(ch.id);
+      const selected = save.selectedChar === ch.id;
+      const stats = getCharStats(ch);
+      const isMaxLv = stats.level >= DATA.MAX_CHAR_LEVEL;
+      const lvPrice = DATA.getCharLevelPrice(stats.level);
+
+      const card = document.createElement('div');
+      card.className = `item-card char-card-rich${selected ? ' selected' : ''}`;
+      card.innerHTML = `
+        <div class="char-card-top">
+          <div class="item-avatar"><img src="${ch.avatar}" alt="${ch.name}" class="item-avatar-img" /></div>
+          <div class="item-meta">
+            <div class="item-title-row">
+              <span class="item-name">${ch.name}</span>
+              <span class="item-badge">${unlocked ? `Lv.${stats.level}` : '🔒 미해금'}</span>
+              <span class="item-badge">${ch.tier}</span>
+              ${selected ? '<span class="item-badge equipped">장착 중</span>' : ''}
+            </div>
+            <div class="item-desc">${ch.desc}</div>
+          </div>
+        </div>
+        <div class="char-passive-box"><strong>고유 패시브 · ${ch.passiveName}:</strong> ${ch.passiveDesc}</div>
+        <div class="char-mini-stats">
+          <div class="char-mini-stat-pill">❤️ 체력 ${stats.maxHp}</div>
+          <div class="char-mini-stat-pill">🪙 골드 ${Math.round(stats.goldMult * 100)}%</div>
+          <div class="char-mini-stat-pill">⭐ 점수 ${Math.round(stats.scoreMult * 100)}%</div>
+        </div>
+      `;
+
+      const actRow = document.createElement('div');
+      actRow.className = 'char-card-actions';
+
+      const mainBtn = document.createElement('button');
+      mainBtn.type = 'button';
+      if (selected) {
+        mainBtn.className = 'item-action-btn done';
+        mainBtn.textContent = '장착 완료';
+        mainBtn.disabled = true;
+      } else if (unlocked) {
+        mainBtn.className = 'item-action-btn blue';
+        mainBtn.textContent = '캐릭터 선택';
+        mainBtn.onclick = () => {
           SFX.click();
           save.selectedChar = ch.id;
           previewCharIdx = idx;
@@ -250,13 +536,39 @@
           showToast(`${ch.name} 캐릭터를 장착했습니다!`);
         };
       } else {
-        btn.className = 'item-action-btn';
-        btn.textContent = `${ch.price} G`;
-        btn.disabled = save.gold < ch.price;
-        btn.onclick = () => buyCharacter(ch, idx);
+        mainBtn.className = 'item-action-btn ghost';
+        mainBtn.textContent = '👁️ 미리보기';
+        mainBtn.onclick = () => {
+          SFX.click();
+          previewCharIdx = idx;
+          switchTab('home');
+          showToast(`${ch.name} 능력치 & 애니메이션 미리보기!`);
+        };
       }
 
-      card.appendChild(btn);
+      const subBtn = document.createElement('button');
+      subBtn.type = 'button';
+      if (unlocked) {
+        if (isMaxLv) {
+          subBtn.className = 'item-action-btn done';
+          subBtn.textContent = '레벨 MAX';
+          subBtn.disabled = true;
+        } else {
+          subBtn.className = 'item-action-btn purple';
+          subBtn.textContent = `⬆️ Lv.${stats.level + 1} (${lvPrice}G)`;
+          subBtn.disabled = save.gold < lvPrice;
+          subBtn.onclick = () => levelUpCharacter(ch);
+        }
+      } else {
+        subBtn.className = 'item-action-btn';
+        subBtn.textContent = `🔓 ${ch.price} G 해금`;
+        subBtn.disabled = save.gold < ch.price;
+        subBtn.onclick = () => buyCharacter(ch, idx);
+      }
+
+      actRow.appendChild(mainBtn);
+      actRow.appendChild(subBtn);
+      card.appendChild(actRow);
       el.charList.appendChild(card);
     });
   }
@@ -416,9 +728,26 @@
   const GEAR_COOLDOWN = 5.0;
   const UMBRELLA_BROKEN_CD = 7.0;
 
+  function triggerCameraShake(intensity = 6, dur = 0.25) {
+    if (!run) return;
+    run.shakeIntensity = Math.max(run.shakeIntensity || 0, intensity);
+    run.shakeTimer = Math.max(run.shakeTimer || 0, dur);
+  }
+
+  function commitRunMissionProgress() {
+    if (!run || run.missionsCommitted) return;
+    run.missionsCommitted = true;
+    ensureTodayMissions();
+    save.dailyMissions.progress.dist = (save.dailyMissions.progress.dist || 0) + (run.distanceM || 0);
+    save.dailyMissions.progress.coins = (save.dailyMissions.progress.coins || 0) + (run.coinsCollected || 0);
+    save.dailyMissions.progress.jumps = (save.dailyMissions.progress.jumps || 0) + (run.jumpCount || 0);
+    persistSave();
+  }
+
   function startRun() {
     const ch = getCharDef(save.selectedChar);
-    const maxHp = getMaxHp(ch);
+    const stats = getCharStats(ch);
+    const maxHp = stats.maxHp;
 
     let hasShield = false;
     let startFever = 0;
@@ -434,16 +763,25 @@
     run = {
       active: true,
       dead: false,
+      missionsCommitted: false,
       charId: ch.id,
+      charLevel: stats.level,
+      goldMult: stats.goldMult,
+      scoreMult: stats.scoreMult,
       hp: maxHp,
       maxHp,
       score: 0,
       distanceM: 0,
       gold: 0,
+      coinsCollected: 0,
+      jumpCount: 0,
+      dodgeCombo: 0,
       elapsed: 0,
       year: 1,
       seasonIdx: 0,
       seasonId: 'spring',
+      prevSeasonId: null,
+      seasonTransition: 1,
       scroll: 0,
       baseSpeed: 188,
       speed: 188,
@@ -473,6 +811,11 @@
       maskActiveTimer: 0,
       maskCooldown: 0,
       weatherTickTimer: 1.5,
+
+      // Camera Juice & Feedback Timers
+      shakeTimer: 0,
+      shakeIntensity: 0,
+      hitFlashTimer: 0,
 
       // Buffs & Timers
       invulnTimer: 0,
@@ -513,13 +856,14 @@
     };
 
     el.runPortraitImg.src = ch.avatar;
+    el.runCanvasWrap.classList.toggle('fever-active', startFever > 0);
     el.mudOverlay.classList.add('hidden');
     el.gameoverOverlay.classList.add('hidden');
     el.pauseOverlay.classList.add('hidden');
     el.viewRun.classList.remove('hidden');
 
     SFX.seasonUp();
-    showRunBanner('🌸 1년 차 봄 출발! 날씨 예보를 주시하세요!', 2400);
+    showRunBanner(`🌸 1년 차 봄 출발! (${ch.name} Lv.${stats.level})`, 2400);
     updateRunHud();
   }
 
@@ -566,6 +910,9 @@
     run.umbrellaBrokenTimer = UMBRELLA_BROKEN_CD;
     run.umbrellaCooldown = UMBRELLA_BROKEN_CD;
     run.hitPoseTimer = 0.5;
+    run.hitFlashTimer = 0.28;
+    run.dodgeCombo = 0;
+    triggerCameraShake(7, 0.28);
     SFX.umbrellaBreak();
     const dmg = 14;
     run.hp = Math.max(0, run.hp - dmg);
@@ -603,20 +950,22 @@
     if (run.sliding && !run.slideInputHeld) run.sliding = false;
 
     if (run.jumpsLeft > 0) {
+      const ch = getCharDef(run.charId);
       const isSecond = run.jumpsLeft === 1;
-      // Flood drag weakens ground jump height unless jumping off a dry car roof / bench!
+      // Flood drag weakens ground jump height unless jumping off a dry car roof / bench (우비 소년 mitigates!)
       const inFloodWater = run.weatherEvent === 'flood' && !run.onPlatform && run.playerY >= Renderer.GROUND_Y - 2;
-      const floodFactor = inFloodWater ? 0.78 : 1.0;
+      const floodFactor = inFloodWater ? (ch.floodResist ? 0.94 : 0.78) : 1.0;
 
-      run.vy = (isSecond ? -335 : -378) * floodFactor;
+      run.vy = (isSecond ? -338 : -380) * floodFactor;
       run.jumpsLeft -= 1;
+      run.jumpCount += 1;
       run.onPlatform = false;
       if (isSecond) {
         SFX.doubleJump();
         Renderer.spawnFloater('2단 점프!', '#9be6ff', run.playerX, run.playerY - 40);
       } else {
         SFX.jump();
-        if (inFloodWater) Renderer.spawnFloater('침수 저항!', '#75c4ff', run.playerX, run.playerY - 36);
+        if (inFloodWater && !ch.floodResist) Renderer.spawnFloater('침수 저항!', '#75c4ff', run.playerX, run.playerY - 36);
       }
     }
   }
@@ -639,9 +988,10 @@
 
   function doSlideEnd() {
     if (!run) return;
+    const ch = getCharDef(run.charId);
     run.slideInputHeld = false;
-    if (run.weatherEvent === 'ice_road') {
-      // Ice inertia keeps sliding slightly longer!
+    if (run.weatherEvent === 'ice_road' && !ch.iceMastery) {
+      // Ice inertia keeps sliding slightly longer (Skier controls it cleanly!)
       run.iceSlideInertia = 0.24;
     } else {
       run.sliding = false;
@@ -686,24 +1036,51 @@
   }
 
   // ===================== SPAWNERS (OBSTACLES / ITEMS / K-STREET FEATURES) =====================
+  const SIGN_LABELS = [
+    { text: '치킨', color: '#ff4757' },
+    { text: '카페', color: '#2f80ed' },
+    { text: '분식', color: '#f2994a' },
+    { text: 'PC방', color: '#8e44ad' }
+  ];
+
   function spawnObstacleWave() {
     const diff = DATA.getYearDifficulty(run.year);
     const pool = DATA.OBSTACLES_BY_SEASON[run.seasonId];
     const preset = pool[Math.floor(Math.random() * pool.length)];
 
-    // During flood, prefer air obstacles & leave ground room for car roof / bench platforming!
+    // During flood, prefer air/lightning obstacles & leave ground room for car roof / bench platforming!
     if (run.weatherEvent === 'flood' && preset.lane === 'low' && Math.random() < 0.55) {
       return;
     }
 
-    const startX = Renderer.W + (preset.warn ? 48 : 22);
+    let startX = Renderer.W + (preset.warn ? 48 : 22);
     let y = Renderer.GROUND_Y - preset.h;
+    const extra = {};
+
     if (preset.lane === 'air') {
       y = Renderer.GROUND_Y - 20 - preset.h;
+    } else if (preset.lane === 'lightning') {
+      startX = Renderer.W - 36;
+      y = Renderer.GROUND_Y - preset.h;
+      extra.strikeTimer = preset.strikeDelay || 0.72;
+      extra.strikeActiveTimer = 0.45;
+      extra.thunderPlayed = false;
+    } else if (preset.lane === 'icicle') {
+      startX = Renderer.W + 24;
+      y = 8;
+      extra.falling = false;
+      extra.vy = 0;
+    }
+
+    if (preset.customDraw === 'flying_sign') {
+      const pick = SIGN_LABELS[Math.floor(Math.random() * SIGN_LABELS.length)];
+      extra.signText = pick.text;
+      extra.signColor = pick.color;
     }
 
     run.obstacles.push({
       ...preset,
+      ...extra,
       x: startX,
       y,
       passed: false,
@@ -722,9 +1099,14 @@
         const arc = Math.sin((i / 4) * Math.PI) * 86;
         run.items.push({ kind: i === 2 ? 'big_coin' : 'coin', x: coinX0 + i * 24, y: Renderer.GROUND_Y - 18 - arc });
       }
-    } else {
+    } else if (preset.lane === 'air') {
       for (let i = 0; i < 5; i++) {
         run.items.push({ kind: 'coin', x: startX - 10 + i * 22, y: Renderer.GROUND_Y - 11 });
+      }
+    } else {
+      // Lightning / Icicle: guiding coins along a safe low/mid line
+      for (let i = 0; i < 3; i++) {
+        run.items.push({ kind: 'coin', x: startX + 36 + i * 22, y: Renderer.GROUND_Y - 22 });
       }
     }
   }
@@ -791,27 +1173,37 @@
     const newSeasonIdx = Math.floor(yearTime / DATA.SEASON_DURATION);
 
     if (newYear > run.year) {
+      run.prevSeasonId = run.seasonId;
+      run.seasonTransition = 0;
       run.year = newYear;
       run.seasonIdx = 0;
       run.seasonId = DATA.SEASONS[0].id;
       const yearGoldBonus = 45 + run.year * 10;
-      run.score += Math.round(600 * run.year * ch.scoreMult);
+      run.score += Math.round(600 * run.year * run.scoreMult);
       run.gold += yearGoldBonus;
       run.winPoseTimer = 0.9;
       SFX.yearUp();
       showRunBanner(`🔥 ${run.year}년 차 진입! 기후 위기 상승! (+${yearGoldBonus}G)`, 2800);
       Renderer.spawnFloater(`${run.year}년 차 돌파!`, '#ffe55c', run.playerX + 40, run.playerY - 52);
     } else if (newSeasonIdx !== run.seasonIdx) {
+      run.prevSeasonId = run.seasonId;
+      run.seasonTransition = 0;
       run.seasonIdx = newSeasonIdx;
       const sObj = DATA.SEASONS[run.seasonIdx];
       run.seasonId = sObj.id;
-      run.score += Math.round(200 * run.year * ch.scoreMult);
+      run.score += Math.round(200 * run.year * run.scoreMult);
       run.gold += 15;
       run.heatGauge = 0;
       SFX.seasonUp();
-      showRunBanner(`${run.year}년 차 [${sObj.name}] 시작 · ${sObj.weatherLabel}`, 2300);
+      showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] 전환 · ${sObj.weatherLabel}`, 2300);
       // Immediately queue a forecast for the new season's weather!
       if (!run.pendingWeather) scheduleNextWeatherForecast();
+    }
+
+    // Smooth 3.2-second visual seasonal background & particle crossfade!
+    if (run.seasonTransition < 1) {
+      run.seasonTransition = Math.min(1, run.seasonTransition + dt / 3.2);
+      if (run.seasonTransition >= 1) run.prevSeasonId = null;
     }
 
     // Weather Forecast Countdown State Machine
@@ -838,6 +1230,8 @@
     if (run.hitPoseTimer > 0) run.hitPoseTimer = Math.max(0, run.hitPoseTimer - dt);
     if (run.itemPoseTimer > 0) run.itemPoseTimer = Math.max(0, run.itemPoseTimer - dt);
     if (run.winPoseTimer > 0) run.winPoseTimer = Math.max(0, run.winPoseTimer - dt);
+    if (run.shakeTimer > 0) run.shakeTimer = Math.max(0, run.shakeTimer - dt);
+    if (run.hitFlashTimer > 0) run.hitFlashTimer = Math.max(0, run.hitFlashTimer - dt);
     if (run.feverTimer > 0) {
       run.feverTimer = Math.max(0, run.feverTimer - dt);
       run.feverCharge = (run.feverTimer / 4.5) * 100;
@@ -876,15 +1270,21 @@
       }
     }
 
-    // ---- MECHANIC 1: WEATHER-DRIVEN MOVEMENT SPEED & PHYSICS ----
+    // ---- MECHANIC 1: WEATHER-DRIVEN MOVEMENT SPEED & CHARACTER PASSIVES ----
     const feverBoost = run.feverTimer > 0 ? 1.36 : 1.0;
     let weatherSpeedMult = 1.0;
+    let iceScoreBonus = 1.0;
     if (run.umbrellaOn) weatherSpeedMult *= 0.84; // Umbrella air drag slows runner!
     if (run.weatherEvent === 'flood' && !run.onPlatform && run.playerY >= Renderer.GROUND_Y - 2) {
-      weatherSpeedMult *= 0.72; // Floodwater drag!
+      weatherSpeedMult *= ch.floodResist ? 0.92 : 0.72; // 우비 소년 mitigates flood drag!
     }
-    if (run.weatherEvent === 'ice_road' && run.sliding) {
-      weatherSpeedMult *= 1.38; // Fast slippery ice slide!
+    if (run.weatherEvent === 'ice_road') {
+      if (ch.iceMastery) {
+        weatherSpeedMult *= 1.15; // 스키어 excels on icy roads!
+        iceScoreBonus = 1.2;
+      } else if (run.sliding) {
+        weatherSpeedMult *= 1.38; // Fast slippery ice slide!
+      }
     }
     if (run.weatherEvent === 'gust' && run.sliding) {
       weatherSpeedMult *= 1.12; // Aerodynamic crouch cuts headwind!
@@ -893,7 +1293,7 @@
     run.speed = run.baseSpeed * diff.speedMult * feverBoost * weatherSpeedMult;
     run.scroll += run.speed * dt;
     run.distanceM = Math.floor(run.scroll / 14);
-    run.score += run.speed * dt * 0.16 * ch.scoreMult * diff.scoreMult * upgradeScoreMult;
+    run.score += run.speed * dt * 0.16 * run.scoreMult * diff.scoreMult * upgradeScoreMult * iceScoreBonus;
 
     // Gust Headwind Horizontal Push-Back vs Slide Push-Forward!
     if (run.weatherEvent === 'gust' && run.feverTimer <= 0) {
@@ -946,8 +1346,8 @@
       run.jumpsLeft = 2;
       run.gliding = false;
       run.onPlatform = landedPlatform;
-      if (wasAir && run.weatherEvent === 'ice_road' && !landedPlatform) {
-        run.iceSlipTimer = 0.28; // Slippery landing on winter ice!
+      if (wasAir && run.weatherEvent === 'ice_road' && !landedPlatform && !ch.iceMastery) {
+        run.iceSlipTimer = 0.28; // Slippery landing on winter ice (Skier has full control!)
       }
     } else {
       run.onPlatform = false;
@@ -1012,6 +1412,8 @@
             const dmg = Math.max(2, Math.round(5 * rainMult));
             run.hp = Math.max(0, run.hp - dmg);
             run.hitPoseTimer = 0.25;
+            run.hitFlashTimer = 0.18;
+            triggerCameraShake(3.2, 0.14);
             run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 국지성 폭우를 우산 없이 맞다 쓰러졌습니다!`;
             SFX.hit();
             Renderer.spawnFloater(`폭우 피격! -${dmg} (우산!)`, '#6ec6ff', run.playerX + 8, run.playerY - 44);
@@ -1019,6 +1421,8 @@
             const dmg = 5;
             run.hp = Math.max(0, run.hp - dmg);
             run.hitPoseTimer = 0.25;
+            run.hitFlashTimer = 0.18;
+            triggerCameraShake(3.2, 0.14);
             run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 초미세먼지에 마스크 없이 노출되어 쓰러졌습니다!`;
             SFX.hit();
             Renderer.spawnFloater(`미세먼지! -${dmg} (마스크!)`, '#ffd966', run.playerX + 8, run.playerY - 44);
@@ -1026,6 +1430,8 @@
             const dmg = 6;
             run.hp = Math.max(0, run.hp - dmg);
             run.hitPoseTimer = 0.25;
+            run.hitFlashTimer = 0.18;
+            triggerCameraShake(3.5, 0.15);
             run.lastHitCause = `${run.year}년 차 여름 폭염, 그늘을 놓쳐 열사병으로 쓰러졌습니다!`;
             SFX.hit();
             Renderer.spawnFloater(`열사병! -${dmg} (그늘!)`, '#ff8052', run.playerX + 8, run.playerY - 44);
@@ -1061,9 +1467,11 @@
           } else {
             run.mudBlindTimer = 2.8;
             SFX.splash();
-            const splashDmg = run.umbrellaOn ? 6 : 14;
+            const splashDmg = Math.max(3, Math.round((run.umbrellaOn ? 6 : 14) * (ch.floodResist ? 0.55 : 1)));
             run.hp = Math.max(0, run.hp - splashDmg);
             run.hitPoseTimer = 0.45;
+            run.hitFlashTimer = 0.25;
+            triggerCameraShake(5, 0.22);
             run.lastHitCause = `${run.year}년 차 장마철, 지나가는 차의 흙탕물 물벼락을 맞고 쓰러졌습니다!`;
             Renderer.spawnFloater(`물벼락 적중! -${splashDmg}`, '#ff9452', run.playerX + 10, run.playerY - 44);
           }
@@ -1121,7 +1529,7 @@
       if (run.feverCharge >= 100) {
         run.feverTimer = 4.5;
         run.winPoseTimer = 0.7;
-        SFX.yearUp();
+        SFX.feverStart();
         Renderer.spawnFloater('FEVER! 무적 질주!', '#ffe85c', run.playerX + 16, run.playerY - 48);
       }
     }
@@ -1143,13 +1551,14 @@
         it.y += ((pcy - it.y) / dist) * pull;
       }
 
-      if (dist < 24) {
+      if (dist < 25) {
         run.items.splice(i, 1);
         if (it.kind === 'coin' || it.kind === 'big_coin') {
           const baseG = (it.kind === 'big_coin' ? 12 : 3) + diff.goldBonus;
-          const gainedG = Math.max(1, Math.round(baseG * ch.goldMult));
-          const gainedS = Math.round((it.kind === 'big_coin' ? 120 : 30) * ch.scoreMult * upgradeScoreMult);
+          const gainedG = Math.max(1, Math.round(baseG * run.goldMult));
+          const gainedS = Math.round((it.kind === 'big_coin' ? 120 : 30) * run.scoreMult * upgradeScoreMult);
           run.gold += gainedG;
+          run.coinsCollected += it.kind === 'big_coin' ? 3 : 1;
           run.score += gainedS;
           addFeverCharge(it.kind === 'big_coin' ? 10 : 2.5);
           if (it.kind === 'big_coin') {
@@ -1166,7 +1575,7 @@
           Renderer.spawnFloater('노르웨이 기상청 ON! (25초)', '#70e2ff', run.playerX + 16, run.playerY - 46);
           showRunBanner('🇳🇴 노르웨이 기상청 획득! 3초 전 100% 정확 예보!', 2300);
         } else if (it.kind === 'star') {
-          run.score += Math.round(160 * ch.scoreMult * upgradeScoreMult);
+          run.score += Math.round(160 * run.scoreMult * upgradeScoreMult);
           addFeverCharge(24);
           SFX.bigCoin();
           Renderer.spawnFloater('FEVER +24%!', '#ffe866', it.x, it.y - 10);
@@ -1176,15 +1585,16 @@
           SFX.guard();
           Renderer.spawnFloater('자석 발동! (6초)', '#ff7d95', run.playerX + 12, run.playerY - 42);
         } else if (it.kind === 'chest') {
-          const bonusG = Math.round(32 * ch.goldMult);
+          const bonusG = Math.round(32 * run.goldMult);
           run.gold += bonusG;
+          run.coinsCollected += 10;
           run.score += Math.round(250 * upgradeScoreMult);
           addFeverCharge(25);
-          SFX.yearUp();
+          SFX.reward();
           Renderer.spawnFloater(`보물상자 +${bonusG}G!`, '#ffe55c', it.x, it.y - 14);
         } else if (it.kind === 'coffee') {
-          const healAmt = ch.icedBonus ? 22 : 14;
-          const bonusSc = ch.icedBonus ? 250 : 90;
+          const healAmt = ch.icedBonus ? 24 : 14;
+          const bonusSc = ch.icedBonus ? 260 : 90;
           run.hp = Math.min(run.maxHp, run.hp + healAmt);
           run.heatGauge = Math.max(0, run.heatGauge - 20);
           run.score += Math.round(bonusSc * upgradeScoreMult);
@@ -1196,7 +1606,7 @@
           run.feverTimer = 4.5;
           run.score += 180;
           run.itemPoseTimer = 0.55;
-          SFX.yearUp();
+          SFX.feverStart();
           Renderer.spawnFloater('FEVER! 무적 질주!', '#ffe55c', run.playerX + 12, run.playerY - 44);
         }
         continue;
@@ -1207,11 +1617,41 @@
 
     for (let i = run.obstacles.length - 1; i >= 0; i--) {
       const ob = run.obstacles[i];
-      ob.x -= (run.speed + ob.extraSpeed) * dt;
+
+      // Special movement & telegraph for Summer Lightning and Winter Falling Icicle!
+      if (ob.lane === 'lightning') {
+        ob.x -= run.speed * 0.72 * dt;
+        if (ob.strikeTimer > 0) {
+          ob.strikeTimer -= dt;
+          if (ob.strikeTimer <= 0 && !ob.thunderPlayed) {
+            ob.thunderPlayed = true;
+            SFX.thunder();
+            triggerCameraShake(4.5, 0.16);
+          }
+        } else {
+          ob.strikeActiveTimer -= dt;
+          if (ob.strikeActiveTimer <= 0) {
+            run.obstacles.splice(i, 1);
+            continue;
+          }
+        }
+      } else if (ob.lane === 'icicle') {
+        ob.x -= run.speed * dt;
+        if (!ob.falling && ob.x < Renderer.W - 70) {
+          ob.falling = true;
+        }
+        if (ob.falling) {
+          ob.vy = (ob.vy || 0) + 520 * dt;
+          ob.y = Math.min(Renderer.GROUND_Y - ob.h, ob.y + ob.vy * dt);
+        }
+      } else {
+        ob.x -= (run.speed + ob.extraSpeed) * dt;
+      }
 
       // Forgiving inset hitbox so grazing visual edges never causes unfair hits!
+      const isHarmlessTelegraph = ob.lane === 'lightning' && ob.strikeTimer > 0;
       const padX = Math.round(ob.w * 0.28);
-      const padTop = Math.round(ob.h * 0.34);
+      const padTop = ob.lane === 'lightning' ? 24 : Math.round(ob.h * 0.34);
       const padBot = ob.lane === 'air' ? Math.round(ob.h * 0.10) : Math.round(ob.h * 0.16);
       const oBox = {
         x: ob.x + padX,
@@ -1221,6 +1661,7 @@
       };
 
       const overlap =
+        !isHarmlessTelegraph &&
         pBox.x < oBox.x + oBox.w &&
         pBox.x + pBox.w > oBox.x &&
         pBox.y < oBox.y + oBox.h &&
@@ -1229,21 +1670,43 @@
       if (overlap) {
         if (run.feverTimer > 0) {
           run.obstacles.splice(i, 1);
-          run.score += Math.round(150 * ch.scoreMult * upgradeScoreMult);
+          run.score += Math.round(150 * run.scoreMult * upgradeScoreMult);
           SFX.guard();
           Renderer.spawnFloater('돌파 +150!', '#ffe866', ob.x, ob.y);
+          continue;
+        } else if (ob.customDraw === 'smog_zone' && run.maskOn) {
+          // KF94 Mask cleanly blocks fine-dust ground smog zones!
+          ob.passed = true;
+          run.obstacles.splice(i, 1);
+          run.score += Math.round(80 * run.scoreMult * upgradeScoreMult);
+          SFX.guard();
+          Renderer.spawnFloater('마스크 미세먼지 차단! +80', '#9ef5c6', run.playerX + 10, run.playerY - 44);
           continue;
         } else if (run.invulnTimer <= 0) {
           handleObstacleHit(ob, ch, diff);
         }
-      } else if (ch.nearMissBonus && !ob.nearMissed && ob.x + ob.w < pBox.x) {
-        ob.nearMissed = true;
-        const vertDist = Math.min(Math.abs(pBox.y - (oBox.y + oBox.h)), Math.abs((pBox.y + pBox.h) - oBox.y));
-        if (vertDist < 28) {
-          run.score += Math.round(120 * upgradeScoreMult);
-          run.gold += 5;
-          SFX.coin();
-          Renderer.spawnFloater('NEAR MISS +5G!', '#ff9ce6', run.playerX + 10, run.playerY - 45);
+      } else {
+        // Clean Dodge Feedback & Sound when passing an obstacle unscathed!
+        if (!ob.passed && ob.x + ob.w < pBox.x - 4) {
+          ob.passed = true;
+          run.dodgeCombo += 1;
+          run.score += Math.round(15 * run.scoreMult * upgradeScoreMult);
+          SFX.dodge();
+          if (run.dodgeCombo > 0 && run.dodgeCombo % 5 === 0) {
+            const comboBonus = Math.round(60 * run.scoreMult * upgradeScoreMult);
+            run.score += comboBonus;
+            Renderer.spawnFloater(`${run.dodgeCombo}연속 회피! +${comboBonus}`, '#9ef5ff', run.playerX + 12, run.playerY - 48);
+          }
+        }
+        if (ch.nearMissBonus && !ob.nearMissed && ob.x + ob.w < pBox.x) {
+          ob.nearMissed = true;
+          const vertDist = Math.min(Math.abs(pBox.y - (oBox.y + oBox.h)), Math.abs((pBox.y + pBox.h) - oBox.y));
+          if (vertDist < 28) {
+            run.score += Math.round(120 * upgradeScoreMult);
+            run.gold += 5;
+            SFX.coin();
+            Renderer.spawnFloater('NEAR MISS +5G!', '#ff9ce6', run.playerX + 10, run.playerY - 45);
+          }
         }
       }
 
@@ -1262,7 +1725,7 @@
     if (ch.summerImmune && ob.tag === 'heat') {
       run.invulnTimer = 0.6;
       SFX.guard();
-      Renderer.spawnFloater('반팔충 폭염 면역!', '#7aff99', run.playerX + 10, run.playerY - 42);
+      Renderer.spawnFloater('한복 소년 폭염 면역!', '#7aff99', run.playerX + 10, run.playerY - 42);
       return;
     }
 
@@ -1290,8 +1753,17 @@
     const finalDmg = Math.max(5, Math.round(dmg));
     run.hp = Math.max(0, run.hp - finalDmg);
     run.invulnTimer = 1.5 + save.upgrades.defense * 0.08;
-    run.hitPoseTimer = 0.42;
-    run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, '${ob.name}'에 부딪혀 쓰러졌습니다!`;
+    run.hitPoseTimer = 0.45;
+    run.hitFlashTimer = 0.3;
+    run.dodgeCombo = 0;
+    triggerCameraShake(7, 0.28);
+
+    const seasonName = DATA.SEASONS[run.seasonIdx].name;
+    if (run.weatherEvent === 'ice_road' && !ch.iceMastery) {
+      run.lastHitCause = `${run.year}년 차 겨울 빙판에서 미끄러져 '${ob.name}'에 부딪혔습니다!`;
+    } else {
+      run.lastHitCause = `${run.year}년 차 ${seasonName}, '${ob.name}'에 부딪혀 쓰러졌습니다!`;
+    }
 
     SFX.hit();
     Renderer.spawnFloater(`-${finalDmg}`, '#ff5c5c', run.playerX, run.playerY - 42);
@@ -1403,26 +1875,33 @@
       el.gearMaskBar.style.width = '0%';
     }
 
-    // 4 Status Orbs
+    // 4 Status Orbs + Full-Canvas FEVER Frame Pulse
     el.orbUiFever.classList.toggle('active', run.feverTimer > 0);
     el.orbUiMagnet.classList.toggle('active', run.magnetTimer > 0 || run.feverTimer > 0);
     el.orbUiNorway.classList.toggle('active', isNorway);
     el.orbUiShield.classList.toggle('active', Boolean(run.shield));
+    el.runCanvasWrap.classList.toggle('fever-active', run.feverTimer > 0);
   }
 
   function finishRunGameOver() {
     run.active = false;
     run.dead = true;
     el.mudOverlay.classList.add('hidden');
+    el.runCanvasWrap.classList.remove('fever-active');
     SFX.fail();
+
+    commitRunMissionProgress();
 
     const ch = getCharDef(run.charId);
     const finalScore = Math.floor(run.score);
+    const finalDist = run.distanceM || 0;
     const distGoldBonus = Math.floor(run.elapsed * 0.7);
     const totalGoldEarned = run.gold + distGoldBonus;
 
     const isNewBest = finalScore > save.bestScore;
+    const isNewDist = finalDist > (save.bestDistanceM || 0);
     if (isNewBest) save.bestScore = finalScore;
+    if (isNewDist) save.bestDistanceM = finalDist;
     if (run.year > save.bestYear) save.bestYear = run.year;
     save.gold += totalGoldEarned;
     save.playCount += 1;
@@ -1431,10 +1910,13 @@
     const seasonName = DATA.SEASONS[run.seasonIdx].name;
     el.resNewBest.classList.toggle('hidden', !isNewBest);
     el.resScore.textContent = `${finalScore.toLocaleString('ko-KR')}점`;
+    el.resDistCompare.textContent = isNewDist
+      ? `생존 거리 ${finalDist.toLocaleString('ko-KR')}m · 🎉 최장 거리 신기록!`
+      : `생존 거리 ${finalDist.toLocaleString('ko-KR')}m · 최고 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
     el.resCause.textContent = run.lastHitCause;
     el.resSurvived.textContent = `${run.year}년 차 ${seasonName} (${Math.floor(run.elapsed)}초)`;
     el.resGoldEarned.textContent = `+${totalGoldEarned.toLocaleString('ko-KR')} G`;
-    el.resCharName.textContent = ch.name;
+    el.resCharName.textContent = `${ch.name} Lv.${run.charLevel || 1}`;
     el.resGoldTotal.textContent = `${save.gold.toLocaleString('ko-KR')} G`;
 
     el.gameoverOverlay.classList.remove('hidden');
@@ -1442,9 +1924,11 @@
 
   function exitRunToHome() {
     SFX.click();
+    if (run) commitRunMissionProgress();
     run = null;
     paused = false;
     el.mudOverlay.classList.add('hidden');
+    el.runCanvasWrap.classList.remove('fever-active');
     el.pauseOverlay.classList.add('hidden');
     el.gameoverOverlay.classList.add('hidden');
     el.viewRun.classList.add('hidden');
@@ -1467,7 +1951,7 @@
       }
     } else if (currentTab === 'home') {
       const previewChar = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
-      Renderer.renderHomePreview(homeCtx, previewChar, t);
+      Renderer.renderHomePreview(homeCtx, previewChar, t, selectedHomeSeasonIdx);
     }
 
     requestAnimationFrame(loop);
@@ -1519,6 +2003,32 @@
     });
     el.btnDockChars.addEventListener('click', () => switchTab('chars'));
     el.btnDockShop.addEventListener('click', () => switchTab('shop'));
+
+    // Interactive 4-Season Weather Preview Pills on Home Screen
+    document.querySelectorAll('.pedestal-seasons .p-s').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        SFX.click();
+        selectedHomeSeasonIdx = Number(btn.dataset.seasonIdx) || 0;
+        renderHomeSeasonPreview();
+      });
+    });
+
+    // 7-Day Attendance Reward Modal
+    el.btnOpenAttendance.addEventListener('click', () => {
+      SFX.click();
+      renderAttendanceUI();
+      el.attendanceOverlay.classList.remove('hidden');
+    });
+    el.btnCloseAttendance.addEventListener('click', () => {
+      SFX.click();
+      el.attendanceOverlay.classList.add('hidden');
+    });
+    el.attendanceOverlay.addEventListener('click', (e) => {
+      if (e.target === el.attendanceOverlay) {
+        el.attendanceOverlay.classList.add('hidden');
+      }
+    });
+    el.btnClaimAttendance.addEventListener('click', claimAttendanceToday);
 
     el.btnSoundGlobal.addEventListener('click', () => {
       const on = SFX.toggle();

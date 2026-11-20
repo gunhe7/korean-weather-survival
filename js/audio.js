@@ -124,6 +124,25 @@ window.SFX = (function () {
     fakeAlert() {
       tone(740, 0.09, 'square', 0.06, 0);
       tone(587, 0.12, 'square', 0.06, 0.10);
+    },
+    dodge() {
+      slideTone(540, 820, 0.07, 'sine', 0.038);
+    },
+    thunder() {
+      tone(150, 0.18, 'sawtooth', 0.09, 0);
+      tone(92, 0.24, 'square', 0.08, 0.07);
+      tone(68, 0.28, 'sawtooth', 0.06, 0.14);
+    },
+    feverStart() {
+      [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, 0.11, 'triangle', 0.07, i * 0.06));
+    },
+    levelUp() {
+      [587, 740, 880, 1174].forEach((f, i) => tone(f, 0.11, 'triangle', 0.075, i * 0.07));
+    },
+    reward() {
+      tone(880, 0.07, 'triangle', 0.07, 0);
+      tone(1174, 0.08, 'triangle', 0.07, 0.06);
+      tone(1568, 0.14, 'triangle', 0.075, 0.12);
     }
   };
 })();
