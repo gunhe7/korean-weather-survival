@@ -66,7 +66,7 @@ window.RUN_DATA = (function () {
     }
   ];
 
-  // 6종 K-날씨 캐릭터 (고유 패시브 + 레벨 성장 + 전용 오라 애니메이션)
+  // 6종 K-날씨 캐릭터 (하트 체력제 + 고유 패시브 + 레벨 성장 + 전용 오라 애니메이션)
   const CHARACTERS = [
     {
       id: 'basic',
@@ -78,13 +78,13 @@ window.RUN_DATA = (function () {
       useAtlasRun: true,
       auraType: 'basic',
       price: 0,
-      baseHp: 105,
+      baseHp: 5,
       goldMult: 1.1,
       scoreMult: 1.05,
       passiveName: '균형 잡힌 생존가',
-      passiveDesc: '사계절 약점 없이 균형 잡힌 체력·속도! 골드 +10%, 점수 +5% 보너스',
+      passiveDesc: '기본 체력 5하트! 사계절 약점 없이 균형 잡힌 속도 · 골드 +10%, 점수 +5%',
       desc: '노란 후드를 쓴 한국 날씨 생존 기본 러너! 균형 잡힌 능력치와 6프레임 풀 모션 적용.',
-      tag: '균형형 · 골드 +10%',
+      tag: '균형형 · 5하트 · 골드 +10%',
       colors: { top: '#f5b82e', outer: '#e09a14', pants: '#2c3a54', shoes: '#f0f4fa', hat: null }
     },
     {
@@ -96,16 +96,16 @@ window.RUN_DATA = (function () {
       avatar: 'assets/sprites/skin_raincoat.png',
       auraType: 'raincoat',
       price: 350,
-      baseHp: 112,
+      baseHp: 5,
       goldMult: 1.15,
       scoreMult: 1.12,
-      rainWindResist: 0.55,
+      rainGraceBonus: 1.5,
       floodResist: true,
       canGlide: true,
       passiveName: '방수 우비 & 우산 활강',
-      passiveDesc: '빗물·침수·낙뢰 피해 -55%, 침수 물저항 완화, 공중 점프 꾹 눌러 우산 활강!',
+      passiveDesc: '빗물 내성(+1.5초 여유), 침수 물저항 완화, 공중 점프 꾹 눌러 우산 활강!',
       desc: '장마와 폭우에 최강! 침수 구간에서도 빠르게 달리고 우산으로 활강합니다.',
-      tag: '빗물/침수 피해 -55% · 활강',
+      tag: '빗물 내성 · 침수 특화 · 활강',
       colors: { top: '#f2c738', outer: '#e0ad1f', pants: '#2b3d57', shoes: '#f2c738', hat: null, umbrella: true }
     },
     {
@@ -117,15 +117,14 @@ window.RUN_DATA = (function () {
       avatar: 'assets/sprites/skin_padding.png',
       auraType: 'padding',
       price: 550,
-      baseHp: 132,
+      baseHp: 6,
       goldMult: 1.05,
       scoreMult: 1.1,
-      winterResist: 0.45,
-      guardChance: 0.25,
-      passiveName: '극한 방한 쿠션',
-      passiveDesc: '최대 체력 132 & 한파·얼음 피해 -45%, 충돌 시 25% 확률 완전 방어!',
-      desc: '중무장 빨간 패딩 탱커! 겨울 북극한파와 고드름에 압도적인 생존력을 자랑합니다.',
-      tag: '한파 피해 -45% · 25% 쿠션 방어',
+      extraInvuln: 0.45,
+      passiveName: '중무장 방한 탱커',
+      passiveDesc: '기본 체력 6하트(+1하트) & 피격 후 무적 시간 +0.45초 연장!',
+      desc: '중무장 빨간 패딩 탱커! 더 많은 하트와 긴 무적 시간으로 안정적인 생존력을 자랑합니다.',
+      tag: '기본 6하트 · 무적 시간 +0.45초',
       colors: { top: '#c43232', outer: '#992020', pants: '#1a202b', shoes: '#5c4132', hat: '#c43232' }
     },
     {
@@ -137,15 +136,14 @@ window.RUN_DATA = (function () {
       avatar: 'assets/sprites/skin_hanbok.png',
       auraType: 'hanbok',
       price: 750,
-      baseHp: 102,
+      baseHp: 5,
       goldMult: 1.15,
       scoreMult: 1.25,
       summerImmune: true,
-      winterWeakness: 1.15,
       passiveName: '풍류 점수 보너스',
-      passiveDesc: '모든 점수 획득 +25% & 여름 폭염·아스팔트 열기 완전 면역! (겨울 피해 +15%)',
-      desc: '통풍 최강 한복 + 반팔충 기질! 고득점 랭킹 도전에 최적화된 하이리스크 러너.',
-      tag: '점수 +25% · 여름 폭염 면역',
+      passiveDesc: '모든 점수 획득 +25% & 여름 폭염 열사병(열기 게이지) 완전 면역!',
+      desc: '통풍 최강 한복 + 반팔충 기질! 여름 폭염을 무시하며 고득점 랭킹에 도전하세요.',
+      tag: '점수 +25% · 여름 열사병 면역',
       colors: { top: '#ffffff', outer: '#7ab3f0', pants: '#3b5998', shoes: '#5ec9f2', hat: null }
     },
     {
@@ -157,16 +155,15 @@ window.RUN_DATA = (function () {
       avatar: 'assets/sprites/skin_skier.png',
       auraType: 'skier',
       price: 1050,
-      baseHp: 110,
+      baseHp: 5,
       goldMult: 1.12,
       scoreMult: 1.18,
-      winterResist: 0.35,
       iceMastery: true,
       icedBonus: true,
       passiveName: '빙판길 마스터 & 얼죽아',
-      passiveDesc: '빙판 미끄러짐 완전 제어 + 빙판 구간 이동/점수 +20%, 포션 회복량 대폭 증가!',
+      passiveDesc: '빙판 미끄러짐 완전 제어 + 빙판 구간 이동/점수 +20%, 음료 아이템 점수·피버 대폭 증가!',
       desc: '영하 15도에도 아아 한 잔! 겨울 빙판길에서 오히려 최고의 기동력을 발휘합니다.',
-      tag: '빙판 제어 & 가속 · 회복 특화',
+      tag: '빙판 제어 & 가속 · 피버 특화',
       colors: { top: '#2b70d4', outer: '#1d54a8', pants: '#232c3d', shoes: '#d9e3f0', hat: null, coffeeCup: true }
     },
     {
@@ -178,7 +175,7 @@ window.RUN_DATA = (function () {
       avatar: 'assets/sprites/skin_santa.png',
       auraType: 'santa',
       price: 1450,
-      baseHp: 108,
+      baseHp: 5,
       goldMult: 1.45,
       scoreMult: 1.2,
       nearMissBonus: true,
@@ -199,7 +196,7 @@ window.RUN_DATA = (function () {
       maxLv: 5,
       basePrice: 120,
       priceStep: 110,
-      desc: (lv) => `최대 체력 +${(lv + 1) * 14} (현재 +${lv * 14})`
+      desc: (lv) => `최대 체력(하트) +${lv + 1}칸 (현재 +${lv}칸)`
     },
     {
       id: 'magnet',
@@ -212,12 +209,12 @@ window.RUN_DATA = (function () {
     },
     {
       id: 'defense',
-      name: '기상 방어력 강화',
+      name: '기상 대응력 강화',
       icon: 'assets/design/ui_chest.png',
       maxLv: 5,
       basePrice: 160,
       priceStep: 130,
-      desc: (lv) => `장애물 충돌 피해 -${(lv + 1) * 7}% 감소 (현재 -${lv * 7}%)`
+      desc: (lv) => `우산·마스크 쿨타임 -${((lv + 1) * 0.35).toFixed(1)}초 & 피격 무적 +${((lv + 1) * 0.2).toFixed(1)}초`
     },
     {
       id: 'score',
@@ -303,8 +300,8 @@ window.RUN_DATA = (function () {
       norwayWarn: '쾌청한 구간 (잠시 휴식)', color: '#63d8ff'
     },
     dust: {
-      id: 'dust', label: '초미세먼지 경보!', kmaFake: '미세먼지 좋음 · 나들이 최적',
-      norwayWarn: '초미세먼지 습격! [마스크 ON]', color: '#e6c24c'
+      id: 'dust', label: '황사 · 미세먼지 경보!', kmaFake: '미세먼지 좋음 · 나들이 최적',
+      norwayWarn: '황사 습격! [마스크 ON 필수]', color: '#e6c24c'
     },
     gust: {
       id: 'gust', label: '태풍·강풍 맞바람!', kmaFake: '바람 잔잔 (풍속 1m/s)',
@@ -391,13 +388,14 @@ window.RUN_DATA = (function () {
   function getCharEffectiveStats(charDef, charLv = 1, upgrades = {}, unlockedCount = 1) {
     const lv = Math.max(1, Math.min(MAX_CHAR_LEVEL, charLv || 1));
     const lvExtra = lv - 1;
-    const hpUpgrade = (upgrades && upgrades.hp ? upgrades.hp : 0) * 14;
+    const lvHeartBonus = (lv >= 3 ? 1 : 0) + (lv >= 5 ? 1 : 0);
+    const hpUpgrade = upgrades && upgrades.hp ? upgrades.hp : 0;
     const dexScoreBonus = Math.max(0, unlockedCount - 1) * 0.03; // 도감 수집 보너스: 추가 해금당 점수 +3%!
     return {
       level: lv,
-      maxHp: charDef.baseHp + lvExtra * 8 + hpUpgrade,
-      goldMult: Number((charDef.goldMult + lvExtra * 0.04).toFixed(2)),
-      scoreMult: Number((charDef.scoreMult + lvExtra * 0.04 + dexScoreBonus).toFixed(2)),
+      maxHp: charDef.baseHp + lvHeartBonus + hpUpgrade,
+      goldMult: Number((charDef.goldMult + lvExtra * 0.05).toFixed(2)),
+      scoreMult: Number((charDef.scoreMult + lvExtra * 0.05 + dexScoreBonus).toFixed(2)),
       dexScorePct: Math.round(dexScoreBonus * 100)
     };
   }

@@ -362,16 +362,22 @@ window.RunRenderer = (function () {
       const usePrev = prevSeasonId && blend < 1 && (idx / particles.length) > blend;
       const effSeason = usePrev ? prevSeasonId : seasonId;
 
-      if (heavyRain || (effSeason === 'summer' && !heavyDust)) {
-        p.x -= (heavyRain ? 145 : 95) * dt * p.v;
-        p.y += (heavyRain ? 285 : 225) * dt * p.v;
-        ctx.fillStyle = heavyRain ? 'rgba(185, 228, 255, 0.92)' : 'rgba(210, 236, 255, 0.68)';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), heavyRain ? 2 : 1, heavyRain ? 13 : 9);
+      if (heavyRain) {
+        p.x -= 150 * dt * p.v;
+        p.y += 290 * dt * p.v;
+        ctx.fillStyle = 'rgba(185, 228, 255, 0.94)';
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 2, 13);
       } else if (heavyDust) {
-        p.x -= 110 * dt * p.v;
-        p.y += Math.sin(t * 4 + p.p) * 16 * dt;
-        ctx.fillStyle = 'rgba(235, 198, 75, 0.88)';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 3, 3);
+        p.x -= 120 * dt * p.v;
+        p.y += Math.sin(t * 4 + p.p) * 18 * dt;
+        ctx.fillStyle = p.s === 1 ? 'rgba(235, 198, 75, 0.92)' : 'rgba(196, 152, 46, 0.85)';
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 4, 3);
+      } else if (effSeason === 'summer') {
+        // Warm shimmering summer sunlight motes (no fake rain unless weatherEvent is rain/flood!)
+        p.x -= 48 * dt * p.v;
+        p.y += Math.sin(t * 3 + p.p) * 14 * dt;
+        ctx.fillStyle = 'rgba(255, 245, 175, 0.72)';
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 2, 2);
       } else if (effSeason === 'winter' || weatherEvent === 'ice_road') {
         p.x -= ((isBlizzard ? 185 : 52) + Math.sin(t * 2 + p.p) * 18) * dt;
         p.y += (isBlizzard ? 88 : 52) * dt * p.v;

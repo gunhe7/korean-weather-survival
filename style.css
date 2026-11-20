@@ -3053,3 +3053,17 @@ input:focus-visible {
     gap: 7px;
   }
 }
+
+
+/* Heart-Unit HP Compact & Urgent Exposure Countdown Pill */
+.hearts-icons.compact {
+  font-size: 12px;
+  gap: 1px;
+}
+
+.fc-heat-pill.urgent {
+  background: #e53935 !important;
+  border-color: #ffe57f !important;
+  color: #ffffff !important;
+  animation: pulseDot 0.65s ease-in-out infinite;
+}
