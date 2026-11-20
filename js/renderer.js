@@ -46,25 +46,26 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
+  const CHAR_ASSET_VER = '20261121v2';
 
   CHAR_SHEET_SKINS.forEach((sk) => {
     CHAR_ANIM_STATES.forEach((st) => {
       for (let f = 0; f < sk.frames; f++) {
         const key = `${sk.id}_${st}_${f}`;
         const img = new Image();
-        img.src = `assets/chars/${key}.png`;
+        img.src = `assets/chars/${key}.png?v=${CHAR_ASSET_VER}`;
         sprites[key] = img;
       }
     });
     const pKey = `port_${sk.id}`;
     const pImg = new Image();
-    pImg.src = `assets/chars/${pKey}.png`;
+    pImg.src = `assets/chars/${pKey}.png?v=${CHAR_ASSET_VER}`;
     sprites[pKey] = pImg;
   });
 
   CHAR_VFX_SPRITES.forEach((key) => {
     const img = new Image();
-    img.src = `assets/chars/${key}.png`;
+    img.src = `assets/chars/${key}.png?v=${CHAR_ASSET_VER}`;
     sprites[key] = img;
   });
 
@@ -612,7 +613,7 @@ window.RunRenderer = (function () {
         const dw = Math.round(dh * (dashSpr.naturalWidth / dashSpr.naturalHeight));
         ctx.save();
         ctx.globalAlpha = 0.88;
-        ctx.imageSmoothingEnabled = false;
+        ctx.imageSmoothingEnabled = true;
         ctx.drawImage(dashSpr, Math.floor(cx - dw - 2), Math.floor(cy - (isProne ? 22 : scaleHeight * 0.56) - dh / 2), dw, dh);
         ctx.restore();
       }
@@ -632,7 +633,7 @@ window.RunRenderer = (function () {
         const rSz = Math.round((isProne ? 48 : scaleHeight * 1.18) * pulse);
         ctx.save();
         ctx.globalAlpha = 0.9;
-        ctx.imageSmoothingEnabled = false;
+        ctx.imageSmoothingEnabled = true;
         ctx.drawImage(ringSpr, Math.floor(cx - rSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - rSz / 2), rSz, rSz);
         ctx.restore();
       } else {
@@ -728,7 +729,8 @@ window.RunRenderer = (function () {
 
       ctx.save();
       ctx.translate(cx, Math.floor(cy - bob));
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(spr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
 
       // White KF94 Mask overlay when Mask Toggle is ON!
@@ -1009,7 +1011,7 @@ window.RunRenderer = (function () {
       itemPoseTimer: run.itemPoseTimer || 0,
       winPoseTimer: run.winPoseTimer || 0,
       running: !run.dead && !run.dying,
-      scaleHeight: 54
+      scaleHeight: 62
     }, t);
 
     // Item Pickup Ring & Sparkle Burst Animations!

@@ -4785,3 +4785,15 @@ input:focus-visible {
     width: clamp(168px, 30vw, 210px);
   }
 }
+
+/* Smooth High-Resolution Rendering for Updated Cartoon Character Sprites & Canvas */
+.bs-hero-img,
+.bs-mini-avatar,
+.brawl-card-img,
+.brawl-hero-img,
+.run-portrait-img,
+.rank-my-img,
+.rank-row-avatar,
+#runCanvas {
+  image-rendering: auto;
+}
