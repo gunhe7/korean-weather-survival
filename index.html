@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>한국 날씨에서 살아남기</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="mobile-app">
+    <!-- ================= GAME LAUNCH INTRO OVERLAY (LOGO + SOUND) ================= -->
+    <div id="intro-overlay" role="button" tabindex="0" aria-label="화면을 터치해 게임 시작">
+      <div class="intro-bg-glow"></div>
+      <div class="intro-content">
+        <div class="intro-logo-wrap">
+          <img id="intro-logo-img" src="assets/logo.png" alt="한국 날씨에서 살아남기" class="intro-logo-img" />
+        </div>
+        <div class="intro-sub-row">
+          <img src="assets/sprites/motion_run.png" alt="" class="intro-char-mini" />
+          <span class="intro-tagline">사계절 극한 기상 재난 생존 러너</span>
+        </div>
+        <button id="btn-intro-enter" class="ms-orange-btn intro-tap-btn" type="button">
+          ▶ 터치해서 시작하기!
+        </button>
+        <div class="intro-sound-hint">🔊 터치 시 인트로 사운드와 함께 시작됩니다</div>
+      </div>
+    </div>
+
+    <!-- ================= TOP GLOBAL HEADER (HOME / CHARS / SHOP) ================= -->
+    <header id="app-header">
+      <button id="btn-replay-intro" class="header-brand" type="button" title="인트로 로고 다시 보기">
+        <img src="assets/logo.png" alt="한국 날씨에서 살아남기" class="header-mini-logo" />
+        <span class="brand-title">한국 날씨에서 살아남기</span>
+      </button>
+      <div class="header-right">
+        <div class="gold-pill" title="보유 골드">
+          <img src="assets/design/item_coin.png" alt="골드" class="coin-sprite" />
+          <span id="ui-gold">0</span>
+        </div>
+        <button id="btn-sound-global" class="icon-btn" type="button" aria-label="효과음 토글">🔊</button>
+      </div>
+    </header>
+
+    <!-- ================= MAIN CONTENT AREA (TABS) ================= -->
+    <main id="tab-container">
+      <!-- 1. HOME SCREEN -->
+      <section id="view-home" class="tab-view active">
+        <div class="home-record-strip">
+          <div class="rec-chip">
+            <span class="rec-label">최고 점수</span>
+            <strong id="home-best-score">0</strong>
+          </div>
+          <div class="rec-chip">
+            <span class="rec-label">최고 도달</span>
+            <strong id="home-best-year">1년 차</strong>
+          </div>
+          <div class="rec-chip">
+            <span class="rec-label">총 플레이</span>
+            <strong id="home-play-count">0회</strong>
+          </div>
+        </div>
+
+        <!-- Live Animated Character Stage Preview -->
+        <div class="home-stage-card ms-panel">
+          <div class="ms-panel-bar">
+            <span id="home-stage-title">출격 캐릭터</span>
+            <span id="home-char-tier" class="tier-tag">기본</span>
+          </div>
+          <div class="home-canvas-wrap">
+            <canvas id="homePreviewCanvas" width="380" height="175"></canvas>
+            <button id="btn-prev-char" class="stage-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
+            <button id="btn-next-char" class="stage-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
+          </div>
+          <div class="home-char-info">
+            <div class="home-char-name-row">
+              <strong id="home-char-name">기본 모험가</strong>
+              <span id="home-char-hp" class="stat-pill">체력 100</span>
+            </div>
+            <p id="home-char-desc" class="home-char-desc">사계절 한국 날씨를 돌파하는 기본 생존 러너</p>
+          </div>
+        </div>
+
+        <!-- Active Run Boosters Indicator -->
+        <div id="home-booster-bar" class="home-booster-bar">
+          <span class="booster-label">출발 버프:</span>
+          <div id="home-booster-chips" class="booster-chips">없음 (상점에서 구매 가능)</div>
+        </div>
+
+        <!-- Quick Weather Info -->
+        <div class="home-tip-box">
+          <div class="tip-title">사계절 무한 순환 · 연차 난이도 상승</div>
+          <p class="tip-text">
+            봄 → 여름 → 가을 → 겨울이 같은 비율로 반복되며 1년이 지날수록 날씨 장애물이 빨라집니다.<br />
+            <strong>점프(2단 점프)</strong>와 <strong>슬라이드</strong>로 번개구름·태풍·얼음가시를 피하고 <strong>FEVER!</strong>를 발동하세요!
+          </p>
+        </div>
+
+        <button id="btn-play-start" class="ms-orange-btn start-run-btn" type="button">
+          ▶ 달리기 시작!
+        </button>
+      </section>
+
+      <!-- 2. CHARACTERS SCREEN -->
+      <section id="view-chars" class="tab-view">
+        <div class="view-title-bar">
+          <h2>캐릭터 선택 &amp; 해금</h2>
+          <p>한국 특유의 날씨 생존 캐릭터를 골드로 해금하고 장착하세요.</p>
+        </div>
+        <div id="char-list" class="card-list"></div>
+      </section>
+
+      <!-- 3. SHOP SCREEN -->
+      <section id="view-shop" class="tab-view">
+        <div class="view-title-bar">
+          <h2>K-날씨 상점</h2>
+          <p>모은 골드로 능력치를 강화하거나 다음 판 출발 아이템을 준비하세요.</p>
+        </div>
+        <div class="shop-subtabs">
+          <button class="subtab-btn active" data-shoptab="upgrades" type="button">영구 강화</button>
+          <button class="subtab-btn" data-shoptab="boosters" type="button">출발 아이템</button>
+          <button class="subtab-btn" data-shoptab="chars" type="button">캐릭터 구매</button>
+        </div>
+        <div id="shop-items-list" class="card-list"></div>
+      </section>
+    </main>
+
+    <!-- ================= BOTTOM NAVIGATION BAR (HOME / CHARACTERS / SHOP) ================= -->
+    <nav id="bottom-nav">
+      <button class="nav-btn active" data-tab="home" type="button">
+        <span class="nav-ico">🏠</span>
+        <span class="nav-txt">홈</span>
+      </button>
+      <button class="nav-btn" data-tab="chars" type="button">
+        <span class="nav-ico">👤</span>
+        <span class="nav-txt">캐릭터</span>
+      </button>
+      <button class="nav-btn" data-tab="shop" type="button">
+        <span class="nav-ico">🏪</span>
+        <span class="nav-txt">상점</span>
+      </button>
+    </nav>
+
+    <!-- ================= ACTIVE RUNNER GAME SCREEN (MOCKUP DESIGN) ================= -->
+    <section id="view-run" class="hidden">
+      <!-- Top Indie Pixel HUD (Portrait + Hearts + Golden FEVER Bar + Gold Pill + Pause) -->
+      <div id="run-hud">
+        <div class="run-hud-row">
+          <div class="run-portrait-box">
+            <img id="run-portrait-img" src="assets/sprites/motion_idle.png" alt="캐릭터" class="run-portrait-img" />
+            <span id="run-year-num" class="portrait-yr-badge">1Y</span>
+          </div>
+
+          <div class="run-hp-wrap">
+            <div class="run-hearts-row">
+              <div id="run-hearts" class="hearts-icons" aria-label="체력 하트"></div>
+              <span id="run-hp-text" class="hp-mini-num">100/100</span>
+            </div>
+            <!-- Golden FEVER Gauge Bar (exact mockup bar!) -->
+            <div class="fever-bar-track" title="별과 코인을 모아 FEVER 발동!">
+              <div id="run-fever-fill" class="fever-bar-fill" style="width: 0%"></div>
+              <span id="run-fever-text" class="fever-bar-text">FEVER 0%</span>
+            </div>
+          </div>
+
+          <div class="run-right-mini">
+            <div class="run-gold-mini">
+              <img src="assets/design/item_coin.png" alt="G" class="coin-sprite sm" />
+              <span id="run-gold-text">0</span>
+            </div>
+            <button id="btn-pause-run" class="pause-square-btn" type="button" aria-label="일시정지">❚❚</button>
+          </div>
+        </div>
+
+        <!-- Compact Score + 4-Season Equal Cycle Strip -->
+        <div class="run-sub-strip">
+          <span id="run-season-label" class="season-pill">1년 차 봄</span>
+          <div class="season-exp-wrap">
+            <div class="season-exp-segments">
+              <span>봄</span><span>여름</span><span>가을</span><span>겨울</span>
+            </div>
+            <div id="run-year-fill" class="season-exp-fill" style="width: 0%"></div>
+          </div>
+          <span id="run-score-text" class="score-num">0점</span>
+        </div>
+      </div>
+
+      <!-- 2D Cookie Run Pixel Stage -->
+      <div id="run-canvas-wrap">
+        <canvas id="runCanvas" width="450" height="270"></canvas>
+
+        <!-- Crisp HTML Overlays -->
+        <div id="run-banner" class="run-banner hidden">1년 차 봄 시작!</div>
+      </div>
+
+      <!-- Mobile Control Deck (matching uploaded 버튼 디자인!) -->
+      <div id="mobile-controls">
+        <button id="btn-jump" class="ctrl-btn jump-btn" type="button">
+          <span class="ctrl-gloss"></span>
+          <span class="ctrl-arrow">⬆</span>
+          <span class="ctrl-title">점프</span>
+          <span class="ctrl-sub">2단 점프</span>
+        </button>
+
+        <div class="ctrl-center-info">
+          <div class="status-orbs-grid">
+            <div id="orb-ui-fever" class="status-orb" title="FEVER 무적 질주">
+              <img src="assets/design/orb_star.png" alt="피버" />
+            </div>
+            <div id="orb-ui-magnet" class="status-orb" title="코인 자석 활성">
+              <img src="assets/design/orb_magnet.png" alt="자석" />
+            </div>
+            <div id="orb-ui-speed" class="status-orb" title="가속 질주">
+              <img src="assets/design/orb_bolt.png" alt="가속" />
+            </div>
+            <div id="orb-ui-shield" class="status-orb" title="기상 보호막">
+              <img src="assets/design/orb_potion.png" alt="보호막" />
+            </div>
+          </div>
+          <div id="ctrl-char-badge" class="ctrl-char-badge">기본 모험가</div>
+          <div id="ctrl-speed-text" class="ctrl-speed-text">속도 x1.00</div>
+          <div id="ctrl-weather-warn" class="ctrl-weather-warn">미세먼지 · 꽃샘추위</div>
+        </div>
+
+        <button id="btn-slide" class="ctrl-btn slide-btn" type="button">
+          <span class="ctrl-gloss"></span>
+          <span class="ctrl-arrow">⬇</span>
+          <span class="ctrl-title">슬라이드</span>
+          <span class="ctrl-sub">꾹 누르기</span>
+        </button>
+      </div>
+
+      <!-- Pause Modal -->
+      <div id="pause-overlay" class="modal-overlay hidden">
+        <div class="ms-modal">
+          <div class="ms-panel-bar"><span>일시정지</span></div>
+          <div class="modal-body">
+            <p class="modal-msg">잠시 숨을 고르며 한국 날씨를 피하는 중입니다.</p>
+            <div class="modal-actions col">
+              <button id="btn-resume-run" class="ms-orange-btn" type="button">▶ 계속 달리기</button>
+              <button id="btn-quit-home" class="ms-blue-btn" type="button">🏠 홈으로 돌아가기</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Over Result Modal (Score + Gold + Return Home) -->
+      <div id="gameover-overlay" class="modal-overlay hidden">
+        <div class="ms-modal">
+          <div class="ms-panel-bar">
+            <span>생존 결과</span>
+            <span id="res-new-best" class="new-best-tag hidden">NEW BEST!</span>
+          </div>
+          <div class="modal-body">
+            <div class="res-score-box">
+              <div class="res-score-label">최종 점수</div>
+              <div id="res-score" class="res-score-value">0</div>
+            </div>
+            <p id="res-cause" class="res-cause">강풍에 날아온 장애물에 쓰러졌습니다!</p>
+            <div class="res-grid">
+              <div class="res-cell">
+                <span>생존 기록</span>
+                <strong id="res-survived">1년 차 봄 (0초)</strong>
+              </div>
+              <div class="res-cell">
+                <span>획득 골드</span>
+                <strong id="res-gold-earned" class="gold-text">+0 G</strong>
+              </div>
+              <div class="res-cell">
+                <span>출격 캐릭터</span>
+                <strong id="res-char-name">기본 모험가</strong>
+              </div>
+              <div class="res-cell">
+                <span>보유 골드</span>
+                <strong id="res-gold-total" class="gold-text">0 G</strong>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button id="btn-retry-run" class="ms-orange-btn" type="button">🔄 다시 달리기</button>
+              <button id="btn-result-home" class="ms-blue-btn" type="button">🏠 홈으로 돌아가기</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toast Notification -->
+    <div id="global-toast" class="global-toast hidden"></div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
