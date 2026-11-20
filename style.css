@@ -3532,3 +3532,258 @@ input:focus-visible {
     gap: 7px;
   }
 }
+
+/* ================= CLEAN MINIMAL HOME SCREEN (CHAR SELECTOR + PLAY ONLY!) ================= */
+#view-home.active {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+  padding: 4px 2px 6px;
+}
+
+.home-clean-lobby {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+}
+
+.home-char-box {
+  background: #101b2e;
+  border: 3px solid #0c172b;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 12px 26px rgba(6, 16, 36, 0.55), 0 5px 0 #091224;
+}
+
+.home-hero-stage {
+  position: relative;
+  height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 3px solid #0b1426;
+}
+
+.home-hero-stage.locked .home-hero-img {
+  filter: grayscale(0.5) brightness(0.84) drop-shadow(0 8px 0 rgba(10, 18, 36, 0.45));
+}
+
+.home-hero-glow {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.44) 0%, rgba(255, 255, 255, 0.1) 46%, transparent 72%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.home-hero-stage .stage-arrow,
+.home-hero-stage .arena-lv-badge,
+.home-hero-stage .arena-tier-badge {
+  z-index: 4;
+}
+
+.home-hero-btn {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-hero-img {
+  width: 126px;
+  height: 126px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 9px 0 rgba(10, 18, 36, 0.46));
+  animation: brawlBob 1.75s ease-in-out infinite;
+  transition: transform 0.15s ease;
+}
+
+.home-hero-btn:active .home-hero-img {
+  transform: scale(0.95);
+}
+
+.home-char-bar {
+  padding: 11px 12px 12px;
+  background: linear-gradient(180deg, #1a2d4c 0%, #111f36 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-char-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.home-char-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-detail-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1.5px solid #63a4f5;
+  background: rgba(24, 58, 108, 0.85);
+  color: #d8ecff;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.home-detail-chip:active {
+  transform: scale(0.96);
+}
+
+.home-char-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.home-strip-slot {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 11px;
+  border: 2.5px solid #263f6b;
+  background: linear-gradient(180deg, #213860 0%, #142442 100%);
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.home-strip-slot.active {
+  border-color: #ffe24a;
+  background: linear-gradient(180deg, #3c75c8 0%, #1e4687 100%);
+  box-shadow: 0 0 0 2px rgba(255, 226, 74, 0.45), 0 4px 10px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.home-strip-slot.locked .home-strip-img {
+  filter: grayscale(0.75) brightness(0.68);
+}
+
+.home-strip-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.strip-eq-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #30cf65;
+  border: 1.5px solid #0e3d1e;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.strip-lock-ico {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 10px;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.home-play-wrap {
+  width: 100%;
+}
+
+.home-play-cta {
+  width: 100%;
+  min-height: 66px;
+  padding: 12px 18px;
+  border-radius: 18px;
+}
+
+.home-play-cta .battle-main-txt {
+  font-size: 24px;
+  letter-spacing: 0.4px;
+}
+
+.home-play-cta .battle-sub-txt {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Landscape Minimal Clean Home Screen (Side-by-Side Char Selector + Big Play Button!) */
+@media (orientation: landscape) and (max-height: 600px) {
+  #view-home.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 10px;
+  }
+
+  .home-clean-lobby {
+    max-width: 680px;
+    display: grid;
+    grid-template-columns: 1.25fr 0.85fr;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .home-hero-stage {
+    height: 132px;
+  }
+
+  .home-hero-img {
+    width: 92px;
+    height: 92px;
+  }
+
+  .home-char-bar {
+    padding: 8px 10px 9px;
+    gap: 7px;
+  }
+
+  .home-char-title {
+    font-size: 15px;
+  }
+
+  .home-play-cta {
+    min-height: 82px;
+    border-radius: 20px;
+  }
+
+  .home-play-cta .battle-main-txt {
+    font-size: 24px;
+  }
+}

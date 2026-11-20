@@ -50,120 +50,36 @@
 
     <!-- ================= MAIN CONTENT AREA (TABS) ================= -->
     <main id="tab-container">
-      <!-- 1. RENEWED HOME SCREEN (PORTRAIT STACK & LANDSCAPE 2-COLUMN LOBBY) -->
+      <!-- 1. CLEAN HOME SCREEN (CHARACTER SELECTOR + PLAY BUTTON ONLY!) -->
       <section id="view-home" class="tab-view active">
-        <div class="home-col-left">
-          <!-- Top Profile Banner + Daily Attendance Reward Button -->
-          <div class="cr-profile-row">
-            <div class="cr-banner-card">
-              <div class="cr-banner-avatar">
-                <img id="home-profile-avatar" src="assets/chars/port_yellow.png" alt="캐릭터" />
-                <span id="home-char-lv-mini" class="avatar-lv-tag">Lv.1</span>
-              </div>
-              <div class="cr-banner-text">
-                <div class="cr-banner-name" id="home-char-name">기본 모험가</div>
-                <div class="cr-banner-sub">
-                  <span>🏆 <strong id="home-best-year">1년 차</strong></span>
-                  <span class="dot-sep">·</span>
-                  <span><strong id="home-best-dist">0m</strong></span>
-                  <span class="dot-sep">·</span>
-                  <span>체력 <strong id="home-char-hp">5❤️</strong></span>
-                </div>
-              </div>
-            </div>
-
-            <button id="btn-open-attendance" class="cr-pass-card attendance-btn" type="button" title="7일 연속 출석 보상 받기">
-              <span id="attendance-dot" class="notify-dot hidden">!</span>
-              <div class="cr-pass-top">🎁 출석 보상</div>
-              <div class="cr-pass-mid">
-                <span class="cr-pass-lv" id="home-att-streak">1일차</span>
-                <span class="cr-pass-status" id="home-att-status">보상 받기!</span>
-              </div>
-            </button>
-          </div>
-
-          <!-- Center Character Diorama + Stats Visualization + Weather Preview -->
-          <div class="cr-arena-wrap">
-            <div class="cr-arena-stage">
-              <canvas id="homePreviewCanvas" width="380" height="180"></canvas>
-              <button id="btn-prev-char" class="stage-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
-              <button id="btn-next-char" class="stage-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
+        <div class="home-clean-lobby">
+          <!-- Clean Character Selector Card -->
+          <div class="home-char-box">
+            <div id="home-hero-stage" class="home-hero-stage tier-basic">
+              <div class="home-hero-glow"></div>
               <span id="home-char-lv-badge" class="arena-lv-badge">Lv.1 / 5</span>
               <span id="home-char-tier" class="arena-tier-badge">밸런스</span>
+              <button id="btn-prev-char" class="stage-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
+              <button id="btn-home-char-info" class="home-hero-btn" type="button" title="캐릭터 능력 보기">
+                <img id="home-hero-img" src="assets/chars/port_yellow.png" alt="선택 캐릭터" class="home-hero-img" />
+              </button>
+              <button id="btn-next-char" class="stage-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
             </div>
 
-            <div class="cr-arena-pedestal">
-              <div class="char-passive-strip">
-                <span id="home-char-passive-name" class="passive-pill">균형 잡힌 생존가</span>
-                <span id="home-char-desc" class="passive-detail">사계절 약점 없이 균형 잡힌 능력치!</span>
+            <div class="home-char-bar">
+              <div class="home-char-title-row">
+                <span id="home-char-name" class="home-char-title">기본 모험가</span>
+                <button id="btn-home-char-detail" class="home-detail-chip" type="button">능력 보기 ›</button>
               </div>
-
-              <div class="home-stat-grid">
-                <div class="stat-bar-item">
-                  <div class="stat-bar-head"><span>❤️ 체력</span><strong id="stat-val-hp">5칸</strong></div>
-                  <div class="stat-bar-track"><div id="stat-fill-hp" class="stat-bar-fill hp" style="width: 55%"></div></div>
-                </div>
-                <div class="stat-bar-item">
-                  <div class="stat-bar-head"><span>🪙 골드</span><strong id="stat-val-gold">110%</strong></div>
-                  <div class="stat-bar-track"><div id="stat-fill-gold" class="stat-bar-fill gold" style="width: 55%"></div></div>
-                </div>
-                <div class="stat-bar-item">
-                  <div class="stat-bar-head"><span>⭐ 점수</span><strong id="stat-val-score">105%</strong></div>
-                  <div class="stat-bar-track"><div id="stat-fill-score" class="stat-bar-fill score" style="width: 55%"></div></div>
-                </div>
-              </div>
-
-              <div class="pedestal-seasons" role="tablist" aria-label="계절 기상 미리보기">
-                <button class="p-s spring active" data-season-idx="0" type="button">🌸 봄</button>
-                <button class="p-s summer" data-season-idx="1" type="button">☀️ 여름</button>
-                <button class="p-s autumn" data-season-idx="2" type="button">🍁 가을</button>
-                <button class="p-s winter" data-season-idx="3" type="button">❄️ 겨울</button>
-              </div>
-              <div id="home-season-hazards" class="season-hazard-line">🌸 봄 재난: 황사 구름 · 미세먼지 지대 · 꽃샘추위 · 나뭇가지</div>
+              <div id="home-char-strip" class="home-char-strip" role="listbox" aria-label="캐릭터 선택"></div>
             </div>
           </div>
-        </div>
 
-        <div class="home-col-right">
-          <!-- Today's Daily Missions Card + Quick Achievements Button -->
-          <div class="home-mission-card">
-            <div class="mission-card-head">
-              <span class="mission-head-title">📋 오늘의 미션</span>
-              <div class="mission-head-right">
-                <span id="home-mission-badge" class="mission-count-badge">0/3 완료</span>
-                <button id="btn-open-achievements" class="ach-pill-btn" type="button" title="업적 보상 보기">
-                  🏅 업적 <span id="home-ach-count">0/10</span>
-                  <span id="ach-dot" class="ach-mini-dot hidden">!</span>
-                </button>
-              </div>
-            </div>
-            <div id="home-mission-list" class="home-mission-list"></div>
-          </div>
-
-          <!-- Start Preparation / Equipped Boosters Bar -->
-          <button id="btn-pass-shop" class="home-prep-bar" type="button" title="상점에서 출발 아이템 준비">
-            <div class="prep-left">
-              <span class="prep-title">🎒 출발 준비</span>
-              <span id="home-booster-summary" class="prep-chips">출발 아이템 없음 (상점에서 준비!)</span>
-            </div>
-            <span class="prep-cta">상점 ›</span>
-          </button>
-
-          <!-- Bottom Action Dock (Extra-Large Crisp Yellow Start Button!) -->
-          <div class="atlas-action-dock">
-            <button id="btn-dock-chars" class="atlas-sq-btn" type="button" title="캐릭터 도감 & 강화" aria-label="캐릭터 탭 열기">
-              <img src="assets/atlas/btn_settings.png" alt="캐릭터" />
-              <span class="dock-badge" id="dock-owned-count">1/6</span>
-            </button>
-
-            <button id="btn-dock-shop" class="atlas-sq-btn" type="button" title="상점 강화" aria-label="상점 탭 열기">
-              <img src="assets/atlas/btn_scroll.png" alt="상점" />
-              <span class="dock-badge gold" id="dock-booster-count">0</span>
-            </button>
-
-            <button id="btn-play-start" class="atlas-start-btn hero-start-btn" type="button">
-              <span class="battle-main-txt" id="btn-play-label">시작하기 ▶</span>
-              <span class="battle-sub-txt" id="btn-play-sub">기본 모험가 Lv.1 · 사계절 생존</span>
+          <!-- Clean Big Yellow Play Button -->
+          <div class="home-play-wrap">
+            <button id="btn-play-start" class="atlas-start-btn hero-start-btn home-play-cta" type="button">
+              <span class="battle-main-txt" id="btn-play-label">▶ 플레이</span>
+              <span class="battle-sub-txt" id="btn-play-sub">기본 모험가 Lv.1</span>
             </button>
           </div>
         </div>
