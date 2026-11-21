@@ -1,0 +1,16 @@
+{
+  "name": "한국 날씨에서 살아남기",
+  "short_name": "K-날씨 생존",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#091324",
+  "theme_color": "#0d2147",
+  "icons": [
+    {
+      "src": "assets/chars/port_yellow.png",
+      "sizes": "225x273",
+      "type": "image/png"
+    }
+  ]
+}

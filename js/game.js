@@ -182,7 +182,6 @@
 
   // ===================== DOM REFERENCES =====================
   const el = {
-    btnRotateFullscreen: document.getElementById('btn-rotate-fullscreen'),
     introOverlay: document.getElementById('intro-overlay'),
     headerBestScore: document.getElementById('header-best-score'),
     btnGoldShop: document.getElementById('btn-gold-shop'),
@@ -3389,18 +3388,6 @@
     });
     el.btnToggleFullscreen.addEventListener('click', toggleLandscapeFullscreen);
     el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
-    el.btnRotateFullscreen.addEventListener('click', toggleLandscapeFullscreen);
-
-    // Auto-pause run safely if user rotates phone back into portrait!
-    const portraitMq = window.matchMedia('(orientation: portrait)');
-    const handleOrientationCheck = () => {
-      if (portraitMq.matches && run && run.active && !paused) {
-        paused = true;
-        el.pauseOverlay.classList.remove('hidden');
-      }
-    };
-    if (portraitMq.addEventListener) portraitMq.addEventListener('change', handleOrientationCheck);
-    else window.addEventListener('resize', handleOrientationCheck);
 
     // Auto-pause active run safely when switching apps / backgrounding browser tab!
     document.addEventListener('visibilitychange', () => {

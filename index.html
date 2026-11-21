@@ -2,25 +2,17 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="screen-orientation" content="landscape" />
+  <meta name="x5-orientation" content="landscape" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd9" />
+  <link rel="stylesheet" href="style.css?v=20261121hd11" />
 </head>
 <body>
-  <!-- ================= LANDSCAPE-ONLY ROTATE PROMPT OVERLAY ================= -->
-  <div id="rotate-overlay" aria-live="polite">
-    <div class="rotate-card">
-      <div class="rotate-phone-ico" aria-hidden="true">📱</div>
-      <h2>가로 모드로 돌려주세요!</h2>
-      <p>한국 날씨에서 살아남기는<br />가로 화면 전용 쿠키런 스타일 게임입니다.</p>
-      <button id="btn-rotate-fullscreen" class="bs-play-btn rotate-fs-btn" type="button">
-        <span class="bs-btn-inner">
-          <span class="bs-play-main rotate-btn-txt">⛶ 가로 전체화면 시작</span>
-        </span>
-      </button>
-    </div>
-  </div>
-
   <div id="mobile-app">
     <!-- ================= GAME LAUNCH INTRO OVERLAY (UPLOADED BG + LOGO ONLY) ================= -->
     <div id="intro-overlay" role="button" tabindex="0" aria-label="한국 날씨에서 살아남기 인트로">
@@ -602,6 +594,6 @@
   <script src="js/data.js?v=20261121hd9"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
   <script src="js/renderer.js?v=20261121hd10"></script>
-  <script src="js/game.js?v=20261121hd9"></script>
+  <script src="js/game.js?v=20261121hd11"></script>
 </body>
 </html>

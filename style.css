@@ -155,13 +155,20 @@ body {
   }
 }
 
-/* Enforce Landscape-Only: Show Rotate Prompt on Portrait Devices! */
+/* Instant Landscape Launch on Portrait Phones (Zero Rotate Prompt!) */
 @media (orientation: portrait) {
   #mobile-app {
-    display: none !important;
-  }
-  #rotate-overlay {
-    display: flex;
+    position: fixed !important;
+    top: 50%;
+    left: 50%;
+    width: 100dvh !important;
+    height: 100dvw !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center center;
   }
 }
 
@@ -6387,5 +6394,106 @@ input:focus-visible {
     top: 78px;
     font-size: 14px;
     padding: 5px 14px;
+  }
+}
+
+/* Compact Landscape Sizing When Running Auto-Rotated on Portrait Mobile Phones */
+@media (orientation: portrait) and (max-width: 520px) {
+  #app-header {
+    padding: 4px 12px 2px;
+  }
+
+  .best-score-banner {
+    width: clamp(134px, 21vh, 160px);
+  }
+
+  .best-score-val {
+    font-size: 12px;
+  }
+
+  .hdr-gear-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  #bottom-nav.pixel-nav-bar {
+    bottom: 6px;
+    grid-template-columns: 48px 48px 64px 48px 48px;
+    gap: 4px;
+    padding: 4px 10px 5px;
+    border-radius: 22px;
+  }
+
+  #bottom-nav.pixel-nav-bar .nav-spr-stack {
+    max-width: 48px;
+    height: 40px;
+  }
+
+  #bottom-nav.pixel-nav-bar .nav-spr-stack.home-stack {
+    max-width: 64px;
+    height: 50px;
+    margin-top: -12px;
+  }
+
+  .bs-home-stage {
+    padding: 0 0 46px;
+  }
+
+  .bs-hero-img {
+    width: 96px;
+    height: 96px;
+  }
+
+  .bs-podium-ring {
+    width: 126px;
+    height: 28px;
+    margin-top: -12px;
+  }
+
+  .bs-hero-name {
+    font-size: 18px;
+  }
+
+  .bs-home-actions {
+    bottom: 6px;
+  }
+
+  .bs-brawler-btn {
+    min-width: 120px;
+    min-height: 48px;
+    padding: 4px 8px;
+  }
+
+  .bs-play-btn {
+    min-width: 158px;
+    min-height: 52px;
+    padding: 6px 12px;
+  }
+
+  .img-ctrl-btn.main-img-btn {
+    width: 78px;
+    height: 78px;
+  }
+
+  .img-ctrl-btn.gear-img-btn {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 8px;
+  }
+
+  .gameover-clean-stack {
+    gap: 7px;
+  }
+
+  .res-best-banner {
+    width: 220px;
+  }
+
+  .res-score-banner {
+    width: 285px;
+  }
+
+  .res-home-img-btn {
+    width: 175px;
   }
 }
