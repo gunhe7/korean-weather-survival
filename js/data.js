@@ -513,21 +513,26 @@ window.RUN_DATA = (function () {
     ]
   };
 
-  // 1년이 지날수록 확실히 빨라지고 매서워지는 연도별 난이도 상승 곡선!
-  function getYearDifficulty(year) {
-    const extra = Math.max(0, year - 1);
+  // 시간이 지날수록(매초 · 매 계절 · 매 연차) 확실하게 빨라지고 콤보가 매서워지는 연속 난이도 곡선!
+  function getYearDifficulty(year, elapsedSec = null) {
+    const baseExtra = Math.max(0, (year || 1) - 1);
+    const effYears = (typeof elapsedSec === 'number' && Number.isFinite(elapsedSec))
+      ? Math.max(0, elapsedSec / YEAR_DURATION)
+      : baseExtra;
     return {
       year,
-      speedMult: Math.min(2.85, 1 + extra * 0.28),
-      spawnRateMult: Math.min(2.25, 1 + extra * 0.18),
-      extraObsSpeedMult: Math.min(2.4, 1 + extra * 0.22),
-      weatherPaceMult: Math.min(1.9, 1 + extra * 0.15),
-      exposureGracePenalty: Math.min(1.15, extra * 0.25),
-      heatRateMult: Math.min(1.95, 1 + extra * 0.16),
-      doubleWaveChance: extra <= 0 ? 0 : Math.min(0.48, 0.15 + (extra - 1) * 0.09),
-      dmgMult: 1 + extra * 0.15,
-      scoreMult: 1 + extra * 0.25,
-      goldBonus: Math.floor(extra / 2)
+      effYears,
+      speedMult: Math.min(2.85, 1 + effYears * 0.56),
+      spawnRateMult: Math.min(2.75, 1 + effYears * 0.78),
+      extraObsSpeedMult: Math.min(2.65, 1 + effYears * 0.58),
+      weatherPaceMult: Math.min(2.2, 1 + effYears * 0.38),
+      exposureGracePenalty: Math.min(1.35, effYears * 0.38),
+      heatRateMult: Math.min(2.3, 1 + effYears * 0.42),
+      doubleWaveChance: effYears < 0.22 ? 0 : Math.min(0.78, 0.18 + (effYears - 0.22) * 0.55),
+      tripleWaveChance: effYears < 0.72 ? 0 : Math.min(0.42, 0.14 + (effYears - 0.72) * 0.22),
+      dmgMult: 1 + effYears * 0.2,
+      scoreMult: 1 + effYears * 0.35,
+      goldBonus: Math.floor(effYears * 0.6)
     };
   }
 

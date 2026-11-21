@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd39';
+  const ASSET_VER = '20261121hd40';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -2853,8 +2853,8 @@
       stageMilestonesEarned: [],
       lastHeartCount: -1,
       scroll: 0,
-      baseSpeed: 188,
-      speed: 188,
+      baseSpeed: 196,
+      speed: 196,
 
       // Player physics (16:9 Cookie Run widescreen framing)
       basePlayerX: 132,
@@ -3161,20 +3161,20 @@
 
   // ===================== FORECAST & WEATHER PHASE SCHEDULER =====================
   function scheduleNextWeatherForecast() {
-    const diff = DATA.getYearDifficulty(run.year);
+    const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const pool = DATA.SEASON_WEATHER_POOL[run.seasonId] || ['rain', 'gust', 'dust'];
     const candidates = pool.filter((w) => w !== run.weatherEvent);
     const nextW = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
 
     run.pendingWeather = nextW;
-    run.forecastCountdown = Math.max(1.8, 3.0 / Math.min(1.5, diff.weatherPaceMult));
-    // KMA gives a fake forecast 65% of the time (escalating slightly with years!) unless Norway Yr.no is active!
-    const fakeProb = Math.min(0.82, 0.65 + (run.year - 1) * 0.05);
+    run.forecastCountdown = Math.max(1.45, 2.9 / Math.min(1.85, diff.weatherPaceMult));
+    // KMA gives a fake forecast 65% of the time (escalating with survival time!) unless Norway Yr.no is active!
+    const fakeProb = Math.min(0.85, 0.65 + diff.effYears * 0.08);
     run.forecastIsFake = !hasNorwayForecast() && nextW !== 'clear' && Math.random() < fakeProb;
   }
 
   function activatePendingWeather() {
-    const diff = DATA.getYearDifficulty(run.year);
+    const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const prevW = run.weatherEvent;
     const nextW = run.pendingWeather || 'clear';
     const wasFake = run.forecastIsFake && !hasNorwayForecast();
@@ -3224,14 +3224,26 @@
   }
 
   // ===================== SPAWNERS (100% UPLOADED SHEET OBSTACLES & STRUCTURES) =====================
+  function pickFollowObstacle(pool, prevLane) {
+    const followPool = pool.filter((p) => p.lane !== 'icicle');
+    if (!followPool.length) return pool[0];
+    // 65% of the time alternate jump <-> slide lane for crisp rhythmic combos!
+    if (Math.random() < 0.65) {
+      const wantAir = prevLane !== 'air';
+      const contrasted = followPool.filter((p) => (wantAir ? p.lane === 'air' : p.lane !== 'air'));
+      if (contrasted.length) return contrasted[Math.floor(Math.random() * contrasted.length)];
+    }
+    return followPool[Math.floor(Math.random() * followPool.length)];
+  }
+
   function spawnObstacleWave() {
-    const diff = DATA.getYearDifficulty(run.year);
+    const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const pool = DATA.OBSTACLES_BY_SEASON[run.seasonId];
     const preset = pool[Math.floor(Math.random() * pool.length)];
 
     // During flood, leave ground room for submerged car / box platforming!
     if (run.weatherEvent === 'flood' && preset.lane === 'low' && Math.random() < 0.55) {
-      return;
+      return 0;
     }
 
     let startX = Renderer.W + (preset.warn ? 48 : 22);
@@ -3257,11 +3269,11 @@
       extraSpeed: (preset.speedBonus || 0) * diff.extraObsSpeedMult
     });
 
-    // Year 2+ Escalating Difficulty: Fair Double-Obstacle Combo Wave!
+    // Continuous Escalating Difficulty: Fair Double (15s+) & Triple (45s+) Jump/Slide Rhythm Combos!
+    let comboExtraWidth = 0;
     if (run.weatherEvent !== 'flood' && preset.lane !== 'icicle' && Math.random() < diff.doubleWaveChance) {
-      const followPool = pool.filter((p) => p.lane !== 'icicle');
-      const second = followPool[Math.floor(Math.random() * followPool.length)] || preset;
-      const gapX = Math.max(155, 195 - (run.year - 2) * 10);
+      const second = pickFollowObstacle(pool, preset.lane);
+      const gapX = Math.max(150, Math.min(248, (run.speed || 220) * 0.64));
       const sx2 = startX + gapX;
       const sy2 = second.lane === 'air' ? Renderer.GROUND_Y - 20 - second.h : Renderer.GROUND_Y - second.h;
       run.obstacles.push({
@@ -3272,6 +3284,23 @@
         nearMissed: false,
         extraSpeed: (second.speedBonus || 0) * diff.extraObsSpeedMult
       });
+      comboExtraWidth += gapX;
+
+      if (Math.random() < diff.tripleWaveChance) {
+        const third = pickFollowObstacle(pool, second.lane);
+        const gapX3 = Math.round(gapX * 1.04);
+        const sx3 = sx2 + gapX3;
+        const sy3 = third.lane === 'air' ? Renderer.GROUND_Y - 20 - third.h : Renderer.GROUND_Y - third.h;
+        run.obstacles.push({
+          ...third,
+          x: sx3,
+          y: sy3,
+          passed: false,
+          nearMissed: false,
+          extraSpeed: (third.speedBonus || 0) * diff.extraObsSpeedMult
+        });
+        comboExtraWidth += gapX3;
+      }
     }
 
     // Tighter & Riskier Coin Economy: coins appear on ~55% of waves in smaller, higher-skill clusters!
@@ -3298,6 +3327,8 @@
         }
       }
     }
+
+    return comboExtraWidth / Math.max(190, run.speed || 196);
   }
 
   function spawnUtilityPickup() {
@@ -3371,7 +3402,7 @@
     }
 
     const ch = getCharDef(run.charId);
-    const diff = DATA.getYearDifficulty(run.year);
+    const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const upgradeScoreMult = 1 + save.upgrades.score * 0.12;
 
     run.elapsed += dt;
@@ -3395,8 +3426,8 @@
       run.gold += yearGoldBonus;
       run.winPoseTimer = 0.9;
       SFX.yearUp();
-      const nextDiff = DATA.getYearDifficulty(run.year);
-      showRunBanner(`🔥 ${run.year}년 차 진입! 속도×${nextDiff.speedMult.toFixed(2)} · 콤보 장애물 경보! (+${yearGoldBonus}G)`, 3000);
+      const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
+      showRunBanner(`🔥 ${run.year}년 차 돌파! 속도 ×${nextDiff.speedMult.toFixed(2)} · 3연속 콤보 경보! (+${yearGoldBonus}G)`, 3000);
       Renderer.spawnFloater(`${run.year}년 차 난이도 UP!`, '#ff944d', run.playerX + 40, run.playerY - 52);
       checkStageMilestone(run.year, 0);
     } else if (newSeasonIdx !== run.seasonIdx) {
@@ -3409,7 +3440,9 @@
       run.gold += 5;
       run.heatGauge = 0;
       SFX.seasonUp();
-      showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] 전환 · ${sObj.weatherLabel}`, 2300);
+      const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
+      showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] · 속도 ×${nextDiff.speedMult.toFixed(2)} UP! (${sObj.weatherLabel})`, 2400);
+      Renderer.spawnFloater(`⚡ 속도 ×${nextDiff.speedMult.toFixed(2)} ↑`, '#ffe259', run.playerX + 36, run.playerY - 50);
       checkStageMilestone(run.year, run.seasonIdx);
       // Immediately queue a forecast for the new season's weather!
       if (!run.pendingWeather) scheduleNextWeatherForecast();
@@ -3731,9 +3764,9 @@
     // ---- SPAWN TIMERS ----
     run.obstacleCd -= dt;
     if (run.obstacleCd <= 0) {
-      spawnObstacleWave();
-      const baseInterval = 1.68 / diff.spawnRateMult;
-      run.obstacleCd = Math.max(0.58, baseInterval + (Math.random() - 0.35) * 0.32);
+      const comboExtraCd = spawnObstacleWave() || 0;
+      const baseInterval = 1.48 / diff.spawnRateMult;
+      run.obstacleCd = Math.max(0.46, baseInterval + (Math.random() - 0.35) * 0.24) + comboExtraCd * 0.72;
     }
 
     run.itemCd -= dt;
@@ -3906,11 +3939,11 @@
         }
       } else if (ob.lane === 'icicle') {
         ob.x -= run.speed * dt;
-        if (!ob.falling && ob.x < Renderer.W - 70) {
+        if (!ob.falling && ob.x < Renderer.W - 56) {
           ob.falling = true;
         }
         if (ob.falling) {
-          ob.vy = (ob.vy || 0) + 520 * dt;
+          ob.vy = (ob.vy || 0) + (540 * Math.min(1.85, diff.extraObsSpeedMult)) * dt;
           ob.y = Math.min(Renderer.GROUND_Y - ob.h, ob.y + ob.vy * dt);
         }
       } else {
@@ -4047,13 +4080,13 @@
   function updateRunHud() {
     if (!run) return;
     const ch = getCharDef(run.charId);
-    const diff = DATA.getYearDifficulty(run.year);
+    const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const seasonObj = DATA.SEASONS[run.seasonIdx];
 
     el.runYearNum.textContent = `${run.year}Y`;
     const yrTier = run.year >= 4 ? 'yr-4' : (run.year === 3 ? 'yr-3' : (run.year === 2 ? 'yr-2' : 'yr-1'));
     el.runYearNum.className = `portrait-yr-badge ${yrTier}`;
-    el.runSeasonLabel.textContent = `${run.year}년 차 ${seasonObj.name}`;
+    el.runSeasonLabel.textContent = `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
     el.runScoreText.textContent = `${run.distanceM.toLocaleString('ko-KR')}m · ${Math.floor(run.score).toLocaleString('ko-KR')}점`;
     el.runGoldText.textContent = run.gold.toLocaleString('ko-KR');
 

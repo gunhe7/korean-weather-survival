@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd39';
+  const CHAR_ASSET_VER = '20261121hd40';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -561,8 +561,26 @@ window.RunRenderer = (function () {
       const waveSpr = getSprite('sp_flood_wave1') || getSprite('sp_flood_wave2');
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      if (waveSpr) ctx.drawImage(waveSpr, x + 16, GROUND_Y - 48, 62, 46);
-      if (carSpr) ctx.drawImage(carSpr, x, GROUND_Y - 46, 56, 48);
+      if (waveSpr) {
+        const ow = getOutlinedObstacleSprite('sp_flood_wave_pass', waveSpr);
+        if (ow) {
+          const px = 62 * ow.padRatioX;
+          const py = 46 * ow.padRatioY;
+          ctx.drawImage(ow.canvas, x + 16 - px, GROUND_Y - 48 - py, 62 + px * 2, 46 + py * 2);
+        } else {
+          ctx.drawImage(waveSpr, x + 16, GROUND_Y - 48, 62, 46);
+        }
+      }
+      if (carSpr) {
+        const oc = getOutlinedObstacleSprite('sp_red_car_pass', carSpr);
+        if (oc) {
+          const px = 56 * oc.padRatioX;
+          const py = 48 * oc.padRatioY;
+          ctx.drawImage(oc.canvas, x - px, GROUND_Y - 46 - py, 56 + px * 2, 48 + py * 2);
+        } else {
+          ctx.drawImage(carSpr, x, GROUND_Y - 46, 56, 48);
+        }
+      }
     }
   }
 
@@ -847,6 +865,60 @@ window.RunRenderer = (function () {
     ctx.globalAlpha = 1;
   }
 
+  // ===================== CACHED CRISP RED DANGER OUTLINE FOR ALL OBSTACLES =====================
+  const obstacleOutlineCache = {};
+
+  function getOutlinedObstacleSprite(key, spr) {
+    if (!spr || !spr.complete || !spr.naturalWidth || !spr.naturalHeight) return null;
+    if (obstacleOutlineCache[key]) return obstacleOutlineCache[key];
+
+    const sw = spr.naturalWidth;
+    const sh = spr.naturalHeight;
+    // Consistent bold red contour (~2.2px~2.6px on screen) hugging exact sprite alpha shape!
+    const outlineR = Math.max(3, Math.round(Math.max(sw, sh) * 0.062));
+    const glowR = outlineR + Math.max(2, Math.round(outlineR * 0.45));
+    const pad = glowR + 2;
+    const cw = sw + pad * 2;
+    const ch = sh + pad * 2;
+
+    const sil = document.createElement('canvas');
+    sil.width = sw;
+    sil.height = sh;
+    const sctx = sil.getContext('2d');
+    sctx.drawImage(spr, 0, 0, sw, sh);
+    sctx.globalCompositeOperation = 'source-in';
+    sctx.fillStyle = '#ff1e38';
+    sctx.fillRect(0, 0, sw, sh);
+
+    const out = document.createElement('canvas');
+    out.width = cw;
+    out.height = ch;
+    const octx = out.getContext('2d');
+    octx.imageSmoothingEnabled = true;
+    octx.imageSmoothingQuality = 'high';
+
+    // Soft outer crimson danger aura
+    octx.globalAlpha = 0.45;
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2;
+      octx.drawImage(sil, pad + Math.cos(ang) * glowR, pad + Math.sin(ang) * glowR);
+    }
+
+    // Crisp solid red danger outline hugging obstacle contour
+    octx.globalAlpha = 1;
+    for (let i = 0; i < 16; i++) {
+      const ang = (i / 16) * Math.PI * 2;
+      octx.drawImage(sil, pad + Math.cos(ang) * outlineR, pad + Math.sin(ang) * outlineR);
+    }
+
+    // Original obstacle art cleanly layered on top
+    octx.drawImage(spr, pad, pad, sw, sh);
+
+    const entry = { canvas: out, padRatioX: pad / sw, padRatioY: pad / sh };
+    obstacleOutlineCache[key] = entry;
+    return entry;
+  }
+
   // ===================== UPLOADED SEASONAL SHEET OBSTACLES ONLY =====================
   function drawObstacle(ctx, ob, t) {
     // Right-edge warning badge before fast flying aerial obstacle enters
@@ -887,6 +959,13 @@ window.RunRenderer = (function () {
 
     const spr = getSprite(ob.sprite);
     if (spr) {
+      const outlined = getOutlinedObstacleSprite(ob.sprite, spr);
+      const drawImg = outlined ? outlined.canvas : spr;
+      const px = outlined ? ob.w * outlined.padRatioX : 0;
+      const py = outlined ? ob.h * outlined.padRatioY : 0;
+      const dw = ob.w + px * 2;
+      const dh = ob.h + py * 2;
+
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
@@ -894,9 +973,9 @@ window.RunRenderer = (function () {
         ctx.translate(x + ob.w / 2, y + ob.h / 2);
         const spd = ob.sprite === 'sp_mace' ? -5.5 : (ob.sprite === 'sp_snowflake' ? -3.4 : Math.sin(t * 7) * 0.35);
         ctx.rotate(ob.sprite === 'sp_red_umbrella' ? spd : t * spd);
-        ctx.drawImage(spr, -ob.w / 2, -ob.h / 2, ob.w, ob.h);
+        ctx.drawImage(drawImg, -dw / 2, -dh / 2, dw, dh);
       } else {
-        ctx.drawImage(spr, x, y, ob.w, ob.h);
+        ctx.drawImage(drawImg, x - px, y - py, dw, dh);
       }
       ctx.restore();
     }
@@ -1181,17 +1260,22 @@ window.RunRenderer = (function () {
       scaleHeight: 62
     }, t);
 
-    // Subtle High-Speed Wind Momentum Streaks (Year 2+ or Speed Boost!)
-    if ((run.year >= 2 || run.speedBoostTimer > 0) && run.feverTimer <= 0 && !run.dead) {
+    // Dynamic High-Speed Wind Momentum Streaks (ramps smoothly as speed climbs past 220 px/s!)
+    const speedRatio = (run.speed || 196) / 196;
+    if ((speedRatio >= 1.14 || run.speedBoostTimer > 0) && run.feverTimer <= 0 && !run.dead) {
       ctx.save();
       const boostMode = run.speedBoostTimer > 0;
-      const streakCnt = boostMode ? 7 : Math.min(5, run.year + 1);
-      ctx.fillStyle = boostMode ? 'rgba(110, 244, 255, 0.34)' : 'rgba(255, 255, 255, 0.16)';
+      const intensity = Math.min(1, Math.max(0.18, (speedRatio - 1.1) / 1.2));
+      const streakCnt = boostMode ? 8 : Math.min(8, Math.max(2, Math.floor(2 + intensity * 6)));
+      ctx.fillStyle = boostMode
+        ? 'rgba(110, 244, 255, 0.36)'
+        : `rgba(255, 255, 255, ${(0.12 + intensity * 0.24).toFixed(2)})`;
       for (let i = 0; i < streakCnt; i++) {
-        const spd = boostMode ? 620 : 380 + run.year * 45;
-        const sx = ((i * 115 - t * spd) % (W + 120) + (W + 120)) % (W + 120) - 60;
-        const sy = 26 + ((i * 47) % (GROUND_Y - 56));
-        ctx.fillRect(Math.floor(sx), sy, boostMode ? 52 : 34, 2);
+        const spd = boostMode ? 640 : 340 + speedRatio * 145;
+        const sx = ((i * 105 - t * spd) % (W + 120) + (W + 120)) % (W + 120) - 60;
+        const sy = 24 + ((i * 43) % (GROUND_Y - 54));
+        const len = boostMode ? 54 : Math.round(24 + intensity * 32);
+        ctx.fillRect(Math.floor(sx), sy, len, 2);
       }
       ctx.restore();
     }
