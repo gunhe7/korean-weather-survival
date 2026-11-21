@@ -314,12 +314,13 @@ window.RUN_DATA = (function () {
       filter: 'none',
       customAnimSkin: 'catgirl',
       customAnimFrames: 4,
-      customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd16',
+      customRunFrames: 8,
+      customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd19',
       customShieldVfx: 'catgirl_fx_paw',
       gemPrice: 45,
       glow: '#ff96dc',
       trail: ['#ff96dc', '#ffffff', '#ffc4ee'],
-      desc: '4× HD 전용 풀애니메이션(달리기·점프·슬라이드·유령) & 핑크 냥이 발바닥 오라!'
+      desc: '8프레임 전용 풀애니메이션(달리기·점프·슬라이드) & 핑크 냥이 발바닥 오라!'
     }
   ];
 

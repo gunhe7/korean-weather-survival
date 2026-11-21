@@ -15,7 +15,7 @@ window.RunRenderer = (function () {
     { id: 'hanbok', frames: 2 },
     { id: 'skier', frames: 2 },
     { id: 'santa', frames: 2 },
-    { id: 'catgirl', frames: 4 }
+    { id: 'catgirl', frames: 4, runFrames: 8 }
   ];
   const CHAR_ANIM_STATES = ['idle', 'run', 'jump', 'fall', 'slide', 'hurt', 'die'];
   const CHAR_VFX_SPRITES = ['fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring', 'catgirl_fx_paw'];
@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd16';
+  const CHAR_ASSET_VER = '20261121hd19';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -606,7 +606,7 @@ window.RunRenderer = (function () {
       return getSprite(`${skin}_${state}_${frame}`) || getSprite(`${skin}_${state}_0`);
     }
     if (opts.running) {
-      const rn = (!customSkin && charDef.runFrames) ? charDef.runFrames : n;
+      const rn = customSkin ? (skinDef.customRunFrames || n) : (charDef.runFrames || n);
       const fps = rn >= 6 ? 13 : (rn >= 3 ? 10 : 8.5);
       const frame = Math.floor(t * fps) % rn;
       return getSprite(`${skin}_run_${frame}`) || getSprite(`${skin}_run_0`);
@@ -788,8 +788,7 @@ window.RunRenderer = (function () {
     if (spr) {
       // Prone poses (Slide & Die) are naturally horizontal (~66x52 vs ~60x78 standing):
       // 0.67 height keeps head & body scale pixel-consistent across every animation state!
-      const isCatDead = dead && skinDef && skinDef.customAnimSkin === 'catgirl';
-      const targetH = isProne ? Math.round(scaleHeight * (isCatDead ? 0.88 : 0.67)) : scaleHeight;
+      const targetH = isProne ? Math.round(scaleHeight * 0.67) : scaleHeight;
       const ratio = spr.naturalWidth / spr.naturalHeight;
       const drawW = Math.round(targetH * ratio);
       const drawH = targetH;

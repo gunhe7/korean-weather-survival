@@ -24,7 +24,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd16';
+  const ASSET_VER = '20261121hd19';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -389,7 +389,7 @@
 
   function getCharAnimSpec(charDef, skinDef) {
     if (skinDef && skinDef.customAnimSkin) {
-      return { skin: skinDef.customAnimSkin, frames: skinDef.customAnimFrames || 4 };
+      return { skin: skinDef.customAnimSkin, frames: skinDef.customRunFrames || skinDef.customAnimFrames || 4 };
     }
     return { skin: charDef.animSkin || 'yellow', frames: charDef.runFrames || charDef.animFrames || 2 };
   }
