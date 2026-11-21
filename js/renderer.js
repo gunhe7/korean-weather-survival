@@ -10,7 +10,7 @@ window.RunRenderer = (function () {
 
   // ===================== PRELOAD ALL CHARACTER + DESIGN + WORLD SPRITES =====================
   const CHAR_SHEET_SKINS = [
-    { id: 'yellow', frames: 3 },
+    { id: 'yellow', frames: 3, runFrames: 8 },
     { id: 'blue', frames: 2 },
     { id: 'hanbok', frames: 2 },
     { id: 'skier', frames: 2 },
@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd10';
+  const CHAR_ASSET_VER = '20261121hd16';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -61,7 +61,8 @@ window.RunRenderer = (function () {
 
   CHAR_SHEET_SKINS.forEach((sk) => {
     CHAR_ANIM_STATES.forEach((st) => {
-      for (let f = 0; f < sk.frames; f++) {
+      const fCount = (st === 'run' && sk.runFrames) ? sk.runFrames : sk.frames;
+      for (let f = 0; f < fCount; f++) {
         const key = `${sk.id}_${st}_${f}`;
         const img = new Image();
         img.src = `assets/chars/${key}.png?v=${CHAR_ASSET_VER}`;
@@ -605,8 +606,9 @@ window.RunRenderer = (function () {
       return getSprite(`${skin}_${state}_${frame}`) || getSprite(`${skin}_${state}_0`);
     }
     if (opts.running) {
-      const fps = n >= 3 ? 10 : 8.5;
-      const frame = Math.floor(t * fps) % n;
+      const rn = (!customSkin && charDef.runFrames) ? charDef.runFrames : n;
+      const fps = rn >= 6 ? 13 : (rn >= 3 ? 10 : 8.5);
+      const frame = Math.floor(t * fps) % rn;
       return getSprite(`${skin}_run_${frame}`) || getSprite(`${skin}_run_0`);
     }
     const idleFrame = Math.floor(t * 3.5) % n;

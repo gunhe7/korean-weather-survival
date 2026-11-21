@@ -24,7 +24,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd9';
+  const ASSET_VER = '20261121hd16';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -391,7 +391,7 @@
     if (skinDef && skinDef.customAnimSkin) {
       return { skin: skinDef.customAnimSkin, frames: skinDef.customAnimFrames || 4 };
     }
-    return { skin: charDef.animSkin || 'yellow', frames: charDef.animFrames || 2 };
+    return { skin: charDef.animSkin || 'yellow', frames: charDef.runFrames || charDef.animFrames || 2 };
   }
 
   function getTotalBagChests() {
@@ -1245,7 +1245,7 @@
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const skin = getEquippedSkin(ch.id);
     const anim = getCharAnimSpec(ch, skin);
-    const fps = anim.frames >= 3 ? 9.5 : 7.5;
+    const fps = anim.frames >= 6 ? 13 : (anim.frames >= 3 ? 9.5 : 7.5);
     const frame = Math.floor(t * fps) % anim.frames;
     const src = `assets/chars/${anim.skin}_run_${frame}.png?v=${ASSET_VER}`;
     if (src !== lastHomeHeroSrc) {
