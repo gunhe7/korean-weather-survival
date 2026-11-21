@@ -6657,3 +6657,239 @@ input:focus-visible {
     padding: 2px 10px !important;
   }
 }
+
+/* =========================================================================
+   GLOSSY ICE-BLUE ARCADE SETTINGS MODAL (MATCHES GEAR, SCOREBAR & HOME UI)
+   ========================================================================= */
+.settings-arcade-modal {
+  width: min(420px, 90vw);
+  border-radius: 22px !important;
+  border: 3.5px solid #071433 !important;
+  background: linear-gradient(180deg, #1b4b9c 0%, #102a61 52%, #0c1f4a 100%) !important;
+  box-shadow:
+    0 16px 40px rgba(3, 10, 28, 0.78),
+    0 6px 0 #071433,
+    inset 0 2px 0 rgba(162, 232, 255, 0.55) !important;
+  overflow: hidden;
+}
+
+.settings-arcade-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px !important;
+  background: linear-gradient(180deg, #42c2ff 0%, #1c7fe8 55%, #1159bd 100%) !important;
+  border-bottom: 3px solid #071433 !important;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.52);
+}
+
+.settings-bar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+  text-shadow:
+    -2px -2px 0 #071433,
+     2px -2px 0 #071433,
+    -2px  2px 0 #071433,
+     2px  2px 0 #071433,
+     0px  3px 0 #071433;
+}
+
+.settings-bar-gear {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(7, 20, 51, 0.55));
+}
+
+.settings-x-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 10px !important;
+  border: 2.5px solid #071433 !important;
+  background: linear-gradient(180deg, #ff6b7a, #d92638) !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  box-shadow: 0 3px 0 #071433, inset 0 1.5px 0 rgba(255, 255, 255, 0.45);
+}
+
+.settings-x-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #071433;
+}
+
+.settings-arcade-body {
+  padding: 14px 15px 15px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.settings-ice-card {
+  margin-bottom: 0 !important;
+  padding: 11px 13px !important;
+  border-radius: 15px !important;
+  border: 2.5px solid #071433 !important;
+  background: linear-gradient(180deg, rgba(31, 78, 150, 0.92) 0%, rgba(18, 46, 98, 0.95) 100%) !important;
+  box-shadow: 0 4px 0 #071433, inset 0 1.5px 0 rgba(168, 228, 255, 0.34) !important;
+}
+
+.settings-ice-card .setting-row {
+  margin-bottom: 9px;
+}
+
+.settings-ice-card .setting-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071433;
+}
+
+.setting-ico-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 2px solid #071433;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 0 #071433, inset 0 1.5px 0 rgba(255, 255, 255, 0.45);
+}
+
+.setting-ico-badge.bgm {
+  background: linear-gradient(180deg, #52d9ff, #1982e8);
+}
+
+.setting-ico-badge.sfx {
+  background: linear-gradient(180deg, #ffe24a, #f59c0c);
+}
+
+.settings-ice-card .toggle-pill {
+  min-width: 64px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 2.5px solid #071433;
+  background: linear-gradient(180deg, #54698a, #384966);
+  color: #d6e4f7;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #071433, inset 0 1.5px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.08s ease;
+}
+
+.settings-ice-card .toggle-pill.on {
+  border-color: #071433;
+  background: linear-gradient(180deg, #52f090, #1fb85c);
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #0b4a24;
+  box-shadow: 0 3px 0 #071433, 0 0 10px rgba(72, 232, 136, 0.45), inset 0 1.5px 0 rgba(255, 255, 255, 0.5);
+}
+
+.settings-ice-card .toggle-pill:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #071433;
+}
+
+/* Custom Glossy Blue-Cyan Arcade Slider */
+.arcade-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 12px !important;
+  border-radius: 999px;
+  border: 2px solid #071433;
+  background: linear-gradient(
+    90deg,
+    #4ce0ff 0%,
+    #249cff var(--pct, 50%),
+    #0b1a3b var(--pct, 50%),
+    #0b1a3b 100%
+  );
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.arcade-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2.5px solid #071433;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #c8f3ff 38%, #3fbaff 100%);
+  box-shadow: 0 3px 0 #071433, 0 0 8px rgba(84, 212, 255, 0.65);
+  cursor: pointer;
+}
+
+.arcade-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2.5px solid #071433;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #c8f3ff 38%, #3fbaff 100%);
+  box-shadow: 0 3px 0 #071433, 0 0 8px rgba(84, 212, 255, 0.65);
+  cursor: pointer;
+}
+
+.settings-ice-card .vol-num {
+  min-width: 46px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(7, 20, 51, 0.72);
+  border: 1.5px solid rgba(114, 212, 255, 0.45);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: #a8f0ff !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-footer-row {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 2px;
+}
+
+.settings-ok-btn {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 15.5px;
+  letter-spacing: 0.4px;
+}
+
+@media (max-height: 440px), (orientation: portrait) and (max-width: 520px) {
+  .settings-arcade-bar {
+    padding: 7px 12px !important;
+  }
+  .settings-bar-title {
+    font-size: 16.5px;
+  }
+  .settings-bar-gear {
+    width: 24px;
+    height: 24px;
+  }
+  .settings-arcade-body {
+    padding: 10px 12px 11px !important;
+    gap: 8px;
+  }
+  .settings-ice-card {
+    padding: 8px 11px !important;
+  }
+  .settings-ice-card .setting-row {
+    margin-bottom: 6px;
+  }
+  .settings-ok-btn {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}

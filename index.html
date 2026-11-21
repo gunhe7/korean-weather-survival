@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png" />
   <link rel="manifest" href="manifest.json" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd15" />
+  <link rel="stylesheet" href="style.css?v=20261121hd18" />
 </head>
 <body>
   <div id="mobile-app">
@@ -275,45 +275,49 @@
       </div>
     </div>
 
-    <!-- ================= AUDIO & LANDSCAPE SETTINGS MODAL ================= -->
+    <!-- ================= GLOSSY ARCADE SETTINGS MODAL ================= -->
     <div id="settings-overlay" class="modal-overlay hidden">
-      <div class="cr-modal">
-        <div class="cr-modal-bar">
-          <span>⚙️ 사운드 &amp; 화면 설정</span>
-          <button id="btn-close-settings" class="modal-x-btn" type="button" aria-label="닫기">✕</button>
+      <div class="cr-modal settings-arcade-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <span class="settings-bar-title">
+            <img src="assets/ui/btn_settings_gear.png" alt="" class="settings-bar-gear" aria-hidden="true" />
+            <span>설정</span>
+          </span>
+          <button id="btn-close-settings" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
         </div>
-        <div class="modal-body">
-          <div class="setting-group">
+        <div class="modal-body settings-arcade-body">
+          <div class="setting-group settings-ice-card">
             <div class="setting-row">
-              <label for="chk-bgm-on" class="setting-label">🎵 배경음 (BGM)</label>
+              <label for="chk-bgm-on" class="setting-label">
+                <span class="setting-ico-badge bgm">🎵</span>
+                <span>배경음 (BGM)</span>
+              </label>
               <button id="chk-bgm-on" class="toggle-pill on" type="button">ON</button>
             </div>
             <div class="setting-slider-row">
-              <input id="rng-bgm-vol" type="range" min="0" max="100" value="45" aria-label="배경음 볼륨" />
+              <input id="rng-bgm-vol" class="arcade-slider" type="range" min="0" max="100" value="45" aria-label="배경음 볼륨" />
               <span id="lbl-bgm-vol" class="vol-num">45%</span>
             </div>
           </div>
 
-          <div class="setting-group">
+          <div class="setting-group settings-ice-card">
             <div class="setting-row">
-              <label for="chk-sfx-on" class="setting-label">🔊 효과음 (SFX)</label>
+              <label for="chk-sfx-on" class="setting-label">
+                <span class="setting-ico-badge sfx">🔊</span>
+                <span>효과음 (SFX)</span>
+              </label>
               <button id="chk-sfx-on" class="toggle-pill on" type="button">ON</button>
             </div>
             <div class="setting-slider-row">
-              <input id="rng-sfx-vol" type="range" min="0" max="100" value="80" aria-label="효과음 볼륨" />
+              <input id="rng-sfx-vol" class="arcade-slider" type="range" min="0" max="100" value="80" aria-label="효과음 볼륨" />
               <span id="lbl-sfx-vol" class="vol-num">80%</span>
             </div>
           </div>
 
-          <div class="setting-group">
-            <div class="setting-row">
-              <span class="setting-label">📱 가로 전체화면 모드</span>
-            </div>
-            <button id="btn-toggle-fullscreen" class="cr-blue-btn" type="button">📱 가로 전체화면 전환</button>
-            <p class="setting-note">이 게임은 가로 화면 전용으로 제작되었습니다. 전체화면으로 더욱 넓게 즐겨보세요!</p>
+          <div class="settings-footer-row">
+            <div class="save-safe-note">💾 게임 데이터 자동 저장 보호 중</div>
+            <button id="btn-settings-ok" class="cr-gold-btn settings-ok-btn" type="button">확인</button>
           </div>
-
-          <div class="save-safe-note">💾 골드·캐릭터·도감·업적 데이터 자동 이중 백업 보호 중</div>
         </div>
       </div>
     </div>
@@ -527,7 +531,7 @@
             <p class="modal-msg">잠시 숨을 고르며 한국 날씨를 피하는 중입니다.<br /><small>PC 단축키: Space/↑ 점프 · ↓ 슬라이드 · Q 우산 · E 마스크</small></p>
             <div class="modal-actions col">
               <button id="btn-resume-run" class="cr-gold-btn" type="button">▶ 계속 달리기</button>
-              <button id="btn-pause-settings" class="cr-blue-btn" type="button">⚙️ 사운드 &amp; 가로 설정</button>
+              <button id="btn-pause-settings" class="cr-blue-btn" type="button">⚙️ 사운드 설정</button>
               <button id="btn-quit-home" class="cr-blue-btn" type="button">🏠 홈으로 돌아가기</button>
             </div>
           </div>
@@ -604,7 +608,7 @@
   <script src="js/data.js?v=20261121hd17"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
   <script src="js/renderer.js?v=20261121hd16"></script>
-  <script src="js/game.js?v=20261121hd17"></script>
+  <script src="js/game.js?v=20261121hd18"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

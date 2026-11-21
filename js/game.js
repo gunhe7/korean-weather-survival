@@ -210,7 +210,7 @@
     chkSfxOn: document.getElementById('chk-sfx-on'),
     rngSfxVol: document.getElementById('rng-sfx-vol'),
     lblSfxVol: document.getElementById('lbl-sfx-vol'),
-    btnToggleFullscreen: document.getElementById('btn-toggle-fullscreen'),
+    btnSettingsOk: document.getElementById('btn-settings-ok'),
 
     homeHeroStage: document.getElementById('home-hero-stage'),
     homeHeroImg: document.getElementById('home-hero-img'),
@@ -927,16 +927,15 @@
     el.chkBgmOn.textContent = st.bgmOn ? 'ON' : 'OFF';
     const bgmPct = Math.round(st.bgmVol * 100);
     el.rngBgmVol.value = String(bgmPct);
+    el.rngBgmVol.style.setProperty('--pct', `${st.bgmOn ? bgmPct : 0}%`);
     el.lblBgmVol.textContent = `${bgmPct}%`;
 
     el.chkSfxOn.classList.toggle('on', st.sfxOn);
     el.chkSfxOn.textContent = st.sfxOn ? 'ON' : 'OFF';
     const sfxPct = Math.round(st.sfxVol * 100);
     el.rngSfxVol.value = String(sfxPct);
+    el.rngSfxVol.style.setProperty('--pct', `${st.sfxOn ? sfxPct : 0}%`);
     el.lblSfxVol.textContent = `${sfxPct}%`;
-
-    const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
-    el.btnToggleFullscreen.textContent = isFs ? '📱 전체화면 종료' : '📱 가로 전체화면 전환';
   }
 
   async function toggleLandscapeFullscreen() {
@@ -3415,6 +3414,12 @@
       SFX.click();
       el.settingsOverlay.classList.add('hidden');
     });
+    if (el.btnSettingsOk) {
+      el.btnSettingsOk.addEventListener('click', () => {
+        SFX.click();
+        el.settingsOverlay.classList.add('hidden');
+      });
+    }
     el.settingsOverlay.addEventListener('click', (e) => {
       if (e.target === el.settingsOverlay) {
         el.settingsOverlay.classList.add('hidden');
@@ -3447,7 +3452,6 @@
       SFX.applySettings({ sfxVol: v, sfxOn: v > 0 });
       saveAudioState();
     });
-    el.btnToggleFullscreen.addEventListener('click', toggleLandscapeFullscreen);
     el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
 
     // Auto-pause active run safely when switching apps / backgrounding browser tab!
