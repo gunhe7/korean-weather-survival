@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd32" />
+  <link rel="stylesheet" href="style.css?v=20261121hd33" />
 </head>
 <body>
   <div id="mobile-app">
@@ -114,7 +114,32 @@
           </div>
 
           <div id="login-setup-notice" class="login-setup-notice hidden">
-            ⚙️ <strong>실제 Google·Apple 로그인 활성화 안내:</strong> Firebase 콘솔(프로젝트 설정 → 웹 앱)의 <code>apiKey</code>를 <code>js/online.js</code>에 연결하면 즉시 실제 OAuth 로그인이 작동합니다. (가이드: <code>AUTH_SETUP.md</code>)
+            ⚙️ <strong>클라우드 동기화 / Apple 로그인 안내:</strong> 모든 기기 데이터 이어하기를 위해 Firebase 규칙에 <code>user_saves</code>를 게시하고, 웹 Apple 로그인은 Apple Developer 연동 또는 이메일/비밀번호 로그인을 켜주세요. (<code>AUTH_SETUP.md</code>)
+          </div>
+        </div>
+
+        <!-- Apple ID / Email Firebase Login Fallback Panel (Cross-Device Real Firebase UID!) -->
+        <div id="login-apple-email-panel" class="login-panel hidden">
+          <div class="login-oauth-head">
+            <span class="login-oauth-badge apple"></span>
+            <strong>Apple ID (이메일) 로그인 · 자동 가입</strong>
+          </div>
+          <p class="login-sub">웹에서 Apple ID 이메일과 비밀번호로 로그인하면 <strong>모든 기기에서 데이터가 자동 동기화</strong>되고 실시간 랭킹에 참여됩니다.</p>
+          <div class="login-nick-row">
+            <label for="login-apple-email" class="login-nick-lbl">📧 Apple ID</label>
+            <input id="login-apple-email" class="login-input" type="email" maxlength="60" placeholder="example@icloud.com" autocomplete="email" />
+          </div>
+          <div class="login-nick-row">
+            <label for="login-apple-pw" class="login-nick-lbl">🔒 비밀번호</label>
+            <input id="login-apple-pw" class="login-input" type="password" maxlength="40" placeholder="6자 이상 입력" autocomplete="current-password" />
+          </div>
+          <div class="login-nick-row">
+            <label for="login-apple-nick" class="login-nick-lbl">🏷️ 닉네임</label>
+            <input id="login-apple-nick" class="login-input" type="text" maxlength="12" placeholder="첫 가입 시 표시될 닉네임" />
+          </div>
+          <div class="login-oauth-actions">
+            <button id="btn-apple-email-back" class="item-action-btn locked-chest" type="button">← 뒤로</button>
+            <button id="btn-apple-email-submit" class="cr-gold-btn login-confirm-btn" type="button"> 로그인 / 시작하기</button>
           </div>
         </div>
       </div>
@@ -793,11 +818,11 @@
   <!-- Official Firebase Auth SDK (Google & Apple Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd32"></script>
+  <script src="js/data.js?v=20261121hd33"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd32"></script>
-  <script src="js/renderer.js?v=20261121hd32"></script>
-  <script src="js/game.js?v=20261121hd32"></script>
+  <script src="js/online.js?v=20261121hd33"></script>
+  <script src="js/renderer.js?v=20261121hd33"></script>
+  <script src="js/game.js?v=20261121hd33"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

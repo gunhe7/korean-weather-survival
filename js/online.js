@@ -1,13 +1,11 @@
 window.OnlineService = (function () {
-  const BOARD_STORE_KEY = 'kr_weather_online_board_v4_clean';
-  const RTDB_BOARD_ROOT = '/weekly_boards_v2';
-  const RTDB_SAVES_ROOT = '/user_saves_v2';
+  const BOARD_STORE_KEY = 'kr_weather_online_board_v5_live';
+  const RTDB_BOARD_ROOT = '/weekly_boards';
+  const RTDB_SAVES_ROOT = '/user_saves';
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
   const WEEKLY_REWARD_GEMS = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP1_GEMS) || 500;
 
   // ===================== FIREBASE PROJECT CONFIG (korean-weather-survival) =====================
-  // 실제 Google / Apple 로그인을 활성화하려면 Firebase 콘솔(프로젝트 설정 -> 일반 -> 내 앱 -> 웹 앱)의
-  // apiKey(AIza...) 1줄을 아래 apiKey에 입력해 주세요! (자세한 안내: AUTH_SETUP.md)
   const FIREBASE_CONFIG = Object.assign({
     apiKey: 'AIzaSyD7w_0nqhqVcbP5iu4SlAtovLXWumy6h6w',
     authDomain: 'korean-weather-survival.firebaseapp.com',
@@ -17,6 +15,8 @@ window.OnlineService = (function () {
 
   let fbApp = null;
   let fbAuth = null;
+  let lastCloudSyncOk = null;
+  let lastCloudSyncStatus = 0;
 
   function hasFirebaseAuth() {
     return Boolean(
@@ -37,6 +37,11 @@ window.OnlineService = (function () {
         : window.firebase.initializeApp(FIREBASE_CONFIG);
       fbAuth = window.firebase.auth();
       try { fbAuth.languageCode = 'ko'; } catch {}
+      try {
+        if (window.firebase.auth.Auth && window.firebase.auth.Auth.Persistence) {
+          fbAuth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+        }
+      } catch {}
       return fbAuth;
     } catch {
       return null;
@@ -46,7 +51,7 @@ window.OnlineService = (function () {
   let channel = null;
   try {
     if (typeof BroadcastChannel !== 'undefined') {
-      channel = new BroadcastChannel('kweather_real_rank_v3');
+      channel = new BroadcastChannel('kweather_real_rank_v5');
     }
   } catch {}
 
@@ -115,9 +120,14 @@ window.OnlineService = (function () {
     };
   }
 
-  // ===================== REAL GOOGLE / APPLE AUTHENTICATION + GUEST =====================
+  // ===================== REAL GOOGLE & APPLE AUTHENTICATION + GUEST =====================
   function isRankedProvider(provider) {
     return provider === 'google' || provider === 'apple';
+  }
+
+  function isLegacyUnverifiedUid(uid) {
+    const s = String(uid || '');
+    return s.startsWith('gst_') || s.startsWith('goo_') || s.startsWith('app_') || s.startsWith('guest_') || s.startsWith('season_');
   }
 
   function sanitizeNickname(raw, fallback = '날씨러너') {
@@ -133,9 +143,10 @@ window.OnlineService = (function () {
 
   function detectProviderFromFirebaseUser(fbUser, hintProvider) {
     if (hintProvider === 'google' || hintProvider === 'apple') return hintProvider;
-    const pd = (fbUser && Array.isArray(fbUser.providerData) && fbUser.providerData[0]) || null;
-    if (pd && pd.providerId === 'apple.com') return 'apple';
-    if (pd && pd.providerId === 'google.com') return 'google';
+    const list = (fbUser && Array.isArray(fbUser.providerData)) ? fbUser.providerData : [];
+    if (list.some((p) => p && p.providerId === 'apple.com')) return 'apple';
+    if (list.some((p) => p && p.providerId === 'google.com')) return 'google';
+    if (list.some((p) => p && p.providerId === 'password')) return 'apple';
     return 'google';
   }
 
@@ -155,21 +166,46 @@ window.OnlineService = (function () {
     };
   }
 
-  async function getAuthIdToken() {
+  async function getAuthIdToken(forceRefresh = false) {
     const auth = ensureFirebaseAuth();
     if (!auth || !auth.currentUser) return '';
     try {
-      return await auth.currentUser.getIdToken();
+      return await auth.currentUser.getIdToken(forceRefresh);
     } catch {
       return '';
     }
   }
 
-  function isMobileOrInApp() {
-    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
-    return /Android|iPhone|iPad|iPod|Mobile|GSA\/|KAKAOTALK|NAVER|Instagram/i.test(ua);
+  function formatAuthError(err, prov) {
+    const code = (err && err.code) || '';
+    const label = prov === 'apple' ? 'Apple ID' : 'Google';
+    if (code === 'auth/unauthorized-domain') {
+      return `Firebase Authentication 승인된 도메인에 ${location.hostname}을 추가해 주세요.`;
+    }
+    if (code === 'auth/operation-not-allowed') {
+      return prov === 'apple'
+        ? 'Firebase 콘솔에서 Apple(또는 이메일/비밀번호) 로그인을 켜면 바로 사용할 수 있습니다.'
+        : 'Firebase 콘솔 Authentication에서 Google 로그인을 사용 설정해 주세요.';
+    }
+    if (code === 'auth/account-exists-with-different-credential') {
+      return '같은 이메일로 이미 다른 로그인 방식(Google/Apple)이 연결되어 있습니다. 기존 방식으로 로그인해 주세요.';
+    }
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-login-credentials') {
+      return '이메일 또는 비밀번호가 올바르지 않습니다.';
+    }
+    if (code === 'auth/weak-password') {
+      return '비밀번호는 6자 이상으로 입력해 주세요.';
+    }
+    if (code === 'auth/invalid-email') {
+      return '올바른 이메일 주소를 입력해 주세요.';
+    }
+    if (code === 'auth/email-already-in-use') {
+      return '이미 가입된 이메일입니다. 기존 비밀번호로 로그인해 주세요.';
+    }
+    return `${label} 로그인 실패 (${code || (err && err.message) || '네트워크 오류'})`;
   }
 
+  // Synchronous-start Popup OAuth (works on Chrome, Safari, iOS, Android without breaking user gesture!)
   async function signInWithOAuth(provider) {
     const prov = provider === 'apple' ? 'apple' : 'google';
     const auth = ensureFirebaseAuth();
@@ -178,7 +214,7 @@ window.OnlineService = (function () {
         ok: false,
         needsSetup: true,
         provider: prov,
-        message: '실제 Google/Apple 로그인을 활성화하려면 Firebase 웹 apiKey 설정이 필요합니다. (AUTH_SETUP.md 참고)'
+        message: 'Firebase Auth SDK를 불러오지 못했습니다. 네트워크를 확인해 주세요.'
       };
     }
 
@@ -204,37 +240,91 @@ window.OnlineService = (function () {
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         return { ok: false, cancelled: true, message: '로그인이 취소되었습니다.' };
       }
-      // Mobile / popup-blocked fallback -> redirect flow!
+      // If Apple Web OAuth isn't configured with an Apple Developer Services ID yet, offer Apple ID Email fallback!
       if (
-        code === 'auth/popup-blocked' ||
-        code === 'auth/operation-not-supported-in-this-environment' ||
-        isMobileOrInApp()
+        prov === 'apple' && (
+          code === 'auth/operation-not-allowed' ||
+          code === 'auth/invalid-oauth-client-id' ||
+          code === 'auth/missing-or-invalid-nonce' ||
+          code === 'auth/internal-error' ||
+          code === 'auth/invalid-credential'
+        )
       ) {
+        return {
+          ok: false,
+          code,
+          appleNeedsEmailFallback: true,
+          message: formatAuthError(err, prov)
+        };
+      }
+      // Popup strictly blocked -> try redirect fallback
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
         try {
           try { sessionStorage.setItem('kweather_oauth_pending_prov', prov); } catch {}
           await auth.signInWithRedirect(authProvider);
           return { ok: false, redirecting: true, message: '로그인 페이지로 이동 중...' };
         } catch (rErr) {
-          return { ok: false, code: rErr && rErr.code, message: formatAuthError(rErr, prov) };
+          const rCode = (rErr && rErr.code) || '';
+          return {
+            ok: false,
+            code: rCode,
+            appleNeedsEmailFallback: prov === 'apple',
+            message: formatAuthError(rErr, prov)
+          };
         }
       }
       return { ok: false, code, message: formatAuthError(err, prov) };
     }
   }
 
-  function formatAuthError(err, prov) {
-    const code = (err && err.code) || '';
-    const label = prov === 'apple' ? 'Apple ID' : 'Google';
-    if (code === 'auth/unauthorized-domain') {
-      return `Firebase Authentication 승인된 도메인에 ${location.hostname}을 추가해 주세요.`;
+  // Real Firebase Email/Password Login/Sign-Up for Apple ID Email (100% cross-device Firebase UID!)
+  async function signInWithAppleEmail(emailRaw, passwordRaw, nicknameRaw) {
+    const auth = ensureFirebaseAuth();
+    if (!auth) {
+      return { ok: false, message: 'Firebase Auth를 초기화하지 못했습니다.' };
     }
-    if (code === 'auth/operation-not-allowed') {
-      return `Firebase 콘솔 Authentication에서 ${label} 로그인을 사용 설정해 주세요.`;
+    const email = String(emailRaw || '').trim();
+    const password = String(passwordRaw || '');
+    if (!email || !email.includes('@')) {
+      return { ok: false, message: '올바른 Apple ID(이메일) 주소를 입력해 주세요.' };
     }
-    if (code === 'auth/invalid-api-key') {
-      return 'Firebase 웹 apiKey가 올바르지 않습니다. 프로젝트 설정에서 확인해 주세요.';
+    if (password.length < 6) {
+      return { ok: false, message: '비밀번호는 6자 이상 입력해 주세요.' };
     }
-    return `${label} 로그인 실패 (${code || (err && err.message) || '네트워크 오류'})`;
+
+    try {
+      // Try signing into existing account first
+      const cred = await auth.signInWithEmailAndPassword(email, password);
+      if (cred && cred.user) {
+        if (nicknameRaw && !cred.user.displayName) {
+          try { await cred.user.updateProfile({ displayName: sanitizeNickname(nicknameRaw, '애플유저') }); } catch {}
+        }
+        return { ok: true, profile: buildProfileFromFirebaseUser(cred.user, 'apple') };
+      }
+    } catch (err) {
+      const code = (err && err.code) || '';
+      // If user does not exist yet, auto-register a new real Firebase account!
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials' || code === 'auth/invalid-credential') {
+        try {
+          const created = await auth.createUserWithEmailAndPassword(email, password);
+          if (created && created.user) {
+            const nick = sanitizeNickname(nicknameRaw, email.split('@')[0] || '애플유저');
+            try { await created.user.updateProfile({ displayName: nick }); } catch {}
+            const prof = buildProfileFromFirebaseUser(created.user, 'apple');
+            prof.nickname = nick;
+            return { ok: true, isNewAccount: true, profile: prof };
+          }
+        } catch (cErr) {
+          const cCode = (cErr && cErr.code) || '';
+          if (cCode === 'auth/email-already-in-use') {
+            return { ok: false, code: cCode, message: '이미 가입된 계정입니다. 비밀번호를 다시 확인해 주세요.' };
+          }
+          return { ok: false, code: cCode, message: formatAuthError(cErr, 'apple') };
+        }
+      }
+      return { ok: false, code, message: formatAuthError(err, 'apple') };
+    }
+    return { ok: false, message: 'Apple ID 로그인에 실패했습니다.' };
   }
 
   async function checkRedirectLoginResult() {
@@ -287,7 +377,7 @@ window.OnlineService = (function () {
     };
   }
 
-  // ===================== FIREBASE REALTIME DB URL HELPERS =====================
+  // ===================== FIREBASE REALTIME DB HELPERS =====================
   function getDbUrl() {
     const url = (window.KWEATHER_ONLINE_CONFIG && window.KWEATHER_ONLINE_CONFIG.firebaseDbUrl) || FIREBASE_CONFIG.databaseURL || '';
     return String(url).trim().replace(/\/+$/, '');
@@ -297,43 +387,66 @@ window.OnlineService = (function () {
     return /^https?:\/\//i.test(getDbUrl());
   }
 
-  async function buildAuthedUrl(path) {
+  async function buildAuthedUrl(path, forceRefreshToken = false) {
     const base = getDbUrl();
-    const token = await getAuthIdToken();
+    const token = await getAuthIdToken(forceRefreshToken);
     return token ? `${base}${path}?auth=${encodeURIComponent(token)}` : `${base}${path}`;
   }
 
-  // ===================== PER-USER CLOUD SAVE (/user_saves_v2/{uid}.json) =====================
+  function getCloudSyncStatus() {
+    return { ok: lastCloudSyncOk, status: lastCloudSyncStatus };
+  }
+
+  // ===================== CROSS-DEVICE PER-USER CLOUD SAVE (/user_saves/{uid}.json) =====================
   async function loadCloudUserSave(uid) {
     if (!uid || !hasRemoteDb()) return null;
-    try {
-      const url = await buildAuthedUrl(`${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`);
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data && typeof data === 'object' ? data : null;
-    } catch {
-      return null;
+    // Try primary /user_saves/{uid} first, then fallback /user_saves_v2/{uid}
+    const paths = [`${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`, `/user_saves_v2/${encodeURIComponent(uid)}.json`];
+    for (const p of paths) {
+      try {
+        const url = await buildAuthedUrl(p);
+        const res = await fetch(url, { cache: 'no-store' });
+        lastCloudSyncStatus = res.status;
+        if (res.ok) {
+          lastCloudSyncOk = true;
+          const data = await res.json();
+          if (data && typeof data === 'object') return data;
+        } else if (res.status === 401 || res.status === 403) {
+          lastCloudSyncOk = false;
+        }
+      } catch {}
     }
+    return null;
   }
 
-  async function saveCloudUserSave(uid, saveData) {
+  async function saveCloudUserSave(uid, saveData, useKeepalive = false) {
     if (!uid || !saveData || !hasRemoteDb()) return false;
-    try {
-      const payload = { ...saveData, cloudUpdatedAt: Date.now() };
-      const url = await buildAuthedUrl(`${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`);
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      return Boolean(res && res.ok);
-    } catch {
-      return false;
+    const payload = JSON.stringify({ ...saveData, cloudUpdatedAt: Date.now() });
+    const paths = [`${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`, `/user_saves_v2/${encodeURIComponent(uid)}.json`];
+
+    for (const p of paths) {
+      try {
+        const url = await buildAuthedUrl(p);
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: Boolean(useKeepalive)
+        });
+        lastCloudSyncStatus = res.status;
+        if (res && res.ok) {
+          lastCloudSyncOk = true;
+          return true;
+        }
+        if (res && (res.status === 401 || res.status === 403)) {
+          lastCloudSyncOk = false;
+        }
+      } catch {}
     }
+    return false;
   }
 
-  // ===================== LINKED-USERS-ONLY WEEKLY LEADERBOARD (GUESTS EXCLUDED!) =====================
+  // ===================== LINKED-USERS-ONLY WEEKLY LEADERBOARD (ALL REAL USERS SHARED LIVE!) =====================
   function readLocalBoards() {
     try {
       const raw = localStorage.getItem(BOARD_STORE_KEY);
@@ -353,7 +466,7 @@ window.OnlineService = (function () {
   async function submitWeeklyScore(entry) {
     if (!entry || !entry.uid) return null;
     // STRICT RULE: 게스트 유저는 랭킹에 절대 등록/표시되지 않음!
-    if (!isRankedProvider(entry.provider)) return null;
+    if (!isRankedProvider(entry.provider) || isLegacyUnverifiedUid(entry.uid)) return null;
 
     const scoreVal = Math.max(0, Math.floor(Number(entry.score) || 0));
     if (scoreVal <= 0) return null;
@@ -391,14 +504,22 @@ window.OnlineService = (function () {
     writeLocalBoards(all);
 
     if (hasRemoteDb()) {
-      try {
-        const url = await buildAuthedUrl(`${RTDB_BOARD_ROOT}/${encodeURIComponent(weekKey)}/${encodeURIComponent(cleanEntry.uid)}.json`);
-        await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(wk[cleanEntry.uid])
-        });
-      } catch {}
+      const bodyStr = JSON.stringify(wk[cleanEntry.uid]);
+      const targets = [
+        `${RTDB_BOARD_ROOT}/${encodeURIComponent(weekKey)}/${encodeURIComponent(cleanEntry.uid)}.json`,
+        `/weekly_boards_v2/${encodeURIComponent(weekKey)}/${encodeURIComponent(cleanEntry.uid)}.json`
+      ];
+      for (const path of targets) {
+        try {
+          const url = await buildAuthedUrl(path);
+          const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyStr
+          });
+          if (res && res.ok) break;
+        } catch {}
+      }
     }
 
     if (channel) {
@@ -416,25 +537,29 @@ window.OnlineService = (function () {
     let syncedOnline = false;
 
     if (hasRemoteDb()) {
-      try {
-        const url = `${getDbUrl()}${RTDB_BOARD_ROOT}/${encodeURIComponent(targetWeek)}.json`;
-        const res = await fetch(url, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && typeof data === 'object') {
-            // STRICT FILTER: ONLY Google / Apple linked real users (Guests excluded!)
-            remoteEntries = Object.values(data).filter(
-              (x) => x && x.uid && isRankedProvider(x.provider) && typeof x.score === 'number' && x.score > 0
-            );
+      // Read BOTH /weekly_boards and /weekly_boards_v2 seamlessly (whichever has active rules!)
+      const roots = [RTDB_BOARD_ROOT, '/weekly_boards_v2'];
+      for (const root of roots) {
+        try {
+          const url = `${getDbUrl()}${root}/${encodeURIComponent(targetWeek)}.json`;
+          const res = await fetch(url, { cache: 'no-store' });
+          if (res.ok) {
+            syncedOnline = true;
+            const data = await res.json();
+            if (data && typeof data === 'object') {
+              const valid = Object.values(data).filter(
+                (x) => x && x.uid && !isLegacyUnverifiedUid(x.uid) && isRankedProvider(x.provider) && typeof x.score === 'number' && x.score > 0
+              );
+              remoteEntries = remoteEntries.concat(valid);
+            }
           }
-          syncedOnline = true;
-        }
-      } catch {}
+        } catch {}
+      }
     }
 
     const localWeekObj = readLocalBoards()[targetWeek] || {};
     const localEntries = Object.values(localWeekObj).filter(
-      (x) => x && x.uid && isRankedProvider(x.provider) && typeof x.score === 'number' && x.score > 0
+      (x) => x && x.uid && !isLegacyUnverifiedUid(x.uid) && isRankedProvider(x.provider) && typeof x.score === 'number' && x.score > 0
     );
 
     const map = new Map();
@@ -472,7 +597,7 @@ window.OnlineService = (function () {
   // ===================== WEEKLY #1 CHAMPION 500 GEM PAYOUT (LINKED USERS ONLY) =====================
   async function checkWeeklyChampionPayout(save) {
     if (!save || !save.auth || !save.auth.uid) return null;
-    if (!isRankedProvider(save.auth.provider)) return null;
+    if (!isRankedProvider(save.auth.provider) || isLegacyUnverifiedUid(save.auth.uid)) return null;
 
     const info = getWeekInfo();
     const prevKey = info.prevWeekKey;
@@ -505,10 +630,12 @@ window.OnlineService = (function () {
     hasFirebaseAuth,
     hasRemoteDb,
     isRankedProvider,
+    getCloudSyncStatus,
     getWeekInfo,
     getProviderMeta,
     sanitizeNickname,
     signInWithOAuth,
+    signInWithAppleEmail,
     checkRedirectLoginResult,
     onAuthStateReady,
     signOutOAuth,

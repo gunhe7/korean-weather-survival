@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd32';
+  const ASSET_VER = '20261121hd33';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -343,6 +343,12 @@
     btnLoginApple: document.getElementById('btn-login-apple'),
     btnLoginGuest: document.getElementById('btn-login-guest'),
     loginSetupNotice: document.getElementById('login-setup-notice'),
+    loginAppleEmailPanel: document.getElementById('login-apple-email-panel'),
+    loginAppleEmail: document.getElementById('login-apple-email'),
+    loginApplePw: document.getElementById('login-apple-pw'),
+    loginAppleNick: document.getElementById('login-apple-nick'),
+    btnAppleEmailBack: document.getElementById('btn-apple-email-back'),
+    btnAppleEmailSubmit: document.getElementById('btn-apple-email-submit'),
 
     btnHeaderProfile: document.getElementById('btn-header-profile'),
     hdrProfileBadge: document.getElementById('hdr-profile-badge'),
@@ -1083,26 +1089,108 @@
     }
     if (el.loginCurName) el.loginCurName.textContent = auth.loggedIn ? nick : '미로그인';
     if (el.loginCurSub) {
-      el.loginCurSub.textContent = !auth.loggedIn
-        ? '계정을 선택해 로그인하세요'
-        : (isLinked
-          ? `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · 클라우드 동기화 중`
-          : '게스트 모드 (랭킹 미등록 · 연동 권장)');
+      const syncSt = (ONLINE && ONLINE.getCloudSyncStatus) ? ONLINE.getCloudSyncStatus() : { ok: null };
+      const cloudTag = !isLinked
+        ? '게스트 모드 (랭킹 미등록 · 연동 권장)'
+        : (syncSt.ok === false
+          ? `${meta.label} · ⚠️ 클라우드 DB 규칙(user_saves) 게시 필요`
+          : `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · ☁️ 모든 기기 자동 동기화`);
+      el.loginCurSub.textContent = !auth.loggedIn ? '계정을 선택해 로그인하세요' : cloudTag;
     }
     if (el.btnLoginLogout) el.btnLoginLogout.classList.toggle('hidden', !auth.loggedIn);
     if (el.loginSetupNotice && ONLINE) {
-      el.loginSetupNotice.classList.toggle('hidden', ONLINE.hasFirebaseAuth());
+      const syncSt = ONLINE.getCloudSyncStatus ? ONLINE.getCloudSyncStatus() : { ok: null };
+      el.loginSetupNotice.classList.toggle('hidden', ONLINE.hasFirebaseAuth() && syncSt.ok !== false);
     }
     renderIntroAuthState();
   }
 
+  let appleEmailFromIntro = false;
+
   function openLoginOverlay() {
     if (!el.loginOverlay) return;
+    if (el.loginMainPanel) el.loginMainPanel.classList.remove('hidden');
+    if (el.loginAppleEmailPanel) el.loginAppleEmailPanel.classList.add('hidden');
     renderProfileUI();
     if (el.loginNicknameInput) {
       el.loginNicknameInput.value = (save.auth && save.auth.nickname) || '';
     }
     el.loginOverlay.classList.remove('hidden');
+  }
+
+  function openAppleEmailPanel(fromIntro = false) {
+    appleEmailFromIntro = Boolean(fromIntro);
+    if (!el.loginOverlay) return;
+    if (el.loginMainPanel) el.loginMainPanel.classList.add('hidden');
+    if (el.loginAppleEmailPanel) el.loginAppleEmailPanel.classList.remove('hidden');
+    if (el.loginAppleEmail) el.loginAppleEmail.value = (save.auth && save.auth.email) || '';
+    if (el.loginApplePw) el.loginApplePw.value = '';
+    if (el.loginAppleNick) el.loginAppleNick.value = (save.auth && save.auth.provider !== 'guest' && save.auth.nickname) || '';
+    el.loginOverlay.classList.remove('hidden');
+  }
+
+  function hasMeaningfulProgress(raw) {
+    if (!raw || typeof raw !== 'object') return false;
+    const skins = Array.isArray(raw.unlockedSkins) ? raw.unlockedSkins : (raw.unlockedSkins ? Object.values(raw.unlockedSkins) : []);
+    const chars = Array.isArray(raw.unlockedChars) ? raw.unlockedChars : (raw.unlockedChars ? Object.values(raw.unlockedChars) : []);
+    return Boolean(
+      (Number(raw.playCount) || 0) > 0 ||
+      (Number(raw.bestScore) || 0) > 0 ||
+      skins.length > 0 ||
+      chars.length > 1 ||
+      (Number(raw.gems) || 0) > 0 ||
+      (Number(raw.gold) || 0) > 80
+    );
+  }
+
+  function mergeCrossDeviceSaves(cloudRaw, localRaw, authProfile) {
+    const c = hydrateSaveData(cloudRaw, authProfile);
+    const l = hydrateSaveData(localRaw, authProfile);
+    const cHas = hasMeaningfulProgress(cloudRaw);
+    const lHas = hasMeaningfulProgress(localRaw);
+    if (cHas && !lHas) return c;
+    if (lHas && !cHas) return l;
+
+    const cTs = Number(cloudRaw && cloudRaw.cloudUpdatedAt) || 0;
+    const lTs = Number(localRaw && localRaw.cloudUpdatedAt) || 0;
+    const primary = cTs >= lTs ? c : l;
+    const secondary = cTs >= lTs ? l : c;
+
+    const mergedChars = Array.from(new Set([...(primary.unlockedChars || []), ...(secondary.unlockedChars || [])]));
+    const mergedSkins = Array.from(new Set([...(primary.unlockedSkins || []), ...(secondary.unlockedSkins || [])]));
+    const mergedCharLv = { ...secondary.charLevels, ...primary.charLevels };
+    Object.keys(mergedCharLv).forEach((k) => {
+      mergedCharLv[k] = Math.max(Number(c.charLevels[k]) || 1, Number(l.charLevels[k]) || 1);
+    });
+    const mergedUpg = { ...secondary.upgrades, ...primary.upgrades };
+    Object.keys(mergedUpg).forEach((k) => {
+      mergedUpg[k] = Math.max(Number(c.upgrades[k]) || 0, Number(l.upgrades[k]) || 0);
+    });
+    const curWk = getWeekKey();
+    const cWkScore = (c.weeklyRank && c.weeklyRank.weekKey === curWk) ? (c.weeklyRank.bestScore || 0) : 0;
+    const lWkScore = (l.weeklyRank && l.weeklyRank.weekKey === curWk) ? (l.weeklyRank.bestScore || 0) : 0;
+    const bestWkObj = cWkScore >= lWkScore ? c.weeklyRank : l.weeklyRank;
+
+    return {
+      ...primary,
+      unlockedChars: mergedChars,
+      unlockedSkins: mergedSkins,
+      charLevels: mergedCharLv,
+      upgrades: mergedUpg,
+      bestScore: Math.max(c.bestScore || 0, l.bestScore || 0),
+      bestYear: Math.max(c.bestYear || 1, l.bestYear || 1),
+      bestDistanceM: Math.max(c.bestDistanceM || 0, l.bestDistanceM || 0),
+      totalCoinsEver: Math.max(c.totalCoinsEver || 0, l.totalCoinsEver || 0),
+      maxDodgeComboEver: Math.max(c.maxDodgeComboEver || 0, l.maxDodgeComboEver || 0),
+      playCount: Math.max(c.playCount || 0, l.playCount || 0),
+      achievementsClaimed: { ...(secondary.achievementsClaimed || {}), ...(primary.achievementsClaimed || {}) },
+      stageMilestonesClaimed: { ...(secondary.stageMilestonesClaimed || {}), ...(primary.stageMilestonesClaimed || {}) },
+      weeklyRank: {
+        ...bestWkObj,
+        history: { ...((secondary.weeklyRank && secondary.weeklyRank.history) || {}), ...((primary.weeklyRank && primary.weeklyRank.history) || {}) },
+        claimedWeeks: Array.from(new Set([...((c.weeklyRank && c.weeklyRank.claimedWeeks) || []), ...((l.weeklyRank && l.weeklyRank.claimedWeeks) || [])]))
+      }
+    };
   }
 
   function dismissIntroToHome() {
@@ -1124,8 +1212,10 @@
 
   async function switchToAccount(profile, opts = {}) {
     if (!profile) return;
-    // 1. Flush current account's save into its own slot before switching!
-    persistSave(true);
+    // 1. Flush previous account's save ONLY if previously logged into a DIFFERENT valid account
+    if (save && save.auth && save.auth.loggedIn && save.auth.uid && save.auth.uid !== profile.uid) {
+      persistSave(true);
+    }
 
     const isLinked = ONLINE && ONLINE.isRankedProvider(profile.provider);
     const slotKey = getAccountSaveKey(profile);
@@ -1135,32 +1225,29 @@
       try { cloudSlot = await ONLINE.loadCloudUserSave(profile.uid); } catch {}
     }
 
-    let chosenRaw = null;
-    if (cloudSlot && localSlot) {
-      const cTs = Number(cloudSlot.cloudUpdatedAt) || 0;
-      const lTs = Number(localSlot.cloudUpdatedAt) || 0;
-      chosenRaw = cTs >= lTs ? cloudSlot : localSlot;
-    } else if (cloudSlot) {
-      chosenRaw = cloudSlot;
-    } else if (localSlot) {
-      chosenRaw = localSlot;
-    } else if (opts.carryGuestSave && save && save.auth && save.auth.provider === 'guest') {
-      // First-time upgrade from Guest -> brand-new Google/Apple account carries over existing progress!
-      chosenRaw = JSON.parse(JSON.stringify(save));
-      delete chosenRaw.auth;
-    } else if (!isLinked) {
-      // Guest fallback to legacy v1 save if first visit after migration
-      chosenRaw = parseStorageJson(SAVE_KEY) || parseStorageJson(SAVE_BACKUP_KEY);
-    }
-
     activeAuth = { ...profile, loggedIn: true };
     persistActiveAuth(activeAuth);
-    save = hydrateSaveData(chosenRaw, activeAuth);
+
+    if (cloudSlot && localSlot) {
+      save = mergeCrossDeviceSaves(cloudSlot, localSlot, activeAuth);
+    } else if (cloudSlot) {
+      save = hydrateSaveData(cloudSlot, activeAuth);
+    } else if (localSlot) {
+      save = hydrateSaveData(localSlot, activeAuth);
+    } else if (opts.carryGuestSave && save && save.auth && save.auth.provider === 'guest' && hasMeaningfulProgress(save)) {
+      const clone = JSON.parse(JSON.stringify(save));
+      delete clone.auth;
+      save = hydrateSaveData(clone, activeAuth);
+    } else {
+      save = hydrateSaveData(null, activeAuth);
+    }
+
+    // Preserve custom nickname saved in cloud/local for this exact account if present
+    const savedNick = (cloudSlot && cloudSlot.auth && cloudSlot.auth.nickname)
+      || (localSlot && localSlot.auth && localSlot.auth.nickname);
     save.auth = {
       ...activeAuth,
-      nickname: (chosenRaw && chosenRaw.auth && chosenRaw.auth.nickname && chosenRaw.auth.provider === profile.provider)
-        ? chosenRaw.auth.nickname
-        : activeAuth.nickname
+      nickname: savedNick || activeAuth.nickname
     };
 
     SFX.applySettings(save.audioSettings);
@@ -1178,7 +1265,10 @@
 
     const meta = ONLINE ? ONLINE.getProviderMeta(save.auth.provider) : { label: '계정' };
     if (isLinked) {
-      showToast(`✅ ${meta.label} [${save.auth.nickname}] 연동 완료! (클라우드 저장 & 랭킹 참여)`);
+      const restored = Boolean(cloudSlot);
+      showToast(restored
+        ? `☁️ ${meta.label} [${save.auth.nickname}] 클라우드 데이터 불러오기 완료!`
+        : `✅ ${meta.label} [${save.auth.nickname}] 연동 완료! (클라우드 저장 · 랭킹 참여)`);
     } else {
       showToast('👤 게스트로 입장했습니다. (랭킹은 구글/애플 연동 시 참여)');
     }
@@ -1195,14 +1285,38 @@
         const carryGuest = Boolean(!fromIntro && save.auth && save.auth.provider === 'guest');
         await switchToAccount(res.profile, { carryGuestSave: carryGuest });
         if (fromIntro) dismissIntroToHome();
+      } else if (res && res.appleNeedsEmailFallback) {
+        showToast(' 웹 Apple ID(이메일) 로그인 화면으로 전환합니다.');
+        openAppleEmailPanel(fromIntro);
       } else if (res && res.needsSetup) {
-        showToast('⚙️ 실제 Google/Apple 로그인을 위해 Firebase apiKey 연결이 필요합니다.');
+        showToast(`⚙️ ${res.message}`);
         openLoginOverlay();
         if (el.loginSetupNotice) el.loginSetupNotice.classList.remove('hidden');
       } else if (res && res.redirecting) {
         showToast('🔄 로그인 페이지로 이동 중입니다...');
       } else if (res && !res.cancelled && res.message) {
         showToast(`⚠️ ${res.message}`);
+      }
+    } finally {
+      oauthInFlight = false;
+    }
+  }
+
+  async function handleAppleEmailSubmit() {
+    if (oauthInFlight || !ONLINE) return;
+    try { SFX.click(); } catch {}
+    const email = el.loginAppleEmail ? el.loginAppleEmail.value.trim() : '';
+    const pw = el.loginApplePw ? el.loginApplePw.value : '';
+    const nick = el.loginAppleNick ? el.loginAppleNick.value.trim() : '';
+    oauthInFlight = true;
+    try {
+      const res = await ONLINE.signInWithAppleEmail(email, pw, nick);
+      if (res && res.ok && res.profile) {
+        const carryGuest = Boolean(!appleEmailFromIntro && save.auth && save.auth.provider === 'guest');
+        await switchToAccount(res.profile, { carryGuestSave: carryGuest });
+        if (appleEmailFromIntro) dismissIntroToHome();
+      } else {
+        showToast(`⚠️ ${(res && res.message) || 'Apple ID 로그인에 실패했습니다.'}`);
       }
     } finally {
       oauthInFlight = false;
@@ -4086,7 +4200,7 @@
       gotWoodChest = true;
     }
 
-    persistSave();
+    persistSave(true);
     syncMyWeeklyScore();
 
     if (el.resBestScore) {
@@ -4272,6 +4386,16 @@
     }
     if (el.btnLoginGuest) {
       el.btnLoginGuest.addEventListener('click', () => handleGuestLogin(false));
+    }
+    if (el.btnAppleEmailBack) {
+      el.btnAppleEmailBack.addEventListener('click', () => {
+        SFX.click();
+        if (el.loginAppleEmailPanel) el.loginAppleEmailPanel.classList.add('hidden');
+        if (el.loginMainPanel) el.loginMainPanel.classList.remove('hidden');
+      });
+    }
+    if (el.btnAppleEmailSubmit) {
+      el.btnAppleEmailSubmit.addEventListener('click', handleAppleEmailSubmit);
     }
     if (el.btnRankLinkAccount) {
       el.btnRankLinkAccount.addEventListener('click', () => {
@@ -4462,11 +4586,21 @@
     });
     if (el.btnLandscapeRun) el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
 
-    // Auto-pause active run safely when switching apps / backgrounding browser tab!
+    // Auto-pause active run + keepalive cloud save flush when leaving tab / switching devices!
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && run && run.active && !paused) {
-        paused = true;
-        el.pauseOverlay.classList.remove('hidden');
+      if (document.hidden) {
+        if (run && run.active && !paused) {
+          paused = true;
+          el.pauseOverlay.classList.remove('hidden');
+        }
+        if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid) {
+          try { ONLINE.saveCloudUserSave(save.auth.uid, save, true); } catch {}
+        }
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid) {
+        try { ONLINE.saveCloudUserSave(save.auth.uid, save, true); } catch {}
       }
     });
     document.addEventListener('fullscreenchange', renderSettingsUI);
