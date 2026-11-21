@@ -567,6 +567,50 @@ window.RUN_DATA = (function () {
   }
 
   const WEEKLY_TOP1_GEMS = 500;
+  const SCORE_ROAD_STEP = 1000;
+
+  // 브롤스타즈 트로피 로드 스타일: 1,000점 간격 최고점수 달성 보상 (무한 확장!)
+  function getScoreRoadMilestone(scoreVal) {
+    const score = Math.max(SCORE_ROAD_STEP, Math.round(scoreVal / SCORE_ROAD_STEP) * SCORE_ROAD_STEP);
+    const step = Math.floor(score / SCORE_ROAD_STEP);
+
+    if (step % 20 === 0) {
+      return { score, kind: 'chest', chest: 'diamond', amount: 1, label: '다이아 상자 ×1', tier: 'mythic', tag: '대보상' };
+    }
+    if (step % 10 === 0) {
+      return { score, kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1', tier: 'gold', tag: '특급' };
+    }
+    if (step === 5) {
+      return { score, kind: 'chest', chest: 'silver', amount: 1, label: '실버 상자 ×1', tier: 'silver', tag: '마일스톤' };
+    }
+    if (step % 5 === 0) {
+      return { score, kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1', tier: 'gold', tag: '마일스톤' };
+    }
+
+    const cycle = step % 4;
+    if (cycle === 1) {
+      const goldAmt = 150 + Math.min(850, Math.floor((step - 1) / 2) * 50);
+      return { score, kind: 'gold', amount: goldAmt, label: `${goldAmt.toLocaleString('ko-KR')} G`, tier: 'coin', tag: '골드' };
+    }
+    if (cycle === 2) {
+      if (step <= 4) {
+        return { score, kind: 'chest', chest: 'wood', amount: 1, label: '나무 상자 ×1', tier: 'wood', tag: '상자' };
+      }
+      return { score, kind: 'chest', chest: 'silver', amount: 1, label: '실버 상자 ×1', tier: 'silver', tag: '상자' };
+    }
+    if (cycle === 3) {
+      const gemAmt = 10 + Math.min(40, Math.floor(step / 4) * 5);
+      return { score, kind: 'gems', amount: gemAmt, label: `보석 ${gemAmt}개`, tier: 'gem', tag: '보석' };
+    }
+    // cycle === 0 (4000, 8000, 12000, 16000...)
+    if (step === 4) {
+      return { score, kind: 'gold', amount: 250, label: '250 G', tier: 'coin', tag: '골드' };
+    }
+    if (step === 8) {
+      return { score, kind: 'chest', chest: 'silver', amount: 1, label: '실버 상자 ×1', tier: 'silver', tag: '상자' };
+    }
+    return { score, kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1', tier: 'gold', tag: '상자' };
+  }
 
   // 보석으로 구매하는 골드 패키지 (브롤스타즈 상점 스타일!)
   const GOLD_PACKS = [
@@ -589,6 +633,8 @@ window.RUN_DATA = (function () {
     YEAR_DURATION,
     MAX_CHAR_LEVEL,
     WEEKLY_TOP1_GEMS,
+    SCORE_ROAD_STEP,
+    getScoreRoadMilestone,
     GOLD_PACKS,
     GEM_PACKS,
     SEASONS,

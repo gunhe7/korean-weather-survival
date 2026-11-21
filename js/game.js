@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd40';
+  const ASSET_VER = '20261121hd41';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -144,6 +144,7 @@
       weeklyMissions: { week, progress: { dist: 0, runs: 0, dodges: 0, year2Runs: 0 }, claimed: {} },
       achievementsClaimed: {},
       stageMilestonesClaimed: {},
+      scoreRoadClaimed: {},
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
       auth: cleanAuth,
       weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] }
@@ -201,6 +202,7 @@
       },
       achievementsClaimed: { ...(raw.achievementsClaimed || {}) },
       stageMilestonesClaimed: { ...(raw.stageMilestonesClaimed || {}) },
+      scoreRoadClaimed: { ...(raw.scoreRoadClaimed || {}) },
       audioSettings: { ...def.audioSettings, ...(raw.audioSettings || {}) },
       auth: {
         ...cleanAuth,
@@ -350,10 +352,13 @@
     btnAppleEmailSubmit: document.getElementById('btn-apple-email-submit'),
 
     btnHeaderProfile: document.getElementById('btn-header-profile'),
+    btnHeaderProfileName: document.getElementById('btn-header-profile-name'),
     hdrProfileAvatar: document.getElementById('hdr-profile-avatar'),
     hdrProfileRank: document.getElementById('hdr-profile-rank'),
     hdrProfileBadge: document.getElementById('hdr-profile-badge'),
     hdrProfileName: document.getElementById('hdr-profile-name'),
+    btnScoreRoad: document.getElementById('btn-score-road'),
+    hdrScoreRoadDot: document.getElementById('hdr-score-road-dot'),
     headerBestScore: document.getElementById('header-best-score'),
     hdrTrophyFill: document.getElementById('hdr-trophy-fill'),
     hdrTrophyNext: document.getElementById('hdr-trophy-next'),
@@ -395,9 +400,9 @@
     homeCharName: document.getElementById('home-char-name'),
     homeCharLvBadge: document.getElementById('home-char-lv-badge'),
     homeCharTier: document.getElementById('home-char-tier'),
-    btnHomeBrawlers: document.getElementById('btn-home-brawlers'),
-    homeBrawlerMini: document.getElementById('home-brawler-mini'),
-    homeBrawlerCount: document.getElementById('home-brawler-count'),
+    btnHomeVault: document.getElementById('btn-home-vault'),
+    homeVaultCount: document.getElementById('home-vault-count'),
+    homeVaultDot: document.getElementById('home-vault-dot'),
     btnPrevChar: document.getElementById('btn-prev-char'),
     btnNextChar: document.getElementById('btn-next-char'),
 
@@ -517,6 +522,7 @@
     chestOpenTitle: document.getElementById('chest-open-title'),
     chestPityNote: document.getElementById('chest-pity-note'),
     btnTapChest: document.getElementById('btn-tap-chest'),
+    btnChestStore: document.getElementById('btn-chest-store'),
     chestAnimImg: document.getElementById('chest-anim-img'),
     chestTapHint: document.getElementById('chest-tap-hint'),
     chestRewardCard: document.getElementById('chest-reward-card'),
@@ -546,6 +552,17 @@
     weeklyChampScore: document.getElementById('weekly-champ-score'),
     weeklyChampGems: document.getElementById('weekly-champ-gems'),
     btnClaimWeeklyChamp: document.getElementById('btn-claim-weekly-champ'),
+
+    scoreRoadOverlay: document.getElementById('score-road-overlay'),
+    scoreRoadBestVal: document.getElementById('score-road-best-val'),
+    scoreRoadTrack: document.getElementById('score-road-track'),
+    btnScoreRoadClaimAll: document.getElementById('btn-score-road-claim-all'),
+    btnCloseScoreRoad: document.getElementById('btn-close-score-road'),
+
+    vaultOverlay: document.getElementById('vault-overlay'),
+    vaultTotalPill: document.getElementById('vault-total-pill'),
+    vaultModalGrid: document.getElementById('vault-modal-grid'),
+    btnCloseVault: document.getElementById('btn-close-vault'),
 
     globalToast: document.getElementById('global-toast')
   };
@@ -719,10 +736,28 @@
     el.chestAnimImg.classList.remove('burst', 'shaking');
     el.chestTapHint.textContent = '상자를 터치해서 열기!';
     el.chestTapHint.classList.remove('hidden');
+    if (el.btnChestStore) el.btnChestStore.classList.remove('hidden');
     el.chestRewardCard.classList.add('hidden');
     el.btnChestEquip.classList.add('hidden');
     el.chestOpenOverlay.classList.remove('hidden');
     SFX.click();
+  }
+
+  function storeActiveChestToVault() {
+    if (!activeChestSession || activeChestSession.animating || activeChestSession.opened) return;
+    const tierId = activeChestSession.tierId;
+    const chest = DATA.CHESTS[tierId] || DATA.CHESTS.wood;
+    save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
+    save.chestBag[tierId] = (save.chestBag[tierId] || 0) + 1;
+    if (activeChestSession.timers) {
+      activeChestSession.timers.forEach((id) => clearTimeout(id));
+    }
+    activeChestSession = null;
+    el.chestOpenOverlay.classList.add('hidden');
+    SFX.reward();
+    persistSave();
+    refreshAllMenus();
+    showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
   }
 
   function triggerChestAnimation() {
@@ -730,6 +765,7 @@
     activeChestSession.animating = true;
     const tierId = activeChestSession.tierId;
     el.chestTapHint.classList.add('hidden');
+    if (el.btnChestStore) el.btnChestStore.classList.add('hidden');
     el.chestAnimImg.classList.add('shaking');
 
     // Roll reward right as opening starts so persistence is immediate and safe!
@@ -784,7 +820,7 @@
       el.chestRewardRarity.textContent = '🪙 골드 획득';
       el.chestRewardRarity.style.background = '#8f5900';
       el.chestRewardRarity.style.color = '#ffe866';
-      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png?v=20261121hd6" alt="골드" class="rw-big-ico" />`;
+      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="골드" class="rw-big-ico" />`;
       el.chestRewardName.textContent = `+${rw.amount.toLocaleString('ko-KR')} G`;
       el.chestRewardSub.textContent = `${rw.chest.name}에서 골드를 획득했습니다!`;
     } else if (rw.kind === 'diamond') {
@@ -824,7 +860,7 @@
       el.chestRewardRarity.textContent = `🔄 ${rar.name} 스킨 전체 보유 (중복 대체)`;
       el.chestRewardRarity.style.background = rar.bg;
       el.chestRewardRarity.style.color = rar.color;
-      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png?v=20261121hd6" alt="중복 골드" class="rw-big-ico" />`;
+      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="중복 골드" class="rw-big-ico" />`;
       el.chestRewardName.textContent = `+${rw.amount.toLocaleString('ko-KR')} G`;
       el.chestRewardSub.textContent = `해당 등급 스킨을 모두 보유해 중복 방지 골드로 지급되었습니다!`;
     }
@@ -1063,26 +1099,229 @@
     }
   }
 
-  const TROPHY_MILESTONES = [500, 1000, 2000, 3500, 5000, 8000, 12000, 20000, 35000, 50000, 100000];
-
-  function getTrophyTierProgress(score) {
+  function getScoreRoadBracket(score) {
+    const step = DATA.SCORE_ROAD_STEP || 1000;
     const sc = Math.max(0, Math.floor(score || 0));
-    let rank = 1;
-    let prev = 0;
-    let next = TROPHY_MILESTONES[0];
-    for (let i = 0; i < TROPHY_MILESTONES.length; i++) {
-      if (sc >= TROPHY_MILESTONES[i]) {
-        rank = i + 2;
-        prev = TROPHY_MILESTONES[i];
-        next = TROPHY_MILESTONES[i + 1] || null;
+    const completed = Math.floor(sc / step);
+    const rank = completed + 1;
+    const prev = completed * step;
+    const next = (completed + 1) * step;
+    const pct = Math.max(0, Math.min(100, ((sc - prev) / step) * 100));
+    const tierCls = rank >= 15 ? 'tier-mythic' : (rank >= 10 ? 'tier-epic' : (rank >= 5 ? 'tier-gold' : 'tier-blue'));
+    return { rank, prev, next, pct, tierCls };
+  }
+
+  function getUnclaimedScoreRoadMilestones() {
+    const step = DATA.SCORE_ROAD_STEP || 1000;
+    const best = Math.max(0, Math.floor(save.bestScore || 0));
+    const claimed = save.scoreRoadClaimed || {};
+    const list = [];
+    for (let m = step; m <= best; m += step) {
+      if (!claimed[String(m)]) list.push(m);
+    }
+    return list;
+  }
+
+  function grantScoreRoadReward(milestoneScore, silentToast = false) {
+    const key = String(milestoneScore);
+    save.scoreRoadClaimed = save.scoreRoadClaimed || {};
+    if (save.scoreRoadClaimed[key]) return null;
+    if ((save.bestScore || 0) < milestoneScore) return null;
+
+    const rw = DATA.getScoreRoadMilestone(milestoneScore);
+    save.scoreRoadClaimed[key] = true;
+    if (rw.kind === 'gold') {
+      save.gold += rw.amount;
+    } else if (rw.kind === 'gems') {
+      save.gems = (save.gems || 0) + rw.amount;
+    } else if (rw.kind === 'chest') {
+      save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
+      save.chestBag[rw.chest] = (save.chestBag[rw.chest] || 0) + (rw.amount || 1);
+    }
+    if (!silentToast) {
+      SFX.reward();
+      persistSave();
+      refreshAllMenus();
+      if (rw.kind === 'chest') {
+        showToast(`🎁 ${milestoneScore.toLocaleString('ko-KR')}점 달성 보상! ${rw.label}이(가) 상자 보관함에 저장되었습니다!`);
       } else {
-        next = TROPHY_MILESTONES[i];
-        break;
+        showToast(`🎁 ${milestoneScore.toLocaleString('ko-KR')}점 달성 보상! ${rw.label} 획득!`);
       }
     }
-    const pct = next ? Math.max(0, Math.min(100, ((sc - prev) / (next - prev)) * 100)) : 100;
-    const tierCls = rank >= 10 ? 'tier-mythic' : (rank >= 7 ? 'tier-epic' : (rank >= 4 ? 'tier-gold' : 'tier-blue'));
-    return { rank, prev, next, pct, tierCls };
+    return rw;
+  }
+
+  function claimAllScoreRoad() {
+    const ready = getUnclaimedScoreRoadMilestones();
+    if (!ready.length) return;
+    let totalGold = 0;
+    let totalGems = 0;
+    let totalChests = 0;
+    ready.forEach((m) => {
+      const rw = grantScoreRoadReward(m, true);
+      if (!rw) return;
+      if (rw.kind === 'gold') totalGold += rw.amount;
+      else if (rw.kind === 'gems') totalGems += rw.amount;
+      else if (rw.kind === 'chest') totalChests += (rw.amount || 1);
+    });
+    SFX.reward();
+    persistSave();
+    refreshAllMenus();
+    const parts = [];
+    if (totalGold > 0) parts.push(`🪙 ${totalGold.toLocaleString('ko-KR')}G`);
+    if (totalGems > 0) parts.push(`💎 ${totalGems}`);
+    if (totalChests > 0) parts.push(`📦 상자 ${totalChests}개(보관함 저장)`);
+    showToast(`🎉 최고점수 보상 ${ready.length}건 모두 수령! (${parts.join(' · ')})`);
+  }
+
+  function renderScoreRoadModal() {
+    if (!el.scoreRoadTrack) return;
+    const step = DATA.SCORE_ROAD_STEP || 1000;
+    const best = Math.max(0, Math.floor(save.bestScore || 0));
+    const claimed = save.scoreRoadClaimed || {};
+    const unclaimed = getUnclaimedScoreRoadMilestones();
+
+    if (el.scoreRoadBestVal) {
+      el.scoreRoadBestVal.textContent = `내 최고점수 ${best.toLocaleString('ko-KR')}점`;
+    }
+    if (el.btnScoreRoadClaimAll) {
+      el.btnScoreRoadClaimAll.classList.toggle('hidden', unclaimed.length === 0);
+      el.btnScoreRoadClaimAll.textContent = `🎁 모두 받기 (${unclaimed.length})`;
+    }
+
+    const maxMilestone = Math.max(20000, (Math.floor(best / step) + 6) * step);
+    el.scoreRoadTrack.innerHTML = '';
+
+    let focusCard = null;
+    for (let m = step; m <= maxMilestone; m += step) {
+      const rw = DATA.getScoreRoadMilestone(m);
+      const isReached = best >= m;
+      const isClaimed = Boolean(claimed[String(m)]);
+      const canClaim = isReached && !isClaimed;
+      const segFill = Math.max(0, Math.min(100, ((best - (m - step)) / step) * 100));
+
+      let iconHtml = '';
+      if (rw.kind === 'gold') {
+        iconHtml = `<img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="골드" class="sr-rw-img" />`;
+      } else if (rw.kind === 'gems') {
+        iconHtml = `<span class="sr-rw-gem" aria-hidden="true">💎</span>`;
+      } else {
+        const chDef = DATA.CHESTS[rw.chest] || DATA.CHESTS.wood;
+        iconHtml = `<img src="${chDef.icon}?v=${ASSET_VER}" alt="${chDef.name}" class="sr-rw-img chest" />`;
+      }
+
+      const card = document.createElement('div');
+      card.className = `sr-node tier-${rw.tier}${isClaimed ? ' claimed' : (canClaim ? ' ready' : ' locked')}`;
+      card.innerHTML = `
+        <div class="sr-node-head">
+          <span class="sr-node-score">${m.toLocaleString('ko-KR')}점</span>
+          <span class="sr-node-tag">${rw.tag}</span>
+        </div>
+        <div class="sr-node-rail">
+          <div class="sr-node-rail-fill" style="width:${segFill.toFixed(1)}%"></div>
+          <span class="sr-node-pip">${isClaimed ? '✓' : (canClaim ? '!' : '★')}</span>
+        </div>
+        <div class="sr-node-art">${iconHtml}</div>
+        <div class="sr-node-lbl">${rw.label}</div>
+      `;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (canClaim) {
+        btn.className = 'sr-claim-btn ready';
+        btn.textContent = rw.kind === 'chest' ? '보관함 받기!' : '받기!';
+        btn.onclick = () => grantScoreRoadReward(m, false);
+        if (!focusCard) focusCard = card;
+      } else if (isClaimed) {
+        btn.className = 'sr-claim-btn done';
+        btn.textContent = '완료 ✓';
+        btn.disabled = true;
+      } else {
+        btn.className = 'sr-claim-btn locked';
+        btn.textContent = `🔒 ${(m - best).toLocaleString('ko-KR')}점 남음`;
+        btn.disabled = true;
+        if (!focusCard) focusCard = card;
+      }
+      card.appendChild(btn);
+      el.scoreRoadTrack.appendChild(card);
+    }
+
+    if (focusCard && el.scoreRoadTrack.scrollTo) {
+      requestAnimationFrame(() => {
+        try {
+          const targetLeft = Math.max(0, focusCard.offsetLeft - 60);
+          el.scoreRoadTrack.scrollTo({ left: targetLeft, behavior: 'smooth' });
+        } catch {}
+      });
+    }
+  }
+
+  function openScoreRoadModal() {
+    if (!el.scoreRoadOverlay) return;
+    SFX.click();
+    renderScoreRoadModal();
+    el.scoreRoadOverlay.classList.remove('hidden');
+  }
+
+  function renderVaultModal() {
+    if (!el.vaultModalGrid) return;
+    const total = getTotalVaultChests();
+    if (el.vaultTotalPill) el.vaultTotalPill.textContent = `보유 ${total}개`;
+    el.vaultModalGrid.innerHTML = '';
+
+    DATA.CHEST_ORDER.forEach((tierId) => {
+      const chest = DATA.CHESTS[tierId];
+      const qty = (save.chestBag && save.chestBag[tierId]) || 0;
+      const pityLine = tierId === 'gold'
+        ? `영웅+ 천장 ${save.pity.gold || 0}/10회`
+        : (tierId === 'diamond'
+          ? `전설 천장 ${save.pity.diamond || 0}/15회`
+          : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
+
+      const card = document.createElement('div');
+      card.className = `vault-card tier-${tierId}${qty > 0 ? ' ready' : ' empty'}`;
+      card.innerHTML = `
+        <div class="vault-card-top">
+          <span class="vault-card-name">${chest.name}</span>
+          <span class="vault-card-qty">×${qty}</span>
+        </div>
+        <div class="vault-card-stage">
+          <img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="vault-card-img" />
+        </div>
+        <div class="vault-card-sub">${pityLine}</div>
+      `;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (qty > 0) {
+        btn.className = 'vault-open-btn ready';
+        btn.textContent = '열기!';
+        btn.onclick = () => {
+          if ((save.chestBag[tierId] || 0) <= 0) return;
+          save.chestBag[tierId] -= 1;
+          persistSave();
+          refreshAllMenus();
+          openChestModal(tierId);
+        };
+      } else {
+        btn.className = 'vault-open-btn empty';
+        btn.textContent = '상점에서 얻기';
+        btn.onclick = () => {
+          SFX.click();
+          if (el.vaultOverlay) el.vaultOverlay.classList.add('hidden');
+          currentShopSubtab = 'chests';
+          switchTab('shop');
+        };
+      }
+      card.appendChild(btn);
+      el.vaultModalGrid.appendChild(card);
+    });
+  }
+
+  function openVaultModal() {
+    if (!el.vaultOverlay) return;
+    SFX.click();
+    renderVaultModal();
+    el.vaultOverlay.classList.remove('hidden');
   }
 
   function renderProfileUI() {
@@ -1098,19 +1337,27 @@
       el.hdrProfileAvatar.style.filter = getSkinFilter(selSkin);
     }
 
-    const trophy = getTrophyTierProgress(save.bestScore || 0);
+    const bracket = getScoreRoadBracket(save.bestScore || 0);
+    const unclaimedCnt = getUnclaimedScoreRoadMilestones().length;
     if (el.hdrProfileRank) {
-      el.hdrProfileRank.textContent = `★${trophy.rank}`;
-      el.hdrProfileRank.className = `bs-prof-rank-badge ${trophy.tierCls}`;
+      el.hdrProfileRank.textContent = `★${bracket.rank}`;
+      el.hdrProfileRank.className = `bs-prof-rank-badge ${bracket.tierCls}`;
     }
     if (el.headerBestScore) {
       el.headerBestScore.textContent = (save.bestScore || 0).toLocaleString('ko-KR');
     }
     if (el.hdrTrophyFill) {
-      el.hdrTrophyFill.style.width = `${trophy.pct.toFixed(1)}%`;
+      el.hdrTrophyFill.style.width = `${bracket.pct.toFixed(1)}%`;
     }
     if (el.hdrTrophyNext) {
-      el.hdrTrophyNext.textContent = trophy.next ? `/ ${trophy.next.toLocaleString('ko-KR')}` : 'MAX';
+      el.hdrTrophyNext.textContent = `/ ${bracket.next.toLocaleString('ko-KR')}`;
+    }
+    if (el.btnScoreRoad) {
+      el.btnScoreRoad.classList.toggle('has-reward', unclaimedCnt > 0);
+    }
+    if (el.hdrScoreRoadDot) {
+      el.hdrScoreRoadDot.classList.toggle('hidden', unclaimedCnt <= 0);
+      el.hdrScoreRoadDot.textContent = unclaimedCnt > 9 ? '9+' : String(unclaimedCnt);
     }
 
     if (el.hdrProfileBadge) {
@@ -1232,6 +1479,7 @@
       playCount: Math.max(c.playCount || 0, l.playCount || 0),
       achievementsClaimed: { ...(secondary.achievementsClaimed || {}), ...(primary.achievementsClaimed || {}) },
       stageMilestonesClaimed: { ...(secondary.stageMilestonesClaimed || {}), ...(primary.stageMilestonesClaimed || {}) },
+      scoreRoadClaimed: { ...(secondary.scoreRoadClaimed || {}), ...(primary.scoreRoadClaimed || {}) },
       weeklyRank: {
         ...bestWkObj,
         history: { ...((secondary.weeklyRank && secondary.weeklyRank.history) || {}), ...((primary.weeklyRank && primary.weeklyRank.history) || {}) },
@@ -1534,6 +1782,8 @@
     renderRankingTab();
     updateNavMissionDot();
     if (detailCharIdx !== null) renderCharDetailModal();
+    if (el.scoreRoadOverlay && !el.scoreRoadOverlay.classList.contains('hidden')) renderScoreRoadModal();
+    if (el.vaultOverlay && !el.vaultOverlay.classList.contains('hidden')) renderVaultModal();
   }
 
   function updateNavMissionDot() {
@@ -1901,6 +2151,15 @@
             persistSave();
             refreshAllMenus();
             openChestModal(m.rewardChest);
+          },
+          onStore: () => {
+            save.dailyMissions.claimed[m.id] = true;
+            save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
+            save.chestBag[m.rewardChest] = (save.chestBag[m.rewardChest] || 0) + 1;
+            SFX.reward();
+            persistSave();
+            refreshAllMenus();
+            showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
           }
         }));
       });
@@ -1929,6 +2188,15 @@
             persistSave();
             refreshAllMenus();
             openChestModal(m.rewardChest);
+          },
+          onStore: () => {
+            save.weeklyMissions.claimed[m.id] = true;
+            save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
+            save.chestBag[m.rewardChest] = (save.chestBag[m.rewardChest] || 0) + 1;
+            SFX.reward();
+            persistSave();
+            refreshAllMenus();
+            showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
           }
         }));
       });
@@ -1955,6 +2223,15 @@
             persistSave();
             refreshAllMenus();
             openChestModal(a.rewardChest);
+          },
+          onStore: () => {
+            save.achievementsClaimed[a.id] = true;
+            save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
+            save.chestBag[a.rewardChest] = (save.chestBag[a.rewardChest] || 0) + 1;
+            SFX.reward();
+            persistSave();
+            refreshAllMenus();
+            showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
           }
         }));
       });
@@ -2009,7 +2286,7 @@
     }
   }
 
-  function createBrawlQuestCard({ tierClass, tag, icon, title, progText, pct, chest, isDone, isClaimed, onClaim }) {
+  function createBrawlQuestCard({ tierClass, tag, icon, title, progText, pct, chest, isDone, isClaimed, onClaim, onStore }) {
     const card = document.createElement('div');
     card.className = `bs-quest-card ${tierClass}${isClaimed ? ' claimed' : (isDone ? ' ready' : '')}`;
     card.innerHTML = `
@@ -2025,6 +2302,9 @@
       </div>
     `;
 
+    const actionCol = document.createElement('div');
+    actionCol.className = 'bs-qreward-col';
+
     const rwBtn = document.createElement('button');
     rwBtn.type = 'button';
     rwBtn.className = `bs-qreward-tile tier-${chest.id}${isClaimed ? ' done' : (isDone ? ' ready' : ' locked')}`;
@@ -2037,8 +2317,19 @@
     } else {
       rwBtn.disabled = true;
     }
+    actionCol.appendChild(rwBtn);
 
-    card.appendChild(rwBtn);
+    if (isDone && !isClaimed && typeof onStore === 'function') {
+      const storeBtn = document.createElement('button');
+      storeBtn.type = 'button';
+      storeBtn.className = 'bs-qstore-btn';
+      storeBtn.textContent = '📦 보관';
+      storeBtn.title = '상자 보관함에 저장';
+      storeBtn.onclick = onStore;
+      actionCol.appendChild(storeBtn);
+    }
+
+    card.appendChild(actionCol);
     return card;
   }
 
@@ -2062,10 +2353,14 @@
       : `🔒 ${ch.price.toLocaleString('ko-KR')}G`;
     el.homeCharName.textContent = ch.name;
 
-    // Brawl Stars Bottom-Left Character Switcher Badge
-    el.homeBrawlerMini.src = getSkinAvatar(ch, skin);
-    el.homeBrawlerMini.style.filter = getSkinFilter(skin);
-    el.homeBrawlerCount.textContent = `${save.unlockedChars.length} / ${DATA.CHARACTERS.length}`;
+    // Brawl Stars Bottom-Left Chest Vault Button (상자 보관함)
+    const vaultTotal = getTotalVaultChests();
+    if (el.homeVaultCount) el.homeVaultCount.textContent = `보유 ${vaultTotal}개`;
+    if (el.btnHomeVault) el.btnHomeVault.classList.toggle('has-chests', vaultTotal > 0);
+    if (el.homeVaultDot) {
+      el.homeVaultDot.classList.toggle('hidden', vaultTotal <= 0);
+      el.homeVaultDot.textContent = vaultTotal > 99 ? '99+' : String(vaultTotal);
+    }
 
     if (unlocked) {
       el.btnPlayStart.disabled = false;
@@ -2583,7 +2878,7 @@
           ${pk.bonusTag ? `<div class="bs-offer-ribbon bonus">${pk.bonusTag}</div>` : '<div class="bs-offer-ribbon">골드 교환</div>'}
           <div class="bs-offer-stage gold-stage">
             <div class="bs-offer-rays"></div>
-            <img src="assets/design/item_coin.png?v=20261121hd9" alt="${pk.name}" class="bs-offer-img coin ${pk.tier}" />
+            <img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="${pk.name}" class="bs-offer-img coin ${pk.tier}" />
           </div>
           <div class="bs-offer-bigval gold">+${pk.gold.toLocaleString('ko-KR')} G</div>
           <div class="bs-offer-sub">${pk.name}</div>
@@ -4407,6 +4702,29 @@
         openLoginOverlay();
       });
     }
+    if (el.btnHeaderProfileName) {
+      el.btnHeaderProfileName.addEventListener('click', () => {
+        SFX.click();
+        openLoginOverlay();
+      });
+    }
+    if (el.btnScoreRoad) {
+      el.btnScoreRoad.addEventListener('click', openScoreRoadModal);
+    }
+    if (el.btnCloseScoreRoad) {
+      el.btnCloseScoreRoad.addEventListener('click', () => {
+        SFX.click();
+        if (el.scoreRoadOverlay) el.scoreRoadOverlay.classList.add('hidden');
+      });
+    }
+    if (el.scoreRoadOverlay) {
+      el.scoreRoadOverlay.addEventListener('click', (e) => {
+        if (e.target === el.scoreRoadOverlay) el.scoreRoadOverlay.classList.add('hidden');
+      });
+    }
+    if (el.btnScoreRoadClaimAll) {
+      el.btnScoreRoadClaimAll.addEventListener('click', claimAllScoreRoad);
+    }
     if (el.btnSettingsSwitchLogin) {
       el.btnSettingsSwitchLogin.addEventListener('click', () => {
         SFX.click();
@@ -4536,7 +4854,18 @@
     }, 5000);
 
     el.btnHomeCharInfo.addEventListener('click', () => openCharDetail(previewCharIdx));
-    el.btnHomeBrawlers.addEventListener('click', () => switchTab('chars'));
+    if (el.btnHomeVault) el.btnHomeVault.addEventListener('click', openVaultModal);
+    if (el.btnCloseVault) {
+      el.btnCloseVault.addEventListener('click', () => {
+        SFX.click();
+        if (el.vaultOverlay) el.vaultOverlay.classList.add('hidden');
+      });
+    }
+    if (el.vaultOverlay) {
+      el.vaultOverlay.addEventListener('click', (e) => {
+        if (e.target === el.vaultOverlay) el.vaultOverlay.classList.add('hidden');
+      });
+    }
 
     // Brawl Stars Quest Subtabs (Daily / Weekly / Achievements / Chest Vault)
     document.querySelectorAll('.bs-qtab').forEach((btn) => {
@@ -4564,6 +4893,7 @@
 
     // 8-Frame Animated Chest Opening Modal
     if (el.btnTapChest) el.btnTapChest.addEventListener('click', triggerChestAnimation);
+    if (el.btnChestStore) el.btnChestStore.addEventListener('click', storeActiveChestToVault);
     if (el.btnChestClose) el.btnChestClose.addEventListener('click', closeChestModal);
     if (el.chestOpenOverlay) {
       el.chestOpenOverlay.addEventListener('click', (e) => {

@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd40" />
+  <link rel="stylesheet" href="style.css?v=20261121hd41" />
 </head>
 <body>
   <div id="mobile-app">
@@ -145,35 +145,38 @@
     <!-- ================= TOP RESOURCE BAR ================= -->
     <header id="app-header">
       <div class="hdr-left-group">
-        <button id="btn-header-profile" class="bs-profile-card" type="button" title="프로필 · 계정 정보 및 변경">
-          <span class="bs-prof-avatar-box">
-            <img id="hdr-profile-avatar" class="bs-prof-avatar-img" src="assets/chars/port_yellow.png?v=20261121hd39" alt="프로필" />
+        <div class="bs-profile-widget">
+          <button id="btn-header-profile" class="bs-prof-avatar-box" type="button" title="프로필 · 계정 정보 및 변경" aria-label="프로필 설정 열기">
+            <img id="hdr-profile-avatar" class="bs-prof-avatar-img" src="assets/chars/port_yellow.png?v=20261121hd41" alt="프로필" />
             <span id="hdr-profile-rank" class="bs-prof-rank-badge tier-blue">★1</span>
-          </span>
-          <span class="bs-prof-body">
-            <span class="bs-prof-name-strip">
+          </button>
+
+          <div class="bs-prof-body">
+            <button id="btn-header-profile-name" class="bs-prof-name-strip" type="button" title="계정 정보 및 닉네임 변경">
               <span class="bs-prof-unskew bs-prof-name-row">
                 <span id="hdr-profile-name" class="bs-prof-name">날씨러너</span>
                 <span id="hdr-profile-badge" class="prov-chip mini guest">GUEST</span>
               </span>
-            </span>
-            <span class="bs-prof-trophy-strip">
-              <span class="bs-prof-trophy-ico" aria-hidden="true">🏆</span>
+            </button>
+
+            <button id="btn-score-road" class="bs-prof-score-btn" type="button" title="최고점수 보상 로드 열기 (1,000점 간격 보상)">
+              <span class="bs-prof-score-tag">최고점수</span>
               <span class="bs-prof-trophy-track">
                 <span id="hdr-trophy-fill" class="bs-prof-trophy-fill" style="width: 0%"></span>
                 <span class="bs-prof-unskew bs-prof-trophy-val">
                   <span id="header-best-score">0</span>
-                  <span id="hdr-trophy-next" class="bs-prof-trophy-next">/ 500</span>
+                  <span id="hdr-trophy-next" class="bs-prof-trophy-next">/ 1,000</span>
                 </span>
               </span>
-            </span>
-          </span>
-        </button>
+              <span id="hdr-score-road-dot" class="bs-score-road-dot hidden" aria-label="수령 가능 보상">!</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="header-currencies">
         <button id="btn-gold-shop" class="res-pill gold-res-pill" type="button" title="골드 상점으로 이동">
-          <img src="assets/design/item_coin.png?v=20261121hd9" alt="골드" class="coin-sprite" />
+          <img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="coin-sprite" />
           <span id="ui-gold">0</span>
           <span class="res-plus">+</span>
         </button>
@@ -227,16 +230,17 @@
             </div>
           </div>
 
-          <!-- Brawl Stars Slanted Bottom Action Controls (Character Select + Play) -->
+          <!-- Brawl Stars Slanted Bottom Action Controls (Chest Vault + Play) -->
           <div class="bs-home-actions">
-            <button id="btn-home-brawlers" class="bs-brawler-btn" type="button" aria-label="캐릭터 선택">
+            <button id="btn-home-vault" class="bs-brawler-btn bs-vault-home-btn" type="button" aria-label="상자 보관함 열기">
               <span class="bs-btn-inner">
-                <img id="home-brawler-mini" src="assets/chars/port_yellow.png?v=20261121hd16" alt="" class="bs-mini-avatar" />
+                <img src="assets/design/ui_chest.png?v=20261121hd41" alt="상자 보관함" class="bs-mini-avatar bs-vault-home-ico" />
                 <span class="bs-brawler-txt">
-                  <span class="bs-brawler-lbl">캐릭터</span>
-                  <span id="home-brawler-count" class="bs-brawler-cnt">1 / 5</span>
+                  <span class="bs-brawler-lbl">상자 보관함</span>
+                  <span id="home-vault-count" class="bs-brawler-cnt">보유 0개</span>
                 </span>
               </span>
+              <span id="home-vault-dot" class="bs-vault-dot hidden" aria-hidden="true">0</span>
             </button>
 
             <button id="btn-play-start" class="bs-play-btn" type="button">
@@ -595,7 +599,7 @@
 
           <div class="run-right-mini">
             <div class="run-gold-mini">
-              <img src="assets/design/item_coin.png?v=20261121hd9" alt="G" class="coin-sprite sm" />
+              <img src="assets/design/item_coin.png?v=20261121hd41" alt="G" class="coin-sprite sm" />
               <span id="run-gold-text">0</span>
             </div>
             <button id="btn-landscape-run" class="pause-square-btn rotate-btn" type="button" title="가로 전체화면" aria-label="가로 전체화면 전환">⛶</button>
@@ -754,6 +758,7 @@
           <img id="chest-anim-img" src="assets/chests/chest_gold_0.png?v=20261121hd9" alt="상자" class="chest-anim-img" />
           <span id="chest-tap-hint" class="chest-tap-hint">터치해서 열기!</span>
         </button>
+        <button id="btn-chest-store" class="chest-store-btn" type="button">📦 보관함에 저장하기</button>
 
         <!-- Revealed Reward Card -->
         <div id="chest-reward-card" class="chest-reward-card hidden">
@@ -823,6 +828,39 @@
       </div>
     </div>
 
+    <!-- ================= BRAWL STARS STYLE SCORE REWARD ROAD (EVERY 1,000 PTS!) ================= -->
+    <div id="score-road-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="최고점수 보상 로드">
+      <div class="cr-modal score-road-modal">
+        <div class="cr-modal-bar settings-arcade-bar score-road-bar">
+          <div class="score-road-title-wrap">
+            <span class="settings-bar-title">⭐ 최고점수 보상 로드</span>
+            <span id="score-road-best-val" class="score-road-best-pill">내 최고점수 0점</span>
+          </div>
+          <div class="score-road-bar-actions">
+            <button id="btn-score-road-claim-all" class="cr-gold-btn score-road-claim-all hidden" type="button">🎁 모두 받기</button>
+            <button id="btn-close-score-road" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+          </div>
+        </div>
+        <div class="score-road-sub">1,000점 달성할 때마다 골드 · 보석 · 상자(보관함 저장)를 드립니다! 좌우로 스크롤해 확인하세요.</div>
+        <div id="score-road-track" class="score-road-track"></div>
+      </div>
+    </div>
+
+    <!-- ================= HOME CHEST VAULT MODAL (상자 보관함) ================= -->
+    <div id="vault-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="상자 보관함">
+      <div class="cr-modal settings-arcade-modal vault-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <div class="score-road-title-wrap">
+            <span class="settings-bar-title">📦 상자 보관함</span>
+            <span id="vault-total-pill" class="score-road-best-pill">보유 0개</span>
+          </div>
+          <button id="btn-close-vault" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div class="score-road-sub">퀘스트 · 최고점수 로드 · 주행 드랍으로 얻은 상자가 이곳에 안전하게 보관됩니다.</div>
+        <div id="vault-modal-grid" class="vault-modal-grid"></div>
+      </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="global-toast" class="global-toast hidden"></div>
   </div>
@@ -830,11 +868,11 @@
   <!-- Official Firebase Auth SDK (Google & Apple Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd40"></script>
+  <script src="js/data.js?v=20261121hd41"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd40"></script>
-  <script src="js/renderer.js?v=20261121hd40"></script>
-  <script src="js/game.js?v=20261121hd40"></script>
+  <script src="js/online.js?v=20261121hd41"></script>
+  <script src="js/renderer.js?v=20261121hd41"></script>
+  <script src="js/game.js?v=20261121hd41"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

@@ -21,7 +21,7 @@ window.RunRenderer = (function () {
   const CHAR_VFX_SPRITES = ['fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring', 'catgirl_fx_paw'];
 
   const DESIGN_SPRITES = [
-    'item_coin', 'item_coin_side', 'item_star',
+    'item_coin', 'item_coin_1', 'item_coin_2', 'item_coin_side', 'item_star',
     'orb_star', 'orb_magnet', 'orb_bolt', 'orb_potion',
     'ui_chest', 'ui_fever', 'pet_dog'
   ];
@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd40';
+  const CHAR_ASSET_VER = '20261121hd41';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -1045,12 +1045,28 @@ window.RunRenderer = (function () {
     ctx.imageSmoothingQuality = 'high';
 
     if (it.kind === 'coin' || it.kind === 'big_coin') {
-      const spin = Math.floor(t * 7 + it.x * 0.03) % 4 === 0;
-      const spr = getSprite(spin ? 'item_coin_side' : 'item_coin');
-      const sz = it.kind === 'big_coin' ? 28 : 20;
+      // Smooth 6-step 3D spinning star coin using all 4 uploaded angle frames!
+      const spinSeq = [
+        { key: 'item_coin', flip: false },
+        { key: 'item_coin_1', flip: false },
+        { key: 'item_coin_2', flip: false },
+        { key: 'item_coin_side', flip: false },
+        { key: 'item_coin_2', flip: true },
+        { key: 'item_coin_1', flip: true }
+      ];
+      const step = spinSeq[Math.floor(t * 10 + it.x * 0.04) % spinSeq.length];
+      const spr = getSprite(step.key) || getSprite('item_coin');
+      const sz = it.kind === 'big_coin' ? 28 : 21;
       if (spr) {
-        const dw = spin ? Math.round(sz * 0.55) : sz;
-        ctx.drawImage(spr, Math.floor(x - dw / 2), Math.floor(y - sz / 2), dw, sz);
+        if (step.flip) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(-1, 1);
+          ctx.drawImage(spr, Math.floor(-sz / 2), Math.floor(-sz / 2), sz, sz);
+          ctx.restore();
+        } else {
+          ctx.drawImage(spr, Math.floor(x - sz / 2), Math.floor(y - sz / 2), sz, sz);
+        }
       } else {
         ctx.fillStyle = '#ffd447';
         ctx.beginPath(); ctx.arc(x, y, sz / 2, 0, Math.PI * 2); ctx.fill();
