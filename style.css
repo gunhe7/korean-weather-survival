@@ -154,7 +154,7 @@ body {
   overflow: hidden;
 }
 
-@media (min-width: 960px) and (min-height: 620px) {
+@media (hover: hover) and (pointer: fine) and (min-width: 1024px) and (min-height: 640px) {
   #mobile-app {
     width: min(96vw, 980px);
     height: auto;
@@ -165,20 +165,51 @@ body {
   }
 }
 
-/* Instant Landscape Launch on Portrait Phones (Zero Rotate Prompt!) */
+/* Full Edge-to-Edge Phone Screen Fill (Zero Sidebars / Zero Borders on Any Mobile Device!) */
+@media (pointer: coarse), (max-width: 1023px), (max-height: 639px) {
+  html, body {
+    position: fixed;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  #mobile-app {
+    position: fixed !important;
+    inset: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Instant Full-Bleed Landscape Launch on Portrait Phones (Zero Rotate Prompt, Zero Sidebars!) */
 @media (orientation: portrait) {
   #mobile-app {
     position: fixed !important;
-    top: 50%;
-    left: 50%;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
     width: 100vh !important;
     width: 100dvh !important;
     height: 100vw !important;
     height: 100dvw !important;
     max-width: none !important;
     max-height: none !important;
+    aspect-ratio: auto !important;
     border: none !important;
     border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
     transform: translate(-50%, -50%) rotate(90deg);
     transform-origin: center center;
   }
@@ -2506,13 +2537,13 @@ input:focus-visible {
    ========================================================================= */
 @media (orientation: landscape) and (max-height: 600px) {
   #mobile-app {
-    width: 100vw;
-    max-width: 1040px;
-    height: 100dvh;
-    border-left: none;
-    border-right: none;
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
   }
 
   /* Compact Intro for Landscape Phones */
@@ -4220,8 +4251,8 @@ input:focus-visible {
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  aspect-ratio: 16 / 9 !important;
-  object-fit: contain;
+  aspect-ratio: auto !important;
+  object-fit: fill !important;
   display: block;
   image-rendering: auto;
 }

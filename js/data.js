@@ -315,7 +315,7 @@ window.RUN_DATA = (function () {
       customAnimSkin: 'catgirl',
       customAnimFrames: 4,
       customRunFrames: 8,
-      customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd19',
+      customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd32',
       customShieldVfx: 'catgirl_fx_paw',
       gemPrice: 1000,
       glow: '#ff96dc',

@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd31';
+  const CHAR_ASSET_VER = '20261121hd32';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -789,9 +789,9 @@ window.RunRenderer = (function () {
       // Prone poses (Slide & Die) are naturally horizontal (~66x52 vs ~60x78 standing):
       // 0.67 height keeps head & body scale pixel-consistent across every animation state!
       const targetH = isProne ? Math.round(scaleHeight * 0.67) : scaleHeight;
-      const ratio = spr.naturalWidth / spr.naturalHeight;
-      const drawW = Math.round(targetH * ratio);
-      const drawH = targetH;
+      const ratio = (spr.naturalWidth > 0 && spr.naturalHeight > 0) ? (spr.naturalWidth / spr.naturalHeight) : 1;
+      const drawW = Math.max(1, Math.round(targetH * ratio));
+      const drawH = Math.max(1, targetH);
 
       const bob = running && !dead && !inAir && !sliding ? Math.abs(Math.sin(t * 14)) * 2.0 : 0;
       const sx = opts.squashX !== undefined ? opts.squashX : 1;

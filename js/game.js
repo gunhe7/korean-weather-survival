@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd31';
+  const ASSET_VER = '20261121hd32';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -158,7 +158,8 @@
     }
     delete mergedLevels.basic;
 
-    const rawUnlocked = Array.isArray(raw.unlockedChars) ? raw.unlockedChars.filter((id) => validIds.has(id)) : [];
+    const toSafeArray = (v) => (Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []));
+    const rawUnlocked = toSafeArray(raw.unlockedChars).filter((id) => validIds.has(id));
     if (!rawUnlocked.includes('umbrella_master')) rawUnlocked.unshift('umbrella_master');
     const migratedSelected = validIds.has(raw.selectedChar) ? raw.selectedChar : 'umbrella_master';
 
@@ -174,7 +175,7 @@
       unlockedChars: rawUnlocked,
       selectedChar: migratedSelected,
       charLevels: mergedLevels,
-      unlockedSkins: Array.isArray(raw.unlockedSkins) ? raw.unlockedSkins : [],
+      unlockedSkins: toSafeArray(raw.unlockedSkins).filter((id) => typeof id === 'string'),
       equippedSkins: raw.equippedSkins && typeof raw.equippedSkins === 'object' ? { ...raw.equippedSkins } : {},
       chestBag: { wood: 0, silver: 0, gold: 0, diamond: 0, ...(raw.chestBag || {}) },
       pity: { gold: 0, diamond: 0, ...(raw.pity || {}) },
@@ -4143,7 +4144,14 @@
       }
       if (run) {
         const animDt = paused || (!run.active && !run.dying) ? 0 : dt;
-        Renderer.renderRunFrame(runCtx, run, getCharDef(run.charId), animDt, t);
+        try {
+          Renderer.renderRunFrame(runCtx, run, getCharDef(run.charId), animDt, t);
+        } catch (err) {
+          if (!run._renderErrShown) {
+            run._renderErrShown = true;
+            showToast(`⚠️ 렌더 복구: ${(err && err.message) || '스킨 로드 중'}`);
+          }
+        }
       }
     } else if (currentTab === 'home') {
       updateHomeRunningHero(t);
