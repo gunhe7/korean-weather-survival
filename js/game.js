@@ -26,7 +26,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd26';
+  const ASSET_VER = '20261121hd27';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -117,9 +117,12 @@
       dailyWoodChestDrops: { date: today, count: Number(rawDrops.count) || 0 },
       upgrades: { ...def.upgrades, ...(raw.upgrades || {}) },
       boosters: { ...def.boosters, ...(raw.boosters || {}) },
-      bestDistanceM: typeof raw.bestDistanceM === 'number' ? raw.bestDistanceM : 0,
-      totalCoinsEver: typeof raw.totalCoinsEver === 'number' ? raw.totalCoinsEver : 0,
-      maxDodgeComboEver: typeof raw.maxDodgeComboEver === 'number' ? raw.maxDodgeComboEver : 0,
+      bestScore: typeof raw.bestScore === 'number' && Number.isFinite(raw.bestScore) ? Math.max(0, Math.floor(raw.bestScore)) : 0,
+      bestYear: typeof raw.bestYear === 'number' && Number.isFinite(raw.bestYear) ? Math.max(1, Math.floor(raw.bestYear)) : 1,
+      bestDistanceM: typeof raw.bestDistanceM === 'number' && Number.isFinite(raw.bestDistanceM) ? Math.max(0, Math.floor(raw.bestDistanceM)) : 0,
+      totalCoinsEver: typeof raw.totalCoinsEver === 'number' && Number.isFinite(raw.totalCoinsEver) ? Math.max(0, Math.floor(raw.totalCoinsEver)) : 0,
+      maxDodgeComboEver: typeof raw.maxDodgeComboEver === 'number' && Number.isFinite(raw.maxDodgeComboEver) ? Math.max(0, Math.floor(raw.maxDodgeComboEver)) : 0,
+      playCount: typeof raw.playCount === 'number' && Number.isFinite(raw.playCount) ? Math.max(0, Math.floor(raw.playCount)) : 0,
       attendance: { ...def.attendance, ...(raw.attendance || {}) },
       dailyMissions: {
         date: today,
@@ -840,7 +843,15 @@
     return coarse || ua;
   }
 
+  function isInAppBrowser() {
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    // Google App (GSA), KakaoTalk, Naver, Instagram, Facebook, Line, Android WebView
+    return /GSA\/|GoogleApp|KAKAOTALK|NAVER|FBAN|FBAV|Instagram|Line\/|\bwv\b/i.test(ua);
+  }
+
   let landscapeLockInFlight = false;
+  let fullscreenAttemptedOnce = false;
+
   async function tryAutoLockLandscape(fromUserGesture = false) {
     // 1. Native Capacitor ScreenOrientation plugin if present
     try {
@@ -856,11 +867,14 @@
     try {
       const docEl = document.documentElement;
       const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
-      // Mobile Chrome/Samsung/Edge require fullscreen inside a user gesture before screen.orientation.lock() rotates hardware!
-      if (fromUserGesture && !isFs) {
+      const canFs = Boolean(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+
+      // Avoid calling requestFullscreen inside Google App / KakaoTalk / in-app WebViews where it can break touch/viewport!
+      if (fromUserGesture && !isFs && canFs && !isInAppBrowser() && !fullscreenAttemptedOnce) {
+        fullscreenAttemptedOnce = true;
         try {
           if (docEl.requestFullscreen) {
-            await docEl.requestFullscreen({ navigationUI: 'hide' });
+            await docEl.requestFullscreen();
           } else if (docEl.webkitRequestFullscreen) {
             await docEl.webkitRequestFullscreen();
           }
@@ -4197,15 +4211,18 @@
     });
 
     el.btnPlayStart.addEventListener('click', () => {
-      const ch = DATA.CHARACTERS[previewCharIdx];
-      if (!isCharUnlocked(ch.id)) {
-        buyCharacter(ch, previewCharIdx);
-        return;
+      try {
+        const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
+        if (!isCharUnlocked(ch.id)) {
+          buyCharacter(ch, previewCharIdx);
+          return;
+        }
+        save.selectedChar = ch.id;
+        persistSave();
+        startRun();
+      } catch (err) {
+        showToast(`⚠️ 시작 오류: ${(err && err.message) || '다시 시도해주세요'}`);
       }
-      save.selectedChar = ch.id;
-      persistSave();
-      startRun();
-      try { tryAutoLockLandscape(true); } catch {}
     });
 
     // Runner Controls + Gear Toggles (All 4 use crisp Up/Down sprite swap on press & release!)
@@ -4322,10 +4339,15 @@
     });
   }
 
-  // ===================== BOOT =====================
+  // ===================== GLOBAL ERROR GUARD & BOOT =====================
+  window.addEventListener('error', (ev) => {
+    try {
+      if (ev && ev.message) showToast(`⚠️ 오류: ${ev.message}`);
+    } catch {}
+  });
   setupEvents();
   refreshAllMenus();
-  tryAutoLockLandscape(false);
+  try { tryAutoLockLandscape(false); } catch {}
   try { SFX.introJingle(); } catch {}
   requestAnimationFrame(loop);
 })();

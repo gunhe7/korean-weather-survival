@@ -27,6 +27,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+#intro-overlay {
+  touch-action: manipulation;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -131,6 +136,7 @@ body {
   position: relative;
   width: 100vw;
   max-width: none;
+  height: 100vh;
   height: 100dvh;
   max-height: none;
   display: flex;
@@ -165,7 +171,9 @@ body {
     position: fixed !important;
     top: 50%;
     left: 50%;
+    width: 100vh !important;
     width: 100dvh !important;
+    height: 100vw !important;
     height: 100dvw !important;
     max-width: none !important;
     max-height: none !important;
