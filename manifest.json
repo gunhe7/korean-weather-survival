@@ -1,16 +1,35 @@
 {
+  "id": "com.gunhe7.kweathersurvival",
   "name": "한국 날씨에서 살아남기",
   "short_name": "K-날씨 생존",
+  "description": "폭우·황사·폭염·한파·구라청 오보를 뚫고 사계절을 버티는 가로형 2D 생존 러너 게임!",
+  "lang": "ko",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "orientation": "landscape",
   "background_color": "#091324",
   "theme_color": "#0d2147",
+  "categories": ["games", "arcade", "action"],
   "icons": [
     {
-      "src": "assets/chars/port_yellow.png",
-      "sizes": "225x273",
-      "type": "image/png"
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

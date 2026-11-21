@@ -1,0 +1,17 @@
+{
+  "appId": "com.gunhe7.kweathersurvival",
+  "appName": "한국 날씨에서 살아남기",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#091324",
+    "allowMixedContent": false
+  },
+  "ios": {
+    "backgroundColor": "#091324",
+    "contentInset": "never"
+  }
+}

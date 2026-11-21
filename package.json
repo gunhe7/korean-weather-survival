@@ -1,0 +1,22 @@
+{
+  "name": "korean-weather-survival",
+  "version": "1.0.0",
+  "description": "한국 날씨에서 살아남기 - 가로형 2D 생존 러너 모바일 앱",
+  "private": true,
+  "scripts": {
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "cap:sync": "npm run prepare:web && npx cap sync",
+    "android:add": "npm run prepare:web && npx cap add android",
+    "android:open": "npx cap open android",
+    "ios:add": "npm run prepare:web && npx cap add ios",
+    "ios:open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/ios": "^6.2.0"
+  }
+}

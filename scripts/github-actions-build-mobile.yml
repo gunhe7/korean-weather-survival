@@ -1,0 +1,96 @@
+name: Build Android APK & Play Store AAB
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'index.html'
+      - 'style.css'
+      - 'manifest.json'
+      - 'sw.js'
+      - 'js/**'
+      - 'assets/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - '.github/workflows/build-mobile.yml'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java 17 (required by Capacitor 6 / Android Gradle)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Capacitor dependencies
+        run: npm install
+
+      - name: Prepare offline web bundle (./www)
+        run: npm run prepare:web
+
+      - name: Generate native Android project & sync assets
+        run: npx cap add android && npx cap sync android
+
+      - name: Lock Android to Landscape & Fullscreen Immersive Mode + Apply Custom App Icon
+        run: |
+          node -e '
+            const fs = require("fs");
+            const manifestPath = "android/app/src/main/AndroidManifest.xml";
+            let xml = fs.readFileSync(manifestPath, "utf8");
+            if (!xml.includes("android:screenOrientation")) {
+              xml = xml.replace(
+                "<activity",
+                "<activity\n            android:screenOrientation=\"sensorLandscape\""
+              );
+            }
+            fs.writeFileSync(manifestPath, xml, "utf8");
+
+            const stylesPath = "android/app/src/main/res/values/styles.xml";
+            if (fs.existsSync(stylesPath)) {
+              let styles = fs.readFileSync(stylesPath, "utf8");
+              if (!styles.includes("windowFullscreen")) {
+                styles = styles.replace(
+                  "</style>",
+                  "    <item name=\"android:windowFullscreen\">true</item>\n        <item name=\"android:windowLayoutInDisplayCutoutMode\">shortEdges</item>\n    </style>"
+                );
+                fs.writeFileSync(stylesPath, styles, "utf8");
+              }
+            }
+          '
+          # Replace default mipmap launcher icons with our custom 512x512 / 192x192 app icons
+          for dir in android/app/src/main/res/mipmap-*; do
+            if [ -f "$dir/ic_launcher.png" ]; then cp assets/icons/icon-192.png "$dir/ic_launcher.png"; fi
+            if [ -f "$dir/ic_launcher_round.png" ]; then cp assets/icons/icon-192.png "$dir/ic_launcher_round.png"; fi
+            if [ -f "$dir/ic_launcher_foreground.png" ]; then cp assets/icons/icon-512.png "$dir/ic_launcher_foreground.png"; fi
+          done
+
+      - name: Build Debug APK (direct install on Android phones)
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew assembleDebug
+
+      - name: Build Release AAB (Google Play Store bundle)
+        working-directory: android
+        run: ./gradlew bundleRelease
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: k-weather-survival-android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Play Store AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: k-weather-survival-playstore-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab

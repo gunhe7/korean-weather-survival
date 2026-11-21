@@ -36,6 +36,10 @@ html, body {
   font-family: var(--font-ui);
   color: #ffffff;
   overflow: hidden;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   word-break: keep-all;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
