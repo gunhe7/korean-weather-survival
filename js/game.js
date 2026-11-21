@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd38';
+  const ASSET_VER = '20261121hd39';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -350,9 +350,13 @@
     btnAppleEmailSubmit: document.getElementById('btn-apple-email-submit'),
 
     btnHeaderProfile: document.getElementById('btn-header-profile'),
+    hdrProfileAvatar: document.getElementById('hdr-profile-avatar'),
+    hdrProfileRank: document.getElementById('hdr-profile-rank'),
     hdrProfileBadge: document.getElementById('hdr-profile-badge'),
     hdrProfileName: document.getElementById('hdr-profile-name'),
     headerBestScore: document.getElementById('header-best-score'),
+    hdrTrophyFill: document.getElementById('hdr-trophy-fill'),
+    hdrTrophyNext: document.getElementById('hdr-trophy-next'),
     btnGoldShop: document.getElementById('btn-gold-shop'),
     uiGold: document.getElementById('ui-gold'),
     btnGemShop: document.getElementById('btn-gem-shop'),
@@ -1059,15 +1063,59 @@
     }
   }
 
+  const TROPHY_MILESTONES = [500, 1000, 2000, 3500, 5000, 8000, 12000, 20000, 35000, 50000, 100000];
+
+  function getTrophyTierProgress(score) {
+    const sc = Math.max(0, Math.floor(score || 0));
+    let rank = 1;
+    let prev = 0;
+    let next = TROPHY_MILESTONES[0];
+    for (let i = 0; i < TROPHY_MILESTONES.length; i++) {
+      if (sc >= TROPHY_MILESTONES[i]) {
+        rank = i + 2;
+        prev = TROPHY_MILESTONES[i];
+        next = TROPHY_MILESTONES[i + 1] || null;
+      } else {
+        next = TROPHY_MILESTONES[i];
+        break;
+      }
+    }
+    const pct = next ? Math.max(0, Math.min(100, ((sc - prev) / (next - prev)) * 100)) : 100;
+    const tierCls = rank >= 10 ? 'tier-mythic' : (rank >= 7 ? 'tier-epic' : (rank >= 4 ? 'tier-gold' : 'tier-blue'));
+    return { rank, prev, next, pct, tierCls };
+  }
+
   function renderProfileUI() {
     const auth = save.auth || { loggedIn: false, provider: 'guest', nickname: '게스트' };
     const meta = ONLINE ? ONLINE.getProviderMeta(auth.provider) : { badge: 'GUEST', label: '게스트' };
     const nick = auth.nickname || meta.label;
     const isLinked = ONLINE ? ONLINE.isRankedProvider(auth.provider) : false;
 
+    const selCh = DATA.CHARACTERS.find((c) => c.id === save.selectedChar) || DATA.CHARACTERS[0];
+    const selSkin = getEquippedSkin(selCh.id);
+    if (el.hdrProfileAvatar) {
+      el.hdrProfileAvatar.src = getSkinAvatar(selCh, selSkin);
+      el.hdrProfileAvatar.style.filter = getSkinFilter(selSkin);
+    }
+
+    const trophy = getTrophyTierProgress(save.bestScore || 0);
+    if (el.hdrProfileRank) {
+      el.hdrProfileRank.textContent = `★${trophy.rank}`;
+      el.hdrProfileRank.className = `bs-prof-rank-badge ${trophy.tierCls}`;
+    }
+    if (el.headerBestScore) {
+      el.headerBestScore.textContent = (save.bestScore || 0).toLocaleString('ko-KR');
+    }
+    if (el.hdrTrophyFill) {
+      el.hdrTrophyFill.style.width = `${trophy.pct.toFixed(1)}%`;
+    }
+    if (el.hdrTrophyNext) {
+      el.hdrTrophyNext.textContent = trophy.next ? `/ ${trophy.next.toLocaleString('ko-KR')}` : 'MAX';
+    }
+
     if (el.hdrProfileBadge) {
       el.hdrProfileBadge.textContent = meta.badge;
-      el.hdrProfileBadge.className = `prov-chip ${auth.provider || 'guest'}`;
+      el.hdrProfileBadge.className = `prov-chip mini ${auth.provider || 'guest'}`;
     }
     if (el.hdrProfileName) el.hdrProfileName.textContent = nick;
 
@@ -4611,6 +4659,7 @@
       if (isCharUnlocked(ch.id)) {
         save.selectedChar = ch.id;
         persistSave();
+        renderProfileUI();
       }
       renderHomeCharStage();
     });
@@ -4622,6 +4671,7 @@
       if (isCharUnlocked(ch.id)) {
         save.selectedChar = ch.id;
         persistSave();
+        renderProfileUI();
       }
       renderHomeCharStage();
     });

@@ -7146,7 +7146,7 @@ input:focus-visible {
   font-size: 13.5px;
 }
 
-/* ================= HEADER PROFILE PILL & PROVIDER BADGES ================= */
+/* ================= BRAWL STARS STYLE TOP-LEFT PROFILE & TROPHY ROAD BAR ================= */
 .hdr-left-group {
   display: flex;
   align-items: center;
@@ -7154,26 +7154,254 @@ input:focus-visible {
   min-width: 0;
 }
 
-.hdr-profile-pill {
+.bs-profile-card {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px 4px 5px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(24, 62, 128, 0.92), rgba(11, 29, 66, 0.96));
-  border: 2px solid #78d8ff;
-  box-shadow: 0 3px 0 #071329;
-  color: #ffffff;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
-  max-width: 122px;
+  text-align: left;
+  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 3px 5px rgba(4, 12, 30, 0.56));
+  transition: transform 0.12s ease;
 }
 
-.hdr-profile-name {
-  font-size: 11px;
+.bs-profile-card:active {
+  transform: translateY(2px) scale(0.97);
+}
+
+.bs-prof-avatar-box {
+  position: relative;
+  z-index: 4;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 2.5px solid #071022;
+  background: radial-gradient(circle at 50% 30%, #72e6ff 0%, #1d75e8 62%, #0c3585 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.58),
+    inset 0 -3px 0 rgba(5, 20, 56, 0.52),
+    0 3px 0 #071022;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.bs-prof-avatar-img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
+}
+
+.bs-prof-rank-badge {
+  position: absolute;
+  left: -5px;
+  bottom: -5px;
+  z-index: 6;
+  min-width: 22px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 6px;
+  border: 1.8px solid #071022;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
   font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.2px;
+  color: #ffffff;
+  text-shadow: 0 1px 0 #071022;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 1.5px 0 #071022;
+}
+
+.bs-prof-rank-badge.tier-blue {
+  background: linear-gradient(180deg, #43c2ff 0%, #1668d4 100%);
+}
+.bs-prof-rank-badge.tier-gold {
+  background: linear-gradient(180deg, #ffe954 0%, #ea8a00 100%);
+  color: #2b1200;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.bs-prof-rank-badge.tier-epic {
+  background: linear-gradient(180deg, #d775ff 0%, #7d22d9 100%);
+}
+.bs-prof-rank-badge.tier-mythic {
+  background: linear-gradient(180deg, #ff5ea8 0%, #c71065 100%);
+}
+
+.bs-prof-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-left: -6px;
+  min-width: 138px;
+  max-width: 178px;
+}
+
+.bs-prof-unskew {
+  display: inline-flex;
+  align-items: center;
+  transform: skewX(8deg);
+}
+
+.bs-prof-name-strip {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px 0 12px;
+  border-radius: 0 7px 7px 0;
+  border: 2.2px solid #071022;
+  border-left: none;
+  background: linear-gradient(180deg, #2d497f 0%, #192c52 54%, #111f3d 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(168, 224, 255, 0.36),
+    0 2.5px 0 #071022;
+  transform: skewX(-8deg);
+}
+
+.bs-prof-name-row {
+  width: 100%;
+  justify-content: space-between;
+  gap: 5px;
+  min-width: 0;
+}
+
+.bs-prof-name {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-shadow:
+    -1.2px -1.2px 0 #071022,
+     1.2px -1.2px 0 #071022,
+    -1.2px  1.2px 0 #071022,
+     1.2px  1.2px 0 #071022,
+     0px    1.8px 0 #071022;
+}
+
+.bs-prof-trophy-strip {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding-left: 5px;
+}
+
+.bs-prof-trophy-ico {
+  position: relative;
+  z-index: 5;
+  font-size: 15px;
+  line-height: 1;
+  margin-right: -6px;
+  filter: drop-shadow(0 1.5px 1px #071022);
+  pointer-events: none;
+}
+
+.bs-prof-trophy-track {
+  position: relative;
+  flex: 1;
+  height: 18px;
+  border-radius: 0 6px 6px 0;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #0b1428 0%, #162646 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.65),
+    0 2px 0 #071022;
+  overflow: hidden;
+  transform: skewX(-8deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bs-prof-trophy-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: linear-gradient(180deg, #fff169 0%, #ffba14 54%, #df7a00 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.65);
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bs-prof-trophy-val {
+  position: relative;
+  z-index: 3;
+  gap: 3px;
+  padding: 0 6px 0 9px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow:
+    -1.2px -1.2px 0 #071022,
+     1.2px -1.2px 0 #071022,
+    -1.2px  1.2px 0 #071022,
+     1.2px  1.2px 0 #071022,
+     0px    1.5px 0 #071022;
+}
+
+.bs-prof-trophy-next {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #ffe89e;
+  opacity: 0.92;
+}
+
+@media (max-height: 440px), (orientation: portrait) and (max-width: 520px) {
+  .bs-prof-avatar-box {
+    width: 39px;
+    height: 39px;
+    border-radius: 8px;
+  }
+  .bs-prof-rank-badge {
+    min-width: 19px;
+    height: 14px;
+    font-size: 8.5px;
+    left: -4px;
+    bottom: -4px;
+  }
+  .bs-prof-body {
+    min-width: 120px;
+    max-width: 152px;
+    gap: 2px;
+  }
+  .bs-prof-name-strip {
+    height: 19px;
+    padding: 0 7px 0 10px;
+  }
+  .bs-prof-name {
+    font-size: 11px;
+  }
+  .bs-prof-trophy-ico {
+    font-size: 13px;
+  }
+  .bs-prof-trophy-track {
+    height: 15px;
+  }
+  .bs-prof-trophy-val {
+    font-size: 10px;
+  }
+  .bs-prof-trophy-next {
+    font-size: 8.5px;
+  }
 }
 
 .prov-chip {

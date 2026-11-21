@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd38" />
+  <link rel="stylesheet" href="style.css?v=20261121hd39" />
 </head>
 <body>
   <div id="mobile-app">
@@ -145,15 +145,30 @@
     <!-- ================= TOP RESOURCE BAR ================= -->
     <header id="app-header">
       <div class="hdr-left-group">
-        <button id="btn-header-profile" class="hdr-profile-pill" type="button" title="계정 정보 및 변경">
-          <span id="hdr-profile-badge" class="prov-chip guest">G</span>
-          <span id="hdr-profile-name" class="hdr-profile-name">날씨러너</span>
+        <button id="btn-header-profile" class="bs-profile-card" type="button" title="프로필 · 계정 정보 및 변경">
+          <span class="bs-prof-avatar-box">
+            <img id="hdr-profile-avatar" class="bs-prof-avatar-img" src="assets/chars/port_yellow.png?v=20261121hd39" alt="프로필" />
+            <span id="hdr-profile-rank" class="bs-prof-rank-badge tier-blue">★1</span>
+          </span>
+          <span class="bs-prof-body">
+            <span class="bs-prof-name-strip">
+              <span class="bs-prof-unskew bs-prof-name-row">
+                <span id="hdr-profile-name" class="bs-prof-name">날씨러너</span>
+                <span id="hdr-profile-badge" class="prov-chip mini guest">GUEST</span>
+              </span>
+            </span>
+            <span class="bs-prof-trophy-strip">
+              <span class="bs-prof-trophy-ico" aria-hidden="true">🏆</span>
+              <span class="bs-prof-trophy-track">
+                <span id="hdr-trophy-fill" class="bs-prof-trophy-fill" style="width: 0%"></span>
+                <span class="bs-prof-unskew bs-prof-trophy-val">
+                  <span id="header-best-score">0</span>
+                  <span id="hdr-trophy-next" class="bs-prof-trophy-next">/ 500</span>
+                </span>
+              </span>
+            </span>
+          </span>
         </button>
-
-        <div class="best-score-banner" title="최고 점수">
-          <img src="assets/ui/best_score_frame.png" alt="최고점수" class="best-score-bg" />
-          <span id="header-best-score" class="best-score-val">0</span>
-        </div>
       </div>
 
       <div class="header-currencies">
@@ -815,11 +830,11 @@
   <!-- Official Firebase Auth SDK (Google & Apple Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd38"></script>
+  <script src="js/data.js?v=20261121hd39"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd38"></script>
-  <script src="js/renderer.js?v=20261121hd38"></script>
-  <script src="js/game.js?v=20261121hd38"></script>
+  <script src="js/online.js?v=20261121hd39"></script>
+  <script src="js/renderer.js?v=20261121hd39"></script>
+  <script src="js/game.js?v=20261121hd39"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {
