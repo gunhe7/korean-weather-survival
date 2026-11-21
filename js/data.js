@@ -197,7 +197,7 @@ window.RUN_DATA = (function () {
     {
       id: 'hp',
       name: '기상 내성 강화',
-      icon: 'assets/design/orb_potion.png?v=20261121hd9',
+      icon: 'assets/design/orb_potion.png?v=20261121hd38',
       maxLv: 5,
       basePrice: 120,
       priceStep: 110,
@@ -206,7 +206,7 @@ window.RUN_DATA = (function () {
     {
       id: 'magnet',
       name: '골드 자석 강화',
-      icon: 'assets/design/orb_magnet.png?v=20261121hd9',
+      icon: 'assets/design/orb_magnet.png?v=20261121hd38',
       maxLv: 5,
       basePrice: 140,
       priceStep: 120,
@@ -215,7 +215,7 @@ window.RUN_DATA = (function () {
     {
       id: 'defense',
       name: '기상 대응력 강화',
-      icon: 'assets/design/ui_chest.png?v=20261121hd9',
+      icon: 'assets/design/ui_chest.png?v=20261121hd38',
       maxLv: 5,
       basePrice: 160,
       priceStep: 130,
@@ -224,7 +224,7 @@ window.RUN_DATA = (function () {
     {
       id: 'score',
       name: '생존 점수 배율',
-      icon: 'assets/design/orb_star.png?v=20261121hd9',
+      icon: 'assets/design/orb_star.png?v=20261121hd38',
       maxLv: 5,
       basePrice: 180,
       priceStep: 150,
@@ -237,21 +237,21 @@ window.RUN_DATA = (function () {
     {
       id: 'norway',
       name: '노르웨이 기상청 (Yr.no)',
-      icon: 'assets/design/orb_star.png?v=20261121hd9',
+      icon: 'assets/design/orb_star.png?v=20261121hd38',
       price: 90,
       desc: '구라청 훼이크 완전 제거! 다가올 폭우·돌풍·빙판·미세먼지를 3초 전 100% 정확히 예고합니다!'
     },
     {
       id: 'shield',
       name: '기상 보호막',
-      icon: 'assets/atlas/spr_shield.png?v=20261121hd9',
+      icon: 'assets/atlas/spr_shield.png?v=20261121hd38',
       price: 80,
       desc: '다음 달리기에서 첫 장애물 충돌 1회를 피해 없이 완전 방어합니다!'
     },
     {
       id: 'boost',
       name: 'FEVER! 쾌속 출발',
-      icon: 'assets/design/orb_bolt.png?v=20261121hd9',
+      icon: 'assets/design/orb_bolt.png?v=20261121hd38',
       price: 100,
       desc: '시작 후 4.5초간 FEVER 무적 질주 + 코인 자석 자동 발동!'
     }

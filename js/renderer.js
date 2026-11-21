@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd37';
+  const CHAR_ASSET_VER = '20261121hd38';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -999,7 +999,7 @@ window.RunRenderer = (function () {
 
     if (it.kind === 'star') {
       const spr = getSprite('item_star');
-      if (spr) ctx.drawImage(spr, x - 11, y - 11, 22, 22);
+      if (spr) ctx.drawImage(spr, x - 12, y - 12, 24, 24);
     } else if (it.kind === 'coffee') {
       const spr = getSprite('orb_potion');
       if (spr) ctx.drawImage(spr, x - 13, y - 13, 26, 26);
