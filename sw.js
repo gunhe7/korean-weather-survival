@@ -1,4 +1,4 @@
-const CACHE_NAME = 'k-weather-survival-v20261121hd29';
+const CACHE_NAME = 'k-weather-survival-v20261121hd30';
 const CORE_ASSETS = [
   './',
   './index.html',

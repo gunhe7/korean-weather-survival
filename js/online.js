@@ -7,7 +7,7 @@ window.OnlineService = (function () {
   // 실제 Google / Apple 로그인을 활성화하려면 Firebase 콘솔(프로젝트 설정 -> 일반 -> 내 앱 -> 웹 앱)의
   // apiKey(AIza...) 1줄을 아래 apiKey에 입력해 주세요! (자세한 안내: AUTH_SETUP.md)
   const FIREBASE_CONFIG = Object.assign({
-    apiKey: '',
+    apiKey: 'AIzaSyD7w_0nqhqVcbP5iu4SlAtovLXWumy6h6w',
     authDomain: 'korean-weather-survival.firebaseapp.com',
     databaseURL: 'https://korean-weather-survival-default-rtdb.asia-southeast1.firebasedatabase.app',
     projectId: 'korean-weather-survival'
