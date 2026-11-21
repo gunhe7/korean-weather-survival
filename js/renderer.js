@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd27';
+  const CHAR_ASSET_VER = '20261121hd28';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -606,7 +606,7 @@ window.RunRenderer = (function () {
       return getSprite(`${skin}_${state}_${frame}`) || getSprite(`${skin}_${state}_0`);
     }
     if (opts.running) {
-      const rn = customSkin ? (skinDef.customRunFrames || n) : (charDef.runFrames || n);
+      const rn = customSkin ? (customSkin.customRunFrames || n) : (charDef.runFrames || n);
       const fps = rn >= 6 ? 13 : (rn >= 3 ? 10 : 8.5);
       const frame = Math.floor(t * fps) % rn;
       return getSprite(`${skin}_run_${frame}`) || getSprite(`${skin}_run_0`);
