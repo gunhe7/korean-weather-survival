@@ -46,7 +46,17 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd4';
+  const CHAR_ASSET_VER = '20261121hd5';
+  const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
+
+  CHEST_TIERS.forEach((tier) => {
+    for (let f = 0; f < 8; f++) {
+      const key = `chest_${tier}_${f}`;
+      const img = new Image();
+      img.src = `assets/chests/${key}.png?v=${CHAR_ASSET_VER}`;
+      sprites[key] = img;
+    }
+  });
 
   CHAR_SHEET_SKINS.forEach((sk) => {
     CHAR_ANIM_STATES.forEach((st) => {
@@ -587,7 +597,7 @@ window.RunRenderer = (function () {
   function drawCharacter(ctx, charDef, x, y, opts, t) {
     const {
       sliding, inAir, gliding, invulnTimer, shield, feverTimer, running,
-      dead = false, speedBoostTimer = 0,
+      dead = false, speedBoostTimer = 0, skinDef = null,
       umbrellaOn = false, maskOn = false, umbrellaBrokenTimer = 0,
       scaleHeight = 52
     } = opts;
@@ -679,8 +689,29 @@ window.RunRenderer = (function () {
       ctx.fillRect(cx - 20 - dustShift, cy - 10, 7, 3);
     }
 
-    // Character-Specific Unique Animated Aura / Running Trail!
-    if (running && !dead && charDef.auraType) {
+    // Character-Specific Unique Animated Aura + Equipped Skin Radiant Trail!
+    if (running && !dead && skinDef && skinDef.trail) {
+      const tr = skinDef.trail;
+      const isHigh = skinDef.rarity === 'legendary' || skinDef.rarity === 'mythic' || skinDef.rarity === 'epic';
+      const cnt = isHigh ? 6 : 3;
+      for (let k = 0; k < cnt; k++) {
+        const ox = ((t * (isHigh ? 74 : 52) + k * 11) % 38);
+        const oy = Math.sin(t * 9 + k * 1.9) * (isHigh ? 14 : 8);
+        ctx.fillStyle = tr[k % tr.length];
+        const sz = isHigh && k % 2 === 0 ? 4 : 3;
+        ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - scaleHeight * 0.48 + oy), sz, sz);
+      }
+      if (isHigh) {
+        ctx.save();
+        ctx.strokeStyle = skinDef.glow || tr[0];
+        ctx.globalAlpha = 0.42 + Math.sin(t * 8) * 0.16;
+        ctx.lineWidth = skinDef.rarity === 'mythic' ? 2.5 : 1.8;
+        ctx.beginPath();
+        ctx.arc(cx, cy - (isProne ? 16 : scaleHeight * 0.5), isProne ? 26 : scaleHeight * 0.54, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    } else if (running && !dead && charDef.auraType) {
       const aura = charDef.auraType;
       if (aura === 'skier') {
         for (let k = 0; k < 3; k++) {
@@ -733,7 +764,11 @@ window.RunRenderer = (function () {
       ctx.translate(cx, Math.floor(cy - bob));
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
+      if (skinDef && skinDef.filter && 'filter' in ctx) {
+        ctx.filter = skinDef.filter;
+      }
       ctx.drawImage(spr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
+      if ('filter' in ctx) ctx.filter = 'none';
 
       // White KF94 Mask overlay when Mask Toggle is ON!
       if (maskOn && !dead) {
@@ -1025,6 +1060,7 @@ window.RunRenderer = (function () {
       itemPoseTimer: run.itemPoseTimer || 0,
       winPoseTimer: run.winPoseTimer || 0,
       running: !run.dead && !run.dying,
+      skinDef: run.skinDef || null,
       scaleHeight: 62
     }, t);
 

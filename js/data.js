@@ -88,7 +88,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'yellow_idle_0',
       animSkin: 'yellow',
       animFrames: 3,
-      avatar: 'assets/chars/port_yellow.png?v=20261121hd4',
+      avatar: 'assets/chars/port_yellow.png?v=20261121hd5',
       auraType: 'raincoat',
       price: 0,
       baseHp: 5,
@@ -111,7 +111,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'blue_idle_0',
       animSkin: 'blue',
       animFrames: 2,
-      avatar: 'assets/chars/port_blue.png?v=20261121hd4',
+      avatar: 'assets/chars/port_blue.png?v=20261121hd5',
       auraType: 'padding',
       price: 350,
       baseHp: 6,
@@ -132,7 +132,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'hanbok_idle_0',
       animSkin: 'hanbok',
       animFrames: 2,
-      avatar: 'assets/chars/port_hanbok.png?v=20261121hd4',
+      avatar: 'assets/chars/port_hanbok.png?v=20261121hd5',
       auraType: 'hanbok',
       price: 650,
       baseHp: 5,
@@ -153,7 +153,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'skier_idle_0',
       animSkin: 'skier',
       animFrames: 2,
-      avatar: 'assets/chars/port_skier.png?v=20261121hd4',
+      avatar: 'assets/chars/port_skier.png?v=20261121hd5',
       auraType: 'skier',
       price: 950,
       baseHp: 5,
@@ -175,7 +175,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'santa_idle_0',
       animSkin: 'santa',
       animFrames: 2,
-      avatar: 'assets/chars/port_santa.png?v=20261121hd4',
+      avatar: 'assets/chars/port_santa.png?v=20261121hd5',
       auraType: 'santa',
       price: 1350,
       baseHp: 5,
@@ -183,7 +183,7 @@ window.RUN_DATA = (function () {
       scoreMult: 1.2,
       nearMissBonus: true,
       passiveName: '산타의 선물 보따리',
-      passiveDesc: '코인·골드 획득 +45% & 장애물 아슬아슬 회피 시 NEAR MISS +5G 보너스!',
+      passiveDesc: '코인·골드 획득 +45% & 장애물 아슬아슬 회피 시 NEAR MISS +2G 보너스!',
       desc: '사계절 코인 잭팟 러너! 상점 강화와 캐릭터 성장을 위한 골드 파밍 최강자.',
       tag: '코인 +45% · 회피 골드 보너스',
       colors: { top: '#d93232', outer: '#b82222', pants: '#2a2a33', shoes: '#362720', hat: null }
@@ -255,36 +255,149 @@ window.RUN_DATA = (function () {
     }
   ];
 
-  // 일일 미션 (매일 날짜 기준 리셋, 홈 화면에서 바로 진행도 확인 및 수령!)
+  // 일일 퀘스트 (매일 초기화 · 완료 시 황금 상자 1개!)
   const DAILY_MISSIONS = [
-    { id: 'dist_1000', metric: 'dist', title: '1,000m 달리기', target: 1000, unit: 'm', rewardGold: 120 },
-    { id: 'coins_100', metric: 'coins', title: '코인 100개 획득', target: 100, unit: '개', rewardGold: 150 },
-    { id: 'jumps_30', metric: 'jumps', title: '점프 30회 성공', target: 30, unit: '회', rewardGold: 100 }
+    { id: 'daily_dist', metric: 'dist', title: '800m 달리기', icon: '🏃', target: 800, unit: 'm', rewardChest: 'gold' },
+    { id: 'daily_jumps', metric: 'jumps', title: '점프 35회 성공', icon: '⬆️', target: 35, unit: '회', rewardChest: 'gold' },
+    { id: 'daily_dodges', metric: 'dodges', title: '장애물 18회 회피', icon: '⚡', target: 18, unit: '회', rewardChest: 'gold' },
+    { id: 'daily_coins', metric: 'coins', title: '코인 30개 획득', icon: '🪙', target: 30, unit: '개', rewardChest: 'gold' }
   ];
 
-  // 7일 연속 출석 보상
+  // 주간 퀘스트 (매주 월요일 초기화 · 완료 시 다이아 상자 1개!)
+  const WEEKLY_MISSIONS = [
+    { id: 'weekly_dist', metric: 'dist', title: '5,000m 누적 달리기', icon: '🌍', target: 5000, unit: 'm', rewardChest: 'diamond' },
+    { id: 'weekly_runs', metric: 'runs', title: '생존 도전 6회 플레이', icon: '🎮', target: 6, unit: '회', rewardChest: 'diamond' },
+    { id: 'weekly_dodges', metric: 'dodges', title: '장애물 90회 회피', icon: '💨', target: 90, unit: '회', rewardChest: 'diamond' },
+    { id: 'weekly_year2', metric: 'year2Runs', title: '2년 차 이상 생존 3회', icon: '🔥', target: 3, unit: '회', rewardChest: 'diamond' }
+  ];
+
+  // 스킨 등급 정의 (중복 시 골드 보상 투명 공개!)
+  const SKIN_RARITIES = {
+    common:    { id: 'common',    name: '일반', color: '#a3c8eb', bg: '#2c4469', dupGold: 120 },
+    rare:      { id: 'rare',      name: '희귀', color: '#47c8ff', bg: '#18548a', dupGold: 300 },
+    epic:      { id: 'epic',      name: '에픽', color: '#d084ff', bg: '#5a238a', dupGold: 650 },
+    legendary: { id: 'legendary', name: '전설', color: '#ffca42', bg: '#8f5200', dupGold: 1200 },
+    mythic:    { id: 'mythic',    name: '신화', color: '#ff5ea8', bg: '#8a144d', dupGold: 2500 }
+  };
+
+  // 20종 수집형 스킨 (일반 5 · 희귀 5 · 에픽 4 · 전설 4 · 신화 2)
+  // 각 스킨은 캐릭터 외형 색상 변형 + 전용 오라/잔상으로 인게임 및 홈화면 즉시 반영!
+  const SKINS = [
+    // 일반 (5)
+    { id: 'mint_rain',      name: '민트 우비',     rarity: 'common',    charId: 'umbrella_master', filter: 'hue-rotate(92deg) saturate(1.15)', glow: '#5ef5c8', trail: ['#5ef5c8', '#ffffff'] },
+    { id: 'coral_rain',     name: '코랄 우비',     rarity: 'common',    charId: 'umbrella_master', filter: 'hue-rotate(-28deg) saturate(1.25)', glow: '#ff8a6b', trail: ['#ff8a6b', '#ffe0b5'] },
+    { id: 'teal_pad',       name: '청록 패딩',     rarity: 'common',    charId: 'long_padding',    filter: 'hue-rotate(-38deg) saturate(1.15)', glow: '#4ce0d2', trail: ['#4ce0d2', '#c8fff9'] },
+    { id: 'jade_hanbok',    name: '비취 한복',     rarity: 'common',    charId: 'short_sleeve',    filter: 'hue-rotate(78deg) saturate(1.15)',  glow: '#78ebb4', trail: ['#78ebb4', '#e0fff0'] },
+    { id: 'pine_santa',     name: '숲속 산타',     rarity: 'common',    charId: 'fashionista',     filter: 'hue-rotate(112deg) saturate(1.1)',  glow: '#5cd67d', trail: ['#5cd67d', '#ffe86b'] },
+    // 희귀 (5)
+    { id: 'cherry_rain',    name: '벚꽃 우비',     rarity: 'rare',      charId: 'umbrella_master', filter: 'hue-rotate(-68deg) saturate(1.3) brightness(1.06)', glow: '#ff8ec7', trail: ['#ff8ec7', '#ffe6f2'] },
+    { id: 'crimson_pad',    name: '크림슨 패딩',   rarity: 'rare',      charId: 'long_padding',    filter: 'hue-rotate(138deg) saturate(1.35)', glow: '#ff5e78', trail: ['#ff5e78', '#ffd1d9'] },
+    { id: 'royal_hanbok',   name: '어사 한복',     rarity: 'rare',      charId: 'short_sleeve',    filter: 'hue-rotate(-45deg) saturate(1.35) brightness(1.04)', glow: '#ffd659', trail: ['#ffd659', '#ff9944'] },
+    { id: 'aurora_skier',   name: '오로라 스키어', rarity: 'rare',      charId: 'iced_americano',  filter: 'hue-rotate(64deg) saturate(1.35)',  glow: '#6bffd8', trail: ['#6bffd8', '#78aaff'] },
+    { id: 'gold_santa',     name: '황금 산타',     rarity: 'rare',      charId: 'fashionista',     filter: 'hue-rotate(42deg) saturate(1.45) brightness(1.08)', glow: '#ffdf4d', trail: ['#ffdf4d', '#ffffff'] },
+    // 에픽 (4)
+    { id: 'thunder_rain',   name: '뇌우 폭풍 우비', rarity: 'epic',      charId: 'umbrella_master', filter: 'hue-rotate(175deg) saturate(1.4) contrast(1.06)', glow: '#78c4ff', trail: ['#78c4ff', '#ffe959'], gemPrice: 28 },
+    { id: 'glacier_pad',    name: '빙하 수호대원',  rarity: 'epic',      charId: 'long_padding',    filter: 'hue-rotate(-18deg) saturate(1.3) brightness(1.14)', glow: '#8cf4ff', trail: ['#8cf4ff', '#ffffff'] },
+    { id: 'eclipse_hanbok', name: '월식 선비',      rarity: 'epic',      charId: 'short_sleeve',    filter: 'hue-rotate(195deg) saturate(1.45)', glow: '#c87aff', trail: ['#c87aff', '#75d8ff'] },
+    { id: 'cyber_skier',    name: '사이버 스키어',  rarity: 'epic',      charId: 'iced_americano',  filter: 'hue-rotate(115deg) saturate(1.55) contrast(1.06)', glow: '#ff6be6', trail: ['#ff6be6', '#5ef2ff'], gemPrice: 32 },
+    // 전설 (4)
+    { id: 'solar_rain',     name: '태양신 우비',    rarity: 'legendary', charId: 'umbrella_master', filter: 'hue-rotate(-14deg) saturate(1.55) brightness(1.12)', glow: '#ffbb29', trail: ['#fff078', '#ff7b29'] },
+    { id: 'phoenix_pad',    name: '불사조 패딩',    rarity: 'legendary', charId: 'long_padding',    filter: 'hue-rotate(162deg) saturate(1.65) brightness(1.1)', glow: '#ff6b2b', trail: ['#ff6b2b', '#ffe852'], gemPrice: 55 },
+    { id: 'dragon_hanbok',  name: '청룡 도령',      rarity: 'legendary', charId: 'short_sleeve',    filter: 'hue-rotate(148deg) saturate(1.5) brightness(1.1)', glow: '#38e8ff', trail: ['#38e8ff', '#ffe259'] },
+    { id: 'frost_santa',    name: '겨울왕국 산타',  rarity: 'legendary', charId: 'fashionista',     filter: 'hue-rotate(198deg) saturate(1.45) brightness(1.12)', glow: '#75e6ff', trail: ['#75e6ff', '#ffffff'] },
+    // 신화 (2 — 초희귀 다이아 상자 전용!)
+    { id: 'mythic_typhoon',   name: '태풍의 지배자',   rarity: 'mythic', charId: 'umbrella_master', filter: 'hue-rotate(225deg) saturate(1.75) brightness(1.12)', glow: '#ff52b8', trail: ['#ff52b8', '#5ef5ff', '#ffe859'] },
+    { id: 'mythic_celestial', name: '천상의 기상술사', rarity: 'mythic', charId: 'iced_americano',  filter: 'hue-rotate(265deg) saturate(1.7) brightness(1.14)',  glow: '#c96bff', trail: ['#c96bff', '#ffe866', '#66f2ff'] }
+  ];
+
+  // 4종 상자 정의 (정확한 보상 확률 + 골드/다이아 지급 범위 + 천장 설정!)
+  const CHESTS = {
+    wood: {
+      id: 'wood',
+      name: '나무 상자',
+      icon: 'assets/chests/chest_wood_0.png',
+      accent: '#e09a42',
+      glow: 'rgba(255, 198, 92, 0.55)',
+      source: '일반 플레이 (400m+ 일일 최대 3회) · 출석 보상',
+      shopGold: 300,
+      shopGems: null,
+      goldRange: [100, 250],
+      gemRange: [1, 2],
+      pityTarget: null,
+      pityMinRarity: null,
+      rates: { gold: 75, common: 18, rare: 5, epic: 1.5, legendary: 0, mythic: 0, diamond: 0.5 }
+    },
+    silver: {
+      id: 'silver',
+      name: '은 상자',
+      icon: 'assets/chests/chest_silver_0.png',
+      accent: '#82c8ff',
+      glow: 'rgba(112, 206, 255, 0.6)',
+      source: '연속 출석 · 업적 보상 · 상점',
+      shopGold: 700,
+      shopGems: null,
+      goldRange: [250, 500],
+      gemRange: [2, 4],
+      pityTarget: null,
+      pityMinRarity: null,
+      rates: { gold: 65, common: 15, rare: 15, epic: 3, legendary: 0, mythic: 0, diamond: 2 }
+    },
+    gold: {
+      id: 'gold',
+      name: '황금 상자',
+      icon: 'assets/chests/chest_gold_0.png',
+      accent: '#ffd845',
+      glow: 'rgba(255, 214, 62, 0.72)',
+      source: '일일 퀘스트 완료 · 고득점 업적 · 상점',
+      shopGold: 1500,
+      shopGems: 15,
+      goldRange: [500, 1000],
+      gemRange: [5, 10],
+      pityTarget: 10,
+      pityMinRarity: 'epic',
+      rates: { gold: 50, common: 0, rare: 25, epic: 17, legendary: 3, mythic: 0, diamond: 5 }
+    },
+    diamond: {
+      id: 'diamond',
+      name: '다이아 상자',
+      icon: 'assets/chests/chest_diamond_0.png',
+      accent: '#78e6ff',
+      glow: 'rgba(148, 128, 255, 0.78)',
+      source: '주간 퀘스트 완료 · 고난도 업적 · 7일 출석 · 상점',
+      shopGold: null,
+      shopGems: 35,
+      goldRange: [1000, 2000],
+      gemRange: [10, 20],
+      pityTarget: 15,
+      pityMinRarity: 'legendary',
+      rates: { gold: 25, common: 0, rare: 10, epic: 30, legendary: 22, mythic: 3, diamond: 10 }
+    }
+  };
+  const CHEST_ORDER = ['wood', 'silver', 'gold', 'diamond'];
+
+  // 7일 연속 출석 보상 (나무 → 은 → 황금 → 7일차 다이아 상자!)
   const ATTENDANCE_REWARDS = [
-    { day: 1, label: '100G', gold: 100, booster: null },
-    { day: 2, label: '보호막 1개', gold: 60, booster: 'shield' },
-    { day: 3, label: '180G', gold: 180, booster: null },
-    { day: 4, label: '노르웨이 1개', gold: 80, booster: 'norway' },
-    { day: 5, label: '250G', gold: 250, booster: null },
-    { day: 6, label: 'FEVER 1개', gold: 100, booster: 'boost' },
-    { day: 7, label: '500G + 보호막', gold: 500, booster: 'shield' }
+    { day: 1, label: '나무 상자', chest: 'wood', gold: 0, gems: 0, booster: null },
+    { day: 2, label: '은 상자', chest: 'silver', gold: 0, gems: 0, booster: null },
+    { day: 3, label: '나무 상자 + 100G', chest: 'wood', gold: 100, gems: 0, booster: null },
+    { day: 4, label: '황금 상자', chest: 'gold', gold: 0, gems: 0, booster: null },
+    { day: 5, label: '은 상자 + 2💎', chest: 'silver', gold: 0, gems: 2, booster: null },
+    { day: 6, label: '황금 상자 + 3💎', chest: 'gold', gold: 0, gems: 3, booster: null },
+    { day: 7, label: '다이아 상자', chest: 'diamond', gold: 0, gems: 0, booster: null }
   ];
 
-  // 업적 시스템 (10종 — 거리·코인·연도·회피·캐릭터 수집 보상!)
+  // 업적 시스템 (10종 — 난이도별 은 / 황금 / 다이아 상자 지급!)
   const ACHIEVEMENTS = [
-    { id: 'dist_500', icon: '🏃', title: '첫 걸음마', desc: '단일 주행 500m 도달', metric: 'bestDistanceM', target: 500, rewardGold: 100 },
-    { id: 'dist_1500', icon: '🏙️', title: '도심 마라토너', desc: '단일 주행 1,500m 도달', metric: 'bestDistanceM', target: 1500, rewardGold: 250 },
-    { id: 'dist_3000', icon: '🇰🇷', title: '대한민국 종주', desc: '단일 주행 3,000m 도달', metric: 'bestDistanceM', target: 3000, rewardGold: 500 },
-    { id: 'coins_200', icon: '🪙', title: '코인 수집가', desc: '누적 코인 200개 획득', metric: 'totalCoinsEver', target: 200, rewardGold: 150 },
-    { id: 'coins_1000', icon: '💰', title: '황금 만능주의', desc: '누적 코인 1,000개 획득', metric: 'totalCoinsEver', target: 1000, rewardGold: 400 },
-    { id: 'year_2', icon: '🗓️', title: '사계절 정복자', desc: '2년 차 이상 생존 돌파', metric: 'bestYear', target: 2, rewardGold: 250 },
-    { id: 'year_3', icon: '🔥', title: '기후 생존왕', desc: '3년 차 이상 생존 돌파', metric: 'bestYear', target: 3, rewardGold: 550 },
-    { id: 'dodge_10', icon: '⚡', title: '회피의 달인', desc: '장애물 10연속 회피 성공', metric: 'maxDodgeComboEver', target: 10, rewardGold: 200 },
-    { id: 'chars_3', icon: '👥', title: '동료 수집가', desc: '캐릭터 3종 이상 해금', metric: 'unlockedCount', target: 3, rewardGold: 300 },
-    { id: 'chars_6', icon: '👑', title: 'K-날씨 올컬렉터', desc: '캐릭터 5종 전체 수집 완료', metric: 'unlockedCount', target: 5, rewardGold: 800 }
+    { id: 'dist_500', icon: '🏃', title: '첫 걸음마', desc: '단일 주행 500m 도달', metric: 'bestDistanceM', target: 500, rewardChest: 'silver' },
+    { id: 'dist_1500', icon: '🏙️', title: '도심 마라토너', desc: '단일 주행 1,500m 도달', metric: 'bestDistanceM', target: 1500, rewardChest: 'gold' },
+    { id: 'dist_3000', icon: '🇰🇷', title: '대한민국 종주', desc: '단일 주행 3,000m 도달', metric: 'bestDistanceM', target: 3000, rewardChest: 'diamond' },
+    { id: 'coins_200', icon: '🪙', title: '코인 수집가', desc: '누적 코인 80개 획득', metric: 'totalCoinsEver', target: 80, rewardChest: 'silver' },
+    { id: 'coins_1000', icon: '💰', title: '황금 만능주의', desc: '누적 코인 300개 획득', metric: 'totalCoinsEver', target: 300, rewardChest: 'gold' },
+    { id: 'year_2', icon: '🗓️', title: '사계절 정복자', desc: '2년 차 이상 생존 돌파', metric: 'bestYear', target: 2, rewardChest: 'gold' },
+    { id: 'year_3', icon: '🔥', title: '기후 생존왕', desc: '3년 차 이상 생존 돌파', metric: 'bestYear', target: 3, rewardChest: 'diamond' },
+    { id: 'dodge_10', icon: '⚡', title: '회피의 달인', desc: '장애물 10연속 회피 성공', metric: 'maxDodgeComboEver', target: 10, rewardChest: 'gold' },
+    { id: 'chars_3', icon: '👥', title: '동료 수집가', desc: '캐릭터 3종 이상 해금', metric: 'unlockedCount', target: 3, rewardChest: 'gold' },
+    { id: 'chars_6', icon: '👑', title: 'K-날씨 올컬렉터', desc: '캐릭터 5종 전체 수집 완료', metric: 'unlockedCount', target: 5, rewardChest: 'diamond' }
   ];
 
   // 스테이지(연도/계절 최초 도달) 마일스톤 보상
@@ -385,16 +498,31 @@ window.RUN_DATA = (function () {
     ]
   };
 
+  // 1년이 지날수록 체감되는 확실한 연도별 난이도 상승 곡선!
   function getYearDifficulty(year) {
     const extra = Math.max(0, year - 1);
     return {
       year,
-      speedMult: Math.min(2.05, 1 + extra * 0.14),
-      spawnRateMult: Math.min(1.85, 1 + extra * 0.12),
-      dmgMult: 1 + extra * 0.12,
-      scoreMult: 1 + extra * 0.2,
-      goldBonus: extra * 1
+      speedMult: Math.min(2.35, 1 + extra * 0.17),
+      spawnRateMult: Math.min(2.15, 1 + extra * 0.16),
+      extraObsSpeedMult: Math.min(2.2, 1 + extra * 0.18),
+      weatherPaceMult: Math.min(1.85, 1 + extra * 0.14),
+      exposureGracePenalty: Math.min(1.15, extra * 0.25),
+      heatRateMult: Math.min(1.9, 1 + extra * 0.15),
+      doubleWaveChance: extra <= 0 ? 0 : Math.min(0.45, 0.14 + (extra - 1) * 0.09),
+      dmgMult: 1 + extra * 0.15,
+      scoreMult: 1 + extra * 0.25,
+      goldBonus: Math.floor(extra / 2)
     };
+  }
+
+  function getSkinById(id) {
+    if (!id) return null;
+    return SKINS.find((s) => s.id === id) || null;
+  }
+
+  function getSkinsForChar(charId) {
+    return SKINS.filter((s) => s.charId === charId);
   }
 
   function getUpgradePrice(upg, currentLv) {
@@ -429,6 +557,11 @@ window.RUN_DATA = (function () {
     UPGRADES,
     BOOSTERS,
     DAILY_MISSIONS,
+    WEEKLY_MISSIONS,
+    SKIN_RARITIES,
+    SKINS,
+    CHESTS,
+    CHEST_ORDER,
     ATTENDANCE_REWARDS,
     ACHIEVEMENTS,
     STAGE_MILESTONES,
@@ -438,6 +571,8 @@ window.RUN_DATA = (function () {
     getYearDifficulty,
     getUpgradePrice,
     getCharLevelPrice,
-    getCharEffectiveStats
+    getCharEffectiveStats,
+    getSkinById,
+    getSkinsForChar
   };
 })();

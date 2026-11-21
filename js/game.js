@@ -14,6 +14,18 @@
     return `${y}-${m}-${day}`;
   }
 
+  function getWeekKey() {
+    const d = new Date();
+    const utc = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = utc.getUTCDay() || 7;
+    utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((utc - yearStart) / 86400000) + 1) / 7);
+    return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  }
+
+  const ASSET_VER = '20261121hd5';
+
   function createDefaultCharLevels() {
     const lv = {};
     DATA.CHARACTERS.forEach((c) => { lv[c.id] = 1; });
@@ -23,11 +35,18 @@
   // ===================== PERSISTENT SAVE DATA (SAFE MIGRATION + BACKUP) =====================
   function loadSave() {
     const today = getTodayKey();
+    const week = getWeekKey();
     const def = {
-      gold: 150,
+      gold: 80,
+      gems: 0,
       unlockedChars: ['umbrella_master'],
       selectedChar: 'umbrella_master',
       charLevels: createDefaultCharLevels(),
+      unlockedSkins: [],
+      equippedSkins: {},
+      chestBag: { wood: 0, silver: 0, gold: 0, diamond: 0 },
+      pity: { gold: 0, diamond: 0 },
+      dailyWoodChestDrops: { date: today, count: 0 },
       upgrades: { hp: 0, magnet: 0, defense: 0, score: 0 },
       boosters: { norway: 0, shield: 0, boost: 0 },
       bestScore: 0,
@@ -37,7 +56,8 @@
       maxDodgeComboEver: 0,
       playCount: 0,
       attendance: { lastClaimDate: '', streak: 0 },
-      dailyMissions: { date: today, progress: { dist: 0, coins: 0, jumps: 0 }, claimed: {} },
+      dailyMissions: { date: today, progress: { dist: 0, coins: 0, jumps: 0, dodges: 0 }, claimed: {} },
+      weeklyMissions: { week, progress: { dist: 0, runs: 0, dodges: 0, year2Runs: 0 }, claimed: {} },
       achievementsClaimed: {},
       stageMilestonesClaimed: {},
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 }
@@ -68,15 +88,23 @@
     if (!rawUnlocked.includes('umbrella_master')) rawUnlocked.unshift('umbrella_master');
     const migratedSelected = validIds.has(raw.selectedChar) ? raw.selectedChar : 'umbrella_master';
 
-    const rawMissions = raw.dailyMissions && raw.dailyMissions.date === today ? raw.dailyMissions : def.dailyMissions;
+    const rawDaily = raw.dailyMissions && raw.dailyMissions.date === today ? raw.dailyMissions : def.dailyMissions;
+    const rawWeekly = raw.weeklyMissions && raw.weeklyMissions.week === week ? raw.weeklyMissions : def.weeklyMissions;
+    const rawDrops = raw.dailyWoodChestDrops && raw.dailyWoodChestDrops.date === today ? raw.dailyWoodChestDrops : def.dailyWoodChestDrops;
 
     return {
       ...def,
       ...raw,
       gold: typeof raw.gold === 'number' && Number.isFinite(raw.gold) ? Math.max(0, Math.floor(raw.gold)) : def.gold,
+      gems: typeof raw.gems === 'number' && Number.isFinite(raw.gems) ? Math.max(0, Math.floor(raw.gems)) : 0,
       unlockedChars: rawUnlocked,
       selectedChar: migratedSelected,
       charLevels: mergedLevels,
+      unlockedSkins: Array.isArray(raw.unlockedSkins) ? raw.unlockedSkins : [],
+      equippedSkins: raw.equippedSkins && typeof raw.equippedSkins === 'object' ? { ...raw.equippedSkins } : {},
+      chestBag: { wood: 0, silver: 0, gold: 0, diamond: 0, ...(raw.chestBag || {}) },
+      pity: { gold: 0, diamond: 0, ...(raw.pity || {}) },
+      dailyWoodChestDrops: { date: today, count: Number(rawDrops.count) || 0 },
       upgrades: { ...def.upgrades, ...(raw.upgrades || {}) },
       boosters: { ...def.boosters, ...(raw.boosters || {}) },
       bestDistanceM: typeof raw.bestDistanceM === 'number' ? raw.bestDistanceM : 0,
@@ -85,8 +113,13 @@
       attendance: { ...def.attendance, ...(raw.attendance || {}) },
       dailyMissions: {
         date: today,
-        progress: { dist: 0, coins: 0, jumps: 0, ...(rawMissions.progress || {}) },
-        claimed: { ...(rawMissions.claimed || {}) }
+        progress: { dist: 0, coins: 0, jumps: 0, dodges: 0, ...(rawDaily.progress || {}) },
+        claimed: { ...(rawDaily.claimed || {}) }
+      },
+      weeklyMissions: {
+        week,
+        progress: { dist: 0, runs: 0, dodges: 0, year2Runs: 0, ...(rawWeekly.progress || {}) },
+        claimed: { ...(rawWeekly.claimed || {}) }
       },
       achievementsClaimed: { ...(raw.achievementsClaimed || {}) },
       stageMilestonesClaimed: { ...(raw.stageMilestonesClaimed || {}) },
@@ -102,9 +135,20 @@
     if (!save.dailyMissions || save.dailyMissions.date !== today) {
       save.dailyMissions = {
         date: today,
-        progress: { dist: 0, coins: 0, jumps: 0 },
+        progress: { dist: 0, coins: 0, jumps: 0, dodges: 0 },
         claimed: {}
       };
+    }
+    const week = getWeekKey();
+    if (!save.weeklyMissions || save.weeklyMissions.week !== week) {
+      save.weeklyMissions = {
+        week,
+        progress: { dist: 0, runs: 0, dodges: 0, year2Runs: 0 },
+        claimed: {}
+      };
+    }
+    if (!save.dailyWoodChestDrops || save.dailyWoodChestDrops.date !== today) {
+      save.dailyWoodChestDrops = { date: today, count: 0 };
     }
   }
 
@@ -120,9 +164,11 @@
 
   // ===================== APP UI STATE =====================
   let currentTab = 'home';
-  let currentShopSubtab = 'upgrades';
+  let currentShopSubtab = 'chests';
+  let currentQuestSubtab = 'daily';
   let previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === save.selectedChar));
   let detailCharIdx = null;
+  let lastHomeHeroSrc = '';
 
   // ===================== ACTIVE RUN STATE =====================
   let run = null;
@@ -135,7 +181,10 @@
     headerBestScore: document.getElementById('header-best-score'),
     btnGoldShop: document.getElementById('btn-gold-shop'),
     uiGold: document.getElementById('ui-gold'),
+    btnGemShop: document.getElementById('btn-gem-shop'),
+    uiGems: document.getElementById('ui-gems'),
     btnOpenSettings: document.getElementById('btn-open-settings'),
+    btnShopProb: document.getElementById('btn-shop-prob'),
 
     attendanceOverlay: document.getElementById('attendance-overlay'),
     btnCloseAttendance: document.getElementById('btn-close-attendance'),
@@ -182,9 +231,12 @@
 
     navMissionDot: document.getElementById('nav-mission-dot'),
     btnTabOpenAttendance: document.getElementById('btn-tab-open-attendance'),
-    tabMissionList: document.getElementById('tab-mission-list'),
-    tabAchSummary: document.getElementById('tab-ach-summary'),
-    tabAchList: document.getElementById('tab-ach-list'),
+    btnQuestProb: document.getElementById('btn-quest-prob'),
+    questVaultBadge: document.getElementById('quest-vault-badge'),
+    questResetLabel: document.getElementById('quest-reset-label'),
+    pityGoldChip: document.getElementById('pity-gold-chip'),
+    pityDiamondChip: document.getElementById('pity-diamond-chip'),
+    bsQuestGrid: document.getElementById('bs-quest-grid'),
 
     rankMyAvatar: document.getElementById('rank-my-avatar'),
     rankMyPos: document.getElementById('rank-my-pos'),
@@ -215,6 +267,7 @@
     detailPassiveIco: document.getElementById('detail-passive-ico'),
     detailPassiveName: document.getElementById('detail-passive-name'),
     detailPassiveDesc: document.getElementById('detail-passive-desc'),
+    detailSkinsRow: document.getElementById('detail-skins-row'),
     btnDetailSub: document.getElementById('btn-detail-sub'),
     btnDetailMain: document.getElementById('btn-detail-main'),
 
@@ -260,8 +313,30 @@
     btnQuitHome: document.getElementById('btn-quit-home'),
 
     gameoverOverlay: document.getElementById('gameover-overlay'),
+    resBestScore: document.getElementById('res-best-score'),
+    resNewBest: document.getElementById('res-new-best'),
     resScore: document.getElementById('res-score'),
     btnResultHome: document.getElementById('btn-result-home'),
+
+    chestOpenOverlay: document.getElementById('chest-open-overlay'),
+    chestOpenStage: document.getElementById('chest-open-stage'),
+    chestOpenTitle: document.getElementById('chest-open-title'),
+    chestPityNote: document.getElementById('chest-pity-note'),
+    btnTapChest: document.getElementById('btn-tap-chest'),
+    chestAnimImg: document.getElementById('chest-anim-img'),
+    chestTapHint: document.getElementById('chest-tap-hint'),
+    chestRewardCard: document.getElementById('chest-reward-card'),
+    chestRewardPity: document.getElementById('chest-reward-pity'),
+    chestRewardRarity: document.getElementById('chest-reward-rarity'),
+    chestRewardVisual: document.getElementById('chest-reward-visual'),
+    chestRewardName: document.getElementById('chest-reward-name'),
+    chestRewardSub: document.getElementById('chest-reward-sub'),
+    btnChestEquip: document.getElementById('btn-chest-equip'),
+    btnChestClose: document.getElementById('btn-chest-close'),
+
+    probOverlay: document.getElementById('prob-overlay'),
+    btnCloseProb: document.getElementById('btn-close-prob'),
+    probModalBody: document.getElementById('prob-modal-body'),
 
     globalToast: document.getElementById('global-toast')
   };
@@ -287,6 +362,311 @@
 
   function getMaxHp(charDef) {
     return getCharStats(charDef).maxHp;
+  }
+
+  function getEquippedSkin(charId) {
+    const sid = save.equippedSkins && save.equippedSkins[charId];
+    if (!sid || !save.unlockedSkins.includes(sid)) return null;
+    return DATA.getSkinById(sid);
+  }
+
+  function getTotalBagChests() {
+    const b = save.chestBag || {};
+    return (b.wood || 0) + (b.silver || 0) + (b.gold || 0) + (b.diamond || 0);
+  }
+
+  function randInt(min, max) {
+    return min + Math.floor(Math.random() * (max - min + 1));
+  }
+
+  // ===================== CHEST GACHA ENGINE (EXACT RATES + DUPLICATE PROTECTION + PITY!) =====================
+  function pickSkinOrDupGold(rarity, pityTriggered) {
+    const pool = DATA.SKINS.filter((s) => s.rarity === rarity);
+    const unowned = pool.filter((s) => !save.unlockedSkins.includes(s.id));
+    if (unowned.length > 0) {
+      const picked = unowned[Math.floor(Math.random() * unowned.length)];
+      save.unlockedSkins.push(picked.id);
+      return { kind: 'skin', rarity, skin: picked, isDuplicate: false, pityTriggered };
+    }
+    // Duplicate skin protection -> grant transparent disclosed gold refund!
+    const dupGold = (DATA.SKIN_RARITIES[rarity] && DATA.SKIN_RARITIES[rarity].dupGold) || 300;
+    save.gold += dupGold;
+    return { kind: 'dup_gold', rarity, amount: dupGold, isDuplicate: true, pityTriggered };
+  }
+
+  function rollChestReward(tierId) {
+    const chest = DATA.CHESTS[tierId] || DATA.CHESTS.wood;
+    const pity = save.pity || (save.pity = { gold: 0, diamond: 0 });
+    let result = null;
+
+    // 1. Check Pity Guarantee FIRST!
+    if (tierId === 'gold' && (pity.gold || 0) >= chest.pityTarget - 1) {
+      // 10th Gold Chest -> Guaranteed Epic+ unowned skin!
+      const unownedEpic = DATA.SKINS.filter((s) => s.rarity === 'epic' && !save.unlockedSkins.includes(s.id));
+      const unownedLeg = DATA.SKINS.filter((s) => s.rarity === 'legendary' && !save.unlockedSkins.includes(s.id));
+      let chosenRarity = 'epic';
+      if (unownedLeg.length > 0 && (unownedEpic.length === 0 || Math.random() < 0.15)) {
+        chosenRarity = 'legendary';
+      } else if (unownedEpic.length === 0 && unownedLeg.length === 0) {
+        chosenRarity = 'epic';
+      }
+      pity.gold = 0;
+      result = pickSkinOrDupGold(chosenRarity, true);
+    } else if (tierId === 'diamond' && (pity.diamond || 0) >= chest.pityTarget - 1) {
+      // 15th Diamond Chest -> Guaranteed Legendary+ unowned skin!
+      const unownedLeg = DATA.SKINS.filter((s) => s.rarity === 'legendary' && !save.unlockedSkins.includes(s.id));
+      const unownedMyth = DATA.SKINS.filter((s) => s.rarity === 'mythic' && !save.unlockedSkins.includes(s.id));
+      let chosenRarity = 'legendary';
+      if (unownedMyth.length > 0 && (unownedLeg.length === 0 || Math.random() < 0.12)) {
+        chosenRarity = 'mythic';
+      } else if (unownedLeg.length === 0 && unownedMyth.length === 0) {
+        chosenRarity = 'legendary';
+      }
+      pity.diamond = 0;
+      result = pickSkinOrDupGold(chosenRarity, true);
+    } else {
+      // 2. Exact Weighted Probability Roll (uses totalWeight for safety; all chests sum to 100%)
+      const order = ['gold', 'common', 'rare', 'epic', 'legendary', 'mythic', 'diamond'];
+      const totalWeight = order.reduce((sum, k) => sum + (chest.rates[k] || 0), 0) || 100;
+      const r = Math.random() * totalWeight;
+      let acc = 0;
+      let hit = 'gold';
+      for (const k of order) {
+        acc += chest.rates[k] || 0;
+        if (r < acc) { hit = k; break; }
+      }
+
+      if (hit === 'gold') {
+        const amt = randInt(chest.goldRange[0], chest.goldRange[1]);
+        save.gold += amt;
+        result = { kind: 'gold', amount: amt, rarity: null, pityTriggered: false };
+      } else if (hit === 'diamond') {
+        const amt = randInt(chest.gemRange[0], chest.gemRange[1]);
+        save.gems += amt;
+        result = { kind: 'diamond', amount: amt, rarity: null, pityTriggered: false };
+      } else {
+        result = pickSkinOrDupGold(hit, false);
+      }
+
+      // 3. Update Pity Counters
+      if (tierId === 'gold') {
+        const isEpicPlus = hit === 'epic' || hit === 'legendary' || hit === 'mythic';
+        pity.gold = isEpicPlus ? 0 : (pity.gold || 0) + 1;
+      } else if (tierId === 'diamond') {
+        const isLegPlus = hit === 'legendary' || hit === 'mythic';
+        pity.diamond = isLegPlus ? 0 : (pity.diamond || 0) + 1;
+      }
+    }
+
+    persistSave();
+    return { tierId, chest, ...result };
+  }
+
+  // ===================== 8-FRAME ANIMATED CHEST OPENING MODAL =====================
+  let activeChestSession = null;
+
+  function openChestModal(tierId) {
+    const chest = DATA.CHESTS[tierId] || DATA.CHESTS.wood;
+    if (activeChestSession && activeChestSession.timers) {
+      activeChestSession.timers.forEach((id) => clearTimeout(id));
+    }
+    activeChestSession = { tierId, opened: false, animating: false, reward: null, timers: [] };
+
+    el.chestOpenStage.className = `chest-open-stage tier-${tierId}`;
+    el.chestOpenTitle.textContent = chest.name;
+
+    if (tierId === 'gold') {
+      const rem = Math.max(1, chest.pityTarget - (save.pity.gold || 0));
+      el.chestPityNote.textContent = rem === 1 ? '✨ 이번 상자 에픽 이상 스킨 확정!' : `에픽+ 천장까지 ${rem}회 남음 (${save.pity.gold || 0}/${chest.pityTarget})`;
+      el.chestPityNote.classList.remove('hidden');
+    } else if (tierId === 'diamond') {
+      const rem = Math.max(1, chest.pityTarget - (save.pity.diamond || 0));
+      el.chestPityNote.textContent = rem === 1 ? '✨ 이번 상자 전설 이상 스킨 확정!' : `전설+ 천장까지 ${rem}회 남음 (${save.pity.diamond || 0}/${chest.pityTarget})`;
+      el.chestPityNote.classList.remove('hidden');
+    } else {
+      el.chestPityNote.classList.add('hidden');
+    }
+
+    el.chestAnimImg.src = `assets/chests/chest_${tierId}_0.png?v=${ASSET_VER}`;
+    el.chestAnimImg.classList.remove('burst', 'shaking');
+    el.chestTapHint.textContent = '상자를 터치해서 열기!';
+    el.chestTapHint.classList.remove('hidden');
+    el.chestRewardCard.classList.add('hidden');
+    el.btnChestEquip.classList.add('hidden');
+    el.chestOpenOverlay.classList.remove('hidden');
+    SFX.click();
+  }
+
+  function triggerChestAnimation() {
+    if (!activeChestSession || activeChestSession.animating || activeChestSession.opened) return;
+    activeChestSession.animating = true;
+    const tierId = activeChestSession.tierId;
+    el.chestTapHint.classList.add('hidden');
+    el.chestAnimImg.classList.add('shaking');
+
+    // Roll reward right as opening starts so persistence is immediate and safe!
+    const reward = rollChestReward(tierId);
+    activeChestSession.reward = reward;
+
+    // 8-frame sequence: anticipation wiggle (0->1->2->1->2) -> lid crack & burst (3->4->5->6->7)!
+    const seq = [
+      { f: 1, t: 0, sfx: 'shake' },
+      { f: 2, t: 85, sfx: null },
+      { f: 1, t: 170, sfx: 'shake' },
+      { f: 2, t: 255, sfx: null },
+      { f: 3, t: 360, sfx: 'shake' },
+      { f: 4, t: 460, sfx: null },
+      { f: 5, t: 550, sfx: 'open' },
+      { f: 6, t: 645, sfx: null },
+      { f: 7, t: 745, sfx: null }
+    ];
+
+    seq.forEach((step) => {
+      const tid = setTimeout(() => {
+        if (!activeChestSession) return;
+        el.chestAnimImg.src = `assets/chests/chest_${tierId}_${step.f}.png?v=${ASSET_VER}`;
+        if (step.sfx === 'shake') SFX.chestShake();
+        if (step.sfx === 'open') {
+          el.chestAnimImg.classList.remove('shaking');
+          el.chestAnimImg.classList.add('burst');
+          const isJackpot = reward.kind === 'diamond' || reward.rarity === 'epic' || reward.rarity === 'legendary' || reward.rarity === 'mythic';
+          if (isJackpot) SFX.chestJackpot();
+          else SFX.chestOpen();
+        }
+      }, step.t);
+      activeChestSession.timers.push(tid);
+    });
+
+    const revealTid = setTimeout(() => {
+      if (!activeChestSession) return;
+      activeChestSession.animating = false;
+      activeChestSession.opened = true;
+      showChestRewardCard(reward);
+      refreshAllMenus();
+    }, 860);
+    activeChestSession.timers.push(revealTid);
+  }
+
+  function showChestRewardCard(rw) {
+    el.chestRewardPity.classList.toggle('hidden', !rw.pityTriggered);
+    el.btnChestEquip.classList.add('hidden');
+    el.btnChestEquip.onclick = null;
+
+    if (rw.kind === 'gold') {
+      el.chestRewardRarity.textContent = '🪙 골드 획득';
+      el.chestRewardRarity.style.background = '#8f5900';
+      el.chestRewardRarity.style.color = '#ffe866';
+      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png" alt="골드" class="rw-big-ico" />`;
+      el.chestRewardName.textContent = `+${rw.amount.toLocaleString('ko-KR')} G`;
+      el.chestRewardSub.textContent = `${rw.chest.name}에서 골드를 획득했습니다!`;
+    } else if (rw.kind === 'diamond') {
+      el.chestRewardRarity.textContent = '💎 다이아 획득!';
+      el.chestRewardRarity.style.background = '#10548c';
+      el.chestRewardRarity.style.color = '#7ef6ff';
+      el.chestRewardVisual.innerHTML = `<span class="rw-big-emoji">💎</span>`;
+      el.chestRewardName.textContent = `+${rw.amount} 다이아`;
+      el.chestRewardSub.textContent = `희귀 보석 재화 획득! 다이아 상자 · 전용 스킨에 사용하세요!`;
+    } else if (rw.kind === 'skin') {
+      const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.common;
+      const ownerChar = getCharDef(rw.skin.charId);
+      el.chestRewardRarity.textContent = `✨ ${rar.name} 스킨 획득!`;
+      el.chestRewardRarity.style.background = rar.bg;
+      el.chestRewardRarity.style.color = rar.color;
+      el.chestRewardVisual.innerHTML = `<img src="${ownerChar.avatar}" alt="${rw.skin.name}" class="rw-skin-preview" style="filter: ${rw.skin.filter};" />`;
+      el.chestRewardName.textContent = rw.skin.name;
+      el.chestRewardSub.textContent = `${ownerChar.name} 전용 ${rar.name} 스킨 (신규 획득!)`;
+
+      el.btnChestEquip.classList.remove('hidden');
+      el.btnChestEquip.onclick = () => {
+        save.equippedSkins[rw.skin.charId] = rw.skin.id;
+        if (isCharUnlocked(rw.skin.charId)) {
+          save.selectedChar = rw.skin.charId;
+          previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === rw.skin.charId));
+        }
+        SFX.levelUp();
+        persistSave();
+        closeChestModal();
+        refreshAllMenus();
+        showToast(`✨ [${rw.skin.name}] 스킨 장착 완료!`);
+      };
+    } else if (rw.kind === 'dup_gold') {
+      const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.common;
+      el.chestRewardRarity.textContent = `🔄 ${rar.name} 스킨 전체 보유 (중복 대체)`;
+      el.chestRewardRarity.style.background = rar.bg;
+      el.chestRewardRarity.style.color = rar.color;
+      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png" alt="중복 골드" class="rw-big-ico" />`;
+      el.chestRewardName.textContent = `+${rw.amount.toLocaleString('ko-KR')} G`;
+      el.chestRewardSub.textContent = `해당 등급 스킨을 모두 보유해 중복 방지 골드로 지급되었습니다!`;
+    }
+
+    // Update live pity badge after roll
+    if (rw.tierId === 'gold') {
+      const rem = DATA.CHESTS.gold.pityTarget - (save.pity.gold || 0);
+      el.chestPityNote.textContent = `다음 황금 상자 에픽+ 천장까지 ${rem}회 (${save.pity.gold || 0}/${DATA.CHESTS.gold.pityTarget})`;
+    } else if (rw.tierId === 'diamond') {
+      const rem = DATA.CHESTS.diamond.pityTarget - (save.pity.diamond || 0);
+      el.chestPityNote.textContent = `다음 다이아 상자 전설+ 천장까지 ${rem}회 (${save.pity.diamond || 0}/${DATA.CHESTS.diamond.pityTarget})`;
+    }
+
+    el.chestRewardCard.classList.remove('hidden');
+    el.chestOpenStage.classList.add('revealed');
+  }
+
+  function closeChestModal() {
+    if (activeChestSession && activeChestSession.animating) return;
+    if (activeChestSession && activeChestSession.timers) {
+      activeChestSession.timers.forEach((id) => clearTimeout(id));
+    }
+    activeChestSession = null;
+    el.chestOpenOverlay.classList.add('hidden');
+    refreshAllMenus();
+  }
+
+  function openProbModal() {
+    SFX.click();
+    const gPity = save.pity.gold || 0;
+    const dPity = save.pity.diamond || 0;
+    el.probModalBody.innerHTML = `
+      <div class="prob-section">
+        <h4>📊 상자별 보상 확률 (합계 100%)</h4>
+        <table class="prob-table">
+          <thead>
+            <tr><th>보상</th><th>🪵 나무</th><th>🥈 은</th><th>👑 황금</th><th>💎 다이아</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>🪙 골드</td><td>75%</td><td>65%</td><td>50%</td><td>25%</td></tr>
+            <tr><td style="color:#a3c8eb">일반 스킨</td><td>18%</td><td>15%</td><td>-</td><td>-</td></tr>
+            <tr><td style="color:#47c8ff">희귀 스킨</td><td>5%</td><td>15%</td><td>25%</td><td>10%</td></tr>
+            <tr><td style="color:#d084ff">에픽 스킨</td><td>1.5%</td><td>3%</td><td>17%</td><td>30%</td></tr>
+            <tr><td style="color:#ffca42">전설 스킨</td><td>-</td><td>-</td><td>3%</td><td>22%</td></tr>
+            <tr><td style="color:#ff5ea8">신화 스킨</td><td>-</td><td>-</td><td>-</td><td>3%</td></tr>
+            <tr><td style="color:#7ef6ff">💎 다이아</td><td>0.5%</td><td>2%</td><td>5%</td><td>10%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prob-section">
+        <h4>💰 골드 · 💎 다이아 지급 범위</h4>
+        <table class="prob-table">
+          <thead><tr><th>상자</th><th>골드 획득 시</th><th>다이아 획득 시</th><th>획득 경로</th></tr></thead>
+          <tbody>
+            <tr><td>🪵 나무</td><td>100 ~ 250G</td><td>1 ~ 2💎</td><td>일반 주행(400m+) · 출석</td></tr>
+            <tr><td>🥈 은</td><td>250 ~ 500G</td><td>2 ~ 4💎</td><td>연속 출석 · 업적 · 상점</td></tr>
+            <tr><td>👑 황금</td><td>500 ~ 1,000G</td><td>5 ~ 10💎</td><td>일일 퀘스트 · 업적 · 상점</td></tr>
+            <tr><td>💎 다이아</td><td>1,000 ~ 2,000G</td><td>10 ~ 20💎</td><td>주간 퀘스트 · 고난도 업적 · 7일 출석</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prob-section">
+        <h4>🛡️ 중복 방지 &amp; 천장 시스템 (현재 진행도)</h4>
+        <ul class="prob-rules">
+          <li><strong>미보유 스킨 우선 지급:</strong> 해당 등급에 미보유 스킨이 있으면 100% 새 스킨이 나옵니다.</li>
+          <li><strong>등급 완료 시 대체 골드:</strong> 일반 120G · 희귀 300G · 에픽 650G · 전설 1,200G · 신화 2,500G</li>
+          <li><strong>👑 황금 상자 천장 (10회):</strong> 에픽 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong> · 남은 ${10 - gPity}회)</li>
+          <li><strong>💎 다이아 상자 천장 (15회):</strong> 전설 이상 스킨 미획득 시 15회차 확정! (현재 <strong>${dPity} / 15회</strong> · 남은 ${15 - dPity}회)</li>
+        </ul>
+      </div>
+    `;
+    el.probOverlay.classList.remove('hidden');
   }
 
   function canClaimAttendanceToday() {
@@ -321,13 +701,14 @@
   function refreshAllMenus() {
     ensureTodayMissions();
     el.uiGold.textContent = save.gold.toLocaleString('ko-KR');
+    el.uiGems.textContent = (save.gems || 0).toLocaleString('ko-KR');
     el.headerBestScore.textContent = save.bestScore.toLocaleString('ko-KR');
 
     renderAttendanceUI();
     renderAchievementsUI();
     renderSettingsUI();
     renderHomeCharStage();
-    renderDailyMissions();
+    renderBrawlQuests();
     renderCharList();
     renderShopList();
     renderRankingTab();
@@ -337,12 +718,20 @@
 
   function updateNavMissionDot() {
     ensureTodayMissions();
-    const prog = save.dailyMissions.progress || {};
-    const claimed = save.dailyMissions.claimed || {};
-    const hasMissionClaim = DATA.DAILY_MISSIONS.some((m) => (prog[m.metric] || 0) >= m.target && !claimed[m.id]);
-    const hasAchClaim = DATA.ACHIEVEMENTS.some((a) => getAchievementMetricValue(a.metric) >= a.target && !(save.achievementsClaimed && save.achievementsClaimed[a.id]));
+    const dProg = save.dailyMissions.progress || {};
+    const dClaimed = save.dailyMissions.claimed || {};
+    const wProg = save.weeklyMissions.progress || {};
+    const wClaimed = save.weeklyMissions.claimed || {};
+    const hasDaily = DATA.DAILY_MISSIONS.some((m) => (dProg[m.metric] || 0) >= m.target && !dClaimed[m.id]);
+    const hasWeekly = DATA.WEEKLY_MISSIONS.some((m) => (wProg[m.metric] || 0) >= m.target && !wClaimed[m.id]);
+    const hasAch = DATA.ACHIEVEMENTS.some((a) => getAchievementMetricValue(a.metric) >= a.target && !(save.achievementsClaimed && save.achievementsClaimed[a.id]));
     const hasAtt = canClaimAttendanceToday();
-    el.navMissionDot.classList.toggle('hidden', !(hasMissionClaim || hasAchClaim || hasAtt));
+    const bagCnt = getTotalBagChests();
+    el.navMissionDot.classList.toggle('hidden', !(hasDaily || hasWeekly || hasAch || hasAtt || bagCnt > 0));
+    if (el.questVaultBadge) {
+      el.questVaultBadge.textContent = String(bagCnt);
+      el.questVaultBadge.classList.toggle('hidden', bagCnt === 0);
+    }
   }
 
   const RANK_RIVALS = [
@@ -411,8 +800,7 @@
   function renderAchievementsUI() {
     let unlockedCount = 0;
     let claimableCount = 0;
-    const containers = [el.achList, el.tabAchList].filter(Boolean);
-    containers.forEach((c) => { c.innerHTML = ''; });
+    if (el.achList) el.achList.innerHTML = '';
 
     DATA.ACHIEVEMENTS.forEach((ach) => {
       const val = getAchievementMetricValue(ach.metric);
@@ -421,49 +809,48 @@
       if (isDone) unlockedCount += 1;
       if (isDone && !isClaimed) claimableCount += 1;
 
+      if (!el.achList) return;
       const pct = Math.min(100, (val / ach.target) * 100);
-      containers.forEach((container) => {
-        const card = document.createElement('div');
-        card.className = `ach-card${isClaimed ? ' claimed' : (isDone ? ' ready' : '')}`;
-        card.innerHTML = `
-          <div class="ach-ico">${ach.icon}</div>
-          <div class="ach-meta">
-            <div class="ach-title">${ach.title}</div>
-            <div class="ach-desc">${ach.desc} (${Math.min(val, ach.target).toLocaleString('ko-KR')} / ${ach.target.toLocaleString('ko-KR')})</div>
-            <div class="ach-prog-track"><div class="ach-prog-fill" style="width: ${pct.toFixed(1)}%"></div></div>
-          </div>
-        `;
+      const chest = DATA.CHESTS[ach.rewardChest] || DATA.CHESTS.silver;
 
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        if (isClaimed) {
-          btn.className = 'mission-claim-btn done';
-          btn.textContent = '수령 ✓';
-          btn.disabled = true;
-        } else if (isDone) {
-          btn.className = 'mission-claim-btn ready';
-          btn.textContent = `+${ach.rewardGold}G`;
-          btn.onclick = () => {
-            save.achievementsClaimed[ach.id] = true;
-            save.gold += ach.rewardGold;
-            SFX.reward();
-            persistSave();
-            refreshAllMenus();
-            showToast(`🏅 업적 [${ach.title}] 보상 +${ach.rewardGold}G 획득!`);
-          };
-        } else {
-          btn.className = 'mission-claim-btn pending';
-          btn.textContent = `+${ach.rewardGold}G`;
-          btn.disabled = true;
-        }
-        card.appendChild(btn);
-        container.appendChild(card);
-      });
+      const card = document.createElement('div');
+      card.className = `ach-card${isClaimed ? ' claimed' : (isDone ? ' ready' : '')}`;
+      card.innerHTML = `
+        <div class="ach-ico">${ach.icon}</div>
+        <div class="ach-meta">
+          <div class="ach-title">${ach.title}</div>
+          <div class="ach-desc">${ach.desc} (${Math.min(val, ach.target).toLocaleString('ko-KR')} / ${ach.target.toLocaleString('ko-KR')})</div>
+          <div class="ach-prog-track"><div class="ach-prog-fill" style="width: ${pct.toFixed(1)}%"></div></div>
+        </div>
+      `;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (isClaimed) {
+        btn.className = 'mission-claim-btn done';
+        btn.textContent = '수령 ✓';
+        btn.disabled = true;
+      } else if (isDone) {
+        btn.className = 'mission-claim-btn ready';
+        btn.textContent = `${chest.name} 열기`;
+        btn.onclick = () => {
+          save.achievementsClaimed[ach.id] = true;
+          persistSave();
+          el.achievementsOverlay.classList.add('hidden');
+          refreshAllMenus();
+          openChestModal(ach.rewardChest);
+        };
+      } else {
+        btn.className = 'mission-claim-btn pending';
+        btn.textContent = chest.name;
+        btn.disabled = true;
+      }
+      card.appendChild(btn);
+      el.achList.appendChild(card);
     });
 
-    el.achModalSummary.textContent = `달성 현황: ${unlockedCount} / ${DATA.ACHIEVEMENTS.length} (미수령 ${claimableCount}개)`;
-    if (el.tabAchSummary) {
-      el.tabAchSummary.textContent = `${unlockedCount} / ${DATA.ACHIEVEMENTS.length}`;
+    if (el.achModalSummary) {
+      el.achModalSummary.textContent = `달성 현황: ${unlockedCount} / ${DATA.ACHIEVEMENTS.length} (미수령 ${claimableCount}개)`;
     }
   }
 
@@ -522,11 +909,16 @@
       const cell = document.createElement('div');
       const isClaimed = idx < claimedDays;
       const isToday = claimable && idx === dayIdx;
+      const chest = rw.chest ? DATA.CHESTS[rw.chest] : null;
       cell.className = `att-day-cell${idx === 6 ? ' day7' : ''}${isClaimed ? ' claimed' : ''}${isToday ? ' today' : ''}`;
-      const ico = isClaimed ? '✅' : (rw.booster === 'norway' ? '🇳🇴' : rw.booster === 'shield' ? '🛡️' : rw.booster === 'boost' ? '⚡' : '🪙');
+      const icoHtml = isClaimed
+        ? '<span class="att-day-ico">✅</span>'
+        : (chest
+          ? `<img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="att-chest-thumb" />`
+          : '<span class="att-day-ico">🪙</span>');
       cell.innerHTML = `
         <span class="att-day-num">${rw.day}일차</span>
-        <span class="att-day-ico">${ico}</span>
+        ${icoHtml}
         <span class="att-day-val">${rw.label}</span>
       `;
       el.attDaysGrid.appendChild(cell);
@@ -534,9 +926,9 @@
 
     if (claimable) {
       const rw = DATA.ATTENDANCE_REWARDS[dayIdx];
-      el.attModalDesc.textContent = `오늘(${rw.day}일차) 출석 보상: ${rw.label} (+${rw.gold}G)`;
+      el.attModalDesc.textContent = `오늘(${rw.day}일차) 출석 보상: ${rw.label}`;
       el.btnClaimAttendance.disabled = false;
-      el.btnClaimAttendance.textContent = `🎁 ${rw.day}일차 출석 보상 받기!`;
+      el.btnClaimAttendance.textContent = `🎁 ${rw.day}일차 출석 상자 열기!`;
     } else {
       el.attModalDesc.textContent = '오늘 출석 보상을 이미 받았습니다! 내일 또 방문해 주세요.';
       el.btnClaimAttendance.disabled = true;
@@ -548,7 +940,8 @@
     if (!canClaimAttendanceToday()) return;
     const dayIdx = getNextAttendanceDayIndex();
     const rw = DATA.ATTENDANCE_REWARDS[dayIdx];
-    save.gold += rw.gold;
+    if (rw.gold) save.gold += rw.gold;
+    if (rw.gems) save.gems = (save.gems || 0) + rw.gems;
     if (rw.booster) {
       save.boosters[rw.booster] = (save.boosters[rw.booster] || 0) + 1;
     }
@@ -558,81 +951,219 @@
     };
     SFX.reward();
     persistSave();
+    el.attendanceOverlay.classList.add('hidden');
     refreshAllMenus();
-    showToast(`🎁 ${rw.day}일차 출석 보상 수령! (${rw.label})`);
+    if (rw.chest) {
+      openChestModal(rw.chest);
+    } else {
+      showToast(`🎁 ${rw.day}일차 출석 보상 수령! (${rw.label})`);
+    }
   }
 
-  function renderDailyMissions() {
+  function renderBrawlQuests() {
     ensureTodayMissions();
-    const prog = save.dailyMissions.progress || {};
-    const claimed = save.dailyMissions.claimed || {};
-    const container = el.tabMissionList;
-    if (!container) return;
-    container.innerHTML = '';
-
-    DATA.DAILY_MISSIONS.forEach((m) => {
-      const cur = Math.min(m.target, Math.floor(prog[m.metric] || 0));
-      const pct = Math.min(100, (cur / m.target) * 100);
-      const isDone = cur >= m.target;
-      const isClaimed = Boolean(claimed[m.id]);
-
-      const row = document.createElement('div');
-      row.className = 'mission-row';
-      row.innerHTML = `
-        <div class="mission-row-info">
-          <div class="mission-row-top">
-            <span>${m.title}</span>
-            <span class="mission-row-prog">${cur.toLocaleString('ko-KR')}/${m.target.toLocaleString('ko-KR')}${m.unit}</span>
-          </div>
-          <div class="mission-mini-track">
-            <div class="mission-mini-fill" style="width: ${pct.toFixed(1)}%"></div>
-          </div>
-        </div>
-      `;
-
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      if (isClaimed) {
-        btn.className = 'mission-claim-btn done';
-        btn.textContent = '완료 ✓';
-        btn.disabled = true;
-      } else if (isDone) {
-        btn.className = 'mission-claim-btn ready';
-        btn.textContent = `수령 +${m.rewardGold}G`;
-        btn.onclick = () => {
-          save.dailyMissions.claimed[m.id] = true;
-          save.gold += m.rewardGold;
-          SFX.reward();
-          persistSave();
-          refreshAllMenus();
-          showToast(`🎉 미션 완료! +${m.rewardGold}G 획득!`);
-        };
-      } else {
-        btn.className = 'mission-claim-btn pending';
-        btn.textContent = `+${m.rewardGold}G`;
-        btn.disabled = true;
-      }
-
-      row.appendChild(btn);
-      container.appendChild(row);
+    document.querySelectorAll('.bs-qtab').forEach((b) => {
+      b.classList.toggle('active', b.dataset.qtab === currentQuestSubtab);
     });
+
+    const gPity = save.pity.gold || 0;
+    const dPity = save.pity.diamond || 0;
+    if (el.pityGoldChip) el.pityGoldChip.textContent = `👑 황금 천장 ${gPity}/10`;
+    if (el.pityDiamondChip) el.pityDiamondChip.textContent = `💎 다이아 천장 ${dPity}/15`;
+
+    const grid = el.bsQuestGrid;
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (currentQuestSubtab === 'daily') {
+      if (el.questResetLabel) el.questResetLabel.textContent = '⏱️ 일일 퀘스트 · 매일 초기화 · 완료 시 황금 상자!';
+      const prog = save.dailyMissions.progress || {};
+      const claimed = save.dailyMissions.claimed || {};
+      DATA.DAILY_MISSIONS.forEach((m) => {
+        const cur = Math.min(m.target, Math.floor(prog[m.metric] || 0));
+        const pct = Math.min(100, (cur / m.target) * 100);
+        const isDone = cur >= m.target;
+        const isClaimed = Boolean(claimed[m.id]);
+        const chest = DATA.CHESTS[m.rewardChest] || DATA.CHESTS.gold;
+        grid.appendChild(createBrawlQuestCard({
+          tierClass: 'tier-daily',
+          tag: '일일 퀘스트',
+          icon: m.icon,
+          title: m.title,
+          progText: `${cur.toLocaleString('ko-KR')} / ${m.target.toLocaleString('ko-KR')}${m.unit}`,
+          pct,
+          chest,
+          isDone,
+          isClaimed,
+          onClaim: () => {
+            save.dailyMissions.claimed[m.id] = true;
+            persistSave();
+            refreshAllMenus();
+            openChestModal(m.rewardChest);
+          }
+        }));
+      });
+    } else if (currentQuestSubtab === 'weekly') {
+      if (el.questResetLabel) el.questResetLabel.textContent = '⏱️ 주간 퀘스트 · 매주 월요일 초기화 · 완료 시 다이아 상자!';
+      const prog = save.weeklyMissions.progress || {};
+      const claimed = save.weeklyMissions.claimed || {};
+      DATA.WEEKLY_MISSIONS.forEach((m) => {
+        const cur = Math.min(m.target, Math.floor(prog[m.metric] || 0));
+        const pct = Math.min(100, (cur / m.target) * 100);
+        const isDone = cur >= m.target;
+        const isClaimed = Boolean(claimed[m.id]);
+        const chest = DATA.CHESTS[m.rewardChest] || DATA.CHESTS.diamond;
+        grid.appendChild(createBrawlQuestCard({
+          tierClass: 'tier-weekly',
+          tag: '주간 퀘스트',
+          icon: m.icon,
+          title: m.title,
+          progText: `${cur.toLocaleString('ko-KR')} / ${m.target.toLocaleString('ko-KR')}${m.unit}`,
+          pct,
+          chest,
+          isDone,
+          isClaimed,
+          onClaim: () => {
+            save.weeklyMissions.claimed[m.id] = true;
+            persistSave();
+            refreshAllMenus();
+            openChestModal(m.rewardChest);
+          }
+        }));
+      });
+    } else if (currentQuestSubtab === 'ach') {
+      if (el.questResetLabel) el.questResetLabel.textContent = '🏅 영구 업적 · 달성 시 은 / 황금 / 다이아 상자 지급!';
+      DATA.ACHIEVEMENTS.forEach((a) => {
+        const cur = Math.min(a.target, getAchievementMetricValue(a.metric));
+        const pct = Math.min(100, (cur / a.target) * 100);
+        const isDone = cur >= a.target;
+        const isClaimed = Boolean(save.achievementsClaimed && save.achievementsClaimed[a.id]);
+        const chest = DATA.CHESTS[a.rewardChest] || DATA.CHESTS.silver;
+        grid.appendChild(createBrawlQuestCard({
+          tierClass: `tier-ach chest-${a.rewardChest}`,
+          tag: '영구 업적',
+          icon: a.icon,
+          title: `${a.title} · ${a.desc}`,
+          progText: `${cur.toLocaleString('ko-KR')} / ${a.target.toLocaleString('ko-KR')}`,
+          pct,
+          chest,
+          isDone,
+          isClaimed,
+          onClaim: () => {
+            save.achievementsClaimed[a.id] = true;
+            persistSave();
+            refreshAllMenus();
+            openChestModal(a.rewardChest);
+          }
+        }));
+      });
+    } else {
+      const dropsToday = (save.dailyWoodChestDrops && save.dailyWoodChestDrops.count) || 0;
+      if (el.questResetLabel) el.questResetLabel.textContent = `🎁 보관함 · 오늘 일반 주행(400m+) 나무 상자 드랍 ${dropsToday}/3회`;
+      DATA.CHEST_ORDER.forEach((tierId) => {
+        const chest = DATA.CHESTS[tierId];
+        const qty = (save.chestBag && save.chestBag[tierId]) || 0;
+        const pityLine = tierId === 'gold'
+          ? `에픽+ 천장 ${save.pity.gold || 0}/10회`
+          : (tierId === 'diamond' ? `전설+ 천장 ${save.pity.diamond || 0}/15회` : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
+
+        const card = document.createElement('div');
+        card.className = `bs-quest-card bs-vault-card tier-${tierId}${qty > 0 ? ' ready' : ''}`;
+        card.innerHTML = `
+          <div class="bs-vault-left">
+            <img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="bs-vault-chest-img" />
+            <span class="bs-vault-qty">×${qty}</span>
+          </div>
+          <div class="bs-qcard-main">
+            <div class="bs-qcard-top">
+              <span class="bs-qtag">${chest.name}</span>
+              <span class="bs-qsub">${pityLine}</span>
+            </div>
+            <div class="bs-vault-src">${chest.source}</div>
+          </div>
+        `;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        if (qty > 0) {
+          btn.className = 'bs-vault-open-btn ready';
+          btn.textContent = '열기!';
+          btn.onclick = () => {
+            if ((save.chestBag[tierId] || 0) <= 0) return;
+            save.chestBag[tierId] -= 1;
+            persistSave();
+            refreshAllMenus();
+            openChestModal(tierId);
+          };
+        } else {
+          btn.className = 'bs-vault-open-btn empty';
+          btn.textContent = '상점';
+          btn.onclick = () => {
+            currentShopSubtab = 'chests';
+            switchTab('shop');
+          };
+        }
+        card.appendChild(btn);
+        grid.appendChild(card);
+      });
+    }
+  }
+
+  function createBrawlQuestCard({ tierClass, tag, icon, title, progText, pct, chest, isDone, isClaimed, onClaim }) {
+    const card = document.createElement('div');
+    card.className = `bs-quest-card ${tierClass}${isClaimed ? ' claimed' : (isDone ? ' ready' : '')}`;
+    card.innerHTML = `
+      <div class="bs-qcard-main">
+        <div class="bs-qcard-top">
+          <span class="bs-qtag">${tag}</span>
+          <span class="bs-qprog-num">${progText}</span>
+        </div>
+        <div class="bs-qcard-title"><span class="bs-qico">${icon}</span><span>${title}</span></div>
+        <div class="bs-qbar-track">
+          <div class="bs-qbar-fill" style="width: ${pct.toFixed(1)}%"></div>
+        </div>
+      </div>
+    `;
+
+    const rwBtn = document.createElement('button');
+    rwBtn.type = 'button';
+    rwBtn.className = `bs-qreward-tile tier-${chest.id}${isClaimed ? ' done' : (isDone ? ' ready' : ' locked')}`;
+    rwBtn.innerHTML = `
+      <img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="bs-qchest-img" />
+      <span class="bs-qchest-lbl">${isClaimed ? '완료 ✓' : (isDone ? '열기!' : chest.name)}</span>
+    `;
+    if (isDone && !isClaimed) {
+      rwBtn.onclick = onClaim;
+    } else {
+      rwBtn.disabled = true;
+    }
+
+    card.appendChild(rwBtn);
+    return card;
   }
 
   function renderHomeCharStage() {
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const unlocked = isCharUnlocked(ch.id);
     const stats = getCharStats(ch);
+    const skin = getEquippedSkin(ch.id);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
+    const animSkin = ch.animSkin || 'yellow';
 
     el.homeHeroStage.className = `bs-home-stage ${tierCls}${unlocked ? '' : ' locked'}`;
-    el.homeHeroImg.src = ch.avatar;
+    lastHomeHeroSrc = '';
+    el.homeHeroImg.src = `assets/chars/${animSkin}_run_0.png?v=${ASSET_VER}`;
     el.homeHeroImg.alt = ch.name;
+    el.homeHeroImg.style.filter = skin ? skin.filter : '';
+    el.homeHeroImg.style.setProperty('--skin-glow', skin ? skin.glow : '');
     el.homeCharLvBadge.textContent = unlocked ? `POWER ${stats.level}` : '잠금';
-    el.homeCharTier.textContent = unlocked ? ch.tier : `🔒 ${ch.price.toLocaleString('ko-KR')}G`;
+    el.homeCharTier.textContent = unlocked
+      ? (skin ? `✨ ${skin.name}` : ch.tier)
+      : `🔒 ${ch.price.toLocaleString('ko-KR')}G`;
     el.homeCharName.textContent = ch.name;
 
     // Brawl Stars Bottom-Left Character Switcher Badge
     el.homeBrawlerMini.src = ch.avatar;
+    el.homeBrawlerMini.style.filter = skin ? skin.filter : '';
     el.homeBrawlerCount.textContent = `${save.unlockedChars.length} / ${DATA.CHARACTERS.length}`;
 
     if (unlocked) {
@@ -643,6 +1174,20 @@
       el.btnPlayStart.disabled = save.gold < ch.price;
       el.btnPlayLabel.textContent = `${ch.price.toLocaleString('ko-KR')}G 해금`;
       el.btnPlaySub.textContent = `${ch.name} 구매 후 플레이`;
+    }
+  }
+
+  function updateHomeRunningHero(t) {
+    if (currentTab !== 'home') return;
+    const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
+    const animSkin = ch.animSkin || 'yellow';
+    const frames = ch.animFrames || 2;
+    const fps = frames >= 3 ? 9 : 7.5;
+    const frame = Math.floor(t * fps) % frames;
+    const src = `assets/chars/${animSkin}_run_${frame}.png?v=${ASSET_VER}`;
+    if (src !== lastHomeHeroSrc) {
+      lastHomeHeroSrc = src;
+      el.homeHeroImg.src = src;
     }
   }
 
@@ -684,18 +1229,20 @@
     const unlocked = isCharUnlocked(ch.id);
     const selected = save.selectedChar === ch.id;
     const stats = getCharStats(ch);
+    const equippedSkin = getEquippedSkin(ch.id);
     const isMaxLv = stats.level >= DATA.MAX_CHAR_LEVEL;
     const lvPrice = DATA.getCharLevelPrice(stats.level);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
 
     el.detailHeroStage.className = `brawl-hero-stage ${tierCls}`;
-    el.detailCharTier.textContent = ch.tier;
+    el.detailCharTier.textContent = equippedSkin ? `✨ ${equippedSkin.name}` : ch.tier;
     el.detailCharName.textContent = ch.name;
     el.detailCharLv.textContent = unlocked
       ? `POWER Lv.${stats.level} / ${DATA.MAX_CHAR_LEVEL}`
       : `🔒 ${ch.price.toLocaleString('ko-KR')}G 필요`;
     el.detailEquippedPill.classList.toggle('hidden', !selected);
     el.detailCharImg.src = ch.avatar;
+    el.detailCharImg.style.filter = equippedSkin ? equippedSkin.filter : '';
     el.detailCharDesc.textContent = ch.desc;
 
     el.detailStatHp.textContent = `${stats.maxHp}칸`;
@@ -708,6 +1255,55 @@
     el.detailPassiveIco.textContent = ch.icon || '★';
     el.detailPassiveName.textContent = ch.passiveName;
     el.detailPassiveDesc.textContent = ch.passiveDesc;
+
+    // Render Character Skins Row (Default + Character-specific collectible skins)
+    if (el.detailSkinsRow) {
+      el.detailSkinsRow.innerHTML = '';
+      const defChip = document.createElement('button');
+      defChip.type = 'button';
+      defChip.className = `skin-chip${!equippedSkin ? ' active' : ''}`;
+      defChip.innerHTML = `<span class="skin-dot" style="background:#9eb8d8"></span><span>기본</span>`;
+      defChip.onclick = () => {
+        SFX.click();
+        delete save.equippedSkins[ch.id];
+        persistSave();
+        refreshAllMenus();
+        showToast(`${ch.name} 기본 외형으로 변경!`);
+      };
+      el.detailSkinsRow.appendChild(defChip);
+
+      DATA.getSkinsForChar(ch.id).forEach((sk) => {
+        const owned = save.unlockedSkins.includes(sk.id);
+        const isEq = equippedSkin && equippedSkin.id === sk.id;
+        const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.common;
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `skin-chip rar-${sk.rarity}${isEq ? ' active' : ''}${owned ? '' : ' locked'}`;
+        chip.innerHTML = `
+          <span class="skin-dot" style="background:${sk.glow || rar.color}"></span>
+          <span>${sk.name}</span>
+          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : (sk.gemPrice ? `💎${sk.gemPrice}` : '🔒')}</span>
+        `;
+        chip.onclick = () => {
+          if (owned) {
+            SFX.click();
+            save.equippedSkins[ch.id] = sk.id;
+            persistSave();
+            refreshAllMenus();
+            showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
+          } else if (sk.gemPrice) {
+            SFX.click();
+            closeCharDetail();
+            currentShopSubtab = 'skins';
+            switchTab('shop');
+            showToast(`💎 상점 스킨 탭에서 ${sk.gemPrice} 다이아로 구매할 수 있습니다!`);
+          } else {
+            showToast(`🎁 [${sk.name}] (${rar.name}) 스킨은 상자 열기로 획득할 수 있습니다!`);
+          }
+        };
+        el.detailSkinsRow.appendChild(chip);
+      });
+    }
 
     if (unlocked) {
       if (isMaxLv) {
@@ -765,13 +1361,14 @@
     const dexBonusPct = Math.max(0, ownedCount - 1) * 3;
     el.dexRateText.textContent = `${ownedCount} / ${totalCount} (${ratePct}%)`;
     el.dexBarFill.style.width = `${ratePct}%`;
-    el.dexBonusText.textContent = `현재 도감 효과: 전체 점수 +${dexBonusPct}% (캐릭터 추가 해금당 +3%)`;
+    el.dexBonusText.textContent = `현재 도감 효과: 전체 점수 +${dexBonusPct}% (캐릭터 추가 해금당 +3%) · 보유 스킨 ${save.unlockedSkins.length}/${DATA.SKINS.length}`;
 
     el.charList.innerHTML = '';
     DATA.CHARACTERS.forEach((ch, idx) => {
       const unlocked = isCharUnlocked(ch.id);
       const selected = save.selectedChar === ch.id;
       const stats = getCharStats(ch);
+      const eqSkin = getEquippedSkin(ch.id);
       const tierCls = `tier-${ch.auraType || 'basic'}`;
 
       const card = document.createElement('button');
@@ -782,8 +1379,8 @@
         <div class="brawl-card-stage ${tierCls}">
           <span class="brawl-lv-chip">${unlocked ? `Lv.${stats.level}` : `🔒 ${ch.price}G`}</span>
           ${selected ? '<span class="brawl-eq-chip">장착 중</span>' : ''}
-          <img src="${ch.avatar}" alt="${ch.name}" class="brawl-card-img" />
-          <span class="brawl-tap-hint">터치해 능력 보기</span>
+          <img src="${ch.avatar}" alt="${ch.name}" class="brawl-card-img" style="${eqSkin ? `filter:${eqSkin.filter};` : ''}" />
+          <span class="brawl-tap-hint">${eqSkin ? `✨ ${eqSkin.name}` : '터치해 능력·스킨 보기'}</span>
         </div>
         <div class="brawl-nameplate">
           <span class="brawl-name">${ch.name}</span>
@@ -818,7 +1415,144 @@
 
     el.shopItemsList.innerHTML = '';
 
-    if (currentShopSubtab === 'upgrades') {
+    if (currentShopSubtab === 'chests') {
+      DATA.CHEST_ORDER.forEach((tierId) => {
+        const chest = DATA.CHESTS[tierId];
+        const pityInfo = tierId === 'gold'
+          ? `👑 에픽+ 천장 ${save.pity.gold || 0}/10회`
+          : (tierId === 'diamond'
+            ? `💎 전설+ 천장 ${save.pity.diamond || 0}/15회`
+            : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
+        const rateSummary = tierId === 'wood'
+          ? '골드 75% · 일반 18% · 희귀 5% · 에픽 1.5% · 💎 0.5%'
+          : (tierId === 'silver'
+            ? '골드 65% · 일반 15% · 희귀 15% · 에픽 3% · 💎 2%'
+            : (tierId === 'gold'
+              ? '골드 50% · 희귀 25% · 에픽 17% · 전설 3% · 💎 5%'
+              : '골드 25% · 희귀 10% · 에픽 30% · 전설 22% · 신화 3% · 💎 10%'));
+
+        const card = document.createElement('div');
+        card.className = `item-card chest-shop-card tier-${tierId}`;
+        card.innerHTML = `
+          <div class="item-avatar chest-avatar"><img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="item-avatar-img chest-img" /></div>
+          <div class="item-meta">
+            <div class="item-title-row">
+              <span class="item-name">${chest.name}</span>
+              <span class="item-badge chest-pity-badge">${pityInfo}</span>
+            </div>
+            <div class="item-desc">${rateSummary}</div>
+          </div>
+        `;
+
+        const btnCol = document.createElement('div');
+        btnCol.className = 'chest-buy-btns';
+
+        if (chest.shopGold) {
+          const gBtn = document.createElement('button');
+          gBtn.type = 'button';
+          gBtn.className = 'item-action-btn';
+          gBtn.textContent = `${chest.shopGold.toLocaleString('ko-KR')} G`;
+          gBtn.disabled = save.gold < chest.shopGold;
+          gBtn.onclick = () => {
+            if (save.gold < chest.shopGold) return;
+            save.gold -= chest.shopGold;
+            persistSave();
+            refreshAllMenus();
+            openChestModal(tierId);
+          };
+          btnCol.appendChild(gBtn);
+        }
+
+        if (chest.shopGems) {
+          const dBtn = document.createElement('button');
+          dBtn.type = 'button';
+          dBtn.className = 'item-action-btn gem-btn';
+          dBtn.textContent = `💎 ${chest.shopGems}`;
+          dBtn.disabled = (save.gems || 0) < chest.shopGems;
+          dBtn.onclick = () => {
+            if ((save.gems || 0) < chest.shopGems) return;
+            save.gems -= chest.shopGems;
+            persistSave();
+            refreshAllMenus();
+            openChestModal(tierId);
+          };
+          btnCol.appendChild(dBtn);
+        }
+
+        card.appendChild(btnCol);
+        el.shopItemsList.appendChild(card);
+      });
+    } else if (currentShopSubtab === 'skins') {
+      // Sort diamond-purchasable skins first, then by rarity descending!
+      const rarRank = { mythic: 5, legendary: 4, epic: 3, rare: 2, common: 1 };
+      const sortedSkins = [...DATA.SKINS].sort((a, b) => {
+        const aBuy = a.gemPrice ? 1 : 0;
+        const bBuy = b.gemPrice ? 1 : 0;
+        if (aBuy !== bBuy) return bBuy - aBuy;
+        return (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0);
+      });
+
+      sortedSkins.forEach((sk) => {
+        const owned = save.unlockedSkins.includes(sk.id);
+        const ownerChar = getCharDef(sk.charId);
+        const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.common;
+        const isEq = save.equippedSkins[sk.charId] === sk.id;
+
+        const card = document.createElement('div');
+        card.className = `item-card skin-shop-card rar-${sk.rarity}${isEq ? ' selected' : ''}`;
+        card.innerHTML = `
+          <div class="item-avatar">
+            <img src="${ownerChar.avatar}" alt="${sk.name}" class="item-avatar-img" style="filter:${sk.filter};" />
+          </div>
+          <div class="item-meta">
+            <div class="item-title-row">
+              <span class="item-name">${sk.name}</span>
+              <span class="skin-rar-pill" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
+            </div>
+            <div class="item-desc">${ownerChar.name} 전용 스킨 · ${sk.gemPrice ? '보석 직구매 & 상자 획득 가능' : '상자 뽑기 전용 스킨'}</div>
+          </div>
+        `;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        if (owned) {
+          btn.className = isEq ? 'item-action-btn done' : 'item-action-btn purple';
+          btn.textContent = isEq ? '장착 중' : '장착';
+          btn.disabled = isEq;
+          btn.onclick = () => {
+            SFX.click();
+            save.equippedSkins[sk.charId] = sk.id;
+            persistSave();
+            refreshAllMenus();
+            showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
+          };
+        } else if (sk.gemPrice) {
+          btn.className = 'item-action-btn gem-btn';
+          btn.textContent = `💎 ${sk.gemPrice}`;
+          btn.disabled = (save.gems || 0) < sk.gemPrice;
+          btn.onclick = () => {
+            if ((save.gems || 0) < sk.gemPrice) return;
+            SFX.chestJackpot();
+            save.gems -= sk.gemPrice;
+            save.unlockedSkins.push(sk.id);
+            save.equippedSkins[sk.charId] = sk.id;
+            persistSave();
+            refreshAllMenus();
+            showToast(`💎 [${sk.name}] 구매 및 즉시 장착 완료!`);
+          };
+        } else {
+          btn.className = 'item-action-btn locked-chest';
+          btn.textContent = '🎁 상자 획득';
+          btn.onclick = () => {
+            currentShopSubtab = 'chests';
+            renderShopList();
+          };
+        }
+
+        card.appendChild(btn);
+        el.shopItemsList.appendChild(card);
+      });
+    } else if (currentShopSubtab === 'upgrades') {
       DATA.UPGRADES.forEach((upg) => {
         const lv = save.upgrades[upg.id] || 0;
         const isMax = lv >= upg.maxLv;
@@ -960,15 +1694,29 @@
     if (!run || run.missionsCommitted) return;
     run.missionsCommitted = true;
     ensureTodayMissions();
-    save.dailyMissions.progress.dist = (save.dailyMissions.progress.dist || 0) + (run.distanceM || 0);
-    save.dailyMissions.progress.coins = (save.dailyMissions.progress.coins || 0) + (run.coinsCollected || 0);
-    save.dailyMissions.progress.jumps = (save.dailyMissions.progress.jumps || 0) + (run.jumpCount || 0);
+    const dist = run.distanceM || 0;
+    const coins = run.coinsCollected || 0;
+    const jumps = run.jumpCount || 0;
+    const dodges = run.dodgesTotal || 0;
+
+    save.dailyMissions.progress.dist = (save.dailyMissions.progress.dist || 0) + dist;
+    save.dailyMissions.progress.coins = (save.dailyMissions.progress.coins || 0) + coins;
+    save.dailyMissions.progress.jumps = (save.dailyMissions.progress.jumps || 0) + jumps;
+    save.dailyMissions.progress.dodges = (save.dailyMissions.progress.dodges || 0) + dodges;
+
+    save.weeklyMissions.progress.dist = (save.weeklyMissions.progress.dist || 0) + dist;
+    save.weeklyMissions.progress.runs = (save.weeklyMissions.progress.runs || 0) + 1;
+    save.weeklyMissions.progress.dodges = (save.weeklyMissions.progress.dodges || 0) + dodges;
+    if ((run.year || 1) >= 2) {
+      save.weeklyMissions.progress.year2Runs = (save.weeklyMissions.progress.year2Runs || 0) + 1;
+    }
     persistSave();
   }
 
   function startRun() {
     const ch = getCharDef(save.selectedChar);
     const stats = getCharStats(ch);
+    const skinDef = getEquippedSkin(ch.id);
     const maxHp = stats.maxHp;
 
     let hasShield = false;
@@ -989,6 +1737,7 @@
       dead: false,
       missionsCommitted: false,
       charId: ch.id,
+      skinDef,
       charLevel: stats.level,
       goldMult: stats.goldMult,
       scoreMult: stats.scoreMult,
@@ -999,6 +1748,7 @@
       gold: 0,
       coinsCollected: 0,
       jumpCount: 0,
+      dodgesTotal: 0,
       dodgeCombo: 0,
       maxDodgeCombo: 0,
       elapsed: 0,
@@ -1087,6 +1837,7 @@
     };
 
     el.runPortraitImg.src = ch.avatar;
+    el.runPortraitImg.style.filter = skinDef ? skinDef.filter : '';
     el.runCanvasWrap.classList.toggle('fever-active', startFever > 0);
     el.mudOverlay.classList.add('hidden');
     el.gameoverOverlay.classList.add('hidden');
@@ -1254,23 +2005,26 @@
 
   // ===================== FORECAST & WEATHER PHASE SCHEDULER =====================
   function scheduleNextWeatherForecast() {
+    const diff = DATA.getYearDifficulty(run.year);
     const pool = DATA.SEASON_WEATHER_POOL[run.seasonId] || ['rain', 'gust', 'dust'];
     const candidates = pool.filter((w) => w !== run.weatherEvent);
     const nextW = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
 
     run.pendingWeather = nextW;
-    run.forecastCountdown = 3.0;
-    // KMA gives a fake forecast 62% of the time unless Norway Yr.no is active!
-    run.forecastIsFake = !hasNorwayForecast() && nextW !== 'clear' && Math.random() < 0.65;
+    run.forecastCountdown = Math.max(1.8, 3.0 / Math.min(1.5, diff.weatherPaceMult));
+    // KMA gives a fake forecast 65% of the time (escalating slightly with years!) unless Norway Yr.no is active!
+    const fakeProb = Math.min(0.82, 0.65 + (run.year - 1) * 0.05);
+    run.forecastIsFake = !hasNorwayForecast() && nextW !== 'clear' && Math.random() < fakeProb;
   }
 
   function activatePendingWeather() {
+    const diff = DATA.getYearDifficulty(run.year);
     const nextW = run.pendingWeather || 'clear';
     const wasFake = run.forecastIsFake && !hasNorwayForecast();
 
     run.weatherEvent = nextW;
     run.pendingWeather = null;
-    run.weatherEventTimer = 8.5 + Math.random() * 2.5;
+    run.weatherEventTimer = Math.max(5.2, (8.5 + Math.random() * 2.5) / diff.weatherPaceMult);
     run.forecastIsFake = false;
     run.rainExposeTimer = 0;
     run.dustExposeTimer = 0;
@@ -1321,47 +2075,68 @@
       y,
       passed: false,
       nearMissed: false,
-      extraSpeed: (preset.speedBonus || 0) * diff.speedMult
+      extraSpeed: (preset.speedBonus || 0) * diff.extraObsSpeedMult
     });
 
-    const coinX0 = startX - 24;
-    if (preset.lane === 'low') {
-      for (let i = 0; i < 5; i++) {
-        const arc = Math.sin((i / 4) * Math.PI) * 52;
-        run.items.push({ kind: 'coin', x: coinX0 + i * 24, y: Renderer.GROUND_Y - 16 - arc });
-      }
-    } else if (preset.lane === 'tall') {
-      for (let i = 0; i < 5; i++) {
-        const arc = Math.sin((i / 4) * Math.PI) * 86;
-        run.items.push({ kind: i === 2 ? 'big_coin' : 'coin', x: coinX0 + i * 24, y: Renderer.GROUND_Y - 18 - arc });
-      }
-    } else if (preset.lane === 'air') {
-      for (let i = 0; i < 5; i++) {
-        run.items.push({ kind: 'coin', x: startX - 10 + i * 22, y: Renderer.GROUND_Y - 11 });
-      }
-    } else {
-      for (let i = 0; i < 3; i++) {
-        run.items.push({ kind: 'coin', x: startX + 36 + i * 22, y: Renderer.GROUND_Y - 22 });
+    // Year 2+ Escalating Difficulty: Fair Double-Obstacle Combo Wave!
+    if (run.weatherEvent !== 'flood' && preset.lane !== 'icicle' && Math.random() < diff.doubleWaveChance) {
+      const followPool = pool.filter((p) => p.lane !== 'icicle');
+      const second = followPool[Math.floor(Math.random() * followPool.length)] || preset;
+      const gapX = Math.max(155, 195 - (run.year - 2) * 10);
+      const sx2 = startX + gapX;
+      const sy2 = second.lane === 'air' ? Renderer.GROUND_Y - 20 - second.h : Renderer.GROUND_Y - second.h;
+      run.obstacles.push({
+        ...second,
+        x: sx2,
+        y: sy2,
+        passed: false,
+        nearMissed: false,
+        extraSpeed: (second.speedBonus || 0) * diff.extraObsSpeedMult
+      });
+    }
+
+    // Tighter & Riskier Coin Economy: coins appear on ~55% of waves in smaller, higher-skill clusters!
+    if (Math.random() < 0.55) {
+      const coinX0 = startX - 8;
+      if (preset.lane === 'low') {
+        for (let i = 0; i < 3; i++) {
+          const arc = Math.sin((i / 2) * Math.PI) * 58;
+          run.items.push({ kind: 'coin', x: coinX0 + i * 24, y: Renderer.GROUND_Y - 22 - arc });
+        }
+      } else if (preset.lane === 'tall') {
+        const hasBig = Math.random() < 0.25;
+        for (let i = 0; i < 3; i++) {
+          const arc = Math.sin((i / 2) * Math.PI) * 96;
+          run.items.push({ kind: (i === 1 && hasBig) ? 'big_coin' : 'coin', x: coinX0 + i * 24, y: Renderer.GROUND_Y - 22 - arc });
+        }
+      } else if (preset.lane === 'air') {
+        for (let i = 0; i < 3; i++) {
+          run.items.push({ kind: 'coin', x: startX - 4 + i * 22, y: Renderer.GROUND_Y - 10 });
+        }
+      } else {
+        for (let i = 0; i < 2; i++) {
+          run.items.push({ kind: 'coin', x: startX + 38 + i * 24, y: Renderer.GROUND_Y - 24 });
+        }
       }
     }
   }
 
   function spawnUtilityPickup() {
     const r = Math.random();
-    const y = Renderer.GROUND_Y - (Math.random() < 0.5 ? 28 : 74);
-    if (r < 0.18) {
+    const y = Renderer.GROUND_Y - (Math.random() < 0.5 ? 28 : 78);
+    if (r < 0.19) {
       run.items.push({ kind: 'norway', x: Renderer.W + 24, y });
-    } else if (r < 0.38) {
+    } else if (r < 0.39) {
       run.items.push({ kind: 'coffee', x: Renderer.W + 24, y });
-    } else if (r < 0.54) {
+    } else if (r < 0.55) {
       run.items.push({ kind: 'star', x: Renderer.W + 24, y });
-    } else if (r < 0.67) {
+    } else if (r < 0.68) {
       run.items.push({ kind: 'magnet', x: Renderer.W + 24, y });
-    } else if (r < 0.80) {
+    } else if (r < 0.81) {
       run.items.push({ kind: 'speed_boost', x: Renderer.W + 24, y });
-    } else if (r < 0.88) {
+    } else if (r < 0.90) {
       run.items.push({ kind: 'shield_item', x: Renderer.W + 24, y });
-    } else if (r < 0.94) {
+    } else if (r < 0.96) {
       run.items.push({ kind: 'umbrella_fever', x: Renderer.W + 24, y });
     } else {
       run.items.push({ kind: 'chest', x: Renderer.W + 24, y: Renderer.GROUND_Y - 16 });
@@ -1376,8 +2151,8 @@
       const w = kind === 'car_roof' ? 76 : 68;
       const platformY = kind === 'car_roof' ? Renderer.GROUND_Y - 30 : Renderer.GROUND_Y - 26;
       run.features.push({ kind, x: Renderer.W + 30, w, platformY, isPlatform: true });
-      for (let i = 0; i < 3; i++) {
-        run.items.push({ kind: 'coin', x: Renderer.W + 42 + i * 22, y: platformY - 16 });
+      for (let i = 0; i < 2; i++) {
+        run.items.push({ kind: 'coin', x: Renderer.W + 46 + i * 24, y: platformY - 16 });
       }
     } else if (run.weatherEvent === 'heat') {
       // Summer Shade Hopping strictly using sp_summer_tree / sp_palm_tree / sp_parasol!
@@ -1396,9 +2171,10 @@
     // Spawn either a bouncy Red Spring Jump Pad (sp_spring_pad) or Cooling Parasol Spot (sp_parasol)!
     if (Math.random() < 0.55) {
       run.features.push({ kind: 'spring_pad', x: Renderer.W + 40, w: 44, triggered: false });
-      for (let i = 0; i < 5; i++) {
-        const arc = Math.sin((i / 4) * Math.PI) * 95;
-        run.items.push({ kind: i === 2 ? 'big_coin' : 'coin', x: Renderer.W + 64 + i * 24, y: Renderer.GROUND_Y - 36 - arc });
+      const hasBig = Math.random() < 0.35;
+      for (let i = 0; i < 3; i++) {
+        const arc = Math.sin((i / 2) * Math.PI) * 98;
+        run.items.push({ kind: (i === 1 && hasBig) ? 'big_coin' : 'coin', x: Renderer.W + 76 + i * 26, y: Renderer.GROUND_Y - 40 - arc });
       }
     } else {
       run.features.push({ kind: 'cool_spot', x: Renderer.W + 40, w: 78, triggered: false, isShade: true });
@@ -1429,13 +2205,14 @@
       run.year = newYear;
       run.seasonIdx = 0;
       run.seasonId = DATA.SEASONS[0].id;
-      const yearGoldBonus = 45 + run.year * 10;
+      const yearGoldBonus = 20 + run.year * 5;
       run.score += Math.round(600 * run.year * run.scoreMult);
       run.gold += yearGoldBonus;
       run.winPoseTimer = 0.9;
       SFX.yearUp();
-      showRunBanner(`🔥 ${run.year}년 차 진입! 기후 위기 상승! (+${yearGoldBonus}G)`, 2800);
-      Renderer.spawnFloater(`${run.year}년 차 돌파!`, '#ffe55c', run.playerX + 40, run.playerY - 52);
+      const nextDiff = DATA.getYearDifficulty(run.year);
+      showRunBanner(`🔥 ${run.year}년 차 진입! 속도×${nextDiff.speedMult.toFixed(2)} · 콤보 장애물 경보! (+${yearGoldBonus}G)`, 3000);
+      Renderer.spawnFloater(`${run.year}년 차 난이도 UP!`, '#ff944d', run.playerX + 40, run.playerY - 52);
       checkStageMilestone(run.year, 0);
     } else if (newSeasonIdx !== run.seasonIdx) {
       run.prevSeasonId = run.seasonId;
@@ -1444,7 +2221,7 @@
       const sObj = DATA.SEASONS[run.seasonIdx];
       run.seasonId = sObj.id;
       run.score += Math.round(200 * run.year * run.scoreMult);
-      run.gold += 15;
+      run.gold += 5;
       run.heatGauge = 0;
       SFX.seasonUp();
       showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] 전환 · ${sObj.weatherLabel}`, 2300);
@@ -1652,8 +2429,8 @@
     }
 
     // ---- ACTIVE WEATHER EXPOSURE SYSTEM (RAIN WITHOUT UMBRELLA / YELLOW DUST WITHOUT MASK -> -1 HEART!) ----
-    const rainExposeLimit = (run.weatherEvent === 'flood' ? 4.0 : 3.0) + (ch.rainGraceBonus || 0);
-    const dustExposeLimit = 3.0;
+    const rainExposeLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
+    const dustExposeLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
     const isRainingNow = run.weatherEvent === 'rain' || run.weatherEvent === 'flood';
     const isDustNow = run.weatherEvent === 'dust';
 
@@ -1692,7 +2469,7 @@
         run.dustExposeTimer = 0;
       }
 
-      // 3. Summer Heat Gauge (only builds in active heatwave outside shade)
+      // 3. Summer Heat Gauge (only builds in active heatwave outside shade, escalates by year!)
       if (run.weatherEvent === 'heat' && !ch.summerImmune) {
         if (inShade) {
           run.heatGauge = Math.max(0, run.heatGauge - 46 * dt);
@@ -1702,7 +2479,7 @@
             Renderer.spawnFloater('그늘 밟기! 냉각', '#7ae8ff', run.playerX + 8, run.playerY - 42);
           }
         } else {
-          run.heatGauge = Math.min(100, run.heatGauge + 15 * dt);
+          run.heatGauge = Math.min(100, run.heatGauge + 15 * diff.heatRateMult * dt);
           if (run.heatGauge >= 100) {
             run.heatGauge = 55;
             run.hp = Math.max(0, run.hp - 1);
@@ -1757,8 +2534,8 @@
     } else if (run.weatherEvent === 'rain' || run.weatherEvent === 'flood') {
       run.passingCarCd -= dt;
       if (run.passingCarCd <= 0) {
-        run.passingCarCd = 6.5 + Math.random() * 3.0;
-        run.passingCar = { phase: 'warn', timer: 1.15, x: Renderer.W + 30 };
+        run.passingCarCd = Math.max(3.6, (6.5 + Math.random() * 2.5) / diff.weatherPaceMult);
+        run.passingCar = { phase: 'warn', timer: Math.max(0.85, 1.15 / Math.min(1.35, diff.weatherPaceMult)), x: Renderer.W + 30 };
         SFX.fakeAlert();
       }
     }
@@ -1767,14 +2544,14 @@
     run.obstacleCd -= dt;
     if (run.obstacleCd <= 0) {
       spawnObstacleWave();
-      const baseInterval = 1.72 / diff.spawnRateMult;
-      run.obstacleCd = Math.max(0.86, baseInterval + (Math.random() - 0.35) * 0.36);
+      const baseInterval = 1.68 / diff.spawnRateMult;
+      run.obstacleCd = Math.max(0.58, baseInterval + (Math.random() - 0.35) * 0.32);
     }
 
     run.itemCd -= dt;
     if (run.itemCd <= 0) {
       spawnUtilityPickup();
-      run.itemCd = 3.6 + Math.random() * 1.8;
+      run.itemCd = 3.8 + Math.random() * 1.9;
     }
 
     if (run.weatherEvent === 'flood' || run.weatherEvent === 'heat') {
@@ -1811,7 +2588,7 @@
     }
 
     const hasSuperMagnet = run.feverTimer > 0 || run.magnetTimer > 0;
-    const magnetRadius = hasSuperMagnet ? 155 : 34 + save.upgrades.magnet * 22;
+    const magnetRadius = hasSuperMagnet ? 145 : 24 + save.upgrades.magnet * 16;
 
     for (let i = run.items.length - 1; i >= 0; i--) {
       const it = run.items[i];
@@ -1822,19 +2599,19 @@
       const dist = Math.hypot(it.x - pcx, it.y - pcy);
 
       if ((it.kind === 'coin' || it.kind === 'big_coin' || it.kind === 'star') && dist < magnetRadius && dist > 16) {
-        const pull = (hasSuperMagnet ? 430 : 250) * dt;
+        const pull = (hasSuperMagnet ? 420 : 230) * dt;
         it.x += ((pcx - it.x) / dist) * pull;
         it.y += ((pcy - it.y) / dist) * pull;
       }
 
-      if (dist < 25) {
+      if (dist < 24) {
         run.items.splice(i, 1);
         if (it.kind === 'coin' || it.kind === 'big_coin') {
-          const baseG = (it.kind === 'big_coin' ? 12 : 3) + diff.goldBonus;
+          const baseG = (it.kind === 'big_coin' ? 4 : 1) + diff.goldBonus;
           const gainedG = Math.max(1, Math.round(baseG * run.goldMult));
           const gainedS = Math.round((it.kind === 'big_coin' ? 120 : 30) * run.scoreMult * upgradeScoreMult);
           run.gold += gainedG;
-          run.coinsCollected += it.kind === 'big_coin' ? 3 : 1;
+          run.coinsCollected += it.kind === 'big_coin' ? 2 : 1;
           run.score += gainedS;
           addFeverCharge(it.kind === 'big_coin' ? 10 : 2.5);
           Renderer.spawnPickupEffect(it.x, it.y, '#ffe55c', it.kind === 'big_coin');
@@ -1878,9 +2655,9 @@
           Renderer.spawnPickupEffect(it.x, it.y, '#7ad8ff', true);
           Renderer.spawnFloater('🛡️ 기상 보호막 획득!', '#8ce2ff', run.playerX + 12, run.playerY - 44);
         } else if (it.kind === 'chest') {
-          const bonusG = Math.round(32 * run.goldMult);
+          const bonusG = Math.round(12 * run.goldMult);
           run.gold += bonusG;
-          run.coinsCollected += 10;
+          run.coinsCollected += 4;
           run.score += Math.round(250 * upgradeScoreMult);
           addFeverCharge(25);
           SFX.reward();
@@ -1985,6 +2762,7 @@
         // Clean Dodge Feedback & Sound when passing an obstacle unscathed!
         if (!ob.passed && ob.x + ob.w < pBox.x - 4) {
           ob.passed = true;
+          run.dodgesTotal = (run.dodgesTotal || 0) + 1;
           run.dodgeCombo += 1;
           if (run.dodgeCombo > run.maxDodgeCombo) run.maxDodgeCombo = run.dodgeCombo;
           run.score += Math.round(15 * run.scoreMult * upgradeScoreMult);
@@ -2000,9 +2778,9 @@
           const vertDist = Math.min(Math.abs(pBox.y - (oBox.y + oBox.h)), Math.abs((pBox.y + pBox.h) - oBox.y));
           if (vertDist < 28) {
             run.score += Math.round(120 * upgradeScoreMult);
-            run.gold += 5;
+            run.gold += 2;
             SFX.coin();
-            Renderer.spawnFloater('NEAR MISS +5G!', '#ff9ce6', run.playerX + 10, run.playerY - 45);
+            Renderer.spawnFloater('NEAR MISS +2G!', '#ff9ce6', run.playerX + 10, run.playerY - 45);
           }
         }
       }
@@ -2065,9 +2843,12 @@
   function updateRunHud() {
     if (!run) return;
     const ch = getCharDef(run.charId);
+    const diff = DATA.getYearDifficulty(run.year);
     const seasonObj = DATA.SEASONS[run.seasonIdx];
 
     el.runYearNum.textContent = `${run.year}Y`;
+    const yrTier = run.year >= 4 ? 'yr-4' : (run.year === 3 ? 'yr-3' : (run.year === 2 ? 'yr-2' : 'yr-1'));
+    el.runYearNum.className = `portrait-yr-badge ${yrTier}`;
     el.runSeasonLabel.textContent = `${run.year}년 차 ${seasonObj.name}`;
     el.runScoreText.textContent = `${run.distanceM.toLocaleString('ko-KR')}m · ${Math.floor(run.score).toLocaleString('ko-KR')}점`;
     el.runGoldText.textContent = run.gold.toLocaleString('ko-KR');
@@ -2125,8 +2906,8 @@
     }
 
     // Live Exposure Countdown / Heat Warning Pill!
-    const rainLimit = (run.weatherEvent === 'flood' ? 4.0 : 3.0) + (ch.rainGraceBonus || 0);
-    const dustLimit = 3.0;
+    const rainLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
+    const dustLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
     if (run.rainExposeTimer > 0.05 && !run.umbrellaOn && run.feverTimer <= 0) {
       const rem = Math.max(0, rainLimit - run.rainExposeTimer);
       el.fcHeatPill.classList.remove('hidden');
@@ -2212,10 +2993,12 @@
 
     const finalScore = Math.floor(run.score);
     const finalDist = run.distanceM || 0;
-    const distGoldBonus = Math.floor(run.elapsed * 0.7);
+    const distGoldBonus = Math.floor(run.elapsed * 0.25);
     const totalGoldEarned = run.gold + distGoldBonus;
 
-    if (finalScore > (save.bestScore || 0)) save.bestScore = finalScore;
+    const prevBest = save.bestScore || 0;
+    const isNewBest = finalScore > prevBest;
+    if (isNewBest) save.bestScore = finalScore;
     if (finalDist > (save.bestDistanceM || 0)) save.bestDistanceM = finalDist;
     if (run.year > save.bestYear) save.bestYear = run.year;
     save.totalCoinsEver = (save.totalCoinsEver || 0) + (run.coinsCollected || 0);
@@ -2224,10 +3007,29 @@
     }
     save.gold += totalGoldEarned;
     save.playCount += 1;
+
+    // Normal Play Wood Chest Acquisition Path: 400m+ grants 1 Wood Chest into Vault (up to 3/day)
+    let gotWoodChest = false;
+    if (finalDist >= 400 && (save.dailyWoodChestDrops.count || 0) < 3) {
+      save.dailyWoodChestDrops.count = (save.dailyWoodChestDrops.count || 0) + 1;
+      save.chestBag.wood = (save.chestBag.wood || 0) + 1;
+      gotWoodChest = true;
+    }
+
     persistSave();
 
+    if (el.resBestScore) {
+      el.resBestScore.textContent = `${(save.bestScore || 0).toLocaleString('ko-KR')}점`;
+    }
+    if (el.resNewBest) {
+      el.resNewBest.classList.toggle('hidden', !isNewBest);
+    }
     el.resScore.textContent = `${finalScore.toLocaleString('ko-KR')}점`;
     el.gameoverOverlay.classList.remove('hidden');
+
+    if (gotWoodChest) {
+      showToast(`🪵 400m 돌파! 나무 상자 1개 보관함 획득! (오늘 ${save.dailyWoodChestDrops.count}/3)`);
+    }
   }
 
   function exitRunToHome() {
@@ -2272,6 +3074,8 @@
         const animDt = paused || (!run.active && !run.dying) ? 0 : dt;
         Renderer.renderRunFrame(runCtx, run, getCharDef(run.charId), animDt, t);
       }
+    } else if (currentTab === 'home') {
+      updateHomeRunningHero(t);
     }
 
     requestAnimationFrame(loop);
@@ -2317,8 +3121,47 @@
     });
 
     el.btnGoldShop.addEventListener('click', () => switchTab('shop'));
+    el.btnGemShop.addEventListener('click', () => {
+      currentShopSubtab = 'chests';
+      switchTab('shop');
+    });
     el.btnHomeCharInfo.addEventListener('click', () => openCharDetail(previewCharIdx));
     el.btnHomeBrawlers.addEventListener('click', () => switchTab('chars'));
+
+    // Brawl Stars Quest Subtabs (Daily / Weekly / Achievements / Chest Vault)
+    document.querySelectorAll('.bs-qtab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        SFX.click();
+        currentQuestSubtab = btn.dataset.qtab;
+        renderBrawlQuests();
+      });
+    });
+
+    // Transparent Probability & Pity Info Modal
+    if (el.btnShopProb) el.btnShopProb.addEventListener('click', openProbModal);
+    if (el.btnQuestProb) el.btnQuestProb.addEventListener('click', openProbModal);
+    if (el.btnCloseProb) {
+      el.btnCloseProb.addEventListener('click', () => {
+        SFX.click();
+        el.probOverlay.classList.add('hidden');
+      });
+    }
+    if (el.probOverlay) {
+      el.probOverlay.addEventListener('click', (e) => {
+        if (e.target === el.probOverlay) el.probOverlay.classList.add('hidden');
+      });
+    }
+
+    // 8-Frame Animated Chest Opening Modal
+    if (el.btnTapChest) el.btnTapChest.addEventListener('click', triggerChestAnimation);
+    if (el.btnChestClose) el.btnChestClose.addEventListener('click', closeChestModal);
+    if (el.chestOpenOverlay) {
+      el.chestOpenOverlay.addEventListener('click', (e) => {
+        if (e.target === el.chestOpenOverlay && activeChestSession && activeChestSession.opened) {
+          closeChestModal();
+        }
+      });
+    }
 
     // 7-Day Attendance Reward Modal (accessible from Missions Tab)
     function openAttendanceModal() {

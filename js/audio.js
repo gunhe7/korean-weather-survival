@@ -255,6 +255,18 @@ window.SFX = (function () {
       tone(880, 0.07, 'triangle', 0.075, 0);
       tone(1174, 0.08, 'triangle', 0.075, 0.06);
       tone(1568, 0.14, 'triangle', 0.08, 0.12);
+    },
+    chestShake() {
+      tone(220, 0.055, 'triangle', 0.075, 0);
+      tone(330, 0.05, 'sine', 0.055, 0.035);
+    },
+    chestOpen() {
+      slideTone(340, 1280, 0.22, 'triangle', 0.08);
+      [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, 0.13, 'triangle', 0.075, 0.12 + i * 0.055));
+    },
+    chestJackpot() {
+      slideTone(420, 1680, 0.26, 'triangle', 0.085);
+      [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.16, 'triangle', 0.085, 0.1 + i * 0.055));
     }
   };
 })();

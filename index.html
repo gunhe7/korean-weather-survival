@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd4" />
+  <link rel="stylesheet" href="style.css?v=20261121hd5" />
 </head>
 <body>
   <!-- ================= LANDSCAPE-ONLY ROTATE PROMPT OVERLAY ================= -->
@@ -36,11 +36,19 @@
         <span id="header-best-score" class="best-score-val">0</span>
       </div>
 
-      <button id="btn-gold-shop" class="res-pill gold-res-pill" type="button" title="상점으로 이동">
-        <img src="assets/design/item_coin.png" alt="골드" class="coin-sprite" />
-        <span id="ui-gold">0</span>
-        <span class="res-plus">+</span>
-      </button>
+      <div class="header-currencies">
+        <button id="btn-gold-shop" class="res-pill gold-res-pill" type="button" title="상점으로 이동">
+          <img src="assets/design/item_coin.png" alt="골드" class="coin-sprite" />
+          <span id="ui-gold">0</span>
+          <span class="res-plus">+</span>
+        </button>
+
+        <button id="btn-gem-shop" class="res-pill gem-res-pill" type="button" title="보석 상자 및 스킨 상점">
+          <span class="gem-ico" aria-hidden="true">💎</span>
+          <span id="ui-gems">0</span>
+          <span class="res-plus gem">+</span>
+        </button>
+      </div>
 
       <div class="header-actions">
         <button id="btn-open-settings" class="hdr-gear-btn" type="button" title="설정" aria-label="설정 열기">
@@ -71,8 +79,10 @@
             <div class="bs-podium-row">
               <button id="btn-prev-char" class="bs-side-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
 
-              <button id="btn-home-char-info" class="bs-podium-btn" type="button" title="캐릭터 능력 보기">
-                <img id="home-hero-img" src="assets/chars/port_yellow.png?v=20261121hd4" alt="선택 캐릭터" class="bs-hero-img" />
+              <button id="btn-home-char-info" class="bs-podium-btn" type="button" title="캐릭터 능력 및 스킨 보기">
+                <img id="home-hero-img" src="assets/chars/yellow_run_0.png?v=20261121hd5" alt="선택 캐릭터" class="bs-hero-img running-hero" />
+                <span class="bs-run-dust d1" aria-hidden="true"></span>
+                <span class="bs-run-dust d2" aria-hidden="true"></span>
                 <div class="bs-podium-ring">
                   <div class="bs-podium-inner"></div>
                 </div>
@@ -86,7 +96,7 @@
           <div class="bs-home-actions">
             <button id="btn-home-brawlers" class="bs-brawler-btn" type="button" aria-label="캐릭터 선택">
               <span class="bs-btn-inner">
-                <img id="home-brawler-mini" src="assets/chars/port_yellow.png?v=20261121hd4" alt="" class="bs-mini-avatar" />
+                <img id="home-brawler-mini" src="assets/chars/port_yellow.png?v=20261121hd5" alt="" class="bs-mini-avatar" />
                 <span class="bs-brawler-txt">
                   <span class="bs-brawler-lbl">캐릭터</span>
                   <span id="home-brawler-count" class="bs-brawler-cnt">1 / 5</span>
@@ -104,16 +114,21 @@
         </div>
       </section>
 
-      <!-- 2. SHOP SCREEN -->
+      <!-- 2. SHOP SCREEN (CHESTS + GEM SKINS + UPGRADES + BOOSTERS + CHARS) -->
       <section id="view-shop" class="tab-view">
-        <div class="cr-panel-header">
-          <h2>K-날씨 상점</h2>
-          <p>골드로 능력치 강화, 출발 아이템, 노르웨이 기상청을 준비하세요.</p>
+        <div class="cr-panel-header shop-head-row">
+          <div>
+            <h2>K-날씨 상점</h2>
+            <p>골드와 💎보석으로 상자 뽑기, 스킨, 강화, 캐릭터를 획득하세요.</p>
+          </div>
+          <button id="btn-shop-prob" class="bs-prob-btn" type="button">📊 확률·천장</button>
         </div>
-        <div class="cr-subtabs">
-          <button class="subtab-btn active" data-shoptab="upgrades" type="button">영구 강화</button>
-          <button class="subtab-btn" data-shoptab="boosters" type="button">출발 아이템</button>
-          <button class="subtab-btn" data-shoptab="chars" type="button">캐릭터 구매</button>
+        <div class="cr-subtabs shop-five-tabs">
+          <button class="subtab-btn active" data-shoptab="chests" type="button">🎁 상자</button>
+          <button class="subtab-btn" data-shoptab="skins" type="button">💎 스킨</button>
+          <button class="subtab-btn" data-shoptab="upgrades" type="button">⬆️ 강화</button>
+          <button class="subtab-btn" data-shoptab="boosters" type="button">⚡ 부스터</button>
+          <button class="subtab-btn" data-shoptab="chars" type="button">👤 캐릭터</button>
         </div>
         <div id="shop-items-list" class="card-list"></div>
       </section>
@@ -139,28 +154,30 @@
         <div id="char-list" class="brawl-char-grid"></div>
       </section>
 
-      <!-- 4. MISSIONS & ACHIEVEMENTS FULL TAB -->
+      <!-- 4. BRAWL STARS STYLE QUESTS, VAULT & ACHIEVEMENTS TAB -->
       <section id="view-missions" class="tab-view">
-        <div class="cr-panel-header">
-          <h2>미션 · 출석 · 업적</h2>
-          <p>일일 미션과 10종 업적을 달성해 골드와 출발 아이템을 받으세요.</p>
+        <div class="bs-quest-header">
+          <div class="bs-quest-tabs" role="tablist" aria-label="퀘스트 분류">
+            <button class="bs-qtab active daily" data-qtab="daily" type="button">☀️ 일일 <span class="qtab-sub">황금상자</span></button>
+            <button class="bs-qtab weekly" data-qtab="weekly" type="button">💎 주간 <span class="qtab-sub">다이아상자</span></button>
+            <button class="bs-qtab ach" data-qtab="ach" type="button">🏅 업적</button>
+            <button class="bs-qtab vault" data-qtab="vault" type="button">🎁 보관함 <span id="quest-vault-badge" class="vault-cnt-badge hidden">0</span></button>
+          </div>
+          <div class="bs-quest-head-actions">
+            <button id="btn-tab-open-attendance" class="bs-hdr-pill att" type="button">🎁 출석</button>
+            <button id="btn-quest-prob" class="bs-hdr-pill prob" type="button">📊 확률·천장</button>
+          </div>
         </div>
 
-        <div class="mission-tab-block">
-          <div class="mission-block-head">
-            <span>📋 오늘의 일일 미션</span>
-            <button id="btn-tab-open-attendance" class="ach-pill-btn" type="button">🎁 7일 출석 보상</button>
-          </div>
-          <div id="tab-mission-list" class="home-mission-list"></div>
+        <!-- Live Pity & Reset Timer Banner -->
+        <div class="bs-pity-bar">
+          <span id="quest-reset-label" class="pity-chip timer">⏱️ 매일 초기화</span>
+          <span id="pity-gold-chip" class="pity-chip gold">👑 황금 천장 0/10</span>
+          <span id="pity-diamond-chip" class="pity-chip diamond">💎 다이아 천장 0/15</span>
         </div>
 
-        <div class="mission-tab-block">
-          <div class="mission-block-head">
-            <span>🏅 K-날씨 업적 보상</span>
-            <span id="tab-ach-summary" class="mission-count-badge">0 / 10</span>
-          </div>
-          <div id="tab-ach-list" class="ach-list"></div>
-        </div>
+        <!-- Brawl Stars Quest Cards Grid -->
+        <div id="bs-quest-grid" class="bs-quest-grid"></div>
       </section>
 
       <!-- 5. RANKING & PERSONAL RECORDS TAB -->
@@ -172,7 +189,7 @@
 
         <div class="rank-my-card">
           <div class="rank-my-top">
-            <img id="rank-my-avatar" src="assets/chars/port_yellow.png?v=20261121hd4" alt="내 캐릭터" class="rank-my-img" />
+            <img id="rank-my-avatar" src="assets/chars/port_yellow.png?v=20261121hd5" alt="내 캐릭터" class="rank-my-img" />
             <div class="rank-my-meta">
               <div class="rank-my-title">내 현재 순위 <strong id="rank-my-pos">-위</strong></div>
               <div class="rank-my-sub" id="rank-my-score-line">최고 점수 0점 · 최장 거리 0m</div>
@@ -324,7 +341,7 @@
             <span id="detail-char-lv" class="brawl-power-pill">POWER Lv.1 / 5</span>
             <span id="detail-equipped-pill" class="brawl-equipped-pill hidden">장착 중</span>
             <button id="btn-detail-prev" class="brawl-nav-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
-            <img id="detail-char-img" src="assets/chars/port_yellow.png?v=20261121hd4" alt="캐릭터" class="brawl-hero-img" />
+            <img id="detail-char-img" src="assets/chars/port_yellow.png?v=20261121hd5" alt="캐릭터" class="brawl-hero-img" />
             <button id="btn-detail-next" class="brawl-nav-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
           </div>
 
@@ -360,6 +377,12 @@
               </div>
             </div>
 
+            <!-- Character Skin Equip Picker -->
+            <div class="detail-skins-wrap">
+              <div class="detail-skins-head">✨ 보유 스킨 장착</div>
+              <div id="detail-skins-row" class="detail-skins-row"></div>
+            </div>
+
             <!-- Bottom Actions: Level Up / Preview + Select / Unlock -->
             <div class="brawl-detail-actions">
               <button id="btn-detail-sub" class="item-action-btn purple" type="button">⬆️ Lv.2 (140G)</button>
@@ -376,7 +399,7 @@
       <div id="run-hud">
         <div class="run-hud-row">
           <div class="run-portrait-box">
-            <img id="run-portrait-img" src="assets/chars/port_yellow.png?v=20261121hd4" alt="캐릭터" class="run-portrait-img" />
+            <img id="run-portrait-img" src="assets/chars/port_yellow.png?v=20261121hd5" alt="캐릭터" class="run-portrait-img" />
             <span id="run-year-num" class="portrait-yr-badge">1Y</span>
           </div>
 
@@ -509,9 +532,15 @@
         </div>
       </div>
 
-      <!-- Clean Game Over Overlay (Uploaded Scoreboard + Home Button Only!) -->
+      <!-- Clean Game Over Overlay (Best Score + Current Score + Home Button!) -->
       <div id="gameover-overlay" class="modal-overlay gameover-clean-overlay hidden">
         <div class="gameover-clean-stack">
+          <div class="res-best-banner" aria-label="최고 점수">
+            <img src="assets/ui/best_score_frame.png" alt="최고점수" class="res-best-bg" />
+            <span id="res-best-score" class="res-best-num">0점</span>
+            <span id="res-new-best" class="res-new-pill hidden">NEW!</span>
+          </div>
+
           <div class="res-score-banner" aria-label="최종 점수">
             <img src="assets/ui/result_score_bar.png" alt="점수판" class="res-score-bg" />
             <span id="res-score" class="res-score-num">0점</span>
@@ -527,13 +556,52 @@
       </div>
     </section>
 
+    <!-- ================= 8-FRAME ANIMATED CHEST OPENING MODAL ================= -->
+    <div id="chest-open-overlay" class="modal-overlay chest-open-overlay hidden">
+      <div id="chest-open-stage" class="chest-open-stage tier-gold">
+        <div class="chest-rays"></div>
+        <div id="chest-open-title" class="chest-open-title">황금 상자</div>
+        <div id="chest-pity-note" class="chest-pity-note">에픽+ 천장까지 10회</div>
+
+        <!-- Animated 8-Frame Uploaded Chest Sprite -->
+        <button id="btn-tap-chest" class="chest-tap-stage" type="button" aria-label="상자 열기">
+          <img id="chest-anim-img" src="assets/chests/chest_gold_0.png?v=20261121hd5" alt="상자" class="chest-anim-img" />
+          <span id="chest-tap-hint" class="chest-tap-hint">터치해서 열기!</span>
+        </button>
+
+        <!-- Revealed Reward Card -->
+        <div id="chest-reward-card" class="chest-reward-card hidden">
+          <div id="chest-reward-pity" class="chest-pity-tag hidden">✨ 천장 확정 보상!</div>
+          <div id="chest-reward-rarity" class="chest-rarity-pill">골드 보상</div>
+          <div id="chest-reward-visual" class="chest-reward-visual"></div>
+          <div id="chest-reward-name" class="chest-reward-name">+750 G</div>
+          <div id="chest-reward-sub" class="chest-reward-sub">황금 상자 보상 획득!</div>
+          <div class="chest-reward-actions">
+            <button id="btn-chest-equip" class="cr-blue-btn hidden" type="button">✨ 바로 장착</button>
+            <button id="btn-chest-close" class="cr-gold-btn" type="button">확인</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TRANSPARENT PROBABILITY & PITY INFO MODAL ================= -->
+    <div id="prob-overlay" class="modal-overlay hidden">
+      <div class="cr-modal prob-modal">
+        <div class="cr-modal-bar">
+          <span>📊 상자 확률 · 천장 · 중복 보상 안내</span>
+          <button id="btn-close-prob" class="modal-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div id="prob-modal-body" class="modal-body modal-scroll-body prob-body"></div>
+      </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="global-toast" class="global-toast hidden"></div>
   </div>
 
-  <script src="js/data.js?v=20261121hd4"></script>
-  <script src="js/audio.js?v=20261121hd4"></script>
-  <script src="js/renderer.js?v=20261121hd4"></script>
-  <script src="js/game.js?v=20261121hd4"></script>
+  <script src="js/data.js?v=20261121hd5"></script>
+  <script src="js/audio.js?v=20261121hd5"></script>
+  <script src="js/renderer.js?v=20261121hd5"></script>
+  <script src="js/game.js?v=20261121hd5"></script>
 </body>
 </html>
