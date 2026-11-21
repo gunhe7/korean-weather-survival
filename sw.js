@@ -1,4 +1,4 @@
-const CACHE_NAME = 'k-weather-survival-v20261121hd33';
+const CACHE_NAME = 'k-weather-survival-v20261121hd34';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -32,6 +32,8 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  // Let browser handle MP4/Range requests natively (critical for iOS Safari <video> playback!)
+  if (event.request.headers.has('range') || /\.(mp4|webm|mov)$/i.test(url.pathname)) return;
 
   const isCodeOrDoc =
     event.request.mode === 'navigate' ||

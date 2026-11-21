@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd33';
+  const ASSET_VER = '20261121hd34';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -319,6 +319,12 @@
 
   // ===================== DOM REFERENCES =====================
   const el = {
+    companySplashOverlay: document.getElementById('company-splash-overlay'),
+    companyLogoVideo: document.getElementById('company-logo-video'),
+    companyLogoFallback: document.getElementById('company-logo-fallback'),
+    btnCompanyUnmute: document.getElementById('btn-company-unmute'),
+    btnCompanySkip: document.getElementById('btn-company-skip'),
+
     introOverlay: document.getElementById('intro-overlay'),
     introLoginBox: document.getElementById('intro-login-box'),
     btnIntroGoogle: document.getElementById('btn-intro-google'),
@@ -2045,6 +2051,7 @@
 
   function updateHomeRunningHero(t) {
     if (currentTab !== 'home') return;
+    if (el.companySplashOverlay && !el.companySplashOverlay.classList.contains('hidden')) return;
     if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
     if (el.loginOverlay && !el.loginOverlay.classList.contains('hidden')) return;
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
@@ -4699,6 +4706,13 @@
 
     // Desktop Keyboard Controls (Space/↑ Jump, ↓ Slide, Q Umbrella, E Mask, Esc Pause)
     window.addEventListener('keydown', (e) => {
+      if (el.companySplashOverlay && !el.companySplashOverlay.classList.contains('hidden')) {
+        if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
+          e.preventDefault();
+          finishCompanySplash();
+        }
+        return;
+      }
       if (!el.introOverlay.classList.contains('hidden')) {
         if (e.code === 'Space' || e.code === 'Enter') {
           e.preventDefault();
@@ -4746,6 +4760,106 @@
     });
   }
 
+  // ===================== YAGUN STUDIO COMPANY LOGO VIDEO SPLASH =====================
+  let companySplashDone = false;
+  let companySplashTimer = null;
+  let companyFallbackTimer = null;
+
+  function finishCompanySplash(silent = false) {
+    if (companySplashDone) return;
+    companySplashDone = true;
+    if (companySplashTimer) { clearTimeout(companySplashTimer); companySplashTimer = null; }
+    if (companyFallbackTimer) { clearTimeout(companyFallbackTimer); companyFallbackTimer = null; }
+    const ov = el.companySplashOverlay;
+    const vid = el.companyLogoVideo;
+    if (vid) {
+      try { vid.pause(); } catch {}
+    }
+    if (ov && !ov.classList.contains('hidden')) {
+      ov.classList.add('leaving');
+      setTimeout(() => {
+        ov.classList.add('hidden');
+        ov.classList.remove('leaving');
+        if (!silent) {
+          try { SFX.introJingle(); } catch {}
+        }
+      }, 520);
+    } else if (!silent) {
+      try { SFX.introJingle(); } catch {}
+    }
+  }
+
+  function showCompanyFallbackSplash() {
+    if (companySplashDone) return;
+    if (el.companyLogoVideo) el.companyLogoVideo.classList.add('hidden');
+    if (el.btnCompanyUnmute) el.btnCompanyUnmute.classList.add('hidden');
+    if (el.companyLogoFallback) el.companyLogoFallback.classList.remove('hidden');
+    if (companyFallbackTimer) clearTimeout(companyFallbackTimer);
+    companyFallbackTimer = setTimeout(() => finishCompanySplash(false), 2900);
+  }
+
+  function startCompanySplash() {
+    const ov = el.companySplashOverlay;
+    const vid = el.companyLogoVideo;
+    if (!ov || !vid) {
+      companySplashDone = true;
+      try { SFX.introJingle(); } catch {}
+      return;
+    }
+
+    if (el.btnCompanySkip) {
+      el.btnCompanySkip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        finishCompanySplash(false);
+      });
+    }
+    if (el.btnCompanyUnmute) {
+      el.btnCompanyUnmute.addEventListener('click', (e) => {
+        e.stopPropagation();
+        try {
+          vid.muted = false;
+          vid.volume = 1;
+          vid.play().catch(() => {});
+        } catch {}
+        el.btnCompanyUnmute.classList.add('hidden');
+      });
+    }
+
+    vid.addEventListener('ended', () => finishCompanySplash(false));
+    vid.addEventListener('error', () => showCompanyFallbackSplash());
+
+    // Hard safety timeout so splash ALWAYS transitions to Game Intro even on poor networks
+    companySplashTimer = setTimeout(() => finishCompanySplash(false), 13000);
+
+    // If codec (HEVC) fails to start rendering frames within 2.8s, smoothly show YAGUN STUDIO fallback!
+    const decodeWatch = setTimeout(() => {
+      if (!companySplashDone && (vid.readyState < 2 || vid.videoWidth === 0)) {
+        showCompanyFallbackSplash();
+      }
+    }, 2800);
+    vid.addEventListener('playing', () => {
+      if (vid.videoWidth > 0) clearTimeout(decodeWatch);
+    });
+
+    // Try unmuted autoplay first; if blocked by browser policy, immediately autoplay muted + show Unmute pill!
+    try {
+      vid.muted = false;
+      const p = vid.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {
+          vid.muted = true;
+          if (el.btnCompanyUnmute) el.btnCompanyUnmute.classList.remove('hidden');
+          const p2 = vid.play();
+          if (p2 && typeof p2.catch === 'function') {
+            p2.catch(() => showCompanyFallbackSplash());
+          }
+        });
+      }
+    } catch {
+      showCompanyFallbackSplash();
+    }
+  }
+
   // ===================== GLOBAL ERROR GUARD & BOOT =====================
   window.addEventListener('error', (ev) => {
     try {
@@ -4755,12 +4869,14 @@
   setupEvents();
   refreshAllMenus();
   renderIntroAuthState();
+  startCompanySplash();
 
   // Handle Real Firebase OAuth Redirect / Persistent Session Restoration!
   if (ONLINE && ONLINE.hasFirebaseAuth()) {
     const startAuthListeners = () => {
       ONLINE.checkRedirectLoginResult().then(async (redirectProfile) => {
         if (redirectProfile) {
+          finishCompanySplash(true);
           await switchToAccount(redirectProfile, { carryGuestSave: save.auth && save.auth.provider === 'guest' });
           dismissIntroToHome();
         }
@@ -4782,6 +4898,5 @@
   }
 
   try { tryAutoLockLandscape(false); } catch {}
-  try { SFX.introJingle(); } catch {}
   requestAnimationFrame(loop);
 })();
