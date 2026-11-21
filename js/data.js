@@ -88,7 +88,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'yellow_idle_0',
       animSkin: 'yellow',
       animFrames: 3,
-      avatar: 'assets/chars/port_yellow.png?v=20261121hd5',
+      avatar: 'assets/chars/port_yellow.png?v=20261121hd6',
       auraType: 'raincoat',
       price: 0,
       baseHp: 5,
@@ -111,7 +111,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'blue_idle_0',
       animSkin: 'blue',
       animFrames: 2,
-      avatar: 'assets/chars/port_blue.png?v=20261121hd5',
+      avatar: 'assets/chars/port_blue.png?v=20261121hd6',
       auraType: 'padding',
       price: 350,
       baseHp: 6,
@@ -132,7 +132,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'hanbok_idle_0',
       animSkin: 'hanbok',
       animFrames: 2,
-      avatar: 'assets/chars/port_hanbok.png?v=20261121hd5',
+      avatar: 'assets/chars/port_hanbok.png?v=20261121hd6',
       auraType: 'hanbok',
       price: 650,
       baseHp: 5,
@@ -153,7 +153,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'skier_idle_0',
       animSkin: 'skier',
       animFrames: 2,
-      avatar: 'assets/chars/port_skier.png?v=20261121hd5',
+      avatar: 'assets/chars/port_skier.png?v=20261121hd6',
       auraType: 'skier',
       price: 950,
       baseHp: 5,
@@ -175,7 +175,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'santa_idle_0',
       animSkin: 'santa',
       animFrames: 2,
-      avatar: 'assets/chars/port_santa.png?v=20261121hd5',
+      avatar: 'assets/chars/port_santa.png?v=20261121hd6',
       auraType: 'santa',
       price: 1350,
       baseHp: 5,
@@ -195,7 +195,7 @@ window.RUN_DATA = (function () {
     {
       id: 'hp',
       name: '기초 체력 강화',
-      icon: 'assets/design/orb_potion.png',
+      icon: 'assets/design/orb_potion.png?v=20261121hd6',
       maxLv: 5,
       basePrice: 120,
       priceStep: 110,
@@ -204,7 +204,7 @@ window.RUN_DATA = (function () {
     {
       id: 'magnet',
       name: '골드 자석 강화',
-      icon: 'assets/design/orb_magnet.png',
+      icon: 'assets/design/orb_magnet.png?v=20261121hd6',
       maxLv: 5,
       basePrice: 140,
       priceStep: 120,
@@ -213,7 +213,7 @@ window.RUN_DATA = (function () {
     {
       id: 'defense',
       name: '기상 대응력 강화',
-      icon: 'assets/design/ui_chest.png',
+      icon: 'assets/design/ui_chest.png?v=20261121hd6',
       maxLv: 5,
       basePrice: 160,
       priceStep: 130,
@@ -222,7 +222,7 @@ window.RUN_DATA = (function () {
     {
       id: 'score',
       name: '생존 점수 배율',
-      icon: 'assets/design/orb_star.png',
+      icon: 'assets/design/orb_star.png?v=20261121hd6',
       maxLv: 5,
       basePrice: 180,
       priceStep: 150,
@@ -235,21 +235,21 @@ window.RUN_DATA = (function () {
     {
       id: 'norway',
       name: '노르웨이 기상청 (Yr.no)',
-      icon: 'assets/design/orb_star.png',
+      icon: 'assets/design/orb_star.png?v=20261121hd6',
       price: 90,
       desc: '구라청 훼이크 완전 제거! 다가올 폭우·돌풍·빙판·미세먼지를 3초 전 100% 정확히 예고합니다!'
     },
     {
       id: 'shield',
       name: '기상 보호막',
-      icon: 'assets/atlas/spr_shield.png',
+      icon: 'assets/atlas/spr_shield.png?v=20261121hd6',
       price: 80,
       desc: '다음 달리기에서 첫 장애물 충돌 1회를 피해 없이 완전 방어합니다!'
     },
     {
       id: 'boost',
       name: 'FEVER! 쾌속 출발',
-      icon: 'assets/design/orb_bolt.png',
+      icon: 'assets/design/orb_bolt.png?v=20261121hd6',
       price: 100,
       desc: '시작 후 4.5초간 FEVER 무적 질주 + 코인 자석 자동 발동!'
     }

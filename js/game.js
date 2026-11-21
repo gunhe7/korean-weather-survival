@@ -24,7 +24,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd5';
+  const ASSET_VER = '20261121hd6';
 
   function createDefaultCharLevels() {
     const lv = {};
@@ -556,7 +556,7 @@
       el.chestRewardRarity.textContent = '🪙 골드 획득';
       el.chestRewardRarity.style.background = '#8f5900';
       el.chestRewardRarity.style.color = '#ffe866';
-      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png" alt="골드" class="rw-big-ico" />`;
+      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png?v=20261121hd6" alt="골드" class="rw-big-ico" />`;
       el.chestRewardName.textContent = `+${rw.amount.toLocaleString('ko-KR')} G`;
       el.chestRewardSub.textContent = `${rw.chest.name}에서 골드를 획득했습니다!`;
     } else if (rw.kind === 'diamond') {
@@ -594,7 +594,7 @@
       el.chestRewardRarity.textContent = `🔄 ${rar.name} 스킨 전체 보유 (중복 대체)`;
       el.chestRewardRarity.style.background = rar.bg;
       el.chestRewardRarity.style.color = rar.color;
-      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png" alt="중복 골드" class="rw-big-ico" />`;
+      el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png?v=20261121hd6" alt="중복 골드" class="rw-big-ico" />`;
       el.chestRewardName.textContent = `+${rw.amount.toLocaleString('ko-KR')} G`;
       el.chestRewardSub.textContent = `해당 등급 스킨을 모두 보유해 중복 방지 골드로 지급되었습니다!`;
     }

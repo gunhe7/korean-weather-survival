@@ -46,7 +46,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd5';
+  const CHAR_ASSET_VER = '20261121hd6';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -81,13 +81,13 @@ window.RunRenderer = (function () {
 
   DESIGN_SPRITES.forEach((key) => {
     const img = new Image();
-    img.src = `assets/design/${key}.png`;
+    img.src = `assets/design/${key}.png?v=${CHAR_ASSET_VER}`;
     sprites[key] = img;
   });
 
   ATLAS_SPRITES.forEach((key) => {
     const img = new Image();
-    img.src = `assets/atlas/${key}.png`;
+    img.src = `assets/atlas/${key}.png?v=${CHAR_ASSET_VER}`;
     sprites[key] = img;
   });
 
@@ -558,7 +558,8 @@ window.RunRenderer = (function () {
     const w = Math.round(h * (dog.naturalWidth / dog.naturalHeight));
     ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
     ctx.fillRect(Math.floor(x - w * 0.35), Math.floor(y - 1), Math.floor(w * 0.7), 3);
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(dog, Math.floor(x - w / 2), Math.floor(y - h - hop), w, h);
   }
 
@@ -665,7 +666,8 @@ window.RunRenderer = (function () {
       if (umbSpr) {
         const uh = 34;
         const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
-        ctx.imageSmoothingEnabled = false;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 4), Math.floor(uy - 12), uw, uh);
       } else {
         ctx.fillStyle = '#2672d9';
@@ -859,7 +861,8 @@ window.RunRenderer = (function () {
   function drawItem(ctx, it, t) {
     const x = Math.floor(it.x);
     const y = Math.floor(it.y + Math.sin(t * 7 + it.x * 0.05) * 2.5);
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     if (it.kind === 'coin' || it.kind === 'big_coin') {
       const spin = Math.floor(t * 7 + it.x * 0.03) % 4 === 0;
@@ -955,7 +958,8 @@ window.RunRenderer = (function () {
     const scale = 1 + Math.sin(t * 14) * 0.08;
     const dw = Math.round(122 * scale);
     const dh = Math.round(48 * scale);
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(spr, Math.floor((W - dw) / 2), 36, dw, dh);
   }
 
@@ -1089,7 +1093,8 @@ window.RunRenderer = (function () {
 
   function renderHomePreview(ctx, charDef, t, forcedSeasonIdx = null) {
     const pw = 380, ph = 180, gy = 148;
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     const seasonIdx = forcedSeasonIdx !== null ? (forcedSeasonIdx % 4) : (Math.floor(t / 6) % 4);
     const seasonId = window.RUN_DATA.SEASONS[seasonIdx].id;
     drawBackground(ctx, pw, ph, gy, seasonId, t * 48, t, null, 1, 'clear');

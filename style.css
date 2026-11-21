@@ -171,7 +171,7 @@ body {
   inset: 0;
   z-index: 95;
   background: #1b6fe8 url('assets/intro_bg.jpg') center bottom / cover no-repeat;
-  image-rendering: pixelated;
+  image-rendering: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,7 +200,7 @@ body {
   object-fit: contain;
   display: block;
   margin: 0 auto;
-  image-rendering: pixelated;
+  image-rendering: auto;
   filter: drop-shadow(0 10px 22px rgba(8, 22, 54, 0.55));
   animation: logoFloat 2.4s ease-in-out 0.78s infinite;
 }
@@ -285,7 +285,7 @@ body {
   width: 22px;
   height: 22px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   flex-shrink: 0;
 }
 .coin-sprite.sm { width: 18px; height: 18px; }
@@ -367,7 +367,7 @@ body {
   width: 36px;
   height: 38px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .cr-banner-text {
@@ -467,7 +467,7 @@ body {
   width: 100%;
   height: 100%;
   display: block;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .stage-arrow {
@@ -610,7 +610,7 @@ body {
   width: 42px;
   height: 42px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .dock-badge {
@@ -773,7 +773,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .item-meta { flex: 1; min-width: 0; }
@@ -936,7 +936,7 @@ body {
   width: 40px;
   height: 42px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   margin-top: 3px;
 }
 
@@ -1160,7 +1160,7 @@ body {
   aspect-ratio: 450 / 270;
   object-fit: contain;
   display: block;
-  image-rendering: pixelated;
+  image-rendering: auto;
   border-top: 2px solid #3c5f94;
   border-bottom: 2px solid #3c5f94;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -1247,7 +1247,7 @@ body {
   width: 38px;
   height: 38px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .speech-bubble {
@@ -1302,7 +1302,7 @@ body {
   width: 56px;
   height: 58px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   filter: drop-shadow(0 4px 0 rgba(10, 14, 30, 0.55));
 }
 
@@ -1355,7 +1355,7 @@ body {
   width: 24px;
   height: 24px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .fever-bar-fill.rainbow-fill {
@@ -1474,7 +1474,7 @@ body {
   width: 19px;
   height: 19px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   flex-shrink: 0;
 }
 
@@ -1536,7 +1536,7 @@ body {
   transition: opacity 0.15s, transform 0.15s;
 }
 
-.status-orb img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.status-orb img { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
 .orb-emoji { font-size: 14px; line-height: 1; }
 
 .status-orb.active {
@@ -2839,7 +2839,7 @@ input:focus-visible {
   height: 100%;
   object-fit: contain;
   object-position: center bottom;
-  image-rendering: pixelated;
+  image-rendering: auto;
   pointer-events: none;
   transition: opacity 0.08s ease;
 }
@@ -2921,7 +2921,7 @@ input:focus-visible {
   background: linear-gradient(180deg, #ffe078, #f29d24);
   border: 2px solid #142642;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   padding: 2px;
 }
 
@@ -3022,7 +3022,7 @@ input:focus-visible {
   background: #d8ebff;
   border: 1.5px solid #759fd4;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   padding: 2px;
   flex-shrink: 0;
 }
@@ -3172,7 +3172,7 @@ input:focus-visible {
   width: 74px;
   height: 74px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   filter: drop-shadow(0 5px 0 rgba(10, 18, 36, 0.45));
 }
 
@@ -3333,7 +3333,7 @@ input:focus-visible {
   width: 104px;
   height: 104px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   filter: drop-shadow(0 8px 0 rgba(10, 18, 36, 0.45));
   animation: brawlBob 1.7s ease-in-out infinite;
 }
@@ -3738,7 +3738,7 @@ input:focus-visible {
   width: 156px;
   height: 156px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   filter: drop-shadow(0 10px 0 rgba(10, 20, 44, 0.44));
   animation: brawlBob 1.75s ease-in-out infinite;
   transition: transform 0.12s ease;
@@ -3846,7 +3846,7 @@ input:focus-visible {
   width: 40px;
   height: 40px;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   filter: drop-shadow(0 3px 0 rgba(8, 16, 36, 0.55));
   flex-shrink: 0;
 }
@@ -4204,7 +4204,7 @@ input:focus-visible {
   aspect-ratio: 16 / 9 !important;
   object-fit: contain;
   display: block;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 /* Sleek Cookie Run Floating Top HUD Overlay */
@@ -4351,7 +4351,7 @@ input:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   pointer-events: none;
 }
 
