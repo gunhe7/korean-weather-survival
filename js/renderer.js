@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd8';
+  const CHAR_ASSET_VER = '20261121hd9';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -1082,9 +1082,6 @@ window.RunRenderer = (function () {
     // Obstacles
     run.obstacles.forEach((ob) => drawObstacle(ctx, ob, t));
 
-    // Loyal Shiba Puppy Pet running right behind!
-    drawPuppyPet(ctx, run.playerX - 46, run.petY, t, 32);
-
     // Runner Character (Full 7-State Animation: Idle, Run, Jump, Fall, Slide, Hurt, Die!)
     drawCharacter(ctx, charDef, run.playerX, run.playerY, {
       sliding: run.sliding,
@@ -1155,7 +1152,6 @@ window.RunRenderer = (function () {
     const seasonIdx = forcedSeasonIdx !== null ? (forcedSeasonIdx % 4) : (Math.floor(t / 6) % 4);
     const seasonId = window.RUN_DATA.SEASONS[seasonIdx].id;
     drawBackground(ctx, pw, ph, gy, seasonId, t * 48, t, null, 1, 'clear');
-    drawPuppyPet(ctx, pw / 2 - 58, gy + 2, t, 38);
     drawCharacter(ctx, charDef, pw / 2 + 12, gy + 2, {
       sliding: false,
       inAir: false,

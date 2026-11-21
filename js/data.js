@@ -88,7 +88,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'yellow_idle_0',
       animSkin: 'yellow',
       animFrames: 3,
-      avatar: 'assets/chars/port_yellow.png?v=20261121hd8',
+      avatar: 'assets/chars/port_yellow.png?v=20261121hd9',
       auraType: 'raincoat',
       price: 0,
       baseHp: 5,
@@ -111,17 +111,17 @@ window.RUN_DATA = (function () {
       spriteKey: 'blue_idle_0',
       animSkin: 'blue',
       animFrames: 2,
-      avatar: 'assets/chars/port_blue.png?v=20261121hd8',
+      avatar: 'assets/chars/port_blue.png?v=20261121hd9',
       auraType: 'padding',
       price: 350,
-      baseHp: 6,
+      baseHp: 5,
       goldMult: 1.05,
       scoreMult: 1.1,
-      extraInvuln: 0.45,
+      extraInvuln: 0.65,
       passiveName: '중무장 방한 탱커',
-      passiveDesc: '기본 체력 6하트(+1하트) & 피격 후 무적 시간 +0.45초 연장!',
-      desc: '중무장 파란 패딩 탱커! 더 많은 하트와 긴 무적 시간으로 안정적인 생존력을 자랑합니다.',
-      tag: '기본 6하트 · 무적 시간 +0.45초',
+      passiveDesc: '피격 후 무적 시간 +0.65초 대폭 연장! (전 캐릭터 체력 5하트 고정)',
+      desc: '중무장 파란 패딩 탱커! 긴 피격 무적 시간으로 안정적인 생존력을 자랑합니다.',
+      tag: '무적 시간 +0.65초 · 안정 생존',
       colors: { top: '#2d74e0', outer: '#1c52ad', pants: '#1a243b', shoes: '#3c5070', hat: '#2d74e0' }
     },
     {
@@ -132,7 +132,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'hanbok_idle_0',
       animSkin: 'hanbok',
       animFrames: 2,
-      avatar: 'assets/chars/port_hanbok.png?v=20261121hd8',
+      avatar: 'assets/chars/port_hanbok.png?v=20261121hd9',
       auraType: 'hanbok',
       price: 650,
       baseHp: 5,
@@ -153,7 +153,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'skier_idle_0',
       animSkin: 'skier',
       animFrames: 2,
-      avatar: 'assets/chars/port_skier.png?v=20261121hd8',
+      avatar: 'assets/chars/port_skier.png?v=20261121hd9',
       auraType: 'skier',
       price: 950,
       baseHp: 5,
@@ -175,7 +175,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'santa_idle_0',
       animSkin: 'santa',
       animFrames: 2,
-      avatar: 'assets/chars/port_santa.png?v=20261121hd8',
+      avatar: 'assets/chars/port_santa.png?v=20261121hd9',
       auraType: 'santa',
       price: 1350,
       baseHp: 5,
@@ -194,17 +194,17 @@ window.RUN_DATA = (function () {
   const UPGRADES = [
     {
       id: 'hp',
-      name: '기초 체력 강화',
-      icon: 'assets/design/orb_potion.png?v=20261121hd8',
+      name: '기상 내성 강화',
+      icon: 'assets/design/orb_potion.png?v=20261121hd9',
       maxLv: 5,
       basePrice: 120,
       priceStep: 110,
-      desc: (lv) => `최대 체력(하트) +${lv + 1}칸 (현재 +${lv}칸)`
+      desc: (lv) => `비·황사·폭염 노출 유예 +${((lv + 1) * 0.3).toFixed(1)}초 (체력 5하트 고정)`
     },
     {
       id: 'magnet',
       name: '골드 자석 강화',
-      icon: 'assets/design/orb_magnet.png?v=20261121hd8',
+      icon: 'assets/design/orb_magnet.png?v=20261121hd9',
       maxLv: 5,
       basePrice: 140,
       priceStep: 120,
@@ -213,7 +213,7 @@ window.RUN_DATA = (function () {
     {
       id: 'defense',
       name: '기상 대응력 강화',
-      icon: 'assets/design/ui_chest.png?v=20261121hd8',
+      icon: 'assets/design/ui_chest.png?v=20261121hd9',
       maxLv: 5,
       basePrice: 160,
       priceStep: 130,
@@ -222,7 +222,7 @@ window.RUN_DATA = (function () {
     {
       id: 'score',
       name: '생존 점수 배율',
-      icon: 'assets/design/orb_star.png?v=20261121hd8',
+      icon: 'assets/design/orb_star.png?v=20261121hd9',
       maxLv: 5,
       basePrice: 180,
       priceStep: 150,
@@ -235,21 +235,21 @@ window.RUN_DATA = (function () {
     {
       id: 'norway',
       name: '노르웨이 기상청 (Yr.no)',
-      icon: 'assets/design/orb_star.png?v=20261121hd8',
+      icon: 'assets/design/orb_star.png?v=20261121hd9',
       price: 90,
       desc: '구라청 훼이크 완전 제거! 다가올 폭우·돌풍·빙판·미세먼지를 3초 전 100% 정확히 예고합니다!'
     },
     {
       id: 'shield',
       name: '기상 보호막',
-      icon: 'assets/atlas/spr_shield.png?v=20261121hd8',
+      icon: 'assets/atlas/spr_shield.png?v=20261121hd9',
       price: 80,
       desc: '다음 달리기에서 첫 장애물 충돌 1회를 피해 없이 완전 방어합니다!'
     },
     {
       id: 'boost',
       name: 'FEVER! 쾌속 출발',
-      icon: 'assets/design/orb_bolt.png?v=20261121hd8',
+      icon: 'assets/design/orb_bolt.png?v=20261121hd9',
       price: 100,
       desc: '시작 후 4.5초간 FEVER 무적 질주 + 코인 자석 자동 발동!'
     }
@@ -314,7 +314,7 @@ window.RUN_DATA = (function () {
       filter: 'none',
       customAnimSkin: 'catgirl',
       customAnimFrames: 4,
-      customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd8',
+      customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd9',
       customShieldVfx: 'catgirl_fx_paw',
       gemPrice: 45,
       glow: '#ff96dc',
@@ -448,7 +448,7 @@ window.RUN_DATA = (function () {
     },
     heat: {
       id: 'heat', label: '폭염 땡볕 경보!', kmaFake: '선선한 초여름 날씨',
-      norwayWarn: '폭염 땡볕! [그늘·버스정류장 밟기]', color: '#ff8a3d'
+      norwayWarn: '폭염 땡볕! [우산(양산) ON 필수]', color: '#ff8a3d'
     },
     ice_road: {
       id: 'ice_road', label: '겨울 빙판길!', kmaFake: '도로 건조 · 쾌적',
@@ -513,18 +513,18 @@ window.RUN_DATA = (function () {
     ]
   };
 
-  // 1년이 지날수록 체감되는 확실한 연도별 난이도 상승 곡선!
+  // 1년이 지날수록 확실히 빨라지고 매서워지는 연도별 난이도 상승 곡선!
   function getYearDifficulty(year) {
     const extra = Math.max(0, year - 1);
     return {
       year,
-      speedMult: Math.min(2.35, 1 + extra * 0.17),
-      spawnRateMult: Math.min(2.15, 1 + extra * 0.16),
-      extraObsSpeedMult: Math.min(2.2, 1 + extra * 0.18),
-      weatherPaceMult: Math.min(1.85, 1 + extra * 0.14),
+      speedMult: Math.min(2.85, 1 + extra * 0.28),
+      spawnRateMult: Math.min(2.25, 1 + extra * 0.18),
+      extraObsSpeedMult: Math.min(2.4, 1 + extra * 0.22),
+      weatherPaceMult: Math.min(1.9, 1 + extra * 0.15),
       exposureGracePenalty: Math.min(1.15, extra * 0.25),
-      heatRateMult: Math.min(1.9, 1 + extra * 0.15),
-      doubleWaveChance: extra <= 0 ? 0 : Math.min(0.45, 0.14 + (extra - 1) * 0.09),
+      heatRateMult: Math.min(1.95, 1 + extra * 0.16),
+      doubleWaveChance: extra <= 0 ? 0 : Math.min(0.48, 0.15 + (extra - 1) * 0.09),
       dmgMult: 1 + extra * 0.15,
       scoreMult: 1 + extra * 0.25,
       goldBonus: Math.floor(extra / 2)
@@ -551,12 +551,10 @@ window.RUN_DATA = (function () {
   function getCharEffectiveStats(charDef, charLv = 1, upgrades = {}, unlockedCount = 1) {
     const lv = Math.max(1, Math.min(MAX_CHAR_LEVEL, charLv || 1));
     const lvExtra = lv - 1;
-    const lvHeartBonus = (lv >= 3 ? 1 : 0) + (lv >= 5 ? 1 : 0);
-    const hpUpgrade = upgrades && upgrades.hp ? upgrades.hp : 0;
     const dexScoreBonus = Math.max(0, unlockedCount - 1) * 0.03; // 도감 수집 보너스: 추가 해금당 점수 +3%!
     return {
       level: lv,
-      maxHp: charDef.baseHp + lvHeartBonus + hpUpgrade,
+      maxHp: 5, // 전 캐릭터 체력 5하트 고정!
       goldMult: Number((charDef.goldMult + lvExtra * 0.05).toFixed(2)),
       scoreMult: Number((charDef.scoreMult + lvExtra * 0.05 + dexScoreBonus).toFixed(2)),
       dexScorePct: Math.round(dexScoreBonus * 100)

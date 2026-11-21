@@ -24,7 +24,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd8';
+  const ASSET_VER = '20261121hd9';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -1231,8 +1231,7 @@
     SFX.levelUp();
     persistSave();
     refreshAllMenus();
-    const gotHeart = (nextLv === 3 || nextLv === 5) ? ' · 최대 하트 +1!' : '';
-    showToast(`⬆️ ${ch.name} Lv.${nextLv} 성장 완료! (골드/점수 +5%${gotHeart})`);
+    showToast(`⬆️ ${ch.name} Lv.${nextLv} 성장 완료! (골드·점수 +5%)`);
   }
 
   function openCharDetail(idx) {
@@ -1904,6 +1903,14 @@
     return Boolean(run && (run.norwayPermanent || run.norwayTimer > 0));
   }
 
+  function isUmbrellaWeather(w) {
+    return w === 'rain' || w === 'flood' || w === 'heat';
+  }
+
+  function isMaskWeather(w) {
+    return w === 'dust';
+  }
+
   function getEffectiveGearCooldown() {
     return Math.max(2.5, Number((GEAR_COOLDOWN - save.upgrades.defense * 0.35).toFixed(2)));
   }
@@ -1935,7 +1942,8 @@
       run.rainExposeTimer = 0;
       SFX.click();
       haptic(14);
-      Renderer.spawnFloater(`우산 ON! (${GEAR_DURATION}초 지속)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
+      const persistTxt = isUmbrellaWeather(run.weatherEvent) ? '날씨 종료까지 유지!' : `${GEAR_DURATION}초 지속`;
+      Renderer.spawnFloater(`우산 ON! (${persistTxt})`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
 
       // Immediate danger if opened during a roaring wind gust!
       if (run.weatherEvent === 'gust') {
@@ -1987,7 +1995,8 @@
       run.dustExposeTimer = 0;
       SFX.click();
       haptic(14);
-      Renderer.spawnFloater(`KF94 마스크 ON! (${GEAR_DURATION}초 지속)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
+      const persistTxt = isMaskWeather(run.weatherEvent) ? '황사 종료까지 유지!' : `${GEAR_DURATION}초 지속`;
+      Renderer.spawnFloater(`KF94 마스크 ON! (${persistTxt})`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
     }
     updateRunHud();
   }
@@ -2099,6 +2108,7 @@
 
   function activatePendingWeather() {
     const diff = DATA.getYearDifficulty(run.year);
+    const prevW = run.weatherEvent;
     const nextW = run.pendingWeather || 'clear';
     const wasFake = run.forecastIsFake && !hasNorwayForecast();
 
@@ -2108,6 +2118,22 @@
     run.forecastIsFake = false;
     run.rainExposeTimer = 0;
     run.dustExposeTimer = 0;
+
+    // Auto-fold Umbrella when Rain/Flood/Heatwave ends (unless gust snaps it!)
+    if (run.umbrellaOn && isUmbrellaWeather(prevW) && !isUmbrellaWeather(nextW) && nextW !== 'gust') {
+      run.umbrellaOn = false;
+      run.umbrellaActiveTimer = 0;
+      run.umbrellaCooldown = 1.0;
+      Renderer.spawnFloater('날씨 종료! 우산 자동 접기', '#8ce0ff', run.playerX + 10, run.playerY - 44);
+    }
+
+    // Auto-remove Mask when Yellow Dust ends!
+    if (run.maskOn && isMaskWeather(prevW) && !isMaskWeather(nextW)) {
+      run.maskOn = false;
+      run.maskActiveTimer = 0;
+      run.maskCooldown = 1.0;
+      Renderer.spawnFloater('황사 종료! 마스크 자동 해제', '#a6ffcf', run.playerX + 10, run.playerY - 44);
+    }
 
     const evDef = DATA.WEATHER_EVENTS[nextW];
     if (wasFake) {
@@ -2234,30 +2260,16 @@
       for (let i = 0; i < 2; i++) {
         run.items.push({ kind: 'coin', x: Renderer.W + 46 + i * 24, y: platformY - 16 });
       }
-    } else if (run.weatherEvent === 'heat') {
-      // Summer Shade Hopping strictly using sp_summer_tree / sp_palm_tree / sp_parasol!
-      const r = Math.random();
-      if (r < 0.36) {
-        run.features.push({ kind: 'shade_tree', x: Renderer.W + 30, w: 74, isShade: true });
-      } else if (r < 0.70) {
-        run.features.push({ kind: 'shade_parasol', x: Renderer.W + 30, w: 72, isShade: true });
-      } else {
-        run.features.push({ kind: 'shade_palm', x: Renderer.W + 30, w: 76, isShade: true });
-      }
     }
   }
 
   function spawnConvenienceStore() {
-    // Spawn either a bouncy Red Spring Jump Pad (sp_spring_pad) or Cooling Parasol Spot (sp_parasol)!
-    if (Math.random() < 0.55) {
-      run.features.push({ kind: 'spring_pad', x: Renderer.W + 40, w: 44, triggered: false });
-      const hasBig = Math.random() < 0.35;
-      for (let i = 0; i < 3; i++) {
-        const arc = Math.sin((i / 2) * Math.PI) * 98;
-        run.items.push({ kind: (i === 1 && hasBig) ? 'big_coin' : 'coin', x: Renderer.W + 76 + i * 26, y: Renderer.GROUND_Y - 40 - arc });
-      }
-    } else {
-      run.features.push({ kind: 'cool_spot', x: Renderer.W + 40, w: 78, triggered: false, isShade: true });
+    // Spawn bouncy Red Spring Jump Pad (sp_spring_pad) — shade spots removed to avoid obstacle confusion!
+    run.features.push({ kind: 'spring_pad', x: Renderer.W + 40, w: 44, triggered: false });
+    const hasBig = Math.random() < 0.35;
+    for (let i = 0; i < 3; i++) {
+      const arc = Math.sin((i / 2) * Math.PI) * 98;
+      run.items.push({ kind: (i === 1 && hasBig) ? 'big_coin' : 'coin', x: Renderer.W + 76 + i * 26, y: Renderer.GROUND_Y - 40 - arc });
     }
   }
 
@@ -2368,27 +2380,38 @@
       run.feverCharge = (run.feverTimer / 4.5) * 100;
     }
 
-    // Umbrella & Mask Active Duration + Cooldown Timers
+    // Umbrella & Mask Duration: Maintained until Rain/Flood/Heatwave or Yellow Dust ends!
     const effGearCd = getEffectiveGearCooldown();
+    const keepUmbrella = isUmbrellaWeather(run.weatherEvent);
+    const keepMask = isMaskWeather(run.weatherEvent);
+
     if (run.umbrellaOn) {
-      run.umbrellaActiveTimer = Math.max(0, run.umbrellaActiveTimer - dt);
-      if (run.umbrellaActiveTimer <= 0) {
-        run.umbrellaOn = false;
-        run.umbrellaCooldown = effGearCd;
-        SFX.click();
-        Renderer.spawnFloater(`우산 종료 (쿨타임 ${effGearCd}초)`, '#9fd9ff', run.playerX + 10, run.playerY - 42);
+      if (keepUmbrella) {
+        run.umbrellaActiveTimer = GEAR_DURATION;
+      } else {
+        run.umbrellaActiveTimer = Math.max(0, run.umbrellaActiveTimer - dt);
+        if (run.umbrellaActiveTimer <= 0) {
+          run.umbrellaOn = false;
+          run.umbrellaCooldown = effGearCd;
+          SFX.click();
+          Renderer.spawnFloater(`우산 종료 (쿨타임 ${effGearCd}초)`, '#9fd9ff', run.playerX + 10, run.playerY - 42);
+        }
       }
     } else if (run.umbrellaCooldown > 0) {
       run.umbrellaCooldown = Math.max(0, run.umbrellaCooldown - dt);
     }
 
     if (run.maskOn) {
-      run.maskActiveTimer = Math.max(0, run.maskActiveTimer - dt);
-      if (run.maskActiveTimer <= 0) {
-        run.maskOn = false;
-        run.maskCooldown = effGearCd;
-        SFX.click();
-        Renderer.spawnFloater(`마스크 종료 (쿨타임 ${effGearCd}초)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
+      if (keepMask) {
+        run.maskActiveTimer = GEAR_DURATION;
+      } else {
+        run.maskActiveTimer = Math.max(0, run.maskActiveTimer - dt);
+        if (run.maskActiveTimer <= 0) {
+          run.maskOn = false;
+          run.maskCooldown = effGearCd;
+          SFX.click();
+          Renderer.spawnFloater(`마스크 종료 (쿨타임 ${effGearCd}초)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
+        }
       }
     } else if (run.maskCooldown > 0) {
       run.maskCooldown = Math.max(0, run.maskCooldown - dt);
@@ -2498,11 +2521,7 @@
       run.onPlatform = false;
     }
 
-    // Loyal Shiba Puppy mirrors player jump smoothly
-    run.petY += (run.playerY - run.petY) * Math.min(1, dt * 11);
-
-    // ---- UPDATE STREET FEATURES (CONVENIENCE STORE AC + SHADE COOLING) ----
-    let inShade = false;
+    // ---- UPDATE STREET FEATURES (SPRING PAD & FLOOD PLATFORMS — NO SHADE SYSTEM!) ----
     for (let i = run.features.length - 1; i >= 0; i--) {
       const f = run.features[i];
       f.x -= (run.speed + (f.extraSpeed || 0)) * dt;
@@ -2518,35 +2537,19 @@
         run.squashY = 1.24;
         haptic(14);
         run.score += Math.round(120 * run.scoreMult * upgradeScoreMult);
-        if (run.feverTimer <= 0) run.feverCharge = Math.min(100, run.feverCharge + 12);
+        if (run.feverTimer <= 0) run.feverCharge = Math.min(100, run.feverCharge + 5);
         SFX.doubleJump();
         Renderer.spawnPickupEffect(f.x + 22, Renderer.GROUND_Y - 18, '#ff7675', true);
-        Renderer.spawnFloater('스프링 점프! +120 · 피버+12%', '#ffe36e', run.playerX + 14, run.playerY - 46);
-      }
-
-      // Cooling Parasol Spot (sp_parasol + watermelon/icecream) -> Heat Cooling + Score + FEVER (NO HP healing!)
-      if (f.kind === 'cool_spot' && !f.triggered && run.playerX >= f.x + 12 && run.playerX <= f.x + f.w - 4) {
-        f.triggered = true;
-        run.heatGauge = Math.max(0, run.heatGauge - 60);
-        run.score += Math.round(150 * run.scoreMult * upgradeScoreMult);
-        if (run.feverTimer <= 0) {
-          run.feverCharge = Math.min(100, run.feverCharge + 12);
-        }
-        SFX.acChime();
-        Renderer.spawnPickupEffect(f.x + 42, Renderer.GROUND_Y - 28, '#70f2ff', true);
-        Renderer.spawnFloater('파라솔 쿨링! 점수+150 · 피버+12%', '#70f2ff', run.playerX + 18, run.playerY - 48);
-      }
-
-      if (f.isShade && run.playerX >= f.x - 8 && run.playerX <= f.x + f.w + 8) {
-        inShade = true;
+        Renderer.spawnFloater('스프링 점프! +120 · 피버+5%', '#ffe36e', run.playerX + 14, run.playerY - 46);
       }
 
       if (f.x + f.w < -60) run.features.splice(i, 1);
     }
 
-    // ---- ACTIVE WEATHER EXPOSURE SYSTEM (RAIN WITHOUT UMBRELLA / YELLOW DUST WITHOUT MASK -> -1 HEART!) ----
-    const rainExposeLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
-    const dustExposeLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
+    // ---- ACTIVE WEATHER EXPOSURE SYSTEM (RAIN/HEAT WITHOUT UMBRELLA · YELLOW DUST WITHOUT MASK -> -1 HEART!) ----
+    const graceBonus = (save.upgrades.hp || 0) * 0.3;
+    const rainExposeLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0) + graceBonus;
+    const dustExposeLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty) + graceBonus;
     const isRainingNow = run.weatherEvent === 'rain' || run.weatherEvent === 'flood';
     const isDustNow = run.weatherEvent === 'dust';
 
@@ -2585,30 +2588,26 @@
         run.dustExposeTimer = 0;
       }
 
-      // 3. Summer Heat Gauge (only builds in active heatwave outside shade, escalates by year!)
+      // 3. Summer Heatwave (폭염): Open Umbrella(양산) to stay cool! Without Umbrella, heat builds -> -1 Heart!
       if (run.weatherEvent === 'heat' && !ch.summerImmune) {
-        if (inShade) {
+        if (run.umbrellaOn) {
           run.heatGauge = Math.max(0, run.heatGauge - 46 * dt);
-          if (run.shadeScoreCd <= 0) {
-            run.shadeScoreCd = 1.1;
-            run.score += Math.round(60 * upgradeScoreMult);
-            Renderer.spawnFloater('그늘 밟기! 냉각', '#7ae8ff', run.playerX + 8, run.playerY - 42);
-          }
         } else {
-          run.heatGauge = Math.min(100, run.heatGauge + 15 * diff.heatRateMult * dt);
+          const heatRate = Math.max(10, 19 * diff.heatRateMult - graceBonus * 2.2);
+          run.heatGauge = Math.min(100, run.heatGauge + heatRate * dt);
           if (run.heatGauge >= 100) {
             run.heatGauge = 55;
             run.hp = Math.max(0, run.hp - 1);
             run.hitPoseTimer = 0.3;
             run.hitFlashTimer = 0.25;
             triggerCameraShake(5, 0.2);
-            run.lastHitCause = `${run.year}년 차 여름 폭염, 그늘을 놓쳐 열사병으로 쓰러졌습니다!`;
+            run.lastHitCause = `${run.year}년 차 여름 폭염, 우산(양산)을 펴지 않아 열사병으로 쓰러졌습니다!`;
             SFX.hit();
-            Renderer.spawnFloater('열사병! -1 ❤️ (그늘 밟기!)', '#ff8052', run.playerX + 8, run.playerY - 46);
+            Renderer.spawnFloater('폭염 열사병! -1 ❤️ (우산 펴기!)', '#ff8052', run.playerX + 8, run.playerY - 46);
           }
         }
       } else {
-        run.heatGauge = Math.max(0, run.heatGauge - 24 * dt);
+        run.heatGauge = Math.max(0, run.heatGauge - 28 * dt);
       }
     } else {
       run.heatGauge = Math.max(0, run.heatGauge - 40 * dt);
@@ -2670,11 +2669,11 @@
       run.itemCd = 3.8 + Math.random() * 1.9;
     }
 
-    if (run.weatherEvent === 'flood' || run.weatherEvent === 'heat') {
+    if (run.weatherEvent === 'flood') {
       run.featureCd -= dt;
       if (run.featureCd <= 0) {
         spawnStreetFeature();
-        run.featureCd = run.weatherEvent === 'flood' ? 1.55 : 1.85;
+        run.featureCd = 1.55;
       }
     }
 
@@ -2729,7 +2728,7 @@
           run.gold += gainedG;
           run.coinsCollected += it.kind === 'big_coin' ? 2 : 1;
           run.score += gainedS;
-          addFeverCharge(it.kind === 'big_coin' ? 10 : 2.5);
+          addFeverCharge(it.kind === 'big_coin' ? 3.0 : 0.8);
           Renderer.spawnPickupEffect(it.x, it.y, '#ffe55c', it.kind === 'big_coin');
           if (it.kind === 'big_coin') {
             SFX.bigCoin();
@@ -2750,10 +2749,10 @@
           showRunBanner('🇳🇴 노르웨이 기상청 획득! 3초 전 100% 정확 예보!', 2300);
         } else if (it.kind === 'star') {
           run.score += Math.round(160 * run.scoreMult * upgradeScoreMult);
-          addFeverCharge(24);
+          addFeverCharge(9);
           SFX.bigCoin();
           Renderer.spawnPickupEffect(it.x, it.y, '#ffe866', true);
-          Renderer.spawnFloater('FEVER +24%!', '#ffe866', it.x, it.y - 10);
+          Renderer.spawnFloater('FEVER +9%!', '#ffe866', it.x, it.y - 10);
         } else if (it.kind === 'magnet') {
           run.magnetTimer = 6.0;
           run.itemPoseTimer = 0.45;
@@ -2778,14 +2777,14 @@
           run.gold += bonusG;
           run.coinsCollected += 4;
           run.score += Math.round(250 * upgradeScoreMult);
-          addFeverCharge(25);
+          addFeverCharge(8);
           SFX.reward();
           Renderer.spawnPickupEffect(it.x, it.y, '#ffd847', true);
           Renderer.spawnFloater(`보물상자 +${bonusG}G!`, '#ffe55c', it.x, it.y - 14);
         } else if (it.kind === 'coffee') {
           // Energy drink / Iced Americano -> Score + FEVER + Heat cooling (NO HP healing!)
           const bonusSc = ch.icedBonus ? 280 : 120;
-          const feverGain = ch.icedBonus ? 24 : 16;
+          const feverGain = ch.icedBonus ? 9 : 6;
           run.heatGauge = Math.max(0, run.heatGauge - 25);
           run.score += Math.round(bonusSc * run.scoreMult * upgradeScoreMult);
           addFeverCharge(feverGain);
@@ -2799,13 +2798,12 @@
             run.playerY - 40
           );
         } else if (it.kind === 'umbrella_fever') {
-          run.feverCharge = 100;
-          run.feverTimer = 4.5;
+          addFeverCharge(30);
           run.score += 180;
           run.itemPoseTimer = 0.55;
-          SFX.feverStart();
+          SFX.bigCoin();
           Renderer.spawnPickupEffect(it.x, it.y, '#ffe55c', true);
-          Renderer.spawnFloater('FEVER! 무적 질주!', '#ffe55c', run.playerX + 12, run.playerY - 44);
+          Renderer.spawnFloater('FEVER 부스트 +30%!', '#ffe55c', run.playerX + 12, run.playerY - 44);
         }
         continue;
       }
@@ -3029,8 +3027,9 @@
     }
 
     // Live Exposure Countdown / Heat Warning Pill!
-    const rainLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
-    const dustLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
+    const graceBonusHud = (save.upgrades.hp || 0) * 0.3;
+    const rainLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0) + graceBonusHud;
+    const dustLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty) + graceBonusHud;
     if (run.rainExposeTimer > 0.05 && !run.umbrellaOn && run.feverTimer <= 0) {
       const rem = Math.max(0, rainLimit - run.rainExposeTimer);
       el.fcHeatPill.classList.remove('hidden');
@@ -3041,7 +3040,16 @@
       el.fcHeatPill.classList.remove('hidden');
       el.fcHeatPill.classList.toggle('urgent', rem <= 1.3);
       el.fcHeatPill.textContent = `😷 마스크 필요 ${rem.toFixed(1)}s`;
-    } else if (run.weatherEvent === 'heat' || run.heatGauge > 5) {
+    } else if (run.weatherEvent === 'heat' && !ch.summerImmune) {
+      el.fcHeatPill.classList.remove('hidden');
+      if (run.umbrellaOn) {
+        el.fcHeatPill.classList.remove('urgent');
+        el.fcHeatPill.textContent = '☂️ 양산 보호 중';
+      } else {
+        el.fcHeatPill.classList.toggle('urgent', run.heatGauge >= 65);
+        el.fcHeatPill.textContent = `☂️ 폭염! 우산 필요 ${Math.round(run.heatGauge)}%`;
+      }
+    } else if (run.heatGauge > 5) {
       el.fcHeatPill.classList.remove('hidden');
       el.fcHeatPill.classList.toggle('urgent', run.heatGauge >= 75);
       el.fcHeatPill.textContent = `🌡️ 열기 ${Math.round(run.heatGauge)}%`;
@@ -3058,16 +3066,20 @@
       el.mudOverlay.classList.add('hidden');
     }
 
-    // Umbrella & Mask Toggle Buttons with Active Duration & Cooldown Fill Bars
+    // Umbrella & Mask Toggle Buttons with Weather-Maintained Indicator & Cooldown Fill Bars
     const effGearCd = getEffectiveGearCooldown();
     const umbBroken = run.umbrellaBrokenTimer > 0;
     const umbCd = !umbBroken && !run.umbrellaOn && run.umbrellaCooldown > 0;
+    const umbHeldByWeather = run.umbrellaOn && isUmbrellaWeather(run.weatherEvent);
     el.btnToggleUmbrella.classList.toggle('on', run.umbrellaOn);
     el.btnToggleUmbrella.classList.toggle('broken', umbBroken);
     el.btnToggleUmbrella.classList.toggle('cooldown', umbCd);
     if (umbBroken) {
       el.gearUmbrellaState.textContent = `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`;
       el.gearUmbrellaBar.style.width = `${((run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD) * 100).toFixed(1)}%`;
+    } else if (umbHeldByWeather) {
+      el.gearUmbrellaState.textContent = '유지 중';
+      el.gearUmbrellaBar.style.width = '100%';
     } else if (run.umbrellaOn) {
       el.gearUmbrellaState.textContent = `${run.umbrellaActiveTimer.toFixed(1)}s`;
       el.gearUmbrellaBar.style.width = `${((run.umbrellaActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
@@ -3080,9 +3092,13 @@
     }
 
     const maskCd = !run.maskOn && run.maskCooldown > 0;
+    const maskHeldByWeather = run.maskOn && isMaskWeather(run.weatherEvent);
     el.btnToggleMask.classList.toggle('on', run.maskOn);
     el.btnToggleMask.classList.toggle('cooldown', maskCd);
-    if (run.maskOn) {
+    if (maskHeldByWeather) {
+      el.gearMaskState.textContent = '유지 중';
+      el.gearMaskBar.style.width = '100%';
+    } else if (run.maskOn) {
       el.gearMaskState.textContent = `${run.maskActiveTimer.toFixed(1)}s`;
       el.gearMaskBar.style.width = `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
     } else if (maskCd) {
