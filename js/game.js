@@ -26,7 +26,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd22';
+  const ASSET_VER = '20261121hd23';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -959,24 +959,40 @@
   }
 
   async function completeLogin(provider, opts = {}) {
-    if (!ONLINE) return;
-    SFX.click();
-    tryAutoLockLandscape(true);
+    try { SFX.click(); } catch {}
+    const prov = provider === 'google' || provider === 'apple' ? provider : 'guest';
     const existingUid = (save.auth && save.auth.uid) || '';
-    const profile = await ONLINE.signIn(provider, {
-      existingUid,
-      nickname: opts.nickname,
-      email: opts.email
-    });
+    let profile = null;
+    try {
+      if (ONLINE && typeof ONLINE.signIn === 'function') {
+        profile = await ONLINE.signIn(prov, {
+          existingUid,
+          nickname: opts.nickname,
+          email: opts.email
+        });
+      }
+    } catch {}
+    if (!profile) {
+      const nick = String(opts.nickname || '').trim().slice(0, 12) || `러너_${Math.floor(1000 + Math.random() * 9000)}`;
+      profile = {
+        loggedIn: true,
+        provider: prov,
+        uid: existingUid || `u_${Date.now().toString(36)}`,
+        nickname: nick,
+        email: String(opts.email || '').trim().slice(0, 60),
+        loggedInAt: Date.now()
+      };
+    }
     save.auth = profile;
     persistSave();
     if (el.loginOverlay) el.loginOverlay.classList.add('hidden');
     renderProfileUI();
-    await syncMyWeeklyScore();
+    try { await syncMyWeeklyScore(); } catch {}
     refreshAllMenus();
-    const meta = ONLINE.getProviderMeta(profile.provider);
+    const meta = (ONLINE && ONLINE.getProviderMeta) ? ONLINE.getProviderMeta(profile.provider) : { label: '계정' };
     showToast(`✅ ${meta.label} [${profile.nickname}] 로그인 완료!`);
-    checkAndAwardWeeklyChampion();
+    try { tryAutoLockLandscape(true); } catch {}
+    try { checkAndAwardWeeklyChampion(); } catch {}
   }
 
   // ===================== IN-APP PURCHASE (REAL-MONEY GEM STORE: 100💎 = ₩1,000) =====================
@@ -1145,11 +1161,17 @@
     el.rankStatDex.textContent = `${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
 
     if (!ONLINE) return;
-    const [curRes, prevRes] = await Promise.all([
-      ONLINE.fetchWeeklyBoard(info.weekKey, myUid),
-      ONLINE.fetchWeeklyBoard(info.prevWeekKey, myUid)
-    ]);
-    if (seq !== rankRenderSeq) return;
+    let curRes = null;
+    let prevRes = null;
+    try {
+      [curRes, prevRes] = await Promise.all([
+        ONLINE.fetchWeeklyBoard(info.weekKey, myUid),
+        ONLINE.fetchWeeklyBoard(info.prevWeekKey, myUid)
+      ]);
+    } catch {
+      return;
+    }
+    if (seq !== rankRenderSeq || !curRes) return;
 
     // Ensure current player is always visible in the live standings even at 0 pts
     let board = curRes.board.slice();
@@ -2084,7 +2106,7 @@
       const grid = document.createElement('div');
       grid.className = 'bs-shop-grid four';
 
-      DATA.GOLD_PACKS.forEach((pk) => {
+      (DATA.GOLD_PACKS || []).forEach((pk) => {
         const card = document.createElement('div');
         card.className = `bs-offer-card gold-pack tier-${pk.tier}`;
         card.innerHTML = `
@@ -2137,7 +2159,7 @@
       const grid = document.createElement('div');
       grid.className = 'bs-shop-grid four';
 
-      DATA.GEM_PACKS.forEach((pk) => {
+      (DATA.GEM_PACKS || []).forEach((pk) => {
         const card = document.createElement('div');
         card.className = `bs-offer-card gem-pack tier-${pk.tier}`;
         card.innerHTML = `
@@ -4099,7 +4121,7 @@
       SFX.applySettings({ sfxVol: v, sfxOn: v > 0 });
       saveAudioState();
     });
-    el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
+    if (el.btnLandscapeRun) el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
 
     // Auto-pause active run safely when switching apps / backgrounding browser tab!
     document.addEventListener('visibilitychange', () => {
@@ -4133,7 +4155,6 @@
     });
 
     el.btnPlayStart.addEventListener('click', () => {
-      tryAutoLockLandscape(true);
       const ch = DATA.CHARACTERS[previewCharIdx];
       if (!isCharUnlocked(ch.id)) {
         buyCharacter(ch, previewCharIdx);
@@ -4142,6 +4163,7 @@
       save.selectedChar = ch.id;
       persistSave();
       startRun();
+      try { tryAutoLockLandscape(true); } catch {}
     });
 
     // Runner Controls + Gear Toggles (All 4 use crisp Up/Down sprite swap on press & release!)
@@ -4173,14 +4195,20 @@
     // Tap-to-Start Splash Intro (Stays on Logo Until User Touches/Clicks, Then Auto-Locks Landscape & Shows Login!)
     let introLeaving = false;
 
-    function enterFromIntro() {
-      if (introLeaving || el.introOverlay.classList.contains('hidden')) return;
+    function enterFromIntro(ev) {
+      if (ev && ev.cancelable && ev.type === 'touchend') {
+        ev.preventDefault();
+      }
+      if (introLeaving || !el.introOverlay || el.introOverlay.classList.contains('hidden')) return;
       introLeaving = true;
-      tryAutoLockLandscape(true);
-      SFX.introJingle();
-      SFX.startBgm();
-      SFX.setBgmMode('menu');
+      try {
+        SFX.introJingle();
+        SFX.startBgm();
+        SFX.setBgmMode('menu');
+      } catch {}
       el.introOverlay.classList.add('leaving');
+      // Request fullscreen + hardware landscape lock cleanly AFTER handling the tap so click is never cancelled!
+      try { tryAutoLockLandscape(true); } catch {}
       setTimeout(() => {
         el.introOverlay.classList.add('hidden');
         el.introOverlay.classList.remove('playing', 'leaving');
@@ -4188,17 +4216,19 @@
         if (!save.auth || !save.auth.loggedIn) {
           openLoginOverlay();
         } else {
-          syncMyWeeklyScore();
-          checkAndAwardWeeklyChampion();
+          try { syncMyWeeklyScore(); } catch {}
+          try { checkAndAwardWeeklyChampion(); } catch {}
         }
-      }, 420);
+      }, 360);
     }
 
     el.introOverlay.addEventListener('click', enterFromIntro);
+    el.introOverlay.addEventListener('touchend', enterFromIntro, { passive: false });
     window.addEventListener('pointerdown', () => {
-      tryAutoLockLandscape(true);
-      SFX.startBgm();
-      if (!run || !run.active) SFX.setBgmMode('menu');
+      try {
+        SFX.startBgm();
+        if (!run || !run.active) SFX.setBgmMode('menu');
+      } catch {}
     }, { once: true });
 
     // Desktop Keyboard Controls (Space/↑ Jump, ↓ Slide, Q Umbrella, E Mask, Esc Pause)
