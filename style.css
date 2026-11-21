@@ -7805,3 +7805,213 @@ input:focus-visible {
   .intro-tap-prompt { padding: 7px 20px; }
   .intro-tap-main { font-size: 13px; }
 }
+
+/* ================= INTRO LOGO + LOGIN BUTTONS RIGHT BELOW LOGO ================= */
+#intro-overlay {
+  padding: 16px 20px 18px !important;
+  gap: 10px !important;
+}
+
+#intro-overlay .intro-logo-wrap {
+  width: min(330px, 68vw);
+}
+
+#intro-overlay .intro-logo-img {
+  max-height: 44dvh;
+}
+
+.intro-bottom-dock {
+  position: relative;
+  z-index: 4;
+  width: min(500px, 92%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.intro-login-box,
+.intro-start-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.intro-login-btns {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.intro-auth-btn {
+  padding: 10px 8px !important;
+  font-size: 12.5px !important;
+  gap: 6px !important;
+  border-radius: 13px !important;
+}
+
+.intro-login-note {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #e6f6ff;
+  background: rgba(7, 20, 48, 0.72);
+  border: 1.5px solid rgba(130, 218, 255, 0.35);
+  border-radius: 999px;
+  padding: 4px 12px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+.intro-signed-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 8px;
+  border-radius: 999px;
+  background: rgba(8, 22, 52, 0.82);
+  border: 1.5px solid rgba(132, 220, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.intro-acc-name {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.intro-switch-btn {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1.5px solid #82d8ff;
+  background: linear-gradient(180deg, #2d6cd1, #194594);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.intro-switch-btn.logout {
+  border-color: #ff9ab8;
+  background: linear-gradient(180deg, #d9436c, #991f43);
+}
+
+/* Account Modal Refinements */
+.login-cur-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border-radius: 12px;
+  background: rgba(7, 20, 48, 0.72);
+  border: 1.5px solid rgba(128, 214, 255, 0.42);
+}
+
+.login-cur-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-cur-meta strong {
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.login-cur-meta span {
+  font-size: 10.5px;
+  color: #9ad8ff;
+  font-weight: 700;
+}
+
+.login-nick-save {
+  padding: 5px 11px;
+  border-radius: 9px;
+  border: 2px solid #081226;
+  background: linear-gradient(180deg, #ffe24a, #ed9812);
+  color: #241000;
+  font-size: 11.5px;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.login-setup-notice {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 204, 66, 0.14);
+  border: 1.5px solid rgba(255, 214, 82, 0.55);
+  color: #ffe99e;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.login-setup-notice code {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1px 4px;
+  border-radius: 4px;
+  color: #7ef9ff;
+}
+
+/* Guest Ranking Exclusion Banner */
+.rank-guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+  border-radius: 13px;
+  border: 2px solid #7fe0ff;
+  background: linear-gradient(95deg, rgba(24, 62, 132, 0.92), rgba(54, 28, 108, 0.92));
+  box-shadow: 0 4px 0 #081226;
+}
+
+.rank-guest-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rank-guest-txt strong {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffe45e;
+}
+
+.rank-guest-txt span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #d6efff;
+}
+
+.rank-link-btn {
+  padding: 7px 12px;
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+
+@media (max-height: 440px), (orientation: portrait) and (max-width: 520px) {
+  #intro-overlay {
+    padding: 8px 14px 10px !important;
+    gap: 6px !important;
+  }
+  #intro-overlay .intro-logo-wrap {
+    width: min(260px, 52vw);
+  }
+  #intro-overlay .intro-logo-img {
+    max-height: 42dvh;
+  }
+  .intro-auth-btn {
+    padding: 8px 6px !important;
+    font-size: 11px !important;
+  }
+  .intro-login-note {
+    font-size: 9.5px;
+    padding: 3px 10px;
+  }
+}

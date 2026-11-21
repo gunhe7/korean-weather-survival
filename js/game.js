@@ -6,6 +6,44 @@
 
   const SAVE_KEY = 'kr_weather_runner_save_v1';
   const SAVE_BACKUP_KEY = 'kr_weather_runner_save_v1_backup';
+  const ACTIVE_AUTH_KEY = 'kr_weather_active_auth_v2';
+  const GUEST_SAVE_KEY = 'kr_weather_save_v2_guest';
+
+  function getAccountSaveKey(auth) {
+    if (auth && (auth.provider === 'google' || auth.provider === 'apple') && auth.uid) {
+      return `kr_weather_save_v2_acc_${auth.uid}`;
+    }
+    return GUEST_SAVE_KEY;
+  }
+
+  function loadActiveAuth() {
+    try {
+      const raw = localStorage.getItem(ACTIVE_AUTH_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch {}
+    // Check legacy v1 save auth once (only restore if verified OAuth or previously logged in)
+    try {
+      const leg = localStorage.getItem(SAVE_KEY);
+      if (leg) {
+        const p = JSON.parse(leg);
+        if (p && p.auth && p.auth.loggedIn && p.auth.provider === 'guest') {
+          return { loggedIn: false, provider: 'guest', uid: p.auth.uid || '', nickname: '게스트', email: '' };
+        }
+      }
+    } catch {}
+    return { loggedIn: false, provider: 'guest', uid: '', nickname: '', email: '' };
+  }
+
+  function persistActiveAuth(authObj) {
+    try {
+      localStorage.setItem(ACTIVE_AUTH_KEY, JSON.stringify(authObj || { loggedIn: false, provider: 'guest', uid: '', nickname: '', email: '' }));
+    } catch {}
+  }
+
+  let activeAuth = loadActiveAuth();
 
   function getTodayKey() {
     const d = new Date();
@@ -26,7 +64,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd28';
+  const ASSET_VER = '20261121hd29';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -40,10 +78,29 @@
     return lv;
   }
 
-  // ===================== PERSISTENT SAVE DATA (SAFE MIGRATION + BACKUP) =====================
-  function loadSave() {
+  // ===================== PERSISTENT PER-ACCOUNT SAVE DATA (LOCAL + FIREBASE CLOUD) =====================
+  function parseStorageJson(key) {
+    try {
+      const str = localStorage.getItem(key);
+      if (!str) return null;
+      const parsed = JSON.parse(str);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function hydrateSaveData(raw, authProfile) {
     const today = getTodayKey();
     const week = getWeekKey();
+    const cleanAuth = {
+      loggedIn: false,
+      provider: 'guest',
+      uid: '',
+      nickname: '',
+      email: '',
+      ...(authProfile || {})
+    };
     const def = {
       gold: 80,
       gems: 0,
@@ -69,23 +126,11 @@
       achievementsClaimed: {},
       stageMilestonesClaimed: {},
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
-      auth: { loggedIn: false, provider: 'guest', uid: '', nickname: '', email: '' },
+      auth: cleanAuth,
       weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] }
     };
 
-    function parseKey(key) {
-      try {
-        const str = localStorage.getItem(key);
-        if (!str) return null;
-        const parsed = JSON.parse(str);
-        return parsed && typeof parsed === 'object' ? parsed : null;
-      } catch {
-        return null;
-      }
-    }
-
-    const raw = parseKey(SAVE_KEY) || parseKey(SAVE_BACKUP_KEY);
-    if (!raw) return def;
+    if (!raw || typeof raw !== 'object') return def;
 
     const validIds = new Set(DATA.CHARACTERS.map((c) => c.id));
     const mergedLevels = { ...createDefaultCharLevels(), ...(raw.charLevels || {}) };
@@ -137,11 +182,14 @@
       achievementsClaimed: { ...(raw.achievementsClaimed || {}) },
       stageMilestonesClaimed: { ...(raw.stageMilestonesClaimed || {}) },
       audioSettings: { ...def.audioSettings, ...(raw.audioSettings || {}) },
-      auth: { ...def.auth, ...(raw.auth || {}) },
+      auth: {
+        ...cleanAuth,
+        // Preserve custom saved nickname for this account if one was previously set
+        nickname: (raw.auth && raw.auth.nickname) ? raw.auth.nickname : cleanAuth.nickname
+      },
       weeklyRank: (() => {
         const wr = raw.weeklyRank && typeof raw.weeklyRank === 'object' ? raw.weeklyRank : {};
         const hist = { ...(wr.history || {}) };
-        // Preserve previous week's score into history when a new week rolls over!
         if (wr.weekKey && wr.weekKey !== week && (wr.bestScore || 0) > 0) {
           hist[wr.weekKey] = {
             score: wr.bestScore || 0,
@@ -162,7 +210,17 @@
     };
   }
 
-  let save = loadSave();
+  function loadSaveForAuth(authProfile) {
+    const slotKey = getAccountSaveKey(authProfile);
+    let raw = parseStorageJson(slotKey);
+    // Safe one-time migration from legacy v1 key so existing players never lose skins/gold/gems!
+    if (!raw && slotKey === GUEST_SAVE_KEY) {
+      raw = parseStorageJson(SAVE_KEY) || parseStorageJson(SAVE_BACKUP_KEY);
+    }
+    return hydrateSaveData(raw, authProfile);
+  }
+
+  let save = loadSaveForAuth(activeAuth);
   SFX.applySettings(save.audioSettings);
 
   function ensureTodayMissions() {
@@ -187,13 +245,43 @@
     }
   }
 
-  function persistSave() {
+  let cloudSaveTimer = null;
+
+  function persistSave(immediateCloud = false) {
     try {
+      const slotKey = getAccountSaveKey(save.auth || activeAuth);
       const json = JSON.stringify(save);
-      localStorage.setItem(SAVE_KEY, json);
-      localStorage.setItem(SAVE_BACKUP_KEY, json);
+      localStorage.setItem(slotKey, json);
+      if (slotKey === GUEST_SAVE_KEY) {
+        localStorage.setItem(SAVE_KEY, json);
+        localStorage.setItem(SAVE_BACKUP_KEY, json);
+      }
+      if (save.auth) {
+        activeAuth = { ...save.auth };
+        persistActiveAuth(activeAuth);
+      }
     } catch {
       // ignore storage errors
+    }
+
+    // Auto cloud backup to Firebase /user_saves/{uid} for linked Google & Apple accounts!
+    const auth = save.auth;
+    if (ONLINE && auth && auth.loggedIn && ONLINE.isRankedProvider(auth.provider) && auth.uid) {
+      if (cloudSaveTimer) {
+        clearTimeout(cloudSaveTimer);
+        cloudSaveTimer = null;
+      }
+      if (immediateCloud) {
+        try { ONLINE.saveCloudUserSave(auth.uid, save); } catch {}
+      } else {
+        const uidSnap = auth.uid;
+        cloudSaveTimer = setTimeout(() => {
+          cloudSaveTimer = null;
+          if (save.auth && save.auth.uid === uidSnap && ONLINE.isRankedProvider(save.auth.provider)) {
+            try { ONLINE.saveCloudUserSave(uidSnap, save); } catch {}
+          }
+        }, 1200);
+      }
     }
   }
 
@@ -212,20 +300,29 @@
   // ===================== DOM REFERENCES =====================
   const el = {
     introOverlay: document.getElementById('intro-overlay'),
-    introTapPrompt: document.getElementById('intro-tap-prompt'),
+    introLoginBox: document.getElementById('intro-login-box'),
+    btnIntroGoogle: document.getElementById('btn-intro-google'),
+    btnIntroApple: document.getElementById('btn-intro-apple'),
+    btnIntroGuest: document.getElementById('btn-intro-guest'),
+    introStartBox: document.getElementById('intro-start-box'),
+    introAccBadge: document.getElementById('intro-acc-badge'),
+    introAccName: document.getElementById('intro-acc-name'),
+    btnIntroSwitchAcc: document.getElementById('btn-intro-switch-acc'),
+    btnIntroStart: document.getElementById('btn-intro-start'),
+
     loginOverlay: document.getElementById('login-overlay'),
+    btnCloseLogin: document.getElementById('btn-close-login'),
     loginMainPanel: document.getElementById('login-main-panel'),
+    loginCurBadge: document.getElementById('login-cur-badge'),
+    loginCurName: document.getElementById('login-cur-name'),
+    loginCurSub: document.getElementById('login-cur-sub'),
+    btnLoginLogout: document.getElementById('btn-login-logout'),
     loginNicknameInput: document.getElementById('login-nickname-input'),
+    btnSaveNickname: document.getElementById('btn-save-nickname'),
     btnLoginGoogle: document.getElementById('btn-login-google'),
     btnLoginApple: document.getElementById('btn-login-apple'),
     btnLoginGuest: document.getElementById('btn-login-guest'),
-    loginOauthPanel: document.getElementById('login-oauth-panel'),
-    loginOauthBadge: document.getElementById('login-oauth-badge'),
-    loginOauthTitle: document.getElementById('login-oauth-title'),
-    loginOauthEmail: document.getElementById('login-oauth-email'),
-    loginOauthNick: document.getElementById('login-oauth-nick'),
-    btnLoginOauthBack: document.getElementById('btn-login-oauth-back'),
-    btnLoginOauthConfirm: document.getElementById('btn-login-oauth-confirm'),
+    loginSetupNotice: document.getElementById('login-setup-notice'),
 
     btnHeaderProfile: document.getElementById('btn-header-profile'),
     hdrProfileBadge: document.getElementById('hdr-profile-badge'),
@@ -300,6 +397,8 @@
     rankWeekLabel: document.getElementById('rank-week-label'),
     rankWeekCountdown: document.getElementById('rank-week-countdown'),
     rankLastWinner: document.getElementById('rank-last-winner'),
+    rankGuestBanner: document.getElementById('rank-guest-banner'),
+    btnRankLinkAccount: document.getElementById('btn-rank-link-account'),
     rankMyAvatar: document.getElementById('rank-my-avatar'),
     rankMyPos: document.getElementById('rank-my-pos'),
     rankMyScoreLine: document.getElementById('rank-my-score-line'),
@@ -918,95 +1017,223 @@
     return info;
   }
 
+  function renderIntroAuthState() {
+    const auth = (save && save.auth) || activeAuth || { loggedIn: false, provider: 'guest', nickname: '' };
+    const isLogged = Boolean(auth.loggedIn);
+    if (el.introLoginBox) el.introLoginBox.classList.toggle('hidden', isLogged);
+    if (el.introStartBox) el.introStartBox.classList.toggle('hidden', !isLogged);
+    if (isLogged) {
+      const meta = ONLINE ? ONLINE.getProviderMeta(auth.provider) : { badge: 'GUEST', label: '게스트' };
+      if (el.introAccBadge) {
+        el.introAccBadge.textContent = meta.badge;
+        el.introAccBadge.className = `prov-chip ${auth.provider || 'guest'}`;
+      }
+      if (el.introAccName) {
+        el.introAccName.textContent = auth.nickname || meta.label;
+      }
+    }
+  }
+
   function renderProfileUI() {
-    const auth = save.auth || { loggedIn: false, provider: 'guest', nickname: '날씨러너' };
+    const auth = save.auth || { loggedIn: false, provider: 'guest', nickname: '게스트' };
     const meta = ONLINE ? ONLINE.getProviderMeta(auth.provider) : { badge: 'GUEST', label: '게스트' };
-    const nick = auth.nickname || '날씨러너';
+    const nick = auth.nickname || meta.label;
+    const isLinked = ONLINE ? ONLINE.isRankedProvider(auth.provider) : false;
+
     if (el.hdrProfileBadge) {
       el.hdrProfileBadge.textContent = meta.badge;
       el.hdrProfileBadge.className = `prov-chip ${auth.provider || 'guest'}`;
     }
     if (el.hdrProfileName) el.hdrProfileName.textContent = nick;
+
     if (el.settingsAccountBadge) {
       el.settingsAccountBadge.textContent = meta.badge;
       el.settingsAccountBadge.className = `prov-chip ${auth.provider || 'guest'}`;
     }
     if (el.settingsAccountName) el.settingsAccountName.textContent = nick;
     if (el.settingsAccountSub) {
-      el.settingsAccountSub.textContent = auth.email
-        ? `${meta.label} · ${auth.email}`
-        : `${meta.label} 로그인 중`;
+      el.settingsAccountSub.textContent = isLinked
+        ? `${meta.label}${auth.email ? ` · ${auth.email}` : ''} (클라우드 저장 · 랭킹 참여)`
+        : '게스트 모드 (기기 저장 · 랭킹 미표시)';
     }
+
+    if (el.loginCurBadge) {
+      el.loginCurBadge.textContent = meta.badge;
+      el.loginCurBadge.className = `prov-chip ${auth.provider || 'guest'}`;
+    }
+    if (el.loginCurName) el.loginCurName.textContent = auth.loggedIn ? nick : '미로그인';
+    if (el.loginCurSub) {
+      el.loginCurSub.textContent = !auth.loggedIn
+        ? '계정을 선택해 로그인하세요'
+        : (isLinked
+          ? `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · 클라우드 동기화 중`
+          : '게스트 모드 (랭킹 미등록 · 연동 권장)');
+    }
+    if (el.btnLoginLogout) el.btnLoginLogout.classList.toggle('hidden', !auth.loggedIn);
+    if (el.loginSetupNotice && ONLINE) {
+      el.loginSetupNotice.classList.toggle('hidden', ONLINE.hasFirebaseAuth());
+    }
+    renderIntroAuthState();
   }
 
   function openLoginOverlay() {
     if (!el.loginOverlay) return;
-    pendingOauthProvider = null;
-    if (el.loginMainPanel) el.loginMainPanel.classList.remove('hidden');
-    if (el.loginOauthPanel) el.loginOauthPanel.classList.add('hidden');
+    renderProfileUI();
     if (el.loginNicknameInput) {
       el.loginNicknameInput.value = (save.auth && save.auth.nickname) || '';
     }
     el.loginOverlay.classList.remove('hidden');
   }
 
-  function openOauthStep(provider) {
-    pendingOauthProvider = provider;
-    const isGoogle = provider === 'google';
-    if (el.loginMainPanel) el.loginMainPanel.classList.add('hidden');
-    if (el.loginOauthPanel) el.loginOauthPanel.classList.remove('hidden');
-    if (el.loginOauthBadge) {
-      el.loginOauthBadge.textContent = isGoogle ? 'G' : '';
-      el.loginOauthBadge.className = `login-oauth-badge ${provider}`;
+  function dismissIntroToHome() {
+    if (!el.introOverlay || el.introOverlay.classList.contains('hidden')) return;
+    try {
+      SFX.introJingle();
+      SFX.startBgm();
+      SFX.setBgmMode('menu');
+    } catch {}
+    el.introOverlay.classList.add('leaving');
+    try { tryAutoLockLandscape(true); } catch {}
+    setTimeout(() => {
+      el.introOverlay.classList.add('hidden');
+      el.introOverlay.classList.remove('playing', 'leaving');
+      try { syncMyWeeklyScore(); } catch {}
+      try { checkAndAwardWeeklyChampion(); } catch {}
+    }, 340);
+  }
+
+  async function switchToAccount(profile, opts = {}) {
+    if (!profile) return;
+    // 1. Flush current account's save into its own slot before switching!
+    persistSave(true);
+
+    const isLinked = ONLINE && ONLINE.isRankedProvider(profile.provider);
+    const slotKey = getAccountSaveKey(profile);
+    const localSlot = parseStorageJson(slotKey);
+    let cloudSlot = null;
+    if (isLinked && ONLINE && profile.uid) {
+      try { cloudSlot = await ONLINE.loadCloudUserSave(profile.uid); } catch {}
     }
-    if (el.loginOauthTitle) {
-      el.loginOauthTitle.textContent = isGoogle ? 'Google 계정 연결' : 'Apple ID 계정 연결';
+
+    let chosenRaw = null;
+    if (cloudSlot && localSlot) {
+      const cTs = Number(cloudSlot.cloudUpdatedAt) || 0;
+      const lTs = Number(localSlot.cloudUpdatedAt) || 0;
+      chosenRaw = cTs >= lTs ? cloudSlot : localSlot;
+    } else if (cloudSlot) {
+      chosenRaw = cloudSlot;
+    } else if (localSlot) {
+      chosenRaw = localSlot;
+    } else if (opts.carryGuestSave && save && save.auth && save.auth.provider === 'guest') {
+      // First-time upgrade from Guest -> brand-new Google/Apple account carries over existing progress!
+      chosenRaw = JSON.parse(JSON.stringify(save));
+      delete chosenRaw.auth;
+    } else if (!isLinked) {
+      // Guest fallback to legacy v1 save if first visit after migration
+      chosenRaw = parseStorageJson(SAVE_KEY) || parseStorageJson(SAVE_BACKUP_KEY);
     }
-    if (el.loginOauthEmail) {
-      el.loginOauthEmail.placeholder = isGoogle ? 'example@gmail.com' : 'example@icloud.com';
-      el.loginOauthEmail.value = (save.auth && save.auth.provider === provider && save.auth.email) ? save.auth.email : '';
+
+    activeAuth = { ...profile, loggedIn: true };
+    persistActiveAuth(activeAuth);
+    save = hydrateSaveData(chosenRaw, activeAuth);
+    save.auth = {
+      ...activeAuth,
+      nickname: (chosenRaw && chosenRaw.auth && chosenRaw.auth.nickname && chosenRaw.auth.provider === profile.provider)
+        ? chosenRaw.auth.nickname
+        : activeAuth.nickname
+    };
+
+    SFX.applySettings(save.audioSettings);
+    previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === save.selectedChar));
+    persistSave(true);
+
+    if (el.loginOverlay) el.loginOverlay.classList.add('hidden');
+    renderProfileUI();
+    refreshAllMenus();
+
+    if (isLinked) {
+      try { await syncMyWeeklyScore(); } catch {}
+      try { checkAndAwardWeeklyChampion(); } catch {}
     }
-    if (el.loginOauthNick) {
-      const typedNick = el.loginNicknameInput ? el.loginNicknameInput.value.trim() : '';
-      el.loginOauthNick.value = typedNick || (save.auth && save.auth.nickname) || '';
+
+    const meta = ONLINE ? ONLINE.getProviderMeta(save.auth.provider) : { label: '계정' };
+    if (isLinked) {
+      showToast(`✅ ${meta.label} [${save.auth.nickname}] 연동 완료! (클라우드 저장 & 랭킹 참여)`);
+    } else {
+      showToast('👤 게스트로 입장했습니다. (랭킹은 구글/애플 연동 시 참여)');
     }
   }
 
-  async function completeLogin(provider, opts = {}) {
+  let oauthInFlight = false;
+  async function handleOAuthLogin(provider, fromIntro = false) {
+    if (oauthInFlight || !ONLINE) return;
     try { SFX.click(); } catch {}
-    const prov = provider === 'google' || provider === 'apple' ? provider : 'guest';
-    const existingUid = (save.auth && save.auth.uid) || '';
-    let profile = null;
+    oauthInFlight = true;
     try {
-      if (ONLINE && typeof ONLINE.signIn === 'function') {
-        profile = await ONLINE.signIn(prov, {
-          existingUid,
-          nickname: opts.nickname,
-          email: opts.email
-        });
+      const res = await ONLINE.signInWithOAuth(provider);
+      if (res && res.ok && res.profile) {
+        const carryGuest = Boolean(!fromIntro && save.auth && save.auth.provider === 'guest');
+        await switchToAccount(res.profile, { carryGuestSave: carryGuest });
+        if (fromIntro) dismissIntroToHome();
+      } else if (res && res.needsSetup) {
+        showToast('⚙️ 실제 Google/Apple 로그인을 위해 Firebase apiKey 연결이 필요합니다.');
+        openLoginOverlay();
+        if (el.loginSetupNotice) el.loginSetupNotice.classList.remove('hidden');
+      } else if (res && res.redirecting) {
+        showToast('🔄 로그인 페이지로 이동 중입니다...');
+      } else if (res && !res.cancelled && res.message) {
+        showToast(`⚠️ ${res.message}`);
       }
-    } catch {}
-    if (!profile) {
-      const nick = String(opts.nickname || '').trim().slice(0, 12) || `러너_${Math.floor(1000 + Math.random() * 9000)}`;
-      profile = {
-        loggedIn: true,
-        provider: prov,
-        uid: existingUid || `u_${Date.now().toString(36)}`,
-        nickname: nick,
-        email: String(opts.email || '').trim().slice(0, 60),
-        loggedInAt: Date.now()
-      };
+    } finally {
+      oauthInFlight = false;
     }
-    save.auth = profile;
-    persistSave();
+  }
+
+  async function handleGuestLogin(fromIntro = false) {
+    try { SFX.click(); } catch {}
+    const prevGuestUid = (activeAuth && activeAuth.provider === 'guest' && activeAuth.uid) ? activeAuth.uid : '';
+    const profile = ONLINE ? ONLINE.createGuestProfile(prevGuestUid) : {
+      loggedIn: true, provider: 'guest', uid: prevGuestUid || 'guest_local', nickname: '게스트', email: ''
+    };
+    await switchToAccount(profile, { carryGuestSave: false });
+    if (fromIntro) dismissIntroToHome();
+  }
+
+  async function handleLogout() {
+    try { SFX.click(); } catch {}
+    persistSave(true);
+    if (ONLINE) {
+      try { await ONLINE.signOutOAuth(); } catch {}
+    }
+    activeAuth = { loggedIn: false, provider: 'guest', uid: '', nickname: '', email: '' };
+    persistActiveAuth(activeAuth);
+    save.auth = { ...activeAuth };
     if (el.loginOverlay) el.loginOverlay.classList.add('hidden');
+    if (el.settingsOverlay) el.settingsOverlay.classList.add('hidden');
     renderProfileUI();
-    try { await syncMyWeeklyScore(); } catch {}
-    refreshAllMenus();
-    const meta = (ONLINE && ONLINE.getProviderMeta) ? ONLINE.getProviderMeta(profile.provider) : { label: '계정' };
-    showToast(`✅ ${meta.label} [${profile.nickname}] 로그인 완료!`);
-    try { tryAutoLockLandscape(true); } catch {}
-    try { checkAndAwardWeeklyChampion(); } catch {}
+    if (el.introOverlay) {
+      el.introOverlay.classList.remove('hidden', 'leaving');
+    }
+    showToast('👋 로그아웃되었습니다. 로고 아래에서 계정을 선택해 주세요.');
+  }
+
+  async function saveEditedNickname() {
+    if (!el.loginNicknameInput) return;
+    const raw = el.loginNicknameInput.value.trim();
+    if (!raw) {
+      showToast('닉네임을 입력해 주세요.');
+      return;
+    }
+    SFX.click();
+    const clean = ONLINE ? ONLINE.sanitizeNickname(raw, '날씨러너') : raw.slice(0, 12);
+    save.auth = { ...(save.auth || activeAuth), nickname: clean };
+    persistSave(true);
+    renderProfileUI();
+    if (ONLINE && ONLINE.isRankedProvider(save.auth.provider)) {
+      try { await syncMyWeeklyScore(); } catch {}
+    }
+    renderRankingTab();
+    showToast(`🏷️ 닉네임이 [${clean}](으)로 저장되었습니다!`);
   }
 
   // ===================== IN-APP PURCHASE (REAL-MONEY GEM STORE: 100💎 = ₩1,000) =====================
@@ -1162,13 +1389,21 @@
 
     const myChar = getCharDef(save.selectedChar);
     const mySkin = getEquippedSkin(myChar.id);
-    const myUid = (save.auth && save.auth.uid) || 'local_me';
-    const myNick = (save.auth && save.auth.nickname) || `나 (${myChar.name})`;
+    const myAuth = save.auth || { provider: 'guest', uid: '', nickname: '게스트' };
+    const isLinkedUser = Boolean(ONLINE && ONLINE.isRankedProvider(myAuth.provider));
+    const myUid = myAuth.uid || '';
+    const myNick = myAuth.nickname || `나 (${myChar.name})`;
     const weeklyBest = save.weeklyRank ? (save.weeklyRank.bestScore || 0) : 0;
+
+    if (el.rankGuestBanner) {
+      el.rankGuestBanner.classList.toggle('hidden', isLinkedUser);
+    }
 
     el.rankMyAvatar.src = getSkinAvatar(myChar, mySkin);
     el.rankMyAvatar.style.filter = getSkinFilter(mySkin);
-    el.rankMyScoreLine.textContent = `이번 주 ${weeklyBest.toLocaleString('ko-KR')}점 · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
+    el.rankMyScoreLine.textContent = isLinkedUser
+      ? `이번 주 ${weeklyBest.toLocaleString('ko-KR')}점 · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`
+      : `게스트 기록(비공개) · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · Google/Apple 연동 시 랭킹 등록`;
     el.rankStatYear.textContent = `${save.bestYear || 1}년 차`;
     el.rankStatCoins.textContent = `${(save.totalCoinsEver || 0).toLocaleString('ko-KR')}개`;
     el.rankStatCombo.textContent = `${save.maxDodgeComboEver || 0}연속`;
@@ -1179,21 +1414,21 @@
     let prevRes = null;
     try {
       [curRes, prevRes] = await Promise.all([
-        ONLINE.fetchWeeklyBoard(info.weekKey, myUid),
-        ONLINE.fetchWeeklyBoard(info.prevWeekKey, myUid)
+        ONLINE.fetchWeeklyBoard(info.weekKey, isLinkedUser ? myUid : null),
+        ONLINE.fetchWeeklyBoard(info.prevWeekKey, isLinkedUser ? myUid : null)
       ]);
     } catch {
       return;
     }
     if (seq !== rankRenderSeq || !curRes) return;
 
-    // Real users ONLY (zero bots/fake rivals — only entries with score > 0!)
+    // STRICT: Only linked Google/Apple real users appear on the leaderboard (NEVER guests!)
     let board = curRes.board.slice();
-    if (weeklyBest > 0 && !board.some((r) => r.isMe)) {
+    if (isLinkedUser && weeklyBest > 0 && myUid && !board.some((r) => r.isMe)) {
       board.push({
         uid: myUid,
         nickname: myNick,
-        provider: (save.auth && save.auth.provider) || 'guest',
+        provider: myAuth.provider,
         charId: myChar.id,
         skinId: mySkin ? mySkin.id : null,
         score: weeklyBest,
@@ -1205,8 +1440,8 @@
       board = board.map((e, i) => ({ ...e, rank: i + 1 }));
     }
 
-    const myEntry = board.find((r) => r.isMe);
-    el.rankMyPos.textContent = myEntry ? `${myEntry.rank}위` : '미참여';
+    const myEntry = isLinkedUser ? board.find((r) => r.isMe) : null;
+    el.rankMyPos.textContent = !isLinkedUser ? '게스트 (미등록)' : (myEntry ? `${myEntry.rank}위` : '미참여');
 
     if (el.rankLivePill) {
       if (curRes.syncedOnline) {
@@ -1219,17 +1454,15 @@
     }
     if (el.rankOnlineCount) {
       el.rankOnlineCount.textContent = curRes.syncedOnline
-        ? `실제 참여 유저 ${board.length}명`
-        : (curRes.hasRemoteConfig
-          ? `서버 재연결 중 · 기록 ${board.length}명`
-          : `실제 기록 ${board.length}명 (Firebase DB 연결 시 전체 유저 연동)`);
+        ? `연동 유저 ${board.length}명 참여`
+        : `연동 기록 ${board.length}명`;
     }
     if (el.rankLastWinner) {
       if (prevRes && prevRes.board && prevRes.board[0]) {
         const w = prevRes.board[0];
         el.rankLastWinner.textContent = `지난 주(${info.prevWeekLabel}) 1위: 👑 ${w.nickname} (${w.score.toLocaleString('ko-KR')}점 · 💎500 지급)`;
       } else {
-        el.rankLastWinner.textContent = '매주 월요일 00:00(KST) 정산 · 실제 유저 중 최고 점수 1위에게 💎 500 보석 지급!';
+        el.rankLastWinner.textContent = '매주 월요일 00:00(KST) 정산 · Google/Apple 연동 유저 1위에게 💎 500 보석 지급!';
       }
     }
 
@@ -1239,8 +1472,8 @@
       empty.className = 'rank-empty-card';
       empty.innerHTML = `
         <div class="rank-empty-ico">🏆</div>
-        <div class="rank-empty-title">아직 이번 주 랭킹 기록이 없습니다</div>
-        <div class="rank-empty-sub">봇이나 가짜 기록 없이 <strong>실제 유저 기록만</strong> 표시됩니다.<br/>지금 첫 플레이로 주간 1위(💎500)를 선점해 보세요!</div>
+        <div class="rank-empty-title">아직 이번 주 연동 유저 랭킹 기록이 없습니다</div>
+        <div class="rank-empty-sub">게스트와 봇을 제외하고 <strong>Google·Apple 연동 실제 유저만</strong> 표시됩니다.<br/>계정을 연동하고 첫 1위(💎500)를 선점해 보세요!</div>
       `;
       el.rankBoardList.appendChild(empty);
       return;
@@ -3961,39 +4194,62 @@
       });
     }
 
-    // Login Screen Buttons (Google / Apple ID / Guest)
-    if (el.btnLoginGuest) {
-      el.btnLoginGuest.addEventListener('click', () => {
-        const nick = el.loginNicknameInput ? el.loginNicknameInput.value.trim() : '';
-        completeLogin('guest', { nickname: nick });
+    // Intro Login Buttons Directly Below Logo (Google / Apple / Guest)
+    if (el.btnIntroGoogle) {
+      el.btnIntroGoogle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleOAuthLogin('google', true);
       });
     }
-    if (el.btnLoginGoogle) {
-      el.btnLoginGoogle.addEventListener('click', () => {
-        SFX.click();
-        openOauthStep('google');
+    if (el.btnIntroApple) {
+      el.btnIntroApple.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleOAuthLogin('apple', true);
       });
+    }
+    if (el.btnIntroGuest) {
+      el.btnIntroGuest.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleGuestLogin(true);
+      });
+    }
+    if (el.btnIntroSwitchAcc) {
+      el.btnIntroSwitchAcc.addEventListener('click', (e) => {
+        e.stopPropagation();
+        SFX.click();
+        openLoginOverlay();
+      });
+    }
+
+    // Account Link Modal Buttons (Google / Apple / Guest / Nickname / Logout)
+    if (el.btnCloseLogin) {
+      el.btnCloseLogin.addEventListener('click', () => {
+        SFX.click();
+        el.loginOverlay.classList.add('hidden');
+      });
+    }
+    if (el.loginOverlay) {
+      el.loginOverlay.addEventListener('click', (e) => {
+        if (e.target === el.loginOverlay) {
+          el.loginOverlay.classList.add('hidden');
+        }
+      });
+    }
+    if (el.btnSaveNickname) el.btnSaveNickname.addEventListener('click', saveEditedNickname);
+    if (el.btnLoginLogout) el.btnLoginLogout.addEventListener('click', handleLogout);
+    if (el.btnLoginGoogle) {
+      el.btnLoginGoogle.addEventListener('click', () => handleOAuthLogin('google', false));
     }
     if (el.btnLoginApple) {
-      el.btnLoginApple.addEventListener('click', () => {
-        SFX.click();
-        openOauthStep('apple');
-      });
+      el.btnLoginApple.addEventListener('click', () => handleOAuthLogin('apple', false));
     }
-    if (el.btnLoginOauthBack) {
-      el.btnLoginOauthBack.addEventListener('click', () => {
-        SFX.click();
-        pendingOauthProvider = null;
-        if (el.loginOauthPanel) el.loginOauthPanel.classList.add('hidden');
-        if (el.loginMainPanel) el.loginMainPanel.classList.remove('hidden');
-      });
+    if (el.btnLoginGuest) {
+      el.btnLoginGuest.addEventListener('click', () => handleGuestLogin(false));
     }
-    if (el.btnLoginOauthConfirm) {
-      el.btnLoginOauthConfirm.addEventListener('click', () => {
-        const prov = pendingOauthProvider || 'google';
-        const email = el.loginOauthEmail ? el.loginOauthEmail.value.trim() : '';
-        const nick = el.loginOauthNick ? el.loginOauthNick.value.trim() : '';
-        completeLogin(prov, { email, nickname: nick });
+    if (el.btnRankLinkAccount) {
+      el.btnRankLinkAccount.addEventListener('click', () => {
+        SFX.click();
+        openLoginOverlay();
       });
     }
 
@@ -4251,38 +4507,28 @@
     el.btnResultHome.addEventListener('pointerleave', () => el.btnResultHome.classList.remove('pressed'));
     el.btnResultHome.addEventListener('click', exitRunToHome);
 
-    // Tap-to-Start Splash Intro (Stays on Logo Until User Touches/Clicks, Then Auto-Locks Landscape & Shows Login!)
+    // Intro Tap-to-Start (When Logged In: Tap Prompt or Background Enters Home; When Logged Out: Use Login Buttons Below Logo!)
     let introLeaving = false;
 
     function enterFromIntro(ev) {
-      if (ev && ev.cancelable && ev.type === 'touchend') {
-        ev.preventDefault();
-      }
+      if (!save.auth || !save.auth.loggedIn) return;
+      if (ev && ev.target && ev.target.closest && ev.target.closest('#btn-intro-switch-acc')) return;
       if (introLeaving || !el.introOverlay || el.introOverlay.classList.contains('hidden')) return;
       introLeaving = true;
-      try {
-        SFX.introJingle();
-        SFX.startBgm();
-        SFX.setBgmMode('menu');
-      } catch {}
-      el.introOverlay.classList.add('leaving');
-      // Request fullscreen + hardware landscape lock synchronously inside gesture (non-blocking)
-      try { tryAutoLockLandscape(true); } catch {}
-      setTimeout(() => {
-        el.introOverlay.classList.add('hidden');
-        el.introOverlay.classList.remove('playing', 'leaving');
-        introLeaving = false;
-        if (!save.auth || !save.auth.loggedIn) {
-          openLoginOverlay();
-        } else {
-          try { syncMyWeeklyScore(); } catch {}
-          try { checkAndAwardWeeklyChampion(); } catch {}
-        }
-      }, 360);
+      dismissIntroToHome();
+      setTimeout(() => { introLeaving = false; }, 400);
     }
 
-    el.introOverlay.addEventListener('click', enterFromIntro);
-    el.introOverlay.addEventListener('touchend', enterFromIntro, { passive: false });
+    if (el.btnIntroStart) {
+      el.btnIntroStart.addEventListener('click', (e) => {
+        e.stopPropagation();
+        enterFromIntro(e);
+      });
+    }
+    el.introOverlay.addEventListener('click', (e) => {
+      if (e.target && e.target.closest && e.target.closest('button')) return;
+      enterFromIntro(e);
+    });
     window.addEventListener('pointerdown', () => {
       try {
         SFX.startBgm();
@@ -4347,6 +4593,24 @@
   });
   setupEvents();
   refreshAllMenus();
+  renderIntroAuthState();
+
+  // Handle Real Firebase OAuth Redirect / Persistent Session Restoration!
+  if (ONLINE && ONLINE.hasFirebaseAuth()) {
+    ONLINE.checkRedirectLoginResult().then(async (redirectProfile) => {
+      if (redirectProfile) {
+        await switchToAccount(redirectProfile, { carryGuestSave: save.auth && save.auth.provider === 'guest' });
+        dismissIntroToHome();
+      }
+    }).catch(() => {});
+
+    ONLINE.onAuthStateReady(async (fbProfile) => {
+      if (fbProfile && (!save.auth || !save.auth.loggedIn || save.auth.uid !== fbProfile.uid)) {
+        await switchToAccount(fbProfile, { carryGuestSave: false });
+      }
+    });
+  }
+
   try { tryAutoLockLandscape(false); } catch {}
   try { SFX.introJingle(); } catch {}
   requestAnimationFrame(loop);

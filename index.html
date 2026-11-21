@@ -13,78 +13,108 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd27" />
+  <link rel="stylesheet" href="style.css?v=20261121hd29" />
 </head>
 <body>
   <div id="mobile-app">
-    <!-- ================= GAME LAUNCH INTRO OVERLAY (TAP TO START!) ================= -->
-    <div id="intro-overlay" role="button" tabindex="0" aria-label="한국 날씨에서 살아남기 시작하기">
+    <!-- ================= GAME LAUNCH INTRO OVERLAY (LOGO + LOGIN BUTTONS RIGHT BELOW!) ================= -->
+    <div id="intro-overlay" role="region" aria-label="한국 날씨에서 살아남기 시작 화면">
       <div class="intro-logo-wrap">
         <img id="intro-logo-img" src="assets/logo.png" alt="한국 날씨에서 살아남기" class="intro-logo-img" />
       </div>
-      <div id="intro-tap-prompt" class="intro-tap-prompt">
-        <span class="intro-tap-main">화면을 터치해서 시작하세요</span>
-        <span class="intro-tap-sub">TAP ANYWHERE TO START</span>
+
+      <div class="intro-bottom-dock">
+        <!-- Shown on Intro Right Below Logo When Logged Out -->
+        <div id="intro-login-box" class="intro-login-box">
+          <div class="intro-login-btns">
+            <button id="btn-intro-google" class="login-provider-btn google intro-auth-btn" type="button">
+              <span class="login-prov-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.2 0-5.8-2.1-6.8-5H1.2v3.1C3.2 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.2 14.2c-.2-.7-.4-1.4-.4-2.2s.1-1.5.4-2.2V6.7H1.2C.4 8.3 0 10.1 0 12s.4 3.7 1.2 5.3l4-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.2 2.7 1.2 6.7l4 3.1c1-2.9 3.6-5 6.8-5z"/></svg>
+              </span>
+              <span class="login-prov-label">Google 로그인</span>
+            </button>
+
+            <button id="btn-intro-apple" class="login-provider-btn apple intro-auth-btn" type="button">
+              <span class="login-prov-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+              </span>
+              <span class="login-prov-label">Apple 로그인</span>
+            </button>
+
+            <button id="btn-intro-guest" class="login-provider-btn guest intro-auth-btn" type="button">
+              <span class="login-prov-ico" aria-hidden="true">👤</span>
+              <span class="login-prov-label">게스트 시작</span>
+            </button>
+          </div>
+          <div class="intro-login-note">구글·애플 연동 시 계정별 데이터 저장 &amp; 실시간 랭킹(1위 💎500) 참여 · 게스트는 랭킹 미표시</div>
+        </div>
+
+        <!-- Shown on Intro Right Below Logo When Already Logged In -->
+        <div id="intro-start-box" class="intro-start-box hidden">
+          <div class="intro-signed-row">
+            <span id="intro-acc-badge" class="prov-chip guest">GUEST</span>
+            <span id="intro-acc-name" class="intro-acc-name">게스트</span>
+            <button id="btn-intro-switch-acc" class="intro-switch-btn" type="button">계정 변경</button>
+          </div>
+          <button id="btn-intro-start" class="intro-tap-prompt" type="button">
+            <span class="intro-tap-main">화면을 터치해서 시작하세요</span>
+            <span class="intro-tap-sub">TAP TO START</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- ================= LOGIN SCREEN OVERLAY (GOOGLE / APPLE ID / GUEST) ================= -->
-    <div id="login-overlay" class="login-overlay hidden" role="dialog" aria-modal="true" aria-label="계정 로그인">
+    <!-- ================= ACCOUNT & REAL OAUTH LINK MODAL (GOOGLE / APPLE ID / GUEST) ================= -->
+    <div id="login-overlay" class="login-overlay hidden" role="dialog" aria-modal="true" aria-label="계정 연동 및 관리">
       <div class="login-card">
         <div class="login-brand-row">
           <img src="assets/icons/icon-192.png?v=20261121hd21" alt="앱 로고" class="login-app-icon" />
           <div class="login-brand-text">
-            <h1 class="login-title">한국 날씨에서 살아남기</h1>
-            <p class="login-sub">계정을 연결하고 <strong>온라인 실시간 주간 1위(💎500)</strong>에 도전하세요!</p>
+            <h1 class="login-title">계정 연동 및 관리</h1>
+            <p class="login-sub">Google·Apple 계정은 <strong>개별 클라우드 저장 &amp; 실시간 랭킹(1위 💎500)</strong>이 지원됩니다.</p>
           </div>
+          <button id="btn-close-login" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
         </div>
 
-        <!-- Primary 3-Provider Login View -->
         <div id="login-main-panel" class="login-panel">
+          <div class="login-cur-bar">
+            <span id="login-cur-badge" class="prov-chip guest">GUEST</span>
+            <div class="login-cur-meta">
+              <strong id="login-cur-name">미로그인</strong>
+              <span id="login-cur-sub">계정을 선택해 로그인하세요</span>
+            </div>
+            <button id="btn-login-logout" class="intro-switch-btn logout hidden" type="button">로그아웃</button>
+          </div>
+
           <div class="login-nick-row">
-            <label for="login-nickname-input" class="login-nick-lbl">🏷️ 랭킹 닉네임</label>
-            <input id="login-nickname-input" class="login-input" type="text" maxlength="12" placeholder="닉네임 입력 (최대 12자)" autocomplete="nickname" />
+            <label for="login-nickname-input" class="login-nick-lbl">🏷️ 닉네임</label>
+            <input id="login-nickname-input" class="login-input" type="text" maxlength="12" placeholder="랭킹 표시 닉네임 (최대 12자)" autocomplete="nickname" />
+            <button id="btn-save-nickname" class="login-nick-save" type="button">저장</button>
           </div>
 
           <div class="login-btn-stack">
             <button id="btn-login-google" class="login-provider-btn google" type="button">
               <span class="login-prov-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.2 0-5.8-2.1-6.8-5H1.2v3.1C3.2 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.2 14.2c-.2-.7-.4-1.4-.4-2.2s.1-1.5.4-2.2V6.7H1.2C.4 8.3 0 10.1 0 12s.4 3.7 1.2 5.3l4-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.2 2.7 1.2 6.7l4 3.1c1-2.9 3.6-5 6.8-5z"/></svg>
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.2 0-5.8-2.1-6.8-5H1.2v3.1C3.2 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.2 14.2c-.2-.7-.4-1.4-.4-2.2s.1-1.5.4-2.2V6.7H1.2C.4 8.3 0 10.1 0 12s.4 3.7 1.2 5.3l4-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.2 2.7 1.2 6.7l4 3.1c1-2.9 3.6-5 6.8-5z"/></svg>
               </span>
-              <span class="login-prov-label">Google로 계속하기</span>
+              <span class="login-prov-label">Google 계정 연동</span>
             </button>
 
             <button id="btn-login-apple" class="login-provider-btn apple" type="button">
               <span class="login-prov-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
               </span>
-              <span class="login-prov-label">Apple ID로 계속하기</span>
+              <span class="login-prov-label">Apple ID 연동</span>
             </button>
 
             <button id="btn-login-guest" class="login-provider-btn guest" type="button">
               <span class="login-prov-ico" aria-hidden="true">👤</span>
-              <span class="login-prov-label">게스트로 시작하기</span>
+              <span class="login-prov-label">게스트 모드</span>
             </button>
           </div>
-        </div>
 
-        <!-- Inline Google / Apple ID Account Connect Step -->
-        <div id="login-oauth-panel" class="login-panel hidden">
-          <div class="login-oauth-head">
-            <span id="login-oauth-badge" class="login-oauth-badge google">G</span>
-            <strong id="login-oauth-title">Google 계정 연결</strong>
-          </div>
-          <div class="login-nick-row">
-            <label for="login-oauth-email" class="login-nick-lbl">📧 계정 이메일</label>
-            <input id="login-oauth-email" class="login-input" type="email" maxlength="60" placeholder="example@gmail.com" autocomplete="email" />
-          </div>
-          <div class="login-nick-row">
-            <label for="login-oauth-nick" class="login-nick-lbl">🏷️ 게임 닉네임</label>
-            <input id="login-oauth-nick" class="login-input" type="text" maxlength="12" placeholder="랭킹에 표시될 닉네임" />
-          </div>
-          <div class="login-oauth-actions">
-            <button id="btn-login-oauth-back" class="item-action-btn locked-chest" type="button">← 뒤로</button>
-            <button id="btn-login-oauth-confirm" class="cr-gold-btn login-confirm-btn" type="button">연결하고 시작하기</button>
+          <div id="login-setup-notice" class="login-setup-notice hidden">
+            ⚙️ <strong>실제 Google·Apple 로그인 활성화 안내:</strong> Firebase 콘솔(프로젝트 설정 → 웹 앱)의 <code>apiKey</code>를 <code>js/online.js</code>에 연결하면 즉시 실제 OAuth 로그인이 작동합니다. (가이드: <code>AUTH_SETUP.md</code>)
           </div>
         </div>
       </div>
@@ -271,6 +301,15 @@
             <span class="rank-timer-lbl">정산까지 남은 시간</span>
             <strong id="rank-week-countdown" class="rank-timer-val">0일 00:00:00</strong>
           </div>
+        </div>
+
+        <!-- Guest Ranking Exclusion Banner (Visible Only to Guest Accounts) -->
+        <div id="rank-guest-banner" class="rank-guest-banner hidden">
+          <div class="rank-guest-txt">
+            <strong>🔒 게스트는 실시간 랭킹에 표시되지 않습니다</strong>
+            <span>Google 또는 Apple ID로 연동하면 계정별 데이터가 저장되고 주간 1위(💎500)에 도전할 수 있습니다!</span>
+          </div>
+          <button id="btn-rank-link-account" class="cr-gold-btn rank-link-btn" type="button">계정 연동</button>
         </div>
 
         <div class="rank-my-card">
@@ -751,11 +790,14 @@
     <div id="global-toast" class="global-toast hidden"></div>
   </div>
 
-  <script src="js/data.js?v=20261121hd28"></script>
+  <!-- Official Firebase Auth SDK (Google & Apple Real OAuth) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="js/data.js?v=20261121hd29"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd28"></script>
-  <script src="js/renderer.js?v=20261121hd28"></script>
-  <script src="js/game.js?v=20261121hd28"></script>
+  <script src="js/online.js?v=20261121hd29"></script>
+  <script src="js/renderer.js?v=20261121hd29"></script>
+  <script src="js/game.js?v=20261121hd29"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

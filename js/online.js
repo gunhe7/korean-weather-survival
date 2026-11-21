@@ -1,42 +1,62 @@
 window.OnlineService = (function () {
-  const BOARD_STORE_KEY = 'kr_weather_online_board_v2_real';
+  const BOARD_STORE_KEY = 'kr_weather_online_board_v3_linked';
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
   const WEEKLY_REWARD_GEMS = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP1_GEMS) || 500;
 
-  // ===================== REAL ONLINE BACKEND CONFIG (FIREBASE REALTIME DATABASE) =====================
-  // 1) Firebase 콘솔(https://console.firebase.google.com)에서 무료 Realtime Database 생성
-  // 2) 아래 DEFAULT_FIREBASE_DB_URL에 본인 DB 주소 입력 (예: 'https://my-game-default-rtdb.asia-southeast1.firebasedatabase.app')
-  // 3) 자세한 3분 설정 방법은 프로젝트의 ONLINE_RANK_SETUP.md 참고!
-  const DEFAULT_FIREBASE_DB_URL = 'https://korean-weather-survival-default-rtdb.asia-southeast1.firebasedatabase.app';
+  // ===================== FIREBASE PROJECT CONFIG (korean-weather-survival) =====================
+  // 실제 Google / Apple 로그인을 활성화하려면 Firebase 콘솔(프로젝트 설정 -> 일반 -> 내 앱 -> 웹 앱)의
+  // apiKey(AIza...) 1줄을 아래 apiKey에 입력해 주세요! (자세한 안내: AUTH_SETUP.md)
+  const FIREBASE_CONFIG = Object.assign({
+    apiKey: '',
+    authDomain: 'korean-weather-survival.firebaseapp.com',
+    databaseURL: 'https://korean-weather-survival-default-rtdb.asia-southeast1.firebasedatabase.app',
+    projectId: 'korean-weather-survival'
+  }, window.KWEATHER_FIREBASE_CONFIG || {});
 
-  const CONFIG = Object.assign({
-    firebaseDbUrl: DEFAULT_FIREBASE_DB_URL,
-    pollIntervalMs: 5000
-  }, window.KWEATHER_ONLINE_CONFIG || {});
+  let fbApp = null;
+  let fbAuth = null;
+
+  function hasFirebaseAuth() {
+    return Boolean(
+      typeof window !== 'undefined' &&
+      window.firebase &&
+      FIREBASE_CONFIG.apiKey &&
+      String(FIREBASE_CONFIG.apiKey).trim().length > 10 &&
+      !String(FIREBASE_CONFIG.apiKey).startsWith('YOUR_')
+    );
+  }
+
+  function ensureFirebaseAuth() {
+    if (!hasFirebaseAuth()) return null;
+    if (fbAuth) return fbAuth;
+    try {
+      fbApp = window.firebase.apps && window.firebase.apps.length
+        ? window.firebase.app()
+        : window.firebase.initializeApp(FIREBASE_CONFIG);
+      fbAuth = window.firebase.auth();
+      try { fbAuth.languageCode = 'ko'; } catch {}
+      return fbAuth;
+    } catch {
+      return null;
+    }
+  }
 
   let channel = null;
   try {
     if (typeof BroadcastChannel !== 'undefined') {
-      channel = new BroadcastChannel('kweather_real_rank_v2');
+      channel = new BroadcastChannel('kweather_real_rank_v3');
     }
   } catch {}
 
   const listeners = new Set();
-
   function notifyListeners(payload) {
-    listeners.forEach((fn) => {
-      try { fn(payload); } catch {}
-    });
+    listeners.forEach((fn) => { try { fn(payload); } catch {} });
   }
-
   if (channel) {
     channel.onmessage = (ev) => {
-      if (ev && ev.data && ev.data.type === 'board_update') {
-        notifyListeners(ev.data);
-      }
+      if (ev && ev.data && ev.data.type === 'board_update') notifyListeners(ev.data);
     };
   }
-
   function onBoardUpdate(fn) {
     listeners.add(fn);
     return () => listeners.delete(fn);
@@ -62,8 +82,7 @@ window.OnlineService = (function () {
     const prevKst = new Date(nowMs - 7 * 86400000 + KST_OFFSET_MS);
     const prev = getIsoWeekKeyFromKstDate(prevKst);
 
-    // Next Monday 00:00:00 KST
-    const dayOfWeek = kstNow.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const dayOfWeek = kstNow.getUTCDay();
     const daysUntilMon = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
     const nextMonKstUtc = Date.UTC(
       kstNow.getUTCFullYear(),
@@ -94,11 +113,9 @@ window.OnlineService = (function () {
     };
   }
 
-  // ===================== AUTHENTICATION (GUEST / GOOGLE / APPLE ID) =====================
-  function generateUid(prefix = 'u') {
-    const rnd = Math.random().toString(36).slice(2, 8).toUpperCase();
-    const ts = Date.now().toString(36).slice(-4).toUpperCase();
-    return `${prefix}_${ts}${rnd}`;
+  // ===================== REAL GOOGLE / APPLE AUTHENTICATION + GUEST =====================
+  function isRankedProvider(provider) {
+    return provider === 'google' || provider === 'apple';
   }
 
   function sanitizeNickname(raw, fallback = '날씨러너') {
@@ -112,34 +129,209 @@ window.OnlineService = (function () {
     return { id: 'guest', label: '게스트', badge: 'GUEST', color: '#607d9e' };
   }
 
-  async function signIn(provider, opts = {}) {
-    const prov = provider === 'google' || provider === 'apple' ? provider : 'guest';
-    const existingUid = opts.existingUid;
+  function detectProviderFromFirebaseUser(fbUser, hintProvider) {
+    if (hintProvider === 'google' || hintProvider === 'apple') return hintProvider;
+    const pd = (fbUser && Array.isArray(fbUser.providerData) && fbUser.providerData[0]) || null;
+    if (pd && pd.providerId === 'apple.com') return 'apple';
+    if (pd && pd.providerId === 'google.com') return 'google';
+    return 'google';
+  }
 
-    if (CONFIG.customAuthHandler && typeof CONFIG.customAuthHandler === 'function') {
-      const res = await CONFIG.customAuthHandler(prov, opts);
-      if (res && res.uid) return res;
-    }
-
-    const defaultNick = prov === 'google'
-      ? (opts.email ? opts.email.split('@')[0] : '구글러너')
-      : (prov === 'apple'
-        ? (opts.email ? opts.email.split('@')[0] : '애플러너')
-        : `게스트_${Math.floor(1000 + Math.random() * 9000)}`);
-
-    const nickname = sanitizeNickname(opts.nickname, defaultNick);
-    const email = String(opts.email || '').trim().slice(0, 60);
+  function buildProfileFromFirebaseUser(fbUser, hintProvider) {
+    const prov = detectProviderFromFirebaseUser(fbUser, hintProvider);
+    const email = (fbUser.email || '').trim();
+    const rawName = fbUser.displayName || (email ? email.split('@')[0] : (prov === 'apple' ? '애플유저' : '구글유저'));
     return {
       loggedIn: true,
       provider: prov,
-      uid: existingUid || generateUid(prov === 'guest' ? 'gst' : prov.slice(0, 3)),
-      nickname,
+      uid: fbUser.uid,
+      nickname: sanitizeNickname(rawName, prov === 'apple' ? '애플유저' : '구글유저'),
       email,
+      photoURL: fbUser.photoURL || '',
+      verifiedOAuth: true,
       loggedInAt: Date.now()
     };
   }
 
-  // ===================== REAL-USER-ONLY BOARD STORAGE & FIREBASE RTDB SYNC =====================
+  async function getAuthIdToken() {
+    const auth = ensureFirebaseAuth();
+    if (!auth || !auth.currentUser) return '';
+    try {
+      return await auth.currentUser.getIdToken();
+    } catch {
+      return '';
+    }
+  }
+
+  function isMobileOrInApp() {
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    return /Android|iPhone|iPad|iPod|Mobile|GSA\/|KAKAOTALK|NAVER|Instagram/i.test(ua);
+  }
+
+  async function signInWithOAuth(provider) {
+    const prov = provider === 'apple' ? 'apple' : 'google';
+    const auth = ensureFirebaseAuth();
+    if (!auth) {
+      return {
+        ok: false,
+        needsSetup: true,
+        provider: prov,
+        message: '실제 Google/Apple 로그인을 활성화하려면 Firebase 웹 apiKey 설정이 필요합니다. (AUTH_SETUP.md 참고)'
+      };
+    }
+
+    let authProvider = null;
+    if (prov === 'google') {
+      authProvider = new window.firebase.auth.GoogleAuthProvider();
+      authProvider.setCustomParameters({ prompt: 'select_account' });
+    } else {
+      authProvider = new window.firebase.auth.OAuthProvider('apple.com');
+      authProvider.addScope('email');
+      authProvider.addScope('name');
+      authProvider.setCustomParameters({ locale: 'ko' });
+    }
+
+    try {
+      const cred = await auth.signInWithPopup(authProvider);
+      if (cred && cred.user) {
+        return { ok: true, profile: buildProfileFromFirebaseUser(cred.user, prov) };
+      }
+      return { ok: false, message: '로그인 결과를 확인하지 못했습니다.' };
+    } catch (err) {
+      const code = (err && err.code) || '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return { ok: false, cancelled: true, message: '로그인이 취소되었습니다.' };
+      }
+      // Mobile / popup-blocked fallback -> redirect flow!
+      if (
+        code === 'auth/popup-blocked' ||
+        code === 'auth/operation-not-supported-in-this-environment' ||
+        isMobileOrInApp()
+      ) {
+        try {
+          try { sessionStorage.setItem('kweather_oauth_pending_prov', prov); } catch {}
+          await auth.signInWithRedirect(authProvider);
+          return { ok: false, redirecting: true, message: '로그인 페이지로 이동 중...' };
+        } catch (rErr) {
+          return { ok: false, code: rErr && rErr.code, message: formatAuthError(rErr, prov) };
+        }
+      }
+      return { ok: false, code, message: formatAuthError(err, prov) };
+    }
+  }
+
+  function formatAuthError(err, prov) {
+    const code = (err && err.code) || '';
+    const label = prov === 'apple' ? 'Apple ID' : 'Google';
+    if (code === 'auth/unauthorized-domain') {
+      return `Firebase Authentication 승인된 도메인에 ${location.hostname}을 추가해 주세요.`;
+    }
+    if (code === 'auth/operation-not-allowed') {
+      return `Firebase 콘솔 Authentication에서 ${label} 로그인을 사용 설정해 주세요.`;
+    }
+    if (code === 'auth/invalid-api-key') {
+      return 'Firebase 웹 apiKey가 올바르지 않습니다. 프로젝트 설정에서 확인해 주세요.';
+    }
+    return `${label} 로그인 실패 (${code || (err && err.message) || '네트워크 오류'})`;
+  }
+
+  async function checkRedirectLoginResult() {
+    const auth = ensureFirebaseAuth();
+    if (!auth) return null;
+    try {
+      const res = await auth.getRedirectResult();
+      if (res && res.user) {
+        let hint = '';
+        try {
+          hint = sessionStorage.getItem('kweather_oauth_pending_prov') || '';
+          sessionStorage.removeItem('kweather_oauth_pending_prov');
+        } catch {}
+        return buildProfileFromFirebaseUser(res.user, hint);
+      }
+    } catch {}
+    return null;
+  }
+
+  function onAuthStateReady(cb) {
+    const auth = ensureFirebaseAuth();
+    if (!auth) return () => {};
+    return auth.onAuthStateChanged((fbUser) => {
+      if (fbUser) {
+        cb(buildProfileFromFirebaseUser(fbUser, ''));
+      } else {
+        cb(null);
+      }
+    });
+  }
+
+  async function signOutOAuth() {
+    const auth = ensureFirebaseAuth();
+    if (!auth) return;
+    try { await auth.signOut(); } catch {}
+  }
+
+  function createGuestProfile(existingGuestUid = '') {
+    const uid = existingGuestUid && existingGuestUid.startsWith('guest_')
+      ? existingGuestUid
+      : `guest_${Date.now().toString(36).slice(-4)}${Math.random().toString(36).slice(2, 6)}`;
+    return {
+      loggedIn: true,
+      provider: 'guest',
+      uid,
+      nickname: '게스트',
+      email: '',
+      verifiedOAuth: false,
+      loggedInAt: Date.now()
+    };
+  }
+
+  // ===================== FIREBASE REALTIME DB URL HELPERS =====================
+  function getDbUrl() {
+    const url = (window.KWEATHER_ONLINE_CONFIG && window.KWEATHER_ONLINE_CONFIG.firebaseDbUrl) || FIREBASE_CONFIG.databaseURL || '';
+    return String(url).trim().replace(/\/+$/, '');
+  }
+
+  function hasRemoteDb() {
+    return /^https?:\/\//i.test(getDbUrl());
+  }
+
+  async function buildAuthedUrl(path) {
+    const base = getDbUrl();
+    const token = await getAuthIdToken();
+    return token ? `${base}${path}?auth=${encodeURIComponent(token)}` : `${base}${path}`;
+  }
+
+  // ===================== PER-USER CLOUD SAVE (/user_saves/{uid}.json) =====================
+  async function loadCloudUserSave(uid) {
+    if (!uid || !hasRemoteDb()) return null;
+    try {
+      const url = await buildAuthedUrl(`/user_saves/${encodeURIComponent(uid)}.json`);
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data && typeof data === 'object' ? data : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function saveCloudUserSave(uid, saveData) {
+    if (!uid || !saveData || !hasRemoteDb()) return false;
+    try {
+      const payload = { ...saveData, cloudUpdatedAt: Date.now() };
+      const url = await buildAuthedUrl(`/user_saves/${encodeURIComponent(uid)}.json`);
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return Boolean(res && res.ok);
+    } catch {
+      return false;
+    }
+  }
+
+  // ===================== LINKED-USERS-ONLY WEEKLY LEADERBOARD (GUESTS EXCLUDED!) =====================
   function readLocalBoards() {
     try {
       const raw = localStorage.getItem(BOARD_STORE_KEY);
@@ -156,26 +348,12 @@ window.OnlineService = (function () {
     } catch {}
   }
 
-  function getDbUrl() {
-    const url = (window.KWEATHER_ONLINE_CONFIG && window.KWEATHER_ONLINE_CONFIG.firebaseDbUrl) || CONFIG.firebaseDbUrl || '';
-    return String(url).trim().replace(/\/+$/, '');
-  }
-
-  function hasRemoteDb() {
-    return /^https?:\/\//i.test(getDbUrl());
-  }
-
-  function getRemoteWeekUrl(weekKey, uid = null) {
-    const base = getDbUrl();
-    return uid
-      ? `${base}/weekly_boards/${encodeURIComponent(weekKey)}/${encodeURIComponent(uid)}.json`
-      : `${base}/weekly_boards/${encodeURIComponent(weekKey)}.json`;
-  }
-
   async function submitWeeklyScore(entry) {
     if (!entry || !entry.uid) return null;
+    // STRICT RULE: 게스트 유저는 랭킹에 절대 등록/표시되지 않음!
+    if (!isRankedProvider(entry.provider)) return null;
+
     const scoreVal = Math.max(0, Math.floor(Number(entry.score) || 0));
-    // Only register real plays with score > 0 onto the leaderboard!
     if (scoreVal <= 0) return null;
 
     const info = getWeekInfo();
@@ -183,7 +361,7 @@ window.OnlineService = (function () {
     const cleanEntry = {
       uid: String(entry.uid),
       nickname: sanitizeNickname(entry.nickname, '날씨러너'),
-      provider: entry.provider || 'guest',
+      provider: entry.provider,
       charId: entry.charId || 'umbrella_master',
       skinId: entry.skinId || null,
       score: scoreVal,
@@ -192,7 +370,6 @@ window.OnlineService = (function () {
       updatedAt: Date.now()
     };
 
-    // 1. Update local real-user board (keep highest weekly score per uid)
     const all = readLocalBoards();
     const wk = all[weekKey] || {};
     const prev = wk[cleanEntry.uid];
@@ -211,10 +388,10 @@ window.OnlineService = (function () {
     all[weekKey] = wk;
     writeLocalBoards(all);
 
-    // 2. Sync to real Firebase Realtime Database if connected
     if (hasRemoteDb()) {
       try {
-        await fetch(getRemoteWeekUrl(weekKey, cleanEntry.uid), {
+        const url = await buildAuthedUrl(`/weekly_boards/${encodeURIComponent(weekKey)}/${encodeURIComponent(cleanEntry.uid)}.json`);
+        await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(wk[cleanEntry.uid])
@@ -238,12 +415,14 @@ window.OnlineService = (function () {
 
     if (hasRemoteDb()) {
       try {
-        const res = await fetch(getRemoteWeekUrl(targetWeek), { cache: 'no-store' });
+        const url = `${getDbUrl()}/weekly_boards/${encodeURIComponent(targetWeek)}.json`;
+        const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data === 'object') {
+            // STRICT FILTER: ONLY Google / Apple linked real users (Guests excluded!)
             remoteEntries = Object.values(data).filter(
-              (x) => x && x.uid && typeof x.score === 'number' && x.score > 0
+              (x) => x && x.uid && isRankedProvider(x.provider) && typeof x.score === 'number' && x.score > 0
             );
           }
           syncedOnline = true;
@@ -253,10 +432,9 @@ window.OnlineService = (function () {
 
     const localWeekObj = readLocalBoards()[targetWeek] || {};
     const localEntries = Object.values(localWeekObj).filter(
-      (x) => x && x.uid && typeof x.score === 'number' && x.score > 0
+      (x) => x && x.uid && isRankedProvider(x.provider) && typeof x.score === 'number' && x.score > 0
     );
 
-    // Merge ONLY real users (ZERO bots / ZERO fake rivals!)
     const map = new Map();
     localEntries.forEach((e) => {
       const prev = map.get(e.uid);
@@ -270,7 +448,6 @@ window.OnlineService = (function () {
     const allSorted = Array.from(map.values())
       .sort((a, b) => (b.score - a.score) || ((a.updatedAt || 0) - (b.updatedAt || 0)));
 
-    const totalParticipants = allSorted.length;
     const board = allSorted
       .slice(0, 100)
       .map((entry, idx) => ({
@@ -285,14 +462,16 @@ window.OnlineService = (function () {
       board,
       syncedOnline,
       hasRemoteConfig: hasRemoteDb(),
-      totalParticipants,
+      totalParticipants: allSorted.length,
       fetchedAt: Date.now()
     };
   }
 
-  // ===================== WEEKLY #1 CHAMPION 500 GEM PAYOUT CHECK (REAL USERS ONLY) =====================
+  // ===================== WEEKLY #1 CHAMPION 500 GEM PAYOUT (LINKED USERS ONLY) =====================
   async function checkWeeklyChampionPayout(save) {
     if (!save || !save.auth || !save.auth.uid) return null;
+    if (!isRankedProvider(save.auth.provider)) return null;
+
     const info = getWeekInfo();
     const prevKey = info.prevWeekKey;
     const wr = save.weeklyRank || {};
@@ -320,14 +499,23 @@ window.OnlineService = (function () {
 
   return {
     WEEKLY_REWARD_GEMS,
+    FIREBASE_CONFIG,
+    hasFirebaseAuth,
+    hasRemoteDb,
+    isRankedProvider,
     getWeekInfo,
     getProviderMeta,
     sanitizeNickname,
-    signIn,
+    signInWithOAuth,
+    checkRedirectLoginResult,
+    onAuthStateReady,
+    signOutOAuth,
+    createGuestProfile,
+    loadCloudUserSave,
+    saveCloudUserSave,
     submitWeeklyScore,
     fetchWeeklyBoard,
     checkWeeklyChampionPayout,
-    onBoardUpdate,
-    hasRemoteDb
+    onBoardUpdate
   };
 })();
