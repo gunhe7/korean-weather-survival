@@ -24,7 +24,13 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd7';
+  const ASSET_VER = '20261121hd8';
+
+  function haptic(ms = 10) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(ms); } catch {}
+    }
+  }
 
   function createDefaultCharLevels() {
     const lv = {};
@@ -1795,11 +1801,19 @@
       vy: 0,
       jumpsLeft: 2,
       jumpHeld: false,
+      jumpBufferTimer: 0,
+      coyoteTimer: 0.095,
+      springLaunchTimer: 0,
       sliding: false,
       slideInputHeld: false,
       iceSlideInertia: 0,
       iceSlipTimer: 0,
       gliding: false,
+      squashX: 1,
+      squashY: 1,
+      hitStopTimer: 0,
+      coinStreak: 0,
+      coinStreakTimer: 0,
 
       // Strategic Gear Toggles with Duration & Cooldown + Weather Exposure Timers
       umbrellaOn: false,
@@ -1913,12 +1927,14 @@
       run.umbrellaActiveTimer = 0;
       run.umbrellaCooldown = cd;
       SFX.click();
+      haptic(10);
       Renderer.spawnFloater(`우산 접기 (쿨타임 ${cd}초)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
     } else {
       run.umbrellaOn = true;
       run.umbrellaActiveTimer = GEAR_DURATION;
       run.rainExposeTimer = 0;
       SFX.click();
+      haptic(14);
       Renderer.spawnFloater(`우산 ON! (${GEAR_DURATION}초 지속)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
 
       // Immediate danger if opened during a roaring wind gust!
@@ -1936,8 +1952,12 @@
     run.umbrellaCooldown = UMBRELLA_BROKEN_CD;
     run.hitPoseTimer = 0.5;
     run.hitFlashTimer = 0.28;
+    run.hitStopTimer = 0.055;
+    run.squashX = 1.22;
+    run.squashY = 0.80;
     run.dodgeCombo = 0;
     triggerCameraShake(7, 0.28);
+    haptic(35);
     SFX.umbrellaBreak();
     run.hp = Math.max(0, run.hp - 1);
     run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 강풍 속에 우산을 펴다 뒤집혀 쓰러졌습니다!`;
@@ -1959,40 +1979,65 @@
       run.maskActiveTimer = 0;
       run.maskCooldown = cd;
       SFX.click();
+      haptic(10);
       Renderer.spawnFloater(`마스크 벗기 (쿨타임 ${cd}초)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
     } else {
       run.maskOn = true;
       run.maskActiveTimer = GEAR_DURATION;
       run.dustExposeTimer = 0;
       SFX.click();
+      haptic(14);
       Renderer.spawnFloater(`KF94 마스크 ON! (${GEAR_DURATION}초 지속)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
     }
     updateRunHud();
   }
 
+  function executeJump(isGroundJump) {
+    const ch = getCharDef(run.charId);
+    const inFloodWater = run.weatherEvent === 'flood' && !run.onPlatform && run.playerY >= Renderer.GROUND_Y - 2;
+    const floodFactor = inFloodWater ? (ch.floodResist ? 0.94 : 0.78) : 1.0;
+
+    run.sliding = false;
+    run.iceSlideInertia = 0;
+    run.jumpBufferTimer = 0;
+    run.coyoteTimer = 0;
+    run.springLaunchTimer = 0;
+    run.onPlatform = false;
+    run.jumpCount += 1;
+
+    if (isGroundJump) {
+      run.vy = -384 * floodFactor;
+      run.jumpsLeft = 1;
+      run.squashX = 0.84;
+      run.squashY = 1.18;
+      Renderer.spawnLandDust(run.playerX, run.playerY);
+      SFX.jump();
+      haptic(10);
+      if (inFloodWater && !ch.floodResist) Renderer.spawnFloater('침수 저항!', '#75c4ff', run.playerX, run.playerY - 36);
+    } else {
+      run.vy = -342 * floodFactor;
+      run.jumpsLeft = Math.max(0, run.jumpsLeft - 1);
+      run.squashX = 0.86;
+      run.squashY = 1.15;
+      Renderer.spawnDust(run.playerX, run.playerY - 6, true);
+      SFX.doubleJump();
+      haptic(12);
+      Renderer.spawnFloater('2단 점프!', '#9be6ff', run.playerX, run.playerY - 40);
+    }
+  }
+
   function doJumpPress() {
     if (!run || !run.active || paused) return;
     run.jumpHeld = true;
-    if (run.sliding && !run.slideInputHeld) run.sliding = false;
 
-    if (run.jumpsLeft > 0) {
-      const ch = getCharDef(run.charId);
-      const isSecond = run.jumpsLeft === 1;
-      // Flood drag weakens ground jump height unless jumping off a dry car roof / bench (우비 소년 mitigates!)
-      const inFloodWater = run.weatherEvent === 'flood' && !run.onPlatform && run.playerY >= Renderer.GROUND_Y - 2;
-      const floodFactor = inFloodWater ? (ch.floodResist ? 0.94 : 0.78) : 1.0;
-
-      run.vy = (isSecond ? -338 : -380) * floodFactor;
-      run.jumpsLeft -= 1;
-      run.jumpCount += 1;
-      run.onPlatform = false;
-      if (isSecond) {
-        SFX.doubleJump();
-        Renderer.spawnFloater('2단 점프!', '#9be6ff', run.playerX, run.playerY - 40);
-      } else {
-        SFX.jump();
-        if (inFloodWater && !ch.floodResist) Renderer.spawnFloater('침수 저항!', '#75c4ff', run.playerX, run.playerY - 36);
-      }
+    const isGrounded = run.playerY >= run.currentFloorY - 2;
+    if (isGrounded || run.coyoteTimer > 0) {
+      executeJump(true);
+    } else if (run.jumpsLeft > 0) {
+      executeJump(false);
+    } else {
+      // 130ms Jump Input Buffer: executes instant frame-1 jump right upon landing!
+      run.jumpBufferTimer = 0.13;
     }
   }
 
@@ -2000,16 +2045,30 @@
     if (!run) return;
     run.jumpHeld = false;
     run.gliding = false;
+    // Variable Jump Height: releasing Jump early smoothly trims upward arc for surgical control!
+    if (run.vy < -155 && run.springLaunchTimer <= 0) {
+      run.vy *= 0.62;
+    }
   }
 
   function doSlideStart() {
     if (!run || !run.active || paused) return;
     run.slideInputHeld = true;
-    if (!run.sliding) SFX.slide();
-    run.sliding = true;
-    if (run.playerY < run.currentFloorY) {
-      run.vy = Math.max(run.vy, 340);
+    const inAirNow = run.playerY < run.currentFloorY - 2;
+    if (inAirNow) {
+      // Snappy Fast-Fall Dive into instant Slide!
+      run.vy = Math.max(run.vy, 470);
+      run.squashX = 0.86;
+      run.squashY = 1.16;
+      SFX.fastFall();
+      haptic(8);
+    } else if (!run.sliding) {
+      run.squashX = 1.14;
+      run.squashY = 0.88;
+      SFX.slide();
+      haptic(8);
     }
+    run.sliding = true;
   }
 
   function doSlideEnd() {
@@ -2206,6 +2265,26 @@
   function updateRun(dt) {
     if (!run || !run.active || paused) return;
 
+    // 55ms Micro Hit-Stop (Supercell tactile impact freeze!)
+    if (run.hitStopTimer > 0) {
+      run.hitStopTimer = Math.max(0, run.hitStopTimer - dt);
+      if (run.shakeTimer > 0) run.shakeTimer = Math.max(0, run.shakeTimer - dt);
+      if (run.hitFlashTimer > 0) run.hitFlashTimer = Math.max(0, run.hitFlashTimer - dt);
+      return;
+    }
+
+    // Spring-back Squash & Stretch + Input Assist Timers
+    const sqLerp = Math.min(1, dt * 14);
+    run.squashX += (1 - run.squashX) * sqLerp;
+    run.squashY += (1 - run.squashY) * sqLerp;
+    if (run.jumpBufferTimer > 0) run.jumpBufferTimer = Math.max(0, run.jumpBufferTimer - dt);
+    if (run.coyoteTimer > 0) run.coyoteTimer = Math.max(0, run.coyoteTimer - dt);
+    if (run.springLaunchTimer > 0) run.springLaunchTimer = Math.max(0, run.springLaunchTimer - dt);
+    if (run.coinStreakTimer > 0) {
+      run.coinStreakTimer = Math.max(0, run.coinStreakTimer - dt);
+      if (run.coinStreakTimer <= 0) run.coinStreak = 0;
+    }
+
     const ch = getCharDef(run.charId);
     const diff = DATA.getYearDifficulty(run.year);
     const upgradeScoreMult = 1 + save.upgrades.score * 0.12;
@@ -2366,10 +2445,11 @@
       run.playerX += (targetX - run.playerX) * Math.min(1, dt * 4.5);
     }
 
-    // Vertical Physics + One-Way Elevated Street Platforms (Car Roof / Bench / Bus Stop Roof)
+    // Vertical Physics + Apex Hang + Coyote Time + Jump Buffer + One-Way Platforms!
     const prevY = run.playerY;
-    const gravity = (run.weatherEvent === 'gust' && run.vy < 180) ? 740 : 1080; // Longer hangtime in typhoon gust!
-    run.vy += gravity * dt;
+    const baseGravity = (run.weatherEvent === 'gust' && run.vy < 180) ? 740 : 1080;
+    const apexMult = (run.playerY < run.currentFloorY - 2 && Math.abs(run.vy) < 65) ? 0.80 : 1.0;
+    run.vy += baseGravity * apexMult * dt;
 
     if (ch.canGlide && run.jumpHeld && run.playerY < run.currentFloorY && run.vy > 45) {
       run.vy = 85;
@@ -2398,10 +2478,21 @@
       run.playerY = floorY;
       run.vy = 0;
       run.jumpsLeft = 2;
+      run.coyoteTimer = 0.095;
       run.gliding = false;
       run.onPlatform = landedPlatform;
-      if (wasAir && run.weatherEvent === 'ice_road' && !landedPlatform && !ch.iceMastery) {
-        run.iceSlipTimer = 0.28; // Slippery landing on winter ice (Skier has full control!)
+      if (wasAir) {
+        run.squashX = 1.18;
+        run.squashY = 0.84;
+        Renderer.spawnLandDust(run.playerX, floorY);
+        SFX.land();
+        if (run.weatherEvent === 'ice_road' && !landedPlatform && !ch.iceMastery) {
+          run.iceSlipTimer = 0.28; // Slippery landing on winter ice (Skier has full control!)
+        }
+        // Consume 130ms Jump Input Buffer on exact frame-1 landing!
+        if (run.jumpBufferTimer > 0) {
+          executeJump(true);
+        }
       }
     } else {
       run.onPlatform = false;
@@ -2420,8 +2511,12 @@
       if (f.kind === 'spring_pad' && !f.triggered && run.playerX >= f.x - 4 && run.playerX <= f.x + f.w + 4 && run.playerY >= Renderer.GROUND_Y - 26) {
         f.triggered = true;
         run.vy = -495;
+        run.springLaunchTimer = 0.45;
         run.jumpsLeft = 1;
         run.onPlatform = false;
+        run.squashX = 0.80;
+        run.squashY = 1.24;
+        haptic(14);
         run.score += Math.round(120 * run.scoreMult * upgradeScoreMult);
         if (run.feverTimer <= 0) run.feverCharge = Math.min(100, run.feverCharge + 12);
         SFX.doubleJump();
@@ -2638,9 +2733,12 @@
           Renderer.spawnPickupEffect(it.x, it.y, '#ffe55c', it.kind === 'big_coin');
           if (it.kind === 'big_coin') {
             SFX.bigCoin();
+            haptic(10);
             Renderer.spawnFloater(`+${gainedG}G!`, '#ffea59', it.x, it.y - 10);
           } else {
-            SFX.coin();
+            SFX.coin(run.coinStreak);
+            run.coinStreak = Math.min(6, (run.coinStreak || 0) + 1);
+            run.coinStreakTimer = 0.65;
           }
         } else if (it.kind === 'norway') {
           run.norwayTimer = 25.0;
@@ -2847,8 +2945,12 @@
     run.invulnTimer = 1.5 + (ch.extraInvuln || 0) + save.upgrades.defense * 0.2;
     run.hitPoseTimer = 0.45;
     run.hitFlashTimer = 0.3;
+    run.hitStopTimer = 0.055;
+    run.squashX = 1.24;
+    run.squashY = 0.78;
     run.dodgeCombo = 0;
     triggerCameraShake(7, 0.28);
+    haptic(35);
 
     const seasonName = DATA.SEASONS[run.seasonIdx].name;
     if (run.weatherEvent === 'ice_road' && !ch.iceMastery) {

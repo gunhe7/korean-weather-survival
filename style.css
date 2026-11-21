@@ -5972,3 +5972,341 @@ input:focus-visible {
     font-size: 17px;
   }
 }
+
+/* =========================================================================
+   SUPERCELL UNIFIED DESIGN SYSTEM (BRAWL STARS / CLASH ROYALE AAA POLISH)
+   Consistent Royal Navy surfaces, 3D beveled arcade buttons, crisp outlines,
+   unified modals, smooth tab motion, and tactile control feedback.
+   ========================================================================= */
+
+/* 1. Smooth Native-App Tab Transition & Custom Scrollbars */
+.tab-view.active {
+  animation: scTabIn 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes scTabIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+#tab-container::-webkit-scrollbar,
+.modal-scroll-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+#tab-container::-webkit-scrollbar-track,
+.modal-scroll-body::-webkit-scrollbar-track {
+  background: rgba(6, 14, 30, 0.35);
+  border-radius: 999px;
+}
+
+#tab-container::-webkit-scrollbar-thumb,
+.modal-scroll-body::-webkit-scrollbar-thumb {
+  background: rgba(114, 178, 255, 0.45);
+  border-radius: 999px;
+}
+
+/* 2. Unified Panel Headers Across Shop, Characters, Ranking */
+.cr-panel-header {
+  background: linear-gradient(180deg, rgba(24, 49, 92, 0.92) 0%, rgba(14, 30, 60, 0.94) 100%);
+  border: 2.5px solid #081226;
+  border-radius: 14px;
+  padding: 9px 13px;
+  box-shadow: 0 4px 0 #081226, inset 0 1.5px 0 rgba(164, 214, 255, 0.25);
+}
+
+.cr-panel-header h2 {
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+  text-shadow: 0 2px 0 #081226;
+}
+
+.cr-panel-header p {
+  color: #b8d8ff;
+  font-weight: 600;
+}
+
+/* 3. Unified Supercell Subtabs (Shop 5-Tab Bar) */
+.cr-subtabs.shop-five-tabs {
+  background: rgba(9, 19, 40, 0.72);
+  padding: 4px;
+  border-radius: 13px;
+  border: 2px solid #081226;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.cr-subtabs.shop-five-tabs .subtab-btn {
+  border-radius: 9px;
+  border: 2px solid #081226;
+  background: linear-gradient(180deg, #254375 0%, #172d54 100%);
+  color: #cfe5ff;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #081226;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+
+.cr-subtabs.shop-five-tabs .subtab-btn.active {
+  background: linear-gradient(180deg, #ffe24a 0%, #f59c0c 100%);
+  color: #1c1000;
+  text-shadow: none;
+  box-shadow: 0 3px 0 #081226, 0 0 10px rgba(255, 216, 66, 0.45);
+}
+
+.cr-subtabs.shop-five-tabs .subtab-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #081226;
+}
+
+/* 4. Unified Dark-Navy Supercell Arcade Cards in Shop (Matches Quests & Chars!) */
+.item-card {
+  background: linear-gradient(180deg, #213d70 0%, #14274a 100%);
+  border: 2.5px solid #081226;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #081226, inset 0 1.5px 0 rgba(164, 214, 255, 0.24);
+  transition: transform 0.1s ease, border-color 0.12s ease;
+}
+
+.item-card.selected {
+  border-color: #ffe24f;
+  background: linear-gradient(180deg, #2b4d8a 0%, #1a3361 100%);
+  box-shadow: 0 4px 0 #081226, 0 0 12px rgba(255, 224, 72, 0.32);
+}
+
+.item-card .item-avatar {
+  background: radial-gradient(circle at 50% 45%, rgba(92, 168, 255, 0.28), rgba(8, 18, 40, 0.72));
+  border: 2px solid #081226;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.item-card .item-name {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 1.5px 0 #081226;
+}
+
+.item-card .item-desc {
+  color: #bed9fa;
+  font-weight: 600;
+}
+
+.item-card .item-badge {
+  background: rgba(8, 18, 40, 0.75);
+  border: 1px solid rgba(130, 192, 255, 0.35);
+  color: #ffe570;
+  font-weight: 900;
+}
+
+.chest-shop-card.tier-wood {
+  border-left: 5px solid #e09a42;
+  background: linear-gradient(180deg, #273e69 0%, #18294a 100%);
+}
+.chest-shop-card.tier-silver {
+  border-left: 5px solid #7ecbff;
+  background: linear-gradient(180deg, #224375 0%, #142a4f 100%);
+}
+.chest-shop-card.tier-gold {
+  border-left: 5px solid #ffd845;
+  background: linear-gradient(180deg, #334873 0%, #1e2d52 100%);
+}
+.chest-shop-card.tier-diamond {
+  border-left: 5px solid #63ecff;
+  background: linear-gradient(180deg, #24467d 0%, #18285c 100%);
+}
+
+.skin-shop-card.rar-mythic {
+  border-left: 5px solid #ff5ea8;
+  background: linear-gradient(180deg, #362563 0%, #1d1842 100%);
+}
+.skin-shop-card.rar-legendary {
+  border-left: 5px solid #ffca42;
+}
+.skin-shop-card.rar-epic {
+  border-left: 5px solid #c975ff;
+}
+.skin-shop-card.rar-rare {
+  border-left: 5px solid #47c8ff;
+}
+.skin-shop-card.rar-common {
+  border-left: 5px solid #96bde3;
+}
+
+/* 5. Unified Supercell 3D Beveled Buttons Everywhere */
+.item-action-btn,
+.cr-gold-btn,
+.cr-blue-btn {
+  border: 2.5px solid #081226 !important;
+  border-radius: 11px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 #081226, inset 0 2px 0 rgba(255, 255, 255, 0.38);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
+}
+
+.item-action-btn:not(:disabled):active,
+.cr-gold-btn:not(:disabled):active,
+.cr-blue-btn:not(:disabled):active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 1.5px 0 #081226, inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.item-action-btn:disabled {
+  opacity: 0.56;
+  filter: grayscale(0.3);
+}
+
+.item-action-btn.done {
+  background: linear-gradient(180deg, #2ea864, #1b7844);
+  color: #e8fff1;
+  opacity: 0.92;
+}
+
+/* 6. Unified Supercell Royal Navy Modals (Settings, Attendance, Achievements, Prob, Pause) */
+.modal-overlay {
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.cr-modal {
+  background: linear-gradient(180deg, #1b3461 0%, #102140 100%);
+  border: 3px solid #081226;
+  border-radius: 18px;
+  box-shadow: 0 14px 36px rgba(3, 8, 22, 0.72), 0 0 0 2px rgba(126, 192, 255, 0.25);
+  color: #eef6ff;
+  animation: scModalPop 0.22s cubic-bezier(0.22, 1.32, 0.36, 1);
+}
+
+@keyframes scModalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.cr-modal-bar {
+  background: linear-gradient(180deg, #2e67bd 0%, #1a4387 100%);
+  border-bottom: 2.5px solid #081226;
+  color: #ffffff;
+  text-shadow: 0 2px 0 #081226;
+}
+
+.cr-modal .modal-body {
+  background: transparent;
+  color: #dbeeff;
+}
+
+.cr-modal .modal-msg {
+  color: #d6ecff;
+  font-weight: 700;
+}
+
+.cr-modal .setting-group,
+.cr-modal .ach-card,
+.cr-modal .att-day-cell {
+  background: linear-gradient(180deg, #213d70 0%, #15294d 100%);
+  border: 2px solid #081226;
+  color: #ffffff;
+  box-shadow: 0 3px 0 #081226;
+}
+
+.cr-modal .setting-label,
+.cr-modal .ach-title,
+.cr-modal .att-day-val {
+  color: #ffffff;
+}
+
+.cr-modal .setting-note,
+.cr-modal .ach-desc,
+.cr-modal .att-day-num,
+.cr-modal .vol-num {
+  color: #b7d6fa;
+}
+
+.cr-modal .att-day-cell.today {
+  background: linear-gradient(180deg, #3c548a, #243b6b);
+  border-color: #ffe047;
+  box-shadow: 0 3px 0 #081226, 0 0 12px rgba(255, 224, 71, 0.45);
+}
+
+.cr-modal .att-day-cell.day7 {
+  background: linear-gradient(180deg, #344d8f, #222666);
+  border-color: #63e6ff;
+}
+
+.cr-modal .att-day-cell.claimed {
+  background: linear-gradient(180deg, #1b4d38, #123627);
+  border-color: #46d986;
+}
+
+.cr-modal .ach-summary-strip {
+  background: rgba(8, 18, 40, 0.72);
+  border: 1.5px solid rgba(130, 192, 255, 0.35);
+  color: #ffe36e;
+}
+
+.cr-modal .ach-hint {
+  color: #b8d8ff;
+}
+
+.cr-modal .ach-ico {
+  background: rgba(8, 18, 40, 0.65);
+  border: 1.5px solid rgba(130, 192, 255, 0.25);
+}
+
+.cr-modal .ach-prog-track {
+  background: #09142b;
+  border: 1px solid #040914;
+}
+
+.cr-modal .save-safe-note {
+  background: rgba(24, 102, 62, 0.42);
+  border: 1.5px solid #44d685;
+  color: #b9ffda;
+}
+
+.prob-section h4 {
+  color: #ffe36e;
+  text-shadow: 0 1.5px 0 #081226;
+}
+
+.prob-rules {
+  color: #d6ecff;
+}
+
+/* 7. Unified Dex & Ranking Cards Polish */
+.dex-summary-card,
+.rank-my-card {
+  background: linear-gradient(180deg, #213d70 0%, #14274a 100%);
+  border: 2.5px solid #081226;
+  box-shadow: 0 4px 0 #081226, inset 0 1.5px 0 rgba(164, 214, 255, 0.25);
+}
+
+.rank-row {
+  border: 2px solid #081226;
+  box-shadow: 0 3px 0 #081226;
+}
+
+/* 8. Tactile Press Feedback on Runner Action Buttons */
+.img-ctrl-btn.pressed {
+  transform: translateY(3px) scale(0.93);
+  filter: brightness(1.12) drop-shadow(0 0 12px rgba(102, 224, 255, 0.85));
+}
+
+/* 9. Supercell Toast Notification Polish */
+.global-toast {
+  background: linear-gradient(180deg, #1b3666 0%, #0e2042 100%);
+  border: 2px solid #ffe047;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 6px 20px rgba(4, 10, 26, 0.65);
+}

@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd7';
+  const CHAR_ASSET_VER = '20261121hd8';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -183,6 +183,22 @@ window.RunRenderer = (function () {
       life: isStar ? 0.55 : 0.42,
       maxLife: isStar ? 0.55 : 0.42
     });
+  }
+
+  function spawnLandDust(x, y) {
+    for (let i = 0; i < 4; i++) {
+      const dir = i < 2 ? -1 : 1;
+      dustPuffs.push({
+        x: x + dir * (4 + Math.random() * 8),
+        y: y - 2,
+        vx: dir * (28 + Math.random() * 28) - 18,
+        vy: -10 - Math.random() * 16,
+        r: 4.5 + Math.random() * 2.5,
+        isStar: false,
+        life: 0.32,
+        maxLife: 0.32
+      });
+    }
   }
 
   // ===================== COLOR LERP & SMOOTH SEASON TRANSITIONS =====================
@@ -777,9 +793,12 @@ window.RunRenderer = (function () {
       const drawH = targetH;
 
       const bob = running && !dead && !inAir && !sliding ? Math.abs(Math.sin(t * 14)) * 2.0 : 0;
+      const sx = opts.squashX !== undefined ? opts.squashX : 1;
+      const sy = opts.squashY !== undefined ? opts.squashY : 1;
 
       ctx.save();
       ctx.translate(cx, Math.floor(cy - bob));
+      if (sx !== 1 || sy !== 1) ctx.scale(sx, sy);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       if (skinDef && skinDef.filter && skinDef.filter !== 'none' && 'filter' in ctx) {
@@ -988,18 +1007,23 @@ window.RunRenderer = (function () {
         continue;
       }
       const prog = 1 - f.life / f.maxLife;
+      const easeOut = 1 - Math.pow(1 - prog, 3);
+      const pop = prog < 0.14 ? (1.28 - (prog / 0.14) * 0.28) : 1.0;
       const fx = Math.max(54, Math.min(W - 54, Math.floor(f.x)));
-      const fy = Math.max(22, Math.floor(f.y - prog * 28));
-      ctx.globalAlpha = Math.min(1, f.life * 2.2);
-      ctx.font = '800 13px "Paperlogy", "Malgun Gothic", sans-serif';
+      const fy = Math.max(22, Math.floor(f.y - easeOut * 30));
+      ctx.save();
+      ctx.translate(fx, fy);
+      ctx.scale(pop, pop);
+      ctx.globalAlpha = Math.min(1, f.life * 2.4);
+      ctx.font = '900 13px "Paperlogy", "Malgun Gothic", sans-serif';
       ctx.textAlign = 'center';
-      ctx.lineWidth = 3.2;
-      ctx.strokeStyle = '#142038';
-      ctx.strokeText(f.text, fx, fy);
+      ctx.lineWidth = 3.6;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#09152e';
+      ctx.strokeText(f.text, 0, 0);
       ctx.fillStyle = f.color;
-      ctx.fillText(f.text, fx, fy);
-      ctx.textAlign = 'left';
-      ctx.globalAlpha = 1;
+      ctx.fillText(f.text, 0, 0);
+      ctx.restore();
     }
   }
 
@@ -1081,8 +1105,25 @@ window.RunRenderer = (function () {
       winPoseTimer: run.winPoseTimer || 0,
       running: !run.dead && !run.dying,
       skinDef: run.skinDef || null,
+      squashX: run.squashX !== undefined ? run.squashX : 1,
+      squashY: run.squashY !== undefined ? run.squashY : 1,
       scaleHeight: 62
     }, t);
+
+    // Subtle High-Speed Wind Momentum Streaks (Year 2+ or Speed Boost!)
+    if ((run.year >= 2 || run.speedBoostTimer > 0) && run.feverTimer <= 0 && !run.dead) {
+      ctx.save();
+      const boostMode = run.speedBoostTimer > 0;
+      const streakCnt = boostMode ? 7 : Math.min(5, run.year + 1);
+      ctx.fillStyle = boostMode ? 'rgba(110, 244, 255, 0.34)' : 'rgba(255, 255, 255, 0.16)';
+      for (let i = 0; i < streakCnt; i++) {
+        const spd = boostMode ? 620 : 380 + run.year * 45;
+        const sx = ((i * 115 - t * spd) % (W + 120) + (W + 120)) % (W + 120) - 60;
+        const sy = 26 + ((i * 47) % (GROUND_Y - 56));
+        ctx.fillRect(Math.floor(sx), sy, boostMode ? 52 : 34, 2);
+      }
+      ctx.restore();
+    }
 
     // Item Pickup Ring & Sparkle Burst Animations!
     drawPickupEffects(ctx, dt);
@@ -1135,6 +1176,7 @@ window.RunRenderer = (function () {
     clearFloaters,
     spawnFloater,
     spawnDust,
+    spawnLandDust,
     spawnPickupEffect,
     renderRunFrame,
     renderHomePreview

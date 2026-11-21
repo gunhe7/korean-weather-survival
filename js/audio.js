@@ -159,10 +159,16 @@ window.SFX = (function () {
       tone(880, 0.055, 'triangle', 0.065, 0);
       tone(1174, 0.09, 'triangle', 0.065, 0.055);
     },
-    jump() { slideTone(290, 620, 0.11, 'triangle', 0.065); },
-    doubleJump() { slideTone(460, 920, 0.12, 'triangle', 0.07); },
-    slide() { slideTone(320, 150, 0.08, 'sine', 0.055); },
-    coin() { tone(1046, 0.05, 'triangle', 0.05, 0); tone(1396, 0.06, 'triangle', 0.045, 0.04); },
+    jump() { slideTone(305, 650, 0.105, 'triangle', 0.068); },
+    doubleJump() { slideTone(480, 980, 0.115, 'triangle', 0.072); },
+    slide() { slideTone(340, 145, 0.075, 'sine', 0.058); },
+    fastFall() { slideTone(520, 180, 0.07, 'triangle', 0.048); },
+    land() { tone(138, 0.045, 'sine', 0.036, 0); },
+    coin(streak = 0) {
+      const mult = Math.min(1.5, 1 + Math.min(6, Math.max(0, streak)) * 0.08);
+      tone(1046 * mult, 0.048, 'triangle', 0.052, 0);
+      tone(1396 * mult, 0.058, 'triangle', 0.046, 0.038);
+    },
     bigCoin() {
       tone(987, 0.06, 'triangle', 0.065, 0);
       tone(1318, 0.06, 'triangle', 0.065, 0.05);
