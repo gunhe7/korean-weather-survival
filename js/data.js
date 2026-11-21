@@ -272,16 +272,16 @@ window.RUN_DATA = (function () {
     { id: 'weekly_year2', metric: 'year2Runs', title: '2년 차 이상 생존 3회', icon: '🔥', target: 3, unit: '회', rewardChest: 'diamond' }
   ];
 
-  // 스킨 등급 정의 (중복 시 골드 보상 투명 공개!)
+  // 스킨 등급 정의 (등급별 보석 가격 + 중복 시 골드 보상 투명 공개! 신화는 상자 미출현)
   const SKIN_RARITIES = {
-    common:    { id: 'common',    name: '일반', color: '#a3c8eb', bg: '#2c4469', dupGold: 120 },
-    rare:      { id: 'rare',      name: '희귀', color: '#47c8ff', bg: '#18548a', dupGold: 300 },
-    epic:      { id: 'epic',      name: '에픽', color: '#d084ff', bg: '#5a238a', dupGold: 650 },
-    legendary: { id: 'legendary', name: '전설', color: '#ffca42', bg: '#8f5200', dupGold: 1200 },
-    mythic:    { id: 'mythic',    name: '신화', color: '#ff5ea8', bg: '#8a144d', dupGold: 2500 }
+    common:    { id: 'common',    name: '일반', color: '#a3c8eb', bg: '#2c4469', dupGold: 120,  gemPrice: 10 },
+    uncommon:  { id: 'uncommon',  name: '고급', color: '#5ef29d', bg: '#166341', dupGold: 200,  gemPrice: 50 },
+    rare:      { id: 'rare',      name: '희귀', color: '#47c8ff', bg: '#18548a', dupGold: 300,  gemPrice: 80 },
+    epic:      { id: 'epic',      name: '영웅', color: '#d084ff', bg: '#5a238a', dupGold: 650,  gemPrice: 120 },
+    legendary: { id: 'legendary', name: '전설', color: '#ffca42', bg: '#8f5200', dupGold: 1200, gemPrice: 400 },
+    mythic:    { id: 'mythic',    name: '신화', color: '#ff5ea8', bg: '#8a144d', dupGold: 2500, gemPrice: 1000 }
   };
 
-  // 20종 수집형 스킨 (일반 5 · 희귀 5 · 에픽 4 · 전설 4 · 신화 2)
   // 21종 수집형 스킨 (일반 20종 · 신화 1종: 화이트 냥이 후드!)
   const SKINS = [
     // 일반 (20)
@@ -317,7 +317,7 @@ window.RUN_DATA = (function () {
       customRunFrames: 8,
       customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd19',
       customShieldVfx: 'catgirl_fx_paw',
-      gemPrice: 45,
+      gemPrice: 1000,
       glow: '#ff96dc',
       trail: ['#ff96dc', '#ffffff', '#ffc4ee'],
       desc: '8프레임 전용 풀애니메이션(달리기·점프·슬라이드) & 핑크 냥이 발바닥 오라!'
@@ -384,7 +384,7 @@ window.RUN_DATA = (function () {
       gemRange: [10, 20],
       pityTarget: 15,
       pityMinRarity: 'legendary',
-      rates: { gold: 25, common: 0, rare: 10, epic: 30, legendary: 22, mythic: 3, diamond: 10 }
+      rates: { gold: 25, common: 0, uncommon: 0, rare: 10, epic: 30, legendary: 25, mythic: 0, diamond: 10 }
     }
   };
   const CHEST_ORDER = ['wood', 'silver', 'gold', 'diamond'];

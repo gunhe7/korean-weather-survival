@@ -6145,6 +6145,9 @@ input:focus-visible {
 .skin-shop-card.rar-rare {
   border-left: 5px solid #47c8ff;
 }
+.skin-shop-card.rar-uncommon {
+  border-left: 5px solid #5ef29d;
+}
 .skin-shop-card.rar-common {
   border-left: 5px solid #96bde3;
 }

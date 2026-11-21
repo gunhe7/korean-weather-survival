@@ -404,10 +404,19 @@
   }
 
   // ===================== CHEST GACHA ENGINE (EXACT RATES + DUPLICATE PROTECTION + PITY!) =====================
+  function getSkinGemPrice(sk) {
+    if (!sk) return 10;
+    if (typeof sk.gemPrice === 'number' && sk.gemPrice > 0) return sk.gemPrice;
+    const rar = DATA.SKIN_RARITIES[sk.rarity];
+    return (rar && rar.gemPrice) || 10;
+  }
+
   function pickSkinOrDupGold(rarity, pityTriggered) {
-    let pool = DATA.SKINS.filter((s) => s.rarity === rarity);
-    if (pool.length === 0 && rarity !== 'mythic') {
-      pool = DATA.SKINS.filter((s) => s.rarity === 'common');
+    // 신화(mythic) 등급은 상자에서 절대 출현하지 않음!
+    if (rarity === 'mythic') rarity = 'legendary';
+    let pool = DATA.SKINS.filter((s) => s.rarity === rarity && s.rarity !== 'mythic');
+    if (pool.length === 0) {
+      pool = DATA.SKINS.filter((s) => s.rarity !== 'mythic');
     }
     const unowned = pool.filter((s) => !save.unlockedSkins.includes(s.id));
     if (unowned.length > 0) {
@@ -426,7 +435,7 @@
     const pity = save.pity || (save.pity = { gold: 0, diamond: 0 });
     let result = null;
 
-    // 1. Check Pity Guarantee FIRST!
+    // 1. Check Pity Guarantee FIRST! (신화는 상자에서 미출현)
     if (tierId === 'gold' && (pity.gold || 0) >= chest.pityTarget - 1) {
       // 10th Gold Chest -> Guaranteed Epic+ unowned skin!
       const unownedEpic = DATA.SKINS.filter((s) => s.rarity === 'epic' && !save.unlockedSkins.includes(s.id));
@@ -440,20 +449,12 @@
       pity.gold = 0;
       result = pickSkinOrDupGold(chosenRarity, true);
     } else if (tierId === 'diamond' && (pity.diamond || 0) >= chest.pityTarget - 1) {
-      // 15th Diamond Chest -> Guaranteed Legendary+ unowned skin!
-      const unownedLeg = DATA.SKINS.filter((s) => s.rarity === 'legendary' && !save.unlockedSkins.includes(s.id));
-      const unownedMyth = DATA.SKINS.filter((s) => s.rarity === 'mythic' && !save.unlockedSkins.includes(s.id));
-      let chosenRarity = 'legendary';
-      if (unownedMyth.length > 0 && (unownedLeg.length === 0 || Math.random() < 0.12)) {
-        chosenRarity = 'mythic';
-      } else if (unownedLeg.length === 0 && unownedMyth.length === 0) {
-        chosenRarity = 'legendary';
-      }
+      // 15th Diamond Chest -> Guaranteed Legendary unowned skin (Mythic excluded from chests!)
       pity.diamond = 0;
-      result = pickSkinOrDupGold(chosenRarity, true);
+      result = pickSkinOrDupGold('legendary', true);
     } else {
-      // 2. Exact Weighted Probability Roll (uses totalWeight for safety; all chests sum to 100%)
-      const order = ['gold', 'common', 'rare', 'epic', 'legendary', 'mythic', 'diamond'];
+      // 2. Exact Weighted Probability Roll (uses totalWeight for safety; Mythic excluded from chests!)
+      const order = ['gold', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'diamond'];
       const totalWeight = order.reduce((sum, k) => sum + (chest.rates[k] || 0), 0) || 100;
       const r = Math.random() * totalWeight;
       let acc = 0;
@@ -477,11 +478,11 @@
 
       // 3. Update Pity Counters
       if (tierId === 'gold') {
-        const isEpicPlus = hit === 'epic' || hit === 'legendary' || hit === 'mythic';
+        const isEpicPlus = hit === 'epic' || hit === 'legendary';
         pity.gold = isEpicPlus ? 0 : (pity.gold || 0) + 1;
       } else if (tierId === 'diamond') {
-        const isLegPlus = hit === 'legendary' || hit === 'mythic';
-        pity.diamond = isLegPlus ? 0 : (pity.diamond || 0) + 1;
+        const isLeg = hit === 'legendary';
+        pity.diamond = isLeg ? 0 : (pity.diamond || 0) + 1;
       }
     }
 
@@ -504,11 +505,11 @@
 
     if (tierId === 'gold') {
       const rem = Math.max(1, chest.pityTarget - (save.pity.gold || 0));
-      el.chestPityNote.textContent = rem === 1 ? '✨ 이번 상자 에픽 이상 스킨 확정!' : `에픽+ 천장까지 ${rem}회 남음 (${save.pity.gold || 0}/${chest.pityTarget})`;
+      el.chestPityNote.textContent = rem === 1 ? '✨ 이번 상자 영웅 이상 스킨 확정!' : `영웅+ 천장까지 ${rem}회 남음 (${save.pity.gold || 0}/${chest.pityTarget})`;
       el.chestPityNote.classList.remove('hidden');
     } else if (tierId === 'diamond') {
       const rem = Math.max(1, chest.pityTarget - (save.pity.diamond || 0));
-      el.chestPityNote.textContent = rem === 1 ? '✨ 이번 상자 전설 이상 스킨 확정!' : `전설+ 천장까지 ${rem}회 남음 (${save.pity.diamond || 0}/${chest.pityTarget})`;
+      el.chestPityNote.textContent = rem === 1 ? '✨ 이번 상자 전설 스킨 확정!' : `전설 천장까지 ${rem}회 남음 (${save.pity.diamond || 0}/${chest.pityTarget})`;
       el.chestPityNote.classList.remove('hidden');
     } else {
       el.chestPityNote.classList.add('hidden');
@@ -631,10 +632,10 @@
     // Update live pity badge after roll
     if (rw.tierId === 'gold') {
       const rem = DATA.CHESTS.gold.pityTarget - (save.pity.gold || 0);
-      el.chestPityNote.textContent = `다음 황금 상자 에픽+ 천장까지 ${rem}회 (${save.pity.gold || 0}/${DATA.CHESTS.gold.pityTarget})`;
+      el.chestPityNote.textContent = `다음 황금 상자 영웅+ 천장까지 ${rem}회 (${save.pity.gold || 0}/${DATA.CHESTS.gold.pityTarget})`;
     } else if (rw.tierId === 'diamond') {
       const rem = DATA.CHESTS.diamond.pityTarget - (save.pity.diamond || 0);
-      el.chestPityNote.textContent = `다음 다이아 상자 전설+ 천장까지 ${rem}회 (${save.pity.diamond || 0}/${DATA.CHESTS.diamond.pityTarget})`;
+      el.chestPityNote.textContent = `다음 다이아 상자 전설 천장까지 ${rem}회 (${save.pity.diamond || 0}/${DATA.CHESTS.diamond.pityTarget})`;
     }
 
     el.chestRewardCard.classList.remove('hidden');
@@ -666,9 +667,9 @@
             <tr><td>🪙 골드</td><td>75%</td><td>65%</td><td>50%</td><td>25%</td></tr>
             <tr><td style="color:#a3c8eb">일반 스킨</td><td>18%</td><td>15%</td><td>-</td><td>-</td></tr>
             <tr><td style="color:#47c8ff">희귀 스킨</td><td>5%</td><td>15%</td><td>25%</td><td>10%</td></tr>
-            <tr><td style="color:#d084ff">에픽 스킨</td><td>1.5%</td><td>3%</td><td>17%</td><td>30%</td></tr>
-            <tr><td style="color:#ffca42">전설 스킨</td><td>-</td><td>-</td><td>3%</td><td>22%</td></tr>
-            <tr><td style="color:#ff5ea8">신화 스킨</td><td>-</td><td>-</td><td>-</td><td>3%</td></tr>
+            <tr><td style="color:#d084ff">영웅 스킨</td><td>1.5%</td><td>3%</td><td>17%</td><td>30%</td></tr>
+            <tr><td style="color:#ffca42">전설 스킨</td><td>-</td><td>-</td><td>3%</td><td>25%</td></tr>
+            <tr><td style="color:#ff5ea8">신화 스킨</td><td colspan="4">상자 미출현 (상점 보석 1,000💎 전용)</td></tr>
             <tr><td style="color:#7ef6ff">💎 다이아</td><td>0.5%</td><td>2%</td><td>5%</td><td>10%</td></tr>
           </tbody>
         </table>
@@ -688,10 +689,11 @@
       <div class="prob-section">
         <h4>🛡️ 중복 방지 &amp; 천장 시스템 (현재 진행도)</h4>
         <ul class="prob-rules">
-          <li><strong>미보유 스킨 우선 지급:</strong> 해당 등급에 미보유 스킨이 있으면 100% 새 스킨이 나옵니다.</li>
-          <li><strong>등급 완료 시 대체 골드:</strong> 일반 120G · 희귀 300G · 에픽 650G · 전설 1,200G · 신화 2,500G</li>
-          <li><strong>👑 황금 상자 천장 (10회):</strong> 에픽 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong> · 남은 ${10 - gPity}회)</li>
-          <li><strong>💎 다이아 상자 천장 (15회):</strong> 전설 이상 스킨 미획득 시 15회차 확정! (현재 <strong>${dPity} / 15회</strong> · 남은 ${15 - dPity}회)</li>
+          <li><strong>미보유 스킨 우선 지급:</strong> 해당 등급에 미보유 스킨이 있으면 100% 새 스킨이 나옵니다. (신화 스킨은 상자에서 출현하지 않습니다)</li>
+          <li><strong>등급별 보석 가격:</strong> 일반 10💎 · 고급 50💎 · 희귀 80💎 · 영웅 120💎 · 전설 400💎 · 신화 1,000💎</li>
+          <li><strong>등급 완료 시 대체 골드:</strong> 일반 120G · 고급 200G · 희귀 300G · 영웅 650G · 전설 1,200G</li>
+          <li><strong>👑 황금 상자 천장 (10회):</strong> 영웅 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong> · 남은 ${10 - gPity}회)</li>
+          <li><strong>💎 다이아 상자 천장 (15회):</strong> 전설 스킨 미획득 시 15회차 확정! (현재 <strong>${dPity} / 15회</strong> · 남은 ${15 - dPity}회)</li>
         </ul>
       </div>
     `;
@@ -1129,8 +1131,8 @@
         const chest = DATA.CHESTS[tierId];
         const qty = (save.chestBag && save.chestBag[tierId]) || 0;
         const pityLine = tierId === 'gold'
-          ? `에픽+ 천장 ${save.pity.gold || 0}/10회`
-          : (tierId === 'diamond' ? `전설+ 천장 ${save.pity.diamond || 0}/15회` : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
+          ? `영웅+ 천장 ${save.pity.gold || 0}/10회`
+          : (tierId === 'diamond' ? `전설 천장 ${save.pity.diamond || 0}/15회` : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
 
         const card = document.createElement('div');
         card.className = `bs-quest-card bs-vault-card tier-${tierId}${qty > 0 ? ' ready' : ''}`;
@@ -1340,13 +1342,14 @@
         const owned = save.unlockedSkins.includes(sk.id);
         const isEq = equippedSkin && equippedSkin.id === sk.id;
         const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.common;
+        const gemPrice = getSkinGemPrice(sk);
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = `skin-chip rar-${sk.rarity}${isEq ? ' active' : ''}${owned ? '' : ' locked'}`;
         chip.innerHTML = `
           <span class="skin-dot" style="background:${sk.glow || rar.color}"></span>
           <span>${sk.name}</span>
-          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : (sk.gemPrice ? `💎${sk.gemPrice}` : '🔒')}</span>
+          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : `💎${gemPrice.toLocaleString()}`}</span>
         `;
         chip.onclick = () => {
           if (owned) {
@@ -1355,14 +1358,12 @@
             persistSave();
             refreshAllMenus();
             showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
-          } else if (sk.gemPrice) {
+          } else {
             SFX.click();
             closeCharDetail();
             currentShopSubtab = 'skins';
             switchTab('shop');
-            showToast(`💎 상점 스킨 탭에서 ${sk.gemPrice} 다이아로 구매할 수 있습니다!`);
-          } else {
-            showToast(`🎁 [${sk.name}] (${rar.name}) 스킨은 상자 열기로 획득할 수 있습니다!`);
+            showToast(`💎 상점 스킨 탭에서 ${gemPrice.toLocaleString()} 다이아로 구매할 수 있습니다!`);
           }
         };
         el.detailSkinsRow.appendChild(chip);
@@ -1483,17 +1484,17 @@
       DATA.CHEST_ORDER.forEach((tierId) => {
         const chest = DATA.CHESTS[tierId];
         const pityInfo = tierId === 'gold'
-          ? `👑 에픽+ 천장 ${save.pity.gold || 0}/10회`
+          ? `👑 영웅+ 천장 ${save.pity.gold || 0}/10회`
           : (tierId === 'diamond'
-            ? `💎 전설+ 천장 ${save.pity.diamond || 0}/15회`
+            ? `💎 전설 천장 ${save.pity.diamond || 0}/15회`
             : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
         const rateSummary = tierId === 'wood'
-          ? '골드 75% · 일반 18% · 희귀 5% · 에픽 1.5% · 💎 0.5%'
+          ? '골드 75% · 일반 18% · 희귀 5% · 영웅 1.5% · 💎 0.5%'
           : (tierId === 'silver'
-            ? '골드 65% · 일반 15% · 희귀 15% · 에픽 3% · 💎 2%'
+            ? '골드 65% · 일반 15% · 희귀 15% · 영웅 3% · 💎 2%'
             : (tierId === 'gold'
-              ? '골드 50% · 희귀 25% · 에픽 17% · 전설 3% · 💎 5%'
-              : '골드 25% · 희귀 10% · 에픽 30% · 전설 22% · 신화 3% · 💎 10%'));
+              ? '골드 50% · 희귀 25% · 영웅 17% · 전설 3% · 💎 5%'
+              : '골드 25% · 희귀 10% · 영웅 30% · 전설 25% · 💎 10%'));
 
         const card = document.createElement('div');
         card.className = `item-card chest-shop-card tier-${tierId}`;
@@ -1547,20 +1548,17 @@
         el.shopItemsList.appendChild(card);
       });
     } else if (currentShopSubtab === 'skins') {
-      // Sort diamond-purchasable skins first, then by rarity descending!
-      const rarRank = { mythic: 5, legendary: 4, epic: 3, rare: 2, common: 1 };
-      const sortedSkins = [...DATA.SKINS].sort((a, b) => {
-        const aBuy = a.gemPrice ? 1 : 0;
-        const bBuy = b.gemPrice ? 1 : 0;
-        if (aBuy !== bBuy) return bBuy - aBuy;
-        return (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0);
-      });
+      // Sort by rarity descending (신화 → 전설 → 영웅 → 희귀 → 고급 → 일반)
+      const rarRank = { mythic: 6, legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+      const sortedSkins = [...DATA.SKINS].sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
 
       sortedSkins.forEach((sk) => {
         const owned = save.unlockedSkins.includes(sk.id);
         const ownerChar = getCharDef(sk.charId);
         const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.common;
+        const gemPrice = getSkinGemPrice(sk);
         const isEq = save.equippedSkins[sk.charId] === sk.id;
+        const sourceTag = sk.rarity === 'mythic' ? '보석 직구매 전용 (상자 미출현)' : '보석 직구매 & 상자 획득 가능';
 
         const card = document.createElement('div');
         const skAv = getSkinAvatar(ownerChar, sk);
@@ -1575,7 +1573,7 @@
               <span class="item-name">${sk.name}</span>
               <span class="skin-rar-pill" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
             </div>
-            <div class="item-desc">${sk.desc ? `${ownerChar.name} · ${sk.desc}` : `${ownerChar.name} 전용 스킨 · ${sk.gemPrice ? '보석 직구매 & 상자 획득 가능' : '상자 뽑기 전용 스킨'}`}</div>
+            <div class="item-desc">${sk.desc ? `${ownerChar.name} · ${sk.desc} (${sourceTag})` : `${ownerChar.name} 전용 스킨 · ${sourceTag}`}</div>
           </div>
         `;
 
@@ -1592,26 +1590,19 @@
             refreshAllMenus();
             showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
           };
-        } else if (sk.gemPrice) {
+        } else {
           btn.className = 'item-action-btn gem-btn';
-          btn.textContent = `💎 ${sk.gemPrice}`;
-          btn.disabled = (save.gems || 0) < sk.gemPrice;
+          btn.textContent = `💎 ${gemPrice.toLocaleString()}`;
+          btn.disabled = (save.gems || 0) < gemPrice;
           btn.onclick = () => {
-            if ((save.gems || 0) < sk.gemPrice) return;
+            if ((save.gems || 0) < gemPrice) return;
             SFX.chestJackpot();
-            save.gems -= sk.gemPrice;
+            save.gems -= gemPrice;
             save.unlockedSkins.push(sk.id);
             save.equippedSkins[sk.charId] = sk.id;
             persistSave();
             refreshAllMenus();
             showToast(`💎 [${sk.name}] 구매 및 즉시 장착 완료!`);
-          };
-        } else {
-          btn.className = 'item-action-btn locked-chest';
-          btn.textContent = '🎁 상자 획득';
-          btn.onclick = () => {
-            currentShopSubtab = 'chests';
-            renderShopList();
           };
         }
 
