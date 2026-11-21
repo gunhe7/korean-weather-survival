@@ -24,7 +24,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd6';
+  const ASSET_VER = '20261121hd7';
 
   function createDefaultCharLevels() {
     const lv = {};
@@ -370,6 +370,21 @@
     return DATA.getSkinById(sid);
   }
 
+  function getSkinAvatar(charDef, skinDef) {
+    return (skinDef && skinDef.customAvatar) ? skinDef.customAvatar : charDef.avatar;
+  }
+
+  function getSkinFilter(skinDef) {
+    return (skinDef && skinDef.filter && skinDef.filter !== 'none') ? skinDef.filter : '';
+  }
+
+  function getCharAnimSpec(charDef, skinDef) {
+    if (skinDef && skinDef.customAnimSkin) {
+      return { skin: skinDef.customAnimSkin, frames: skinDef.customAnimFrames || 4 };
+    }
+    return { skin: charDef.animSkin || 'yellow', frames: charDef.animFrames || 2 };
+  }
+
   function getTotalBagChests() {
     const b = save.chestBag || {};
     return (b.wood || 0) + (b.silver || 0) + (b.gold || 0) + (b.diamond || 0);
@@ -572,9 +587,11 @@
       el.chestRewardRarity.textContent = `✨ ${rar.name} 스킨 획득!`;
       el.chestRewardRarity.style.background = rar.bg;
       el.chestRewardRarity.style.color = rar.color;
-      el.chestRewardVisual.innerHTML = `<img src="${ownerChar.avatar}" alt="${rw.skin.name}" class="rw-skin-preview" style="filter: ${rw.skin.filter};" />`;
+      const skAv = getSkinAvatar(ownerChar, rw.skin);
+      const skFlt = getSkinFilter(rw.skin);
+      el.chestRewardVisual.innerHTML = `<img src="${skAv}" alt="${rw.skin.name}" class="rw-skin-preview" style="${skFlt ? `filter:${skFlt};` : ''}" />`;
       el.chestRewardName.textContent = rw.skin.name;
-      el.chestRewardSub.textContent = `${ownerChar.name} 전용 ${rar.name} 스킨 (신규 획득!)`;
+      el.chestRewardSub.textContent = rw.skin.desc || `${ownerChar.name} 전용 ${rar.name} 스킨 (신규 획득!)`;
 
       el.btnChestEquip.classList.remove('hidden');
       el.btnChestEquip.onclick = () => {
@@ -759,7 +776,9 @@
     const myIdx = board.findIndex((r) => r.isMe);
     const myRankNum = myIdx + 1;
 
-    el.rankMyAvatar.src = myChar.avatar;
+    const mySkin = getEquippedSkin(myChar.id);
+    el.rankMyAvatar.src = getSkinAvatar(myChar, mySkin);
+    el.rankMyAvatar.style.filter = getSkinFilter(mySkin);
     el.rankMyPos.textContent = `${myRankNum}위`;
     el.rankMyScoreLine.textContent = `최고 점수 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 거리 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
     el.rankStatYear.textContent = `${save.bestYear || 1}년 차`;
@@ -1146,14 +1165,14 @@
     const unlocked = isCharUnlocked(ch.id);
     const stats = getCharStats(ch);
     const skin = getEquippedSkin(ch.id);
+    const anim = getCharAnimSpec(ch, skin);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
-    const animSkin = ch.animSkin || 'yellow';
 
     el.homeHeroStage.className = `bs-home-stage ${tierCls}${unlocked ? '' : ' locked'}`;
     lastHomeHeroSrc = '';
-    el.homeHeroImg.src = `assets/chars/${animSkin}_run_0.png?v=${ASSET_VER}`;
-    el.homeHeroImg.alt = ch.name;
-    el.homeHeroImg.style.filter = skin ? skin.filter : '';
+    el.homeHeroImg.src = `assets/chars/${anim.skin}_run_0.png?v=${ASSET_VER}`;
+    el.homeHeroImg.alt = skin ? `${ch.name} (${skin.name})` : ch.name;
+    el.homeHeroImg.style.filter = getSkinFilter(skin);
     el.homeHeroImg.style.setProperty('--skin-glow', skin ? skin.glow : '');
     el.homeCharLvBadge.textContent = unlocked ? `POWER ${stats.level}` : '잠금';
     el.homeCharTier.textContent = unlocked
@@ -1162,8 +1181,8 @@
     el.homeCharName.textContent = ch.name;
 
     // Brawl Stars Bottom-Left Character Switcher Badge
-    el.homeBrawlerMini.src = ch.avatar;
-    el.homeBrawlerMini.style.filter = skin ? skin.filter : '';
+    el.homeBrawlerMini.src = getSkinAvatar(ch, skin);
+    el.homeBrawlerMini.style.filter = getSkinFilter(skin);
     el.homeBrawlerCount.textContent = `${save.unlockedChars.length} / ${DATA.CHARACTERS.length}`;
 
     if (unlocked) {
@@ -1180,11 +1199,11 @@
   function updateHomeRunningHero(t) {
     if (currentTab !== 'home') return;
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
-    const animSkin = ch.animSkin || 'yellow';
-    const frames = ch.animFrames || 2;
-    const fps = frames >= 3 ? 9 : 7.5;
-    const frame = Math.floor(t * fps) % frames;
-    const src = `assets/chars/${animSkin}_run_${frame}.png?v=${ASSET_VER}`;
+    const skin = getEquippedSkin(ch.id);
+    const anim = getCharAnimSpec(ch, skin);
+    const fps = anim.frames >= 3 ? 9.5 : 7.5;
+    const frame = Math.floor(t * fps) % anim.frames;
+    const src = `assets/chars/${anim.skin}_run_${frame}.png?v=${ASSET_VER}`;
     if (src !== lastHomeHeroSrc) {
       lastHomeHeroSrc = src;
       el.homeHeroImg.src = src;
@@ -1241,9 +1260,9 @@
       ? `POWER Lv.${stats.level} / ${DATA.MAX_CHAR_LEVEL}`
       : `🔒 ${ch.price.toLocaleString('ko-KR')}G 필요`;
     el.detailEquippedPill.classList.toggle('hidden', !selected);
-    el.detailCharImg.src = ch.avatar;
-    el.detailCharImg.style.filter = equippedSkin ? equippedSkin.filter : '';
-    el.detailCharDesc.textContent = ch.desc;
+    el.detailCharImg.src = getSkinAvatar(ch, equippedSkin);
+    el.detailCharImg.style.filter = getSkinFilter(equippedSkin);
+    el.detailCharDesc.textContent = (equippedSkin && equippedSkin.desc) ? `${ch.desc} (${equippedSkin.desc})` : ch.desc;
 
     el.detailStatHp.textContent = `${stats.maxHp}칸`;
     el.detailFillHp.style.width = `${Math.min(100, Math.round((stats.maxHp / 12) * 100))}%`;
@@ -1379,7 +1398,7 @@
         <div class="brawl-card-stage ${tierCls}">
           <span class="brawl-lv-chip">${unlocked ? `Lv.${stats.level}` : `🔒 ${ch.price}G`}</span>
           ${selected ? '<span class="brawl-eq-chip">장착 중</span>' : ''}
-          <img src="${ch.avatar}" alt="${ch.name}" class="brawl-card-img" style="${eqSkin ? `filter:${eqSkin.filter};` : ''}" />
+          <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="brawl-card-img" style="${getSkinFilter(eqSkin) ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
           <span class="brawl-tap-hint">${eqSkin ? `✨ ${eqSkin.name}` : '터치해 능력·스킨 보기'}</span>
         </div>
         <div class="brawl-nameplate">
@@ -1499,17 +1518,19 @@
         const isEq = save.equippedSkins[sk.charId] === sk.id;
 
         const card = document.createElement('div');
+        const skAv = getSkinAvatar(ownerChar, sk);
+        const skFlt = getSkinFilter(sk);
         card.className = `item-card skin-shop-card rar-${sk.rarity}${isEq ? ' selected' : ''}`;
         card.innerHTML = `
           <div class="item-avatar">
-            <img src="${ownerChar.avatar}" alt="${sk.name}" class="item-avatar-img" style="filter:${sk.filter};" />
+            <img src="${skAv}" alt="${sk.name}" class="item-avatar-img" style="${skFlt ? `filter:${skFlt};` : ''}" />
           </div>
           <div class="item-meta">
             <div class="item-title-row">
               <span class="item-name">${sk.name}</span>
               <span class="skin-rar-pill" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
             </div>
-            <div class="item-desc">${ownerChar.name} 전용 스킨 · ${sk.gemPrice ? '보석 직구매 & 상자 획득 가능' : '상자 뽑기 전용 스킨'}</div>
+            <div class="item-desc">${sk.desc ? `${ownerChar.name} · ${sk.desc}` : `${ownerChar.name} 전용 스킨 · ${sk.gemPrice ? '보석 직구매 & 상자 획득 가능' : '상자 뽑기 전용 스킨'}`}</div>
           </div>
         `;
 
@@ -1836,8 +1857,8 @@
       lastHitCause: '극한 한국 날씨에 체력이 다했습니다!'
     };
 
-    el.runPortraitImg.src = ch.avatar;
-    el.runPortraitImg.style.filter = skinDef ? skinDef.filter : '';
+    el.runPortraitImg.src = getSkinAvatar(ch, skinDef);
+    el.runPortraitImg.style.filter = getSkinFilter(skinDef);
     el.runCanvasWrap.classList.toggle('fever-active', startFever > 0);
     el.mudOverlay.classList.add('hidden');
     el.gameoverOverlay.classList.add('hidden');

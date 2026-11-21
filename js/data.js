@@ -88,7 +88,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'yellow_idle_0',
       animSkin: 'yellow',
       animFrames: 3,
-      avatar: 'assets/chars/port_yellow.png?v=20261121hd6',
+      avatar: 'assets/chars/port_yellow.png?v=20261121hd7',
       auraType: 'raincoat',
       price: 0,
       baseHp: 5,
@@ -111,7 +111,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'blue_idle_0',
       animSkin: 'blue',
       animFrames: 2,
-      avatar: 'assets/chars/port_blue.png?v=20261121hd6',
+      avatar: 'assets/chars/port_blue.png?v=20261121hd7',
       auraType: 'padding',
       price: 350,
       baseHp: 6,
@@ -132,7 +132,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'hanbok_idle_0',
       animSkin: 'hanbok',
       animFrames: 2,
-      avatar: 'assets/chars/port_hanbok.png?v=20261121hd6',
+      avatar: 'assets/chars/port_hanbok.png?v=20261121hd7',
       auraType: 'hanbok',
       price: 650,
       baseHp: 5,
@@ -153,7 +153,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'skier_idle_0',
       animSkin: 'skier',
       animFrames: 2,
-      avatar: 'assets/chars/port_skier.png?v=20261121hd6',
+      avatar: 'assets/chars/port_skier.png?v=20261121hd7',
       auraType: 'skier',
       price: 950,
       baseHp: 5,
@@ -175,7 +175,7 @@ window.RUN_DATA = (function () {
       spriteKey: 'santa_idle_0',
       animSkin: 'santa',
       animFrames: 2,
-      avatar: 'assets/chars/port_santa.png?v=20261121hd6',
+      avatar: 'assets/chars/port_santa.png?v=20261121hd7',
       auraType: 'santa',
       price: 1350,
       baseHp: 5,
@@ -195,7 +195,7 @@ window.RUN_DATA = (function () {
     {
       id: 'hp',
       name: '기초 체력 강화',
-      icon: 'assets/design/orb_potion.png?v=20261121hd6',
+      icon: 'assets/design/orb_potion.png?v=20261121hd7',
       maxLv: 5,
       basePrice: 120,
       priceStep: 110,
@@ -204,7 +204,7 @@ window.RUN_DATA = (function () {
     {
       id: 'magnet',
       name: '골드 자석 강화',
-      icon: 'assets/design/orb_magnet.png?v=20261121hd6',
+      icon: 'assets/design/orb_magnet.png?v=20261121hd7',
       maxLv: 5,
       basePrice: 140,
       priceStep: 120,
@@ -213,7 +213,7 @@ window.RUN_DATA = (function () {
     {
       id: 'defense',
       name: '기상 대응력 강화',
-      icon: 'assets/design/ui_chest.png?v=20261121hd6',
+      icon: 'assets/design/ui_chest.png?v=20261121hd7',
       maxLv: 5,
       basePrice: 160,
       priceStep: 130,
@@ -222,7 +222,7 @@ window.RUN_DATA = (function () {
     {
       id: 'score',
       name: '생존 점수 배율',
-      icon: 'assets/design/orb_star.png?v=20261121hd6',
+      icon: 'assets/design/orb_star.png?v=20261121hd7',
       maxLv: 5,
       basePrice: 180,
       priceStep: 150,
@@ -235,21 +235,21 @@ window.RUN_DATA = (function () {
     {
       id: 'norway',
       name: '노르웨이 기상청 (Yr.no)',
-      icon: 'assets/design/orb_star.png?v=20261121hd6',
+      icon: 'assets/design/orb_star.png?v=20261121hd7',
       price: 90,
       desc: '구라청 훼이크 완전 제거! 다가올 폭우·돌풍·빙판·미세먼지를 3초 전 100% 정확히 예고합니다!'
     },
     {
       id: 'shield',
       name: '기상 보호막',
-      icon: 'assets/atlas/spr_shield.png?v=20261121hd6',
+      icon: 'assets/atlas/spr_shield.png?v=20261121hd7',
       price: 80,
       desc: '다음 달리기에서 첫 장애물 충돌 1회를 피해 없이 완전 방어합니다!'
     },
     {
       id: 'boost',
       name: 'FEVER! 쾌속 출발',
-      icon: 'assets/design/orb_bolt.png?v=20261121hd6',
+      icon: 'assets/design/orb_bolt.png?v=20261121hd7',
       price: 100,
       desc: '시작 후 4.5초간 FEVER 무적 질주 + 코인 자석 자동 발동!'
     }
@@ -305,7 +305,22 @@ window.RUN_DATA = (function () {
     { id: 'phoenix_pad',    name: '불사조 패딩',    rarity: 'legendary', charId: 'long_padding',    filter: 'hue-rotate(162deg) saturate(1.65) brightness(1.1)', glow: '#ff6b2b', trail: ['#ff6b2b', '#ffe852'], gemPrice: 55 },
     { id: 'dragon_hanbok',  name: '청룡 도령',      rarity: 'legendary', charId: 'short_sleeve',    filter: 'hue-rotate(148deg) saturate(1.5) brightness(1.1)', glow: '#38e8ff', trail: ['#38e8ff', '#ffe259'] },
     { id: 'frost_santa',    name: '겨울왕국 산타',  rarity: 'legendary', charId: 'fashionista',     filter: 'hue-rotate(198deg) saturate(1.45) brightness(1.12)', glow: '#75e6ff', trail: ['#75e6ff', '#ffffff'] },
-    // 신화 (2 — 초희귀 다이아 상자 전용!)
+    // 신화 (3 — 초희귀 다이아 상자 & 보석 스페셜 스킨!)
+    {
+      id: 'catgirl_hoodie',
+      name: '화이트 냥이 후드',
+      rarity: 'mythic',
+      charId: 'umbrella_master',
+      filter: 'none',
+      customAnimSkin: 'catgirl',
+      customAnimFrames: 4,
+      customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd7',
+      customShieldVfx: 'catgirl_fx_paw',
+      gemPrice: 45,
+      glow: '#ff96dc',
+      trail: ['#ff96dc', '#ffffff', '#ffc4ee'],
+      desc: '4× HD 전용 풀애니메이션(달리기·점프·슬라이드·유령) & 핑크 냥이 발바닥 오라!'
+    },
     { id: 'mythic_typhoon',   name: '태풍의 지배자',   rarity: 'mythic', charId: 'umbrella_master', filter: 'hue-rotate(225deg) saturate(1.75) brightness(1.12)', glow: '#ff52b8', trail: ['#ff52b8', '#5ef5ff', '#ffe859'] },
     { id: 'mythic_celestial', name: '천상의 기상술사', rarity: 'mythic', charId: 'iced_americano',  filter: 'hue-rotate(265deg) saturate(1.7) brightness(1.14)',  glow: '#c96bff', trail: ['#c96bff', '#ffe866', '#66f2ff'] }
   ];

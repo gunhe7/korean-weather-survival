@@ -14,10 +14,11 @@ window.RunRenderer = (function () {
     { id: 'blue', frames: 2 },
     { id: 'hanbok', frames: 2 },
     { id: 'skier', frames: 2 },
-    { id: 'santa', frames: 2 }
+    { id: 'santa', frames: 2 },
+    { id: 'catgirl', frames: 4 }
   ];
   const CHAR_ANIM_STATES = ['idle', 'run', 'jump', 'fall', 'slide', 'hurt', 'die'];
-  const CHAR_VFX_SPRITES = ['fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring'];
+  const CHAR_VFX_SPRITES = ['fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring', 'catgirl_fx_paw'];
 
   const DESIGN_SPRITES = [
     'item_coin', 'item_coin_side', 'item_star',
@@ -46,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd6';
+  const CHAR_ASSET_VER = '20261121hd7';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -565,8 +566,9 @@ window.RunRenderer = (function () {
 
   // ===================== UPLOADED 7-STATE PIXEL K-CHARACTER SPRITE RENDERER =====================
   function pickCharacterSprite(charDef, opts, t) {
-    const skin = charDef.animSkin || 'yellow';
-    const n = charDef.animFrames || 2;
+    const customSkin = opts.skinDef && opts.skinDef.customAnimSkin ? opts.skinDef : null;
+    const skin = customSkin ? customSkin.customAnimSkin : (charDef.animSkin || 'yellow');
+    const n = customSkin ? (customSkin.customAnimFrames || 4) : (charDef.animFrames || 2);
 
     if (opts.dead) {
       const prog = opts.deathProgress !== undefined ? opts.deathProgress : 1;
@@ -640,13 +642,14 @@ window.RunRenderer = (function () {
       ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 24 : scaleHeight * 0.56, 0, Math.PI * 2);
       ctx.stroke();
     } else if (!dead && shield) {
-      const ringSpr = getSprite('fx_shield_ring');
+      const ringSpr = getSprite((skinDef && skinDef.customShieldVfx) || 'fx_shield_ring');
       if (ringSpr) {
         const pulse = 1 + Math.sin(t * 8) * 0.05;
-        const rSz = Math.round((isProne ? 48 : scaleHeight * 1.18) * pulse);
+        const rSz = Math.round((isProne ? 50 : scaleHeight * 1.24) * pulse);
         ctx.save();
-        ctx.globalAlpha = 0.9;
+        ctx.globalAlpha = 0.88;
         ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(ringSpr, Math.floor(cx - rSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - rSz / 2), rSz, rSz);
         ctx.restore();
       } else {
@@ -704,14 +707,26 @@ window.RunRenderer = (function () {
         ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - scaleHeight * 0.48 + oy), sz, sz);
       }
       if (isHigh) {
-        ctx.save();
-        ctx.strokeStyle = skinDef.glow || tr[0];
-        ctx.globalAlpha = 0.42 + Math.sin(t * 8) * 0.16;
-        ctx.lineWidth = skinDef.rarity === 'mythic' ? 2.5 : 1.8;
-        ctx.beginPath();
-        ctx.arc(cx, cy - (isProne ? 16 : scaleHeight * 0.5), isProne ? 26 : scaleHeight * 0.54, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
+        const customAura = skinDef.customShieldVfx ? getSprite(skinDef.customShieldVfx) : null;
+        if (customAura) {
+          const pulse = 0.96 + Math.sin(t * 7) * 0.06;
+          const aSz = Math.round((isProne ? 46 : scaleHeight * 1.12) * pulse);
+          ctx.save();
+          ctx.globalAlpha = 0.34 + Math.sin(t * 6) * 0.10;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(customAura, Math.floor(cx - aSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - aSz / 2), aSz, aSz);
+          ctx.restore();
+        } else {
+          ctx.save();
+          ctx.strokeStyle = skinDef.glow || tr[0];
+          ctx.globalAlpha = 0.42 + Math.sin(t * 8) * 0.16;
+          ctx.lineWidth = skinDef.rarity === 'mythic' ? 2.5 : 1.8;
+          ctx.beginPath();
+          ctx.arc(cx, cy - (isProne ? 16 : scaleHeight * 0.5), isProne ? 26 : scaleHeight * 0.54, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
     } else if (running && !dead && charDef.auraType) {
       const aura = charDef.auraType;
@@ -755,7 +770,8 @@ window.RunRenderer = (function () {
     if (spr) {
       // Prone poses (Slide & Die) are naturally horizontal (~66x52 vs ~60x78 standing):
       // 0.67 height keeps head & body scale pixel-consistent across every animation state!
-      const targetH = isProne ? Math.round(scaleHeight * 0.67) : scaleHeight;
+      const isCatDead = dead && skinDef && skinDef.customAnimSkin === 'catgirl';
+      const targetH = isProne ? Math.round(scaleHeight * (isCatDead ? 0.88 : 0.67)) : scaleHeight;
       const ratio = spr.naturalWidth / spr.naturalHeight;
       const drawW = Math.round(targetH * ratio);
       const drawH = targetH;
@@ -766,7 +782,7 @@ window.RunRenderer = (function () {
       ctx.translate(cx, Math.floor(cy - bob));
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      if (skinDef && skinDef.filter && 'filter' in ctx) {
+      if (skinDef && skinDef.filter && skinDef.filter !== 'none' && 'filter' in ctx) {
         ctx.filter = skinDef.filter;
       }
       ctx.drawImage(spr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
