@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd24" />
+  <link rel="stylesheet" href="style.css?v=20261121hd26" />
 </head>
 <body>
   <div id="mobile-app">
@@ -751,21 +751,15 @@
     <div id="global-toast" class="global-toast hidden"></div>
   </div>
 
-  <script src="js/data.js?v=20261121hd25"></script>
+  <script src="js/data.js?v=20261121hd26"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd25"></script>
-  <script src="js/renderer.js?v=20261121hd25"></script>
-  <script src="js/game.js?v=20261121hd25"></script>
+  <script src="js/online.js?v=20261121hd26"></script>
+  <script src="js/renderer.js?v=20261121hd26"></script>
+  <script src="js/game.js?v=20261121hd26"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (refreshing) return;
-          refreshing = true;
-          window.location.reload();
-        });
-        navigator.serviceWorker.register('./sw.js?v=20261121hd25', { updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
           .then((reg) => { try { reg.update(); } catch {} })
           .catch(() => {});
       });

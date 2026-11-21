@@ -1,4 +1,4 @@
-const CACHE_NAME = 'k-weather-survival-v20261121hd25';
+const CACHE_NAME = 'k-weather-survival-v20261121hd26';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -8,15 +8,14 @@ const CORE_ASSETS = [
   './js/audio.js',
   './js/online.js',
   './js/renderer.js',
-  './js/game.js',
-  './assets/icons/icon-192.png',
-  './assets/icons/icon-512.png'
+  './js/game.js'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(CORE_ASSETS))
+      .catch(() => {})
       .then(() => self.skipWaiting())
   );
 });
@@ -40,7 +39,7 @@ self.addEventListener('fetch', (event) => {
     /\.(html|js|css|json)$/i.test(url.pathname);
 
   if (isCodeOrDoc) {
-    // NETWORK-FIRST for HTML/JS/CSS/JSON so returning phones NEVER get mismatched old/new code!
+    // NETWORK-FIRST for HTML/JS/CSS/JSON so every load gets matching latest code
     event.respondWith(
       fetch(event.request)
         .then((resp) => {
@@ -55,19 +54,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate for static sprites/images/fonts
+  // PURE CACHE-FIRST for versioned images/fonts (ZERO redundant background fetch flood!)
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      const networkFetch = fetch(event.request)
-        .then((resp) => {
-          if (resp && resp.status === 200) {
-            const copy = resp.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          }
-          return resp;
-        })
-        .catch(() => cached);
-      return cached || networkFetch;
+      if (cached) return cached;
+      return fetch(event.request).then((resp) => {
+        if (resp && resp.status === 200) {
+          const copy = resp.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return resp;
+      });
     })
   );
 });

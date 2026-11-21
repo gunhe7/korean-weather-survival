@@ -26,7 +26,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd25';
+  const ASSET_VER = '20261121hd26';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -1650,17 +1650,32 @@
     }
   }
 
+  const homeHeroPreloadCache = {};
+
+  function getPreloadedHomeHeroSrc(src) {
+    let img = homeHeroPreloadCache[src];
+    if (!img) {
+      img = new Image();
+      img.src = src;
+      homeHeroPreloadCache[src] = img;
+    }
+    return img.complete && img.naturalWidth > 0 ? src : null;
+  }
+
   function updateHomeRunningHero(t) {
     if (currentTab !== 'home') return;
+    if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
+    if (el.loginOverlay && !el.loginOverlay.classList.contains('hidden')) return;
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const skin = getEquippedSkin(ch.id);
     const anim = getCharAnimSpec(ch, skin);
     const fps = anim.frames >= 6 ? 13 : (anim.frames >= 3 ? 9.5 : 7.5);
     const frame = Math.floor(t * fps) % anim.frames;
     const src = `assets/chars/${anim.skin}_run_${frame}.png?v=${ASSET_VER}`;
-    if (src !== lastHomeHeroSrc) {
-      lastHomeHeroSrc = src;
-      el.homeHeroImg.src = src;
+    const readySrc = getPreloadedHomeHeroSrc(src);
+    if (readySrc && readySrc !== lastHomeHeroSrc) {
+      lastHomeHeroSrc = readySrc;
+      el.homeHeroImg.src = readySrc;
     }
   }
 
@@ -4234,7 +4249,7 @@
         SFX.setBgmMode('menu');
       } catch {}
       el.introOverlay.classList.add('leaving');
-      // Request fullscreen + hardware landscape lock cleanly AFTER handling the tap so click is never cancelled!
+      // Request fullscreen + hardware landscape lock synchronously inside gesture (non-blocking)
       try { tryAutoLockLandscape(true); } catch {}
       setTimeout(() => {
         el.introOverlay.classList.add('hidden');
