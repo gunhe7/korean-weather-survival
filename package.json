@@ -12,7 +12,8 @@
     "ios:open": "npx cap open ios"
   },
   "dependencies": {
-    "@capacitor/core": "^6.2.0"
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/screen-orientation": "^6.0.2"
   },
   "devDependencies": {
     "@capacitor/android": "^6.2.0",

@@ -2,6 +2,7 @@
   const DATA = window.RUN_DATA;
   const SFX = window.SFX;
   const Renderer = window.RunRenderer;
+  const ONLINE = window.OnlineService;
 
   const SAVE_KEY = 'kr_weather_runner_save_v1';
   const SAVE_BACKUP_KEY = 'kr_weather_runner_save_v1_backup';
@@ -15,6 +16,7 @@
   }
 
   function getWeekKey() {
+    if (ONLINE && ONLINE.getWeekInfo) return ONLINE.getWeekInfo().weekKey;
     const d = new Date();
     const utc = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const dayNum = utc.getUTCDay() || 7;
@@ -24,7 +26,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd19';
+  const ASSET_VER = '20261121hd22';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -66,7 +68,9 @@
       weeklyMissions: { week, progress: { dist: 0, runs: 0, dodges: 0, year2Runs: 0 }, claimed: {} },
       achievementsClaimed: {},
       stageMilestonesClaimed: {},
-      audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 }
+      audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
+      auth: { loggedIn: false, provider: 'guest', uid: '', nickname: '', email: '' },
+      weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] }
     };
 
     function parseKey(key) {
@@ -129,7 +133,29 @@
       },
       achievementsClaimed: { ...(raw.achievementsClaimed || {}) },
       stageMilestonesClaimed: { ...(raw.stageMilestonesClaimed || {}) },
-      audioSettings: { ...def.audioSettings, ...(raw.audioSettings || {}) }
+      audioSettings: { ...def.audioSettings, ...(raw.audioSettings || {}) },
+      auth: { ...def.auth, ...(raw.auth || {}) },
+      weeklyRank: (() => {
+        const wr = raw.weeklyRank && typeof raw.weeklyRank === 'object' ? raw.weeklyRank : {};
+        const hist = { ...(wr.history || {}) };
+        // Preserve previous week's score into history when a new week rolls over!
+        if (wr.weekKey && wr.weekKey !== week && (wr.bestScore || 0) > 0) {
+          hist[wr.weekKey] = {
+            score: wr.bestScore || 0,
+            dist: wr.bestDist || 0,
+            year: wr.bestYear || 1
+          };
+        }
+        const sameWeek = wr.weekKey === week;
+        return {
+          weekKey: week,
+          bestScore: sameWeek ? (Number(wr.bestScore) || 0) : 0,
+          bestDist: sameWeek ? (Number(wr.bestDist) || 0) : 0,
+          bestYear: sameWeek ? (Number(wr.bestYear) || 1) : 1,
+          history: hist,
+          claimedWeeks: Array.isArray(wr.claimedWeeks) ? [...wr.claimedWeeks] : []
+        };
+      })()
     };
   }
 
@@ -183,6 +209,24 @@
   // ===================== DOM REFERENCES =====================
   const el = {
     introOverlay: document.getElementById('intro-overlay'),
+    introTapPrompt: document.getElementById('intro-tap-prompt'),
+    loginOverlay: document.getElementById('login-overlay'),
+    loginMainPanel: document.getElementById('login-main-panel'),
+    loginNicknameInput: document.getElementById('login-nickname-input'),
+    btnLoginGoogle: document.getElementById('btn-login-google'),
+    btnLoginApple: document.getElementById('btn-login-apple'),
+    btnLoginGuest: document.getElementById('btn-login-guest'),
+    loginOauthPanel: document.getElementById('login-oauth-panel'),
+    loginOauthBadge: document.getElementById('login-oauth-badge'),
+    loginOauthTitle: document.getElementById('login-oauth-title'),
+    loginOauthEmail: document.getElementById('login-oauth-email'),
+    loginOauthNick: document.getElementById('login-oauth-nick'),
+    btnLoginOauthBack: document.getElementById('btn-login-oauth-back'),
+    btnLoginOauthConfirm: document.getElementById('btn-login-oauth-confirm'),
+
+    btnHeaderProfile: document.getElementById('btn-header-profile'),
+    hdrProfileBadge: document.getElementById('hdr-profile-badge'),
+    hdrProfileName: document.getElementById('hdr-profile-name'),
     headerBestScore: document.getElementById('header-best-score'),
     btnGoldShop: document.getElementById('btn-gold-shop'),
     uiGold: document.getElementById('ui-gold'),
@@ -210,6 +254,10 @@
     chkSfxOn: document.getElementById('chk-sfx-on'),
     rngSfxVol: document.getElementById('rng-sfx-vol'),
     lblSfxVol: document.getElementById('lbl-sfx-vol'),
+    settingsAccountBadge: document.getElementById('settings-account-badge'),
+    settingsAccountName: document.getElementById('settings-account-name'),
+    settingsAccountSub: document.getElementById('settings-account-sub'),
+    btnSettingsSwitchLogin: document.getElementById('btn-settings-switch-login'),
     btnSettingsOk: document.getElementById('btn-settings-ok'),
 
     homeHeroStage: document.getElementById('home-hero-stage'),
@@ -243,6 +291,12 @@
     pityDiamondChip: document.getElementById('pity-diamond-chip'),
     bsQuestGrid: document.getElementById('bs-quest-grid'),
 
+    rankLivePill: document.getElementById('rank-live-pill'),
+    rankOnlineCount: document.getElementById('rank-online-count'),
+    btnRankRefresh: document.getElementById('btn-rank-refresh'),
+    rankWeekLabel: document.getElementById('rank-week-label'),
+    rankWeekCountdown: document.getElementById('rank-week-countdown'),
+    rankLastWinner: document.getElementById('rank-last-winner'),
     rankMyAvatar: document.getElementById('rank-my-avatar'),
     rankMyPos: document.getElementById('rank-my-pos'),
     rankMyScoreLine: document.getElementById('rank-my-score-line'),
@@ -346,6 +400,21 @@
     probOverlay: document.getElementById('prob-overlay'),
     btnCloseProb: document.getElementById('btn-close-prob'),
     probModalBody: document.getElementById('prob-modal-body'),
+
+    iapOverlay: document.getElementById('iap-overlay'),
+    btnCloseIap: document.getElementById('btn-close-iap'),
+    iapPackName: document.getElementById('iap-pack-name'),
+    iapPackGems: document.getElementById('iap-pack-gems'),
+    iapPackPrice: document.getElementById('iap-pack-price'),
+    iapPayNote: document.getElementById('iap-pay-note'),
+    btnIapCancel: document.getElementById('btn-iap-cancel'),
+    btnIapConfirm: document.getElementById('btn-iap-confirm'),
+
+    weeklyChampOverlay: document.getElementById('weekly-champ-overlay'),
+    weeklyChampWeek: document.getElementById('weekly-champ-week'),
+    weeklyChampScore: document.getElementById('weekly-champ-score'),
+    weeklyChampGems: document.getElementById('weekly-champ-gems'),
+    btnClaimWeeklyChamp: document.getElementById('btn-claim-weekly-champ'),
 
     globalToast: document.getElementById('global-toast')
   };
@@ -763,13 +832,260 @@
     if (el.weatherCenterAlert) el.weatherCenterAlert.classList.add('hidden');
   }
 
+  // ===================== AUTO HARDWARE LANDSCAPE ORIENTATION LOCK =====================
+  function isTouchMobileDevice() {
+    if (typeof window === 'undefined') return false;
+    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const ua = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+    return coarse || ua;
+  }
+
+  let landscapeLockInFlight = false;
+  async function tryAutoLockLandscape(fromUserGesture = false) {
+    // 1. Native Capacitor ScreenOrientation plugin if present
+    try {
+      const cap = window.Capacitor;
+      if (cap && cap.Plugins && cap.Plugins.ScreenOrientation && cap.Plugins.ScreenOrientation.lock) {
+        await cap.Plugins.ScreenOrientation.lock({ orientation: 'landscape' });
+      }
+    } catch {}
+
+    if (!isTouchMobileDevice()) return;
+    if (landscapeLockInFlight) return;
+    landscapeLockInFlight = true;
+    try {
+      const docEl = document.documentElement;
+      const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      // Mobile Chrome/Samsung/Edge require fullscreen inside a user gesture before screen.orientation.lock() rotates hardware!
+      if (fromUserGesture && !isFs) {
+        try {
+          if (docEl.requestFullscreen) {
+            await docEl.requestFullscreen({ navigationUI: 'hide' });
+          } else if (docEl.webkitRequestFullscreen) {
+            await docEl.webkitRequestFullscreen();
+          }
+        } catch {}
+      }
+      if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
+        try {
+          await screen.orientation.lock('landscape');
+        } catch {
+          try { await screen.orientation.lock('landscape-primary'); } catch {}
+        }
+      }
+    } finally {
+      landscapeLockInFlight = false;
+    }
+  }
+
+  // ===================== AUTH / LOGIN / PROFILE UI =====================
+  let pendingOauthProvider = null;
+
+  function ensureWeeklyRankCurrentWeek() {
+    const info = ONLINE ? ONLINE.getWeekInfo() : { weekKey: getWeekKey() };
+    if (!save.weeklyRank || typeof save.weeklyRank !== 'object') {
+      save.weeklyRank = { weekKey: info.weekKey, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] };
+    }
+    if (save.weeklyRank.weekKey && save.weeklyRank.weekKey !== info.weekKey) {
+      save.weeklyRank.history = save.weeklyRank.history || {};
+      if ((save.weeklyRank.bestScore || 0) > 0) {
+        save.weeklyRank.history[save.weeklyRank.weekKey] = {
+          score: save.weeklyRank.bestScore,
+          dist: save.weeklyRank.bestDist || 0,
+          year: save.weeklyRank.bestYear || 1
+        };
+      }
+      save.weeklyRank.weekKey = info.weekKey;
+      save.weeklyRank.bestScore = 0;
+      save.weeklyRank.bestDist = 0;
+      save.weeklyRank.bestYear = 1;
+      persistSave();
+    }
+    return info;
+  }
+
+  function renderProfileUI() {
+    const auth = save.auth || { loggedIn: false, provider: 'guest', nickname: '날씨러너' };
+    const meta = ONLINE ? ONLINE.getProviderMeta(auth.provider) : { badge: 'GUEST', label: '게스트' };
+    const nick = auth.nickname || '날씨러너';
+    if (el.hdrProfileBadge) {
+      el.hdrProfileBadge.textContent = meta.badge;
+      el.hdrProfileBadge.className = `prov-chip ${auth.provider || 'guest'}`;
+    }
+    if (el.hdrProfileName) el.hdrProfileName.textContent = nick;
+    if (el.settingsAccountBadge) {
+      el.settingsAccountBadge.textContent = meta.badge;
+      el.settingsAccountBadge.className = `prov-chip ${auth.provider || 'guest'}`;
+    }
+    if (el.settingsAccountName) el.settingsAccountName.textContent = nick;
+    if (el.settingsAccountSub) {
+      el.settingsAccountSub.textContent = auth.email
+        ? `${meta.label} · ${auth.email}`
+        : `${meta.label} 로그인 중`;
+    }
+  }
+
+  function openLoginOverlay() {
+    if (!el.loginOverlay) return;
+    pendingOauthProvider = null;
+    if (el.loginMainPanel) el.loginMainPanel.classList.remove('hidden');
+    if (el.loginOauthPanel) el.loginOauthPanel.classList.add('hidden');
+    if (el.loginNicknameInput) {
+      el.loginNicknameInput.value = (save.auth && save.auth.nickname) || '';
+    }
+    el.loginOverlay.classList.remove('hidden');
+  }
+
+  function openOauthStep(provider) {
+    pendingOauthProvider = provider;
+    const isGoogle = provider === 'google';
+    if (el.loginMainPanel) el.loginMainPanel.classList.add('hidden');
+    if (el.loginOauthPanel) el.loginOauthPanel.classList.remove('hidden');
+    if (el.loginOauthBadge) {
+      el.loginOauthBadge.textContent = isGoogle ? 'G' : '';
+      el.loginOauthBadge.className = `login-oauth-badge ${provider}`;
+    }
+    if (el.loginOauthTitle) {
+      el.loginOauthTitle.textContent = isGoogle ? 'Google 계정 연결' : 'Apple ID 계정 연결';
+    }
+    if (el.loginOauthEmail) {
+      el.loginOauthEmail.placeholder = isGoogle ? 'example@gmail.com' : 'example@icloud.com';
+      el.loginOauthEmail.value = (save.auth && save.auth.provider === provider && save.auth.email) ? save.auth.email : '';
+    }
+    if (el.loginOauthNick) {
+      const typedNick = el.loginNicknameInput ? el.loginNicknameInput.value.trim() : '';
+      el.loginOauthNick.value = typedNick || (save.auth && save.auth.nickname) || '';
+    }
+  }
+
+  async function completeLogin(provider, opts = {}) {
+    if (!ONLINE) return;
+    SFX.click();
+    tryAutoLockLandscape(true);
+    const existingUid = (save.auth && save.auth.uid) || '';
+    const profile = await ONLINE.signIn(provider, {
+      existingUid,
+      nickname: opts.nickname,
+      email: opts.email
+    });
+    save.auth = profile;
+    persistSave();
+    if (el.loginOverlay) el.loginOverlay.classList.add('hidden');
+    renderProfileUI();
+    await syncMyWeeklyScore();
+    refreshAllMenus();
+    const meta = ONLINE.getProviderMeta(profile.provider);
+    showToast(`✅ ${meta.label} [${profile.nickname}] 로그인 완료!`);
+    checkAndAwardWeeklyChampion();
+  }
+
+  // ===================== IN-APP PURCHASE (REAL-MONEY GEM STORE: 100💎 = ₩1,000) =====================
+  let pendingGemPack = null;
+
+  function openIapModal(pack) {
+    if (!pack || !el.iapOverlay) return;
+    SFX.click();
+    pendingGemPack = pack;
+    if (el.iapPackName) el.iapPackName.textContent = pack.name;
+    if (el.iapPackGems) el.iapPackGems.textContent = `+${pack.gems.toLocaleString('ko-KR')} 💎 즉시 지급`;
+    if (el.iapPackPrice) el.iapPackPrice.textContent = `₩${pack.krwPrice.toLocaleString('ko-KR')}`;
+    const isNativeApp = Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (el.iapPayNote) {
+      el.iapPayNote.textContent = isNativeApp
+        ? `Google Play / App Store 공식 인앱 결제 · 상품ID: ${pack.productId}`
+        : `스토어 결제 연동 규격 (100💎 = ₩1,000) · 웹 미리보기에서는 테스트 결제로 보석이 지급됩니다.`;
+    }
+    if (el.btnIapConfirm) {
+      el.btnIapConfirm.textContent = `₩${pack.krwPrice.toLocaleString('ko-KR')} 결제하기`;
+    }
+    el.iapOverlay.classList.remove('hidden');
+  }
+
+  async function confirmIapPurchase() {
+    if (!pendingGemPack) return;
+    const pack = pendingGemPack;
+    // Native Capacitor IAP bridge hook when packaged as Android/iOS store app
+    if (window.KWeatherIAP && typeof window.KWeatherIAP.purchase === 'function') {
+      try {
+        const res = await window.KWeatherIAP.purchase(pack.productId);
+        if (!res || res.cancelled) return;
+      } catch {
+        showToast('결제가 취소되었거나 실패했습니다.');
+        return;
+      }
+    }
+    SFX.chestJackpot();
+    save.gems = (save.gems || 0) + pack.gems;
+    persistSave();
+    pendingGemPack = null;
+    if (el.iapOverlay) el.iapOverlay.classList.add('hidden');
+    refreshAllMenus();
+    showToast(`💎 ${pack.name} (₩${pack.krwPrice.toLocaleString('ko-KR')}) 결제 완료! +${pack.gems.toLocaleString('ko-KR')}💎 지급!`);
+  }
+
+  // ===================== WEEKLY #1 CHAMPION 500 GEMS AUTOMATIC PAYOUT =====================
+  let pendingChampionReward = null;
+
+  async function checkAndAwardWeeklyChampion() {
+    if (!ONLINE || !save.auth || !save.auth.loggedIn) return;
+    const reward = await ONLINE.checkWeeklyChampionPayout(save);
+    if (!reward || !reward.won) return;
+    pendingChampionReward = reward;
+    if (el.weeklyChampWeek) el.weeklyChampWeek.textContent = `${reward.weekLabel} 주간 최종 1위!`;
+    if (el.weeklyChampScore) el.weeklyChampScore.textContent = `우승 점수 ${reward.score.toLocaleString('ko-KR')}점`;
+    if (el.weeklyChampGems) el.weeklyChampGems.textContent = `+${reward.gems.toLocaleString('ko-KR')} 💎 보석 지급!`;
+    if (el.weeklyChampOverlay) el.weeklyChampOverlay.classList.remove('hidden');
+    SFX.chestJackpot();
+  }
+
+  function claimWeeklyChampionReward() {
+    if (!pendingChampionReward) {
+      if (el.weeklyChampOverlay) el.weeklyChampOverlay.classList.add('hidden');
+      return;
+    }
+    const rw = pendingChampionReward;
+    pendingChampionReward = null;
+    save.gems = (save.gems || 0) + rw.gems;
+    save.weeklyRank = save.weeklyRank || { weekKey: getWeekKey(), bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] };
+    if (!Array.isArray(save.weeklyRank.claimedWeeks)) save.weeklyRank.claimedWeeks = [];
+    if (!save.weeklyRank.claimedWeeks.includes(rw.weekKey)) {
+      save.weeklyRank.claimedWeeks.push(rw.weekKey);
+    }
+    persistSave();
+    if (el.weeklyChampOverlay) el.weeklyChampOverlay.classList.add('hidden');
+    SFX.chestJackpot();
+    refreshAllMenus();
+    showToast(`👑 ${rw.weekLabel} 주간 1위 보상 💎 ${rw.gems} 보석 수령 완료!`);
+  }
+
+  async function syncMyWeeklyScore() {
+    if (!ONLINE || !save.auth || !save.auth.uid) return;
+    const info = ensureWeeklyRankCurrentWeek();
+    const myChar = getCharDef(save.selectedChar);
+    const mySkin = getEquippedSkin(myChar.id);
+    const weeklyBest = Math.max(save.weeklyRank.bestScore || 0, 0);
+    await ONLINE.submitWeeklyScore({
+      weekKey: info.weekKey,
+      uid: save.auth.uid,
+      nickname: save.auth.nickname || '날씨러너',
+      provider: save.auth.provider || 'guest',
+      charId: myChar.id,
+      skinId: mySkin ? mySkin.id : null,
+      score: weeklyBest,
+      dist: save.weeklyRank.bestDist || save.bestDistanceM || 0,
+      year: save.weeklyRank.bestYear || save.bestYear || 1
+    });
+  }
+
   // ===================== HOME / MISSIONS / ATTENDANCE / CHARS / SHOP UI RENDER =====================
   function refreshAllMenus() {
     ensureTodayMissions();
+    ensureWeeklyRankCurrentWeek();
     el.uiGold.textContent = save.gold.toLocaleString('ko-KR');
     el.uiGems.textContent = (save.gems || 0).toLocaleString('ko-KR');
     el.headerBestScore.textContent = save.bestScore.toLocaleString('ko-KR');
 
+    renderProfileUI();
     renderAttendanceUI();
     renderAchievementsUI();
     renderSettingsUI();
@@ -800,57 +1116,98 @@
     }
   }
 
-  const RANK_RIVALS = [
-    { name: '노르웨이신봉자', charId: 'umbrella_master', score: 24500, dist: 2850, year: 4 },
-    { name: '태풍뚫는얼죽아', charId: 'iced_americano', score: 17800, dist: 2120, year: 3 },
-    { name: '한파패딩대장', charId: 'long_padding', score: 12400, dist: 1580, year: 3 },
-    { name: '풍류반팔충', charId: 'short_sleeve', score: 8600, dist: 1120, year: 2 },
-    { name: '산타코인부자', charId: 'fashionista', score: 5400, dist: 760, year: 2 },
-    { name: '구라청저격수', charId: 'long_padding', score: 3100, dist: 480, year: 1 },
-    { name: '장마침수서퍼', charId: 'umbrella_master', score: 1650, dist: 290, year: 1 },
-    { name: '우산뒤집힌민수', charId: 'umbrella_master', score: 750, dist: 140, year: 1 }
-  ];
+  let rankRenderSeq = 0;
 
-  function renderRankingTab() {
+  function updateWeeklyRankCountdownUI() {
+    if (!ONLINE) return;
+    const info = ONLINE.getWeekInfo();
+    if (el.rankWeekLabel) el.rankWeekLabel.textContent = `${info.weekLabel} 주간 랭킹 1위 보상`;
+    if (el.rankWeekCountdown) el.rankWeekCountdown.textContent = info.countdownText;
+  }
+
+  async function renderRankingTab() {
+    const seq = ++rankRenderSeq;
+    const info = ensureWeeklyRankCurrentWeek();
+    updateWeeklyRankCountdownUI();
+
     const myChar = getCharDef(save.selectedChar);
-    const myEntry = {
-      name: `나 (${myChar.name})`,
-      charId: myChar.id,
-      score: save.bestScore || 0,
-      dist: save.bestDistanceM || 0,
-      year: save.bestYear || 1,
-      isMe: true
-    };
-    const board = [...RANK_RIVALS, myEntry].sort((a, b) => b.score - a.score);
-    const myIdx = board.findIndex((r) => r.isMe);
-    const myRankNum = myIdx + 1;
-
     const mySkin = getEquippedSkin(myChar.id);
+    const myUid = (save.auth && save.auth.uid) || 'local_me';
+    const myNick = (save.auth && save.auth.nickname) || `나 (${myChar.name})`;
+    const weeklyBest = save.weeklyRank ? (save.weeklyRank.bestScore || 0) : 0;
+
     el.rankMyAvatar.src = getSkinAvatar(myChar, mySkin);
     el.rankMyAvatar.style.filter = getSkinFilter(mySkin);
-    el.rankMyPos.textContent = `${myRankNum}위`;
-    el.rankMyScoreLine.textContent = `최고 점수 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 거리 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
+    el.rankMyScoreLine.textContent = `이번 주 ${weeklyBest.toLocaleString('ko-KR')}점 · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
     el.rankStatYear.textContent = `${save.bestYear || 1}년 차`;
     el.rankStatCoins.textContent = `${(save.totalCoinsEver || 0).toLocaleString('ko-KR')}개`;
     el.rankStatCombo.textContent = `${save.maxDodgeComboEver || 0}연속`;
     el.rankStatDex.textContent = `${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
 
+    if (!ONLINE) return;
+    const [curRes, prevRes] = await Promise.all([
+      ONLINE.fetchWeeklyBoard(info.weekKey, myUid),
+      ONLINE.fetchWeeklyBoard(info.prevWeekKey, myUid)
+    ]);
+    if (seq !== rankRenderSeq) return;
+
+    // Ensure current player is always visible in the live standings even at 0 pts
+    let board = curRes.board.slice();
+    if (!board.some((r) => r.isMe)) {
+      board.push({
+        uid: myUid,
+        nickname: myNick,
+        provider: (save.auth && save.auth.provider) || 'guest',
+        charId: myChar.id,
+        skinId: mySkin ? mySkin.id : null,
+        score: weeklyBest,
+        dist: save.weeklyRank.bestDist || 0,
+        year: save.weeklyRank.bestYear || 1,
+        isMe: true
+      });
+      board.sort((a, b) => b.score - a.score);
+      board = board.map((e, i) => ({ ...e, rank: i + 1 }));
+    }
+
+    const myEntry = board.find((r) => r.isMe);
+    el.rankMyPos.textContent = myEntry ? `${myEntry.rank}위` : '-';
+
+    if (el.rankOnlineCount) {
+      el.rankOnlineCount.textContent = curRes.syncedOnline
+        ? `실시간 서버 · ${curRes.onlineCount}명 참여`
+        : `실시간 시즌 · ${curRes.onlineCount}명 접속 중`;
+    }
+    if (el.rankLastWinner && prevRes && prevRes.board && prevRes.board[0]) {
+      const w = prevRes.board[0];
+      el.rankLastWinner.textContent = `지난 주(${info.prevWeekLabel}) 1위: 👑 ${w.nickname} (${w.score.toLocaleString('ko-KR')}점 · 💎500 지급)`;
+    }
+
     el.rankBoardList.innerHTML = '';
-    board.forEach((entry, idx) => {
-      const rank = idx + 1;
+    board.forEach((entry) => {
+      const rank = entry.rank;
       const chDef = getCharDef(entry.charId);
+      const skDef = entry.skinId ? DATA.getSkinById(entry.skinId) : null;
+      const avSrc = getSkinAvatar(chDef, skDef);
+      const avFlt = getSkinFilter(skDef);
+      const prov = ONLINE.getProviderMeta(entry.provider);
+
       const row = document.createElement('div');
       const topClass = rank === 1 ? ' top1' : (rank === 2 ? ' top2' : (rank === 3 ? ' top3' : ''));
       const medal = rank === 1 ? '🥇' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : `${rank}`));
       row.className = `rank-row${topClass}${entry.isMe ? ' me' : ''}`;
       row.innerHTML = `
         <div class="rank-medal">${medal}</div>
-        <img src="${chDef.avatar}" alt="" class="rank-row-avatar" />
+        <img src="${avSrc}" alt="" class="rank-row-avatar" style="${avFlt ? `filter:${avFlt};` : ''}" />
         <div class="rank-row-info">
-          <div class="rank-row-name">${entry.name}${entry.isMe ? ' <span class="item-badge equipped">ME</span>' : ''}</div>
-          <div class="rank-row-sub">${entry.year}년 차 · ${entry.dist.toLocaleString('ko-KR')}m</div>
+          <div class="rank-row-name">
+            <span class="prov-chip mini ${entry.provider || 'guest'}">${prov.badge}</span>
+            <span>${entry.nickname}</span>
+            ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
+            ${rank === 1 ? '<span class="rank-top1-prize">👑 500💎</span>' : ''}
+          </div>
+          <div class="rank-row-sub">${entry.year || 1}년 차 · ${(entry.dist || 0).toLocaleString('ko-KR')}m</div>
         </div>
-        <div class="rank-row-score">${entry.score.toLocaleString('ko-KR')}점</div>
+        <div class="rank-row-score">${(entry.score || 0).toLocaleString('ko-KR')}점</div>
       `;
       el.rankBoardList.appendChild(row);
     });
@@ -1474,6 +1831,9 @@
   }
 
   function renderShopList() {
+    if (!['chests', 'skins', 'gold', 'gems', 'upgrades'].includes(currentShopSubtab)) {
+      currentShopSubtab = 'chests';
+    }
     document.querySelectorAll('.subtab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.shoptab === currentShopSubtab);
     });
@@ -1481,42 +1841,52 @@
     el.shopItemsList.innerHTML = '';
 
     if (currentShopSubtab === 'chests') {
+      const sec = document.createElement('div');
+      sec.className = 'bs-shop-section';
+      sec.innerHTML = `
+        <div class="bs-shop-sec-head chests">
+          <span class="bs-shop-sec-title">🎁 상자 상점</span>
+          <span class="bs-shop-sec-sub">골드·보석으로 스킨 &amp; 보석 획득! (신화 스킨 상자 미출현)</span>
+        </div>
+      `;
+      const grid = document.createElement('div');
+      grid.className = 'bs-shop-grid four';
+
       DATA.CHEST_ORDER.forEach((tierId) => {
         const chest = DATA.CHESTS[tierId];
         const pityInfo = tierId === 'gold'
-          ? `👑 영웅+ 천장 ${save.pity.gold || 0}/10회`
+          ? `👑 영웅+ 천장 ${save.pity.gold || 0}/10`
           : (tierId === 'diamond'
-            ? `💎 전설 천장 ${save.pity.diamond || 0}/15회`
-            : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
+            ? `💎 전설 천장 ${save.pity.diamond || 0}/15`
+            : `🪙 ${chest.goldRange[0]}~${chest.goldRange[1]}G`);
         const rateSummary = tierId === 'wood'
-          ? '골드 75% · 일반 18% · 희귀 5% · 영웅 1.5% · 💎 0.5%'
+          ? '일반 18% · 희귀 5% · 💎 0.5%'
           : (tierId === 'silver'
-            ? '골드 65% · 일반 15% · 희귀 15% · 영웅 3% · 💎 2%'
+            ? '일반 15% · 희귀 15% · 영웅 3%'
             : (tierId === 'gold'
-              ? '골드 50% · 희귀 25% · 영웅 17% · 전설 3% · 💎 5%'
-              : '골드 25% · 희귀 10% · 영웅 30% · 전설 25% · 💎 10%'));
+              ? '희귀 25% · 영웅 17% · 전설 3%'
+              : '영웅 30% · 전설 25% · 💎 10%'));
 
         const card = document.createElement('div');
-        card.className = `item-card chest-shop-card tier-${tierId}`;
+        card.className = `bs-offer-card tier-${tierId}`;
         card.innerHTML = `
-          <div class="item-avatar chest-avatar"><img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="item-avatar-img chest-img" /></div>
-          <div class="item-meta">
-            <div class="item-title-row">
-              <span class="item-name">${chest.name}</span>
-              <span class="item-badge chest-pity-badge">${pityInfo}</span>
-            </div>
-            <div class="item-desc">${rateSummary}</div>
+          <div class="bs-offer-ribbon">${pityInfo}</div>
+          <div class="bs-offer-stage">
+            <div class="bs-offer-rays"></div>
+            <img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="bs-offer-img chest" />
           </div>
+          <div class="bs-offer-name">${chest.name}</div>
+          <div class="bs-offer-sub">${rateSummary}</div>
         `;
 
-        const btnCol = document.createElement('div');
-        btnCol.className = 'chest-buy-btns';
+        const foot = document.createElement('div');
+        foot.className = 'bs-offer-foot';
 
         if (chest.shopGold) {
           const gBtn = document.createElement('button');
           gBtn.type = 'button';
-          gBtn.className = 'item-action-btn';
-          gBtn.textContent = `${chest.shopGold.toLocaleString('ko-KR')} G`;
+          gBtn.className = 'bs-buy-btn gold';
+          gBtn.textContent = `🪙 ${chest.shopGold.toLocaleString('ko-KR')}`;
           gBtn.disabled = save.gold < chest.shopGold;
           gBtn.onclick = () => {
             if (save.gold < chest.shopGold) return;
@@ -1525,13 +1895,13 @@
             refreshAllMenus();
             openChestModal(tierId);
           };
-          btnCol.appendChild(gBtn);
+          foot.appendChild(gBtn);
         }
 
         if (chest.shopGems) {
           const dBtn = document.createElement('button');
           dBtn.type = 'button';
-          dBtn.className = 'item-action-btn gem-btn';
+          dBtn.className = 'bs-buy-btn gem';
           dBtn.textContent = `💎 ${chest.shopGems}`;
           dBtn.disabled = (save.gems || 0) < chest.shopGems;
           dBtn.onclick = () => {
@@ -1541,46 +1911,130 @@
             refreshAllMenus();
             openChestModal(tierId);
           };
-          btnCol.appendChild(dBtn);
+          foot.appendChild(dBtn);
         }
 
-        card.appendChild(btnCol);
-        el.shopItemsList.appendChild(card);
+        card.appendChild(foot);
+        grid.appendChild(card);
       });
+
+      sec.appendChild(grid);
+      el.shopItemsList.appendChild(sec);
     } else if (currentShopSubtab === 'skins') {
-      // Sort by rarity descending (신화 → 전설 → 영웅 → 희귀 → 고급 → 일반)
       const rarRank = { mythic: 6, legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
       const sortedSkins = [...DATA.SKINS].sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
+      const mythicSkins = sortedSkins.filter((s) => s.rarity === 'mythic');
+      const otherSkins = sortedSkins.filter((s) => s.rarity !== 'mythic');
 
-      sortedSkins.forEach((sk) => {
+      // Featured Mythic Brawl-Style Hero Showcase Banner!
+      if (mythicSkins.length > 0) {
+        const featSec = document.createElement('div');
+        featSec.className = 'bs-shop-section';
+        featSec.innerHTML = `
+          <div class="bs-shop-sec-head mythic">
+            <span class="bs-shop-sec-title">🌟 신화 스페셜 스킨 (상자 미출현)</span>
+            <span class="bs-shop-sec-sub">오직 보석 상점에서만 획득 가능!</span>
+          </div>
+        `;
+        mythicSkins.forEach((sk) => {
+          const owned = save.unlockedSkins.includes(sk.id);
+          const ownerChar = getCharDef(sk.charId);
+          const gemPrice = getSkinGemPrice(sk);
+          const isEq = save.equippedSkins[sk.charId] === sk.id;
+          const hero = document.createElement('div');
+          hero.className = 'bs-mythic-hero-banner';
+          hero.innerHTML = `
+            <div class="bs-mythic-rays"></div>
+            <div class="bs-mythic-art-wrap">
+              <img src="${getSkinAvatar(ownerChar, sk)}" alt="${sk.name}" class="bs-mythic-art" />
+            </div>
+            <div class="bs-mythic-info">
+              <div class="bs-mythic-badges">
+                <span class="skin-rar-pill" style="background:#8a144d;color:#ff80c2">신화 MYTHIC</span>
+                <span class="bs-mythic-exclusive">보석 직구매 전용</span>
+              </div>
+              <div class="bs-mythic-name">${sk.name}</div>
+              <div class="bs-mythic-desc">${ownerChar.name} · ${sk.desc || '전용 애니메이션 & 핑크 발바닥 오라'}</div>
+            </div>
+          `;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          if (owned) {
+            btn.className = isEq ? 'bs-buy-btn done' : 'bs-buy-btn equip';
+            btn.textContent = isEq ? '장착 중' : '장착하기';
+            btn.disabled = isEq;
+            btn.onclick = () => {
+              SFX.click();
+              save.equippedSkins[sk.charId] = sk.id;
+              persistSave();
+              refreshAllMenus();
+              showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
+            };
+          } else {
+            btn.className = 'bs-buy-btn gem big';
+            btn.textContent = `💎 ${gemPrice.toLocaleString('ko-KR')}`;
+            btn.onclick = () => {
+              if ((save.gems || 0) < gemPrice) {
+                SFX.click();
+                currentShopSubtab = 'gems';
+                renderShopList();
+                showToast(`💎 보석이 부족합니다! 보석 상점에서 충전할 수 있어요.`);
+                return;
+              }
+              SFX.chestJackpot();
+              save.gems -= gemPrice;
+              save.unlockedSkins.push(sk.id);
+              save.equippedSkins[sk.charId] = sk.id;
+              persistSave();
+              refreshAllMenus();
+              showToast(`💎 [${sk.name}] 구매 및 즉시 장착 완료!`);
+            };
+          }
+          hero.appendChild(btn);
+          featSec.appendChild(hero);
+        });
+        el.shopItemsList.appendChild(featSec);
+      }
+
+      // Brawl Stars Skin Showcase Grid (All Other Tiers)
+      const gridSec = document.createElement('div');
+      gridSec.className = 'bs-shop-section';
+      gridSec.innerHTML = `
+        <div class="bs-shop-sec-head skins">
+          <span class="bs-shop-sec-title">✨ 스킨 카탈로그</span>
+          <span class="bs-shop-sec-sub">일반 10💎 · 고급 50💎 · 희귀 80💎 · 영웅 120💎 · 전설 400💎</span>
+        </div>
+      `;
+      const grid = document.createElement('div');
+      grid.className = 'bs-shop-grid skins';
+
+      otherSkins.forEach((sk) => {
         const owned = save.unlockedSkins.includes(sk.id);
         const ownerChar = getCharDef(sk.charId);
         const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.common;
         const gemPrice = getSkinGemPrice(sk);
         const isEq = save.equippedSkins[sk.charId] === sk.id;
-        const sourceTag = sk.rarity === 'mythic' ? '보석 직구매 전용 (상자 미출현)' : '보석 직구매 & 상자 획득 가능';
-
-        const card = document.createElement('div');
         const skAv = getSkinAvatar(ownerChar, sk);
         const skFlt = getSkinFilter(sk);
-        card.className = `item-card skin-shop-card rar-${sk.rarity}${isEq ? ' selected' : ''}`;
+
+        const card = document.createElement('div');
+        card.className = `bs-offer-card skin-card rar-${sk.rarity}${isEq ? ' selected' : ''}`;
         card.innerHTML = `
-          <div class="item-avatar">
-            <img src="${skAv}" alt="${sk.name}" class="item-avatar-img" style="${skFlt ? `filter:${skFlt};` : ''}" />
+          <div class="bs-offer-ribbon" style="background:${rar.bg};color:${rar.color}">${rar.name}</div>
+          <div class="bs-offer-stage">
+            <div class="bs-offer-rays"></div>
+            <img src="${skAv}" alt="${sk.name}" class="bs-offer-img skin" style="${skFlt ? `filter:${skFlt};` : ''}" />
           </div>
-          <div class="item-meta">
-            <div class="item-title-row">
-              <span class="item-name">${sk.name}</span>
-              <span class="skin-rar-pill" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
-            </div>
-            <div class="item-desc">${sk.desc ? `${ownerChar.name} · ${sk.desc} (${sourceTag})` : `${ownerChar.name} 전용 스킨 · ${sourceTag}`}</div>
-          </div>
+          <div class="bs-offer-name">${sk.name}</div>
+          <div class="bs-offer-sub">${ownerChar.name}</div>
         `;
 
+        const foot = document.createElement('div');
+        foot.className = 'bs-offer-foot';
         const btn = document.createElement('button');
         btn.type = 'button';
         if (owned) {
-          btn.className = isEq ? 'item-action-btn done' : 'item-action-btn purple';
+          btn.className = isEq ? 'bs-buy-btn done' : 'bs-buy-btn equip';
           btn.textContent = isEq ? '장착 중' : '장착';
           btn.disabled = isEq;
           btn.onclick = () => {
@@ -1591,11 +2045,16 @@
             showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
           };
         } else {
-          btn.className = 'item-action-btn gem-btn';
-          btn.textContent = `💎 ${gemPrice.toLocaleString()}`;
-          btn.disabled = (save.gems || 0) < gemPrice;
+          btn.className = 'bs-buy-btn gem';
+          btn.textContent = `💎 ${gemPrice.toLocaleString('ko-KR')}`;
           btn.onclick = () => {
-            if ((save.gems || 0) < gemPrice) return;
+            if ((save.gems || 0) < gemPrice) {
+              SFX.click();
+              currentShopSubtab = 'gems';
+              renderShopList();
+              showToast('💎 보석이 부족합니다! 보석 상점에서 충전할 수 있어요.');
+              return;
+            }
             SFX.chestJackpot();
             save.gems -= gemPrice;
             save.unlockedSkins.push(sk.id);
@@ -1605,38 +2064,144 @@
             showToast(`💎 [${sk.name}] 구매 및 즉시 장착 완료!`);
           };
         }
-
-        card.appendChild(btn);
-        el.shopItemsList.appendChild(card);
+        foot.appendChild(btn);
+        card.appendChild(foot);
+        grid.appendChild(card);
       });
-    } else if (currentShopSubtab === 'upgrades') {
+
+      gridSec.appendChild(grid);
+      el.shopItemsList.appendChild(gridSec);
+    } else if (currentShopSubtab === 'gold') {
+      // BRAWL STARS GOLD PACKS (BOUGHT WITH GEMS!)
+      const sec = document.createElement('div');
+      sec.className = 'bs-shop-section';
+      sec.innerHTML = `
+        <div class="bs-shop-sec-head gold">
+          <span class="bs-shop-sec-title">🪙 골드 상점</span>
+          <span class="bs-shop-sec-sub">💎 보석으로 골드를 즉시 교환하세요!</span>
+        </div>
+      `;
+      const grid = document.createElement('div');
+      grid.className = 'bs-shop-grid four';
+
+      DATA.GOLD_PACKS.forEach((pk) => {
+        const card = document.createElement('div');
+        card.className = `bs-offer-card gold-pack tier-${pk.tier}`;
+        card.innerHTML = `
+          ${pk.bonusTag ? `<div class="bs-offer-ribbon bonus">${pk.bonusTag}</div>` : '<div class="bs-offer-ribbon">골드 교환</div>'}
+          <div class="bs-offer-stage gold-stage">
+            <div class="bs-offer-rays"></div>
+            <img src="assets/design/item_coin.png?v=20261121hd9" alt="${pk.name}" class="bs-offer-img coin ${pk.tier}" />
+          </div>
+          <div class="bs-offer-bigval gold">+${pk.gold.toLocaleString('ko-KR')} G</div>
+          <div class="bs-offer-sub">${pk.name}</div>
+        `;
+        const foot = document.createElement('div');
+        foot.className = 'bs-offer-foot';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'bs-buy-btn gem';
+        btn.textContent = `💎 ${pk.gemCost.toLocaleString('ko-KR')}`;
+        btn.onclick = () => {
+          if ((save.gems || 0) < pk.gemCost) {
+            SFX.click();
+            currentShopSubtab = 'gems';
+            renderShopList();
+            showToast('💎 보석이 부족합니다! 보석 상점에서 충전할 수 있어요.');
+            return;
+          }
+          SFX.buy();
+          save.gems -= pk.gemCost;
+          save.gold += pk.gold;
+          persistSave();
+          refreshAllMenus();
+          showToast(`🪙 ${pk.gold.toLocaleString('ko-KR')} 골드 구매 완료!`);
+        };
+        foot.appendChild(btn);
+        card.appendChild(foot);
+        grid.appendChild(card);
+      });
+
+      sec.appendChild(grid);
+      el.shopItemsList.appendChild(sec);
+    } else if (currentShopSubtab === 'gems') {
+      // BRAWL STARS REAL-MONEY GEM SHOP (EXACT 100💎 = ₩1,000!)
+      const sec = document.createElement('div');
+      sec.className = 'bs-shop-section';
+      sec.innerHTML = `
+        <div class="bs-shop-sec-head gems">
+          <span class="bs-shop-sec-title">💎 보석 상점</span>
+          <span class="bs-shop-sec-sub">100💎 = ₩1,000 정가 · 스킨·골드·상자 구매에 사용!</span>
+        </div>
+      `;
+      const grid = document.createElement('div');
+      grid.className = 'bs-shop-grid four';
+
+      DATA.GEM_PACKS.forEach((pk) => {
+        const card = document.createElement('div');
+        card.className = `bs-offer-card gem-pack tier-${pk.tier}`;
+        card.innerHTML = `
+          <div class="bs-offer-ribbon gem-rib" style="background:${pk.accent};color:#08162c">${pk.badge}</div>
+          <div class="bs-offer-stage gem-stage">
+            <div class="bs-offer-rays"></div>
+            <div class="bs-gem-pile ${pk.tier}" aria-hidden="true">${pk.tier === 'xl' ? '💎💎💎' : (pk.tier === 'lg' ? '💎💎' : '💎')}</div>
+          </div>
+          <div class="bs-offer-bigval gem">${pk.gems.toLocaleString('ko-KR')} 💎</div>
+          <div class="bs-offer-sub">${pk.name}</div>
+        `;
+        const foot = document.createElement('div');
+        foot.className = 'bs-offer-foot';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'bs-buy-btn cash';
+        btn.textContent = `₩${pk.krwPrice.toLocaleString('ko-KR')}`;
+        btn.onclick = () => openIapModal(pk);
+        foot.appendChild(btn);
+        card.appendChild(foot);
+        grid.appendChild(card);
+      });
+
+      sec.appendChild(grid);
+      el.shopItemsList.appendChild(sec);
+    } else {
+      // UPGRADES + 1-RUN BOOSTERS IN BRAWL STARS SHOWCASE GRID
+      const upgSec = document.createElement('div');
+      upgSec.className = 'bs-shop-section';
+      upgSec.innerHTML = `
+        <div class="bs-shop-sec-head upgrades">
+          <span class="bs-shop-sec-title">⬆️ 영구 능력 강화</span>
+          <span class="bs-shop-sec-sub">골드로 생존 능력을 영구적으로 강화하세요!</span>
+        </div>
+      `;
+      const upgGrid = document.createElement('div');
+      upgGrid.className = 'bs-shop-grid four';
+
       DATA.UPGRADES.forEach((upg) => {
         const lv = save.upgrades[upg.id] || 0;
         const isMax = lv >= upg.maxLv;
         const price = DATA.getUpgradePrice(upg, lv);
 
         const card = document.createElement('div');
-        card.className = 'item-card';
+        card.className = 'bs-offer-card upg-card';
         card.innerHTML = `
-          <div class="item-avatar"><img src="${upg.icon}" alt="${upg.name}" class="item-avatar-img" /></div>
-          <div class="item-meta">
-            <div class="item-title-row">
-              <span class="item-name">${upg.name}</span>
-              <span class="item-badge">Lv.${lv} / ${upg.maxLv}</span>
-            </div>
-            <div class="item-desc">${isMax ? '최대 레벨 달성!' : upg.desc(lv)}</div>
+          <div class="bs-offer-ribbon">Lv.${lv} / ${upg.maxLv}</div>
+          <div class="bs-offer-stage">
+            <img src="${upg.icon}" alt="${upg.name}" class="bs-offer-img upg" />
           </div>
+          <div class="bs-offer-name">${upg.name}</div>
+          <div class="bs-offer-sub">${isMax ? '최대 레벨 달성!' : upg.desc(lv)}</div>
         `;
-
+        const foot = document.createElement('div');
+        foot.className = 'bs-offer-foot';
         const btn = document.createElement('button');
         btn.type = 'button';
         if (isMax) {
-          btn.className = 'item-action-btn done';
+          btn.className = 'bs-buy-btn done';
           btn.textContent = 'MAX';
           btn.disabled = true;
         } else {
-          btn.className = 'item-action-btn';
-          btn.textContent = `${price} G`;
+          btn.className = 'bs-buy-btn gold';
+          btn.textContent = `🪙 ${price.toLocaleString('ko-KR')}`;
           btn.disabled = save.gold < price;
           btn.onclick = () => {
             if (save.gold < price) return;
@@ -1648,29 +2213,42 @@
             showToast(`${upg.name} Lv.${lv + 1} 강화 성공!`);
           };
         }
-
-        card.appendChild(btn);
-        el.shopItemsList.appendChild(card);
+        foot.appendChild(btn);
+        card.appendChild(foot);
+        upgGrid.appendChild(card);
       });
-    } else if (currentShopSubtab === 'boosters') {
+      upgSec.appendChild(upgGrid);
+      el.shopItemsList.appendChild(upgSec);
+
+      const bstSec = document.createElement('div');
+      bstSec.className = 'bs-shop-section';
+      bstSec.innerHTML = `
+        <div class="bs-shop-sec-head boosters">
+          <span class="bs-shop-sec-title">⚡ 1회용 기상 부스터</span>
+          <span class="bs-shop-sec-sub">구매 시 다음 달리기에 자동 장착됩니다!</span>
+        </div>
+      `;
+      const bstGrid = document.createElement('div');
+      bstGrid.className = 'bs-shop-grid three';
+
       DATA.BOOSTERS.forEach((b) => {
         const ownedQty = save.boosters[b.id] || 0;
         const card = document.createElement('div');
-        card.className = 'item-card';
+        card.className = 'bs-offer-card booster-card';
         card.innerHTML = `
-          <div class="item-avatar"><img src="${b.icon}" alt="${b.name}" class="item-avatar-img" /></div>
-          <div class="item-meta">
-            <div class="item-title-row">
-              <span class="item-name">${b.name}</span>
-              <span class="item-badge">보유 ${ownedQty}개</span>
-            </div>
-            <div class="item-desc">${b.desc}</div>
+          <div class="bs-offer-ribbon">보유 ${ownedQty}개</div>
+          <div class="bs-offer-stage">
+            <img src="${b.icon}" alt="${b.name}" class="bs-offer-img upg" />
           </div>
+          <div class="bs-offer-name">${b.name}</div>
+          <div class="bs-offer-sub">${b.desc}</div>
         `;
+        const foot = document.createElement('div');
+        foot.className = 'bs-offer-foot';
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'item-action-btn';
-        btn.textContent = `${b.price} G`;
+        btn.className = 'bs-buy-btn gold';
+        btn.textContent = `🪙 ${b.price.toLocaleString('ko-KR')}`;
         btn.disabled = save.gold < b.price;
         btn.onclick = () => {
           if (save.gold < b.price) return;
@@ -1681,47 +2259,12 @@
           refreshAllMenus();
           showToast(`${b.name} 구매 완료! 다음 달리기에 자동 적용됩니다.`);
         };
-        card.appendChild(btn);
-        el.shopItemsList.appendChild(card);
+        foot.appendChild(btn);
+        card.appendChild(foot);
+        bstGrid.appendChild(card);
       });
-    } else {
-      DATA.CHARACTERS.forEach((ch, idx) => {
-        const unlocked = isCharUnlocked(ch.id);
-        const card = document.createElement('div');
-        card.className = `item-card${save.selectedChar === ch.id ? ' selected' : ''}`;
-        card.innerHTML = `
-          <div class="item-avatar"><img src="${ch.avatar}" alt="${ch.name}" class="item-avatar-img" /></div>
-          <div class="item-meta">
-            <div class="item-title-row">
-              <span class="item-name">${ch.name}</span>
-              <span class="item-badge">${ch.tag}</span>
-            </div>
-            <div class="item-desc">${ch.desc}</div>
-          </div>
-        `;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        if (unlocked) {
-          btn.className = 'item-action-btn done';
-          btn.textContent = save.selectedChar === ch.id ? '장착 중' : '보유 중';
-          btn.disabled = save.selectedChar === ch.id;
-          btn.onclick = () => {
-            SFX.click();
-            save.selectedChar = ch.id;
-            previewCharIdx = idx;
-            persistSave();
-            refreshAllMenus();
-            showToast(`${ch.name} 장착 완료!`);
-          };
-        } else {
-          btn.className = 'item-action-btn';
-          btn.textContent = `${ch.price} G`;
-          btn.disabled = save.gold < ch.price;
-          btn.onclick = () => buyCharacter(ch, idx);
-        }
-        card.appendChild(btn);
-        el.shopItemsList.appendChild(card);
-      });
+      bstSec.appendChild(bstGrid);
+      el.shopItemsList.appendChild(bstSec);
     }
   }
 
@@ -3196,6 +3739,14 @@
     save.gold += totalGoldEarned;
     save.playCount += 1;
 
+    // Update Weekly Online Ranking Record & Submit Live!
+    ensureWeeklyRankCurrentWeek();
+    if (finalScore > (save.weeklyRank.bestScore || 0)) {
+      save.weeklyRank.bestScore = finalScore;
+      save.weeklyRank.bestDist = finalDist;
+      save.weeklyRank.bestYear = run.year || 1;
+    }
+
     // Normal Play Wood Chest Acquisition Path: 400m+ grants 1 Wood Chest into Vault (up to 3/day)
     let gotWoodChest = false;
     if (finalDist >= 400 && (save.dailyWoodChestDrops.count || 0) < 3) {
@@ -3205,6 +3756,7 @@
     }
 
     persistSave();
+    syncMyWeeklyScore();
 
     if (el.resBestScore) {
       el.resBestScore.textContent = `${(save.bestScore || 0).toLocaleString('ko-KR')}점`;
@@ -3309,11 +3861,115 @@
       });
     });
 
-    el.btnGoldShop.addEventListener('click', () => switchTab('shop'));
-    el.btnGemShop.addEventListener('click', () => {
-      currentShopSubtab = 'chests';
+    el.btnGoldShop.addEventListener('click', () => {
+      currentShopSubtab = 'gold';
       switchTab('shop');
     });
+    el.btnGemShop.addEventListener('click', () => {
+      currentShopSubtab = 'gems';
+      switchTab('shop');
+    });
+    if (el.btnHeaderProfile) {
+      el.btnHeaderProfile.addEventListener('click', () => {
+        SFX.click();
+        openLoginOverlay();
+      });
+    }
+    if (el.btnSettingsSwitchLogin) {
+      el.btnSettingsSwitchLogin.addEventListener('click', () => {
+        SFX.click();
+        el.settingsOverlay.classList.add('hidden');
+        openLoginOverlay();
+      });
+    }
+
+    // Login Screen Buttons (Google / Apple ID / Guest)
+    if (el.btnLoginGuest) {
+      el.btnLoginGuest.addEventListener('click', () => {
+        const nick = el.loginNicknameInput ? el.loginNicknameInput.value.trim() : '';
+        completeLogin('guest', { nickname: nick });
+      });
+    }
+    if (el.btnLoginGoogle) {
+      el.btnLoginGoogle.addEventListener('click', () => {
+        SFX.click();
+        openOauthStep('google');
+      });
+    }
+    if (el.btnLoginApple) {
+      el.btnLoginApple.addEventListener('click', () => {
+        SFX.click();
+        openOauthStep('apple');
+      });
+    }
+    if (el.btnLoginOauthBack) {
+      el.btnLoginOauthBack.addEventListener('click', () => {
+        SFX.click();
+        pendingOauthProvider = null;
+        if (el.loginOauthPanel) el.loginOauthPanel.classList.add('hidden');
+        if (el.loginMainPanel) el.loginMainPanel.classList.remove('hidden');
+      });
+    }
+    if (el.btnLoginOauthConfirm) {
+      el.btnLoginOauthConfirm.addEventListener('click', () => {
+        const prov = pendingOauthProvider || 'google';
+        const email = el.loginOauthEmail ? el.loginOauthEmail.value.trim() : '';
+        const nick = el.loginOauthNick ? el.loginOauthNick.value.trim() : '';
+        completeLogin(prov, { email, nickname: nick });
+      });
+    }
+
+    // Real-Money Gem IAP Modal
+    if (el.btnCloseIap) {
+      el.btnCloseIap.addEventListener('click', () => {
+        SFX.click();
+        pendingGemPack = null;
+        el.iapOverlay.classList.add('hidden');
+      });
+    }
+    if (el.btnIapCancel) {
+      el.btnIapCancel.addEventListener('click', () => {
+        SFX.click();
+        pendingGemPack = null;
+        el.iapOverlay.classList.add('hidden');
+      });
+    }
+    if (el.iapOverlay) {
+      el.iapOverlay.addEventListener('click', (e) => {
+        if (e.target === el.iapOverlay) {
+          pendingGemPack = null;
+          el.iapOverlay.classList.add('hidden');
+        }
+      });
+    }
+    if (el.btnIapConfirm) el.btnIapConfirm.addEventListener('click', confirmIapPurchase);
+
+    // Weekly #1 Champion 500 Gems Reward Modal
+    if (el.btnClaimWeeklyChamp) el.btnClaimWeeklyChamp.addEventListener('click', claimWeeklyChampionReward);
+
+    // Online Live Ranking Refresh + Live Countdown + Auto Poll
+    if (el.btnRankRefresh) {
+      el.btnRankRefresh.addEventListener('click', async () => {
+        SFX.click();
+        await syncMyWeeklyScore();
+        await renderRankingTab();
+        showToast('🔄 온라인 실시간 랭킹이 갱신되었습니다!');
+      });
+    }
+    if (ONLINE && ONLINE.onBoardUpdate) {
+      ONLINE.onBoardUpdate(() => {
+        if (currentTab === 'rank') renderRankingTab();
+      });
+    }
+    setInterval(() => {
+      updateWeeklyRankCountdownUI();
+    }, 1000);
+    setInterval(() => {
+      if (currentTab === 'rank' && (!run || !run.active)) {
+        renderRankingTab();
+      }
+    }, 5000);
+
     el.btnHomeCharInfo.addEventListener('click', () => openCharDetail(previewCharIdx));
     el.btnHomeBrawlers.addEventListener('click', () => switchTab('chars'));
 
@@ -3477,6 +4133,7 @@
     });
 
     el.btnPlayStart.addEventListener('click', () => {
+      tryAutoLockLandscape(true);
       const ch = DATA.CHARACTERS[previewCharIdx];
       if (!isCharUnlocked(ch.id)) {
         buyCharacter(ch, previewCharIdx);
@@ -3513,43 +4170,36 @@
     el.btnResultHome.addEventListener('pointerleave', () => el.btnResultHome.classList.remove('pressed'));
     el.btnResultHome.addEventListener('click', exitRunToHome);
 
-    // Pure Splash Intro (Seoul Winter BG + Logo Only: Auto-Enters & Tap-to-Skip!)
+    // Tap-to-Start Splash Intro (Stays on Logo Until User Touches/Clicks, Then Auto-Locks Landscape & Shows Login!)
     let introLeaving = false;
-    let introAutoTimer = null;
 
-    function scheduleIntroAutoDismiss() {
-      if (introAutoTimer) clearTimeout(introAutoTimer);
-      introAutoTimer = setTimeout(() => {
-        enterFromIntro(true);
-      }, 2200);
-    }
-
-    function enterFromIntro(isAuto = false) {
+    function enterFromIntro() {
       if (introLeaving || el.introOverlay.classList.contains('hidden')) return;
       introLeaving = true;
-      if (introAutoTimer) {
-        clearTimeout(introAutoTimer);
-        introAutoTimer = null;
-      }
-      if (!isAuto) {
-        SFX.introJingle();
-        SFX.startBgm();
-        SFX.setBgmMode('menu');
-      }
+      tryAutoLockLandscape(true);
+      SFX.introJingle();
+      SFX.startBgm();
+      SFX.setBgmMode('menu');
       el.introOverlay.classList.add('leaving');
       setTimeout(() => {
         el.introOverlay.classList.add('hidden');
         el.introOverlay.classList.remove('playing', 'leaving');
         introLeaving = false;
-      }, 520);
+        if (!save.auth || !save.auth.loggedIn) {
+          openLoginOverlay();
+        } else {
+          syncMyWeeklyScore();
+          checkAndAwardWeeklyChampion();
+        }
+      }, 420);
     }
 
-    el.introOverlay.addEventListener('click', () => enterFromIntro(false));
+    el.introOverlay.addEventListener('click', enterFromIntro);
     window.addEventListener('pointerdown', () => {
+      tryAutoLockLandscape(true);
       SFX.startBgm();
       if (!run || !run.active) SFX.setBgmMode('menu');
     }, { once: true });
-    scheduleIntroAutoDismiss();
 
     // Desktop Keyboard Controls (Space/↑ Jump, ↓ Slide, Q Umbrella, E Mask, Esc Pause)
     window.addEventListener('keydown', (e) => {
@@ -3603,6 +4253,7 @@
   // ===================== BOOT =====================
   setupEvents();
   refreshAllMenus();
+  tryAutoLockLandscape(false);
   try { SFX.introJingle(); } catch {}
   requestAnimationFrame(loop);
 })();

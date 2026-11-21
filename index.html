@@ -13,32 +13,105 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd20" />
+  <link rel="stylesheet" href="style.css?v=20261121hd22" />
 </head>
 <body>
   <div id="mobile-app">
-    <!-- ================= GAME LAUNCH INTRO OVERLAY (UPLOADED BG + LOGO ONLY) ================= -->
-    <div id="intro-overlay" role="button" tabindex="0" aria-label="한국 날씨에서 살아남기 인트로">
+    <!-- ================= GAME LAUNCH INTRO OVERLAY (TAP TO START!) ================= -->
+    <div id="intro-overlay" role="button" tabindex="0" aria-label="한국 날씨에서 살아남기 시작하기">
       <div class="intro-logo-wrap">
         <img id="intro-logo-img" src="assets/logo.png" alt="한국 날씨에서 살아남기" class="intro-logo-img" />
+      </div>
+      <div id="intro-tap-prompt" class="intro-tap-prompt">
+        <span class="intro-tap-main">화면을 터치해서 시작하세요</span>
+        <span class="intro-tap-sub">TAP ANYWHERE TO START</span>
+      </div>
+    </div>
+
+    <!-- ================= LOGIN SCREEN OVERLAY (GOOGLE / APPLE ID / GUEST) ================= -->
+    <div id="login-overlay" class="login-overlay hidden" role="dialog" aria-modal="true" aria-label="계정 로그인">
+      <div class="login-card">
+        <div class="login-brand-row">
+          <img src="assets/icons/icon-192.png?v=20261121hd21" alt="앱 로고" class="login-app-icon" />
+          <div class="login-brand-text">
+            <h1 class="login-title">한국 날씨에서 살아남기</h1>
+            <p class="login-sub">계정을 연결하고 <strong>온라인 실시간 주간 1위(💎500)</strong>에 도전하세요!</p>
+          </div>
+        </div>
+
+        <!-- Primary 3-Provider Login View -->
+        <div id="login-main-panel" class="login-panel">
+          <div class="login-nick-row">
+            <label for="login-nickname-input" class="login-nick-lbl">🏷️ 랭킹 닉네임</label>
+            <input id="login-nickname-input" class="login-input" type="text" maxlength="12" placeholder="닉네임 입력 (최대 12자)" autocomplete="nickname" />
+          </div>
+
+          <div class="login-btn-stack">
+            <button id="btn-login-google" class="login-provider-btn google" type="button">
+              <span class="login-prov-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.2 0-5.8-2.1-6.8-5H1.2v3.1C3.2 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.2 14.2c-.2-.7-.4-1.4-.4-2.2s.1-1.5.4-2.2V6.7H1.2C.4 8.3 0 10.1 0 12s.4 3.7 1.2 5.3l4-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.2 2.7 1.2 6.7l4 3.1c1-2.9 3.6-5 6.8-5z"/></svg>
+              </span>
+              <span class="login-prov-label">Google로 계속하기</span>
+            </button>
+
+            <button id="btn-login-apple" class="login-provider-btn apple" type="button">
+              <span class="login-prov-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+              </span>
+              <span class="login-prov-label">Apple ID로 계속하기</span>
+            </button>
+
+            <button id="btn-login-guest" class="login-provider-btn guest" type="button">
+              <span class="login-prov-ico" aria-hidden="true">👤</span>
+              <span class="login-prov-label">게스트로 시작하기</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inline Google / Apple ID Account Connect Step -->
+        <div id="login-oauth-panel" class="login-panel hidden">
+          <div class="login-oauth-head">
+            <span id="login-oauth-badge" class="login-oauth-badge google">G</span>
+            <strong id="login-oauth-title">Google 계정 연결</strong>
+          </div>
+          <div class="login-nick-row">
+            <label for="login-oauth-email" class="login-nick-lbl">📧 계정 이메일</label>
+            <input id="login-oauth-email" class="login-input" type="email" maxlength="60" placeholder="example@gmail.com" autocomplete="email" />
+          </div>
+          <div class="login-nick-row">
+            <label for="login-oauth-nick" class="login-nick-lbl">🏷️ 게임 닉네임</label>
+            <input id="login-oauth-nick" class="login-input" type="text" maxlength="12" placeholder="랭킹에 표시될 닉네임" />
+          </div>
+          <div class="login-oauth-actions">
+            <button id="btn-login-oauth-back" class="item-action-btn locked-chest" type="button">← 뒤로</button>
+            <button id="btn-login-oauth-confirm" class="cr-gold-btn login-confirm-btn" type="button">연결하고 시작하기</button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- ================= TOP RESOURCE BAR ================= -->
     <header id="app-header">
-      <div class="best-score-banner" title="최고 점수">
-        <img src="assets/ui/best_score_frame.png" alt="최고점수" class="best-score-bg" />
-        <span id="header-best-score" class="best-score-val">0</span>
+      <div class="hdr-left-group">
+        <button id="btn-header-profile" class="hdr-profile-pill" type="button" title="계정 정보 및 변경">
+          <span id="hdr-profile-badge" class="prov-chip guest">G</span>
+          <span id="hdr-profile-name" class="hdr-profile-name">날씨러너</span>
+        </button>
+
+        <div class="best-score-banner" title="최고 점수">
+          <img src="assets/ui/best_score_frame.png" alt="최고점수" class="best-score-bg" />
+          <span id="header-best-score" class="best-score-val">0</span>
+        </div>
       </div>
 
       <div class="header-currencies">
-        <button id="btn-gold-shop" class="res-pill gold-res-pill" type="button" title="상점으로 이동">
+        <button id="btn-gold-shop" class="res-pill gold-res-pill" type="button" title="골드 상점으로 이동">
           <img src="assets/design/item_coin.png?v=20261121hd9" alt="골드" class="coin-sprite" />
           <span id="ui-gold">0</span>
           <span class="res-plus">+</span>
         </button>
 
-        <button id="btn-gem-shop" class="res-pill gem-res-pill" type="button" title="보석 상자 및 스킨 상점">
+        <button id="btn-gem-shop" class="res-pill gem-res-pill" type="button" title="보석 상점으로 이동">
           <span class="gem-ico" aria-hidden="true">💎</span>
           <span id="ui-gems">0</span>
           <span class="res-plus gem">+</span>
@@ -109,23 +182,19 @@
         </div>
       </section>
 
-      <!-- 2. SHOP SCREEN (CHESTS + GEM SKINS + UPGRADES + BOOSTERS + CHARS) -->
-      <section id="view-shop" class="tab-view">
-        <div class="cr-panel-header shop-head-row">
-          <div>
-            <h2>K-날씨 상점</h2>
-            <p>골드와 💎보석으로 상자 뽑기, 스킨, 강화, 캐릭터를 획득하세요.</p>
+      <!-- 2. BRAWL STARS STYLE SHOP SCREEN (CHESTS + SKINS + GOLD + REAL-MONEY GEMS + UPGRADES) -->
+      <section id="view-shop" class="tab-view bs-shop-view">
+        <div class="bs-shop-topbar">
+          <div class="bs-shop-tabs" role="tablist" aria-label="상점 카테고리">
+            <button class="subtab-btn bs-shop-tab active" data-shoptab="chests" type="button">🎁 상자</button>
+            <button class="subtab-btn bs-shop-tab" data-shoptab="skins" type="button">✨ 스킨</button>
+            <button class="subtab-btn bs-shop-tab" data-shoptab="gold" type="button">🪙 골드</button>
+            <button class="subtab-btn bs-shop-tab gems-tab" data-shoptab="gems" type="button">💎 보석</button>
+            <button class="subtab-btn bs-shop-tab" data-shoptab="upgrades" type="button">⚡ 강화</button>
           </div>
-          <button id="btn-shop-prob" class="bs-prob-btn" type="button">📊 확률·천장</button>
+          <button id="btn-shop-prob" class="bs-prob-btn" type="button">📊 확률</button>
         </div>
-        <div class="cr-subtabs shop-five-tabs">
-          <button class="subtab-btn active" data-shoptab="chests" type="button">🎁 상자</button>
-          <button class="subtab-btn" data-shoptab="skins" type="button">💎 스킨</button>
-          <button class="subtab-btn" data-shoptab="upgrades" type="button">⬆️ 강화</button>
-          <button class="subtab-btn" data-shoptab="boosters" type="button">⚡ 부스터</button>
-          <button class="subtab-btn" data-shoptab="chars" type="button">👤 캐릭터</button>
-        </div>
-        <div id="shop-items-list" class="card-list"></div>
+        <div id="shop-items-list" class="bs-shop-stage"></div>
       </section>
 
       <!-- 3. CHARACTERS & COLLECTION DEX SCREEN (BRAWL STARS STYLE GRID!) -->
@@ -175,19 +244,41 @@
         <div id="bs-quest-grid" class="bs-quest-grid"></div>
       </section>
 
-      <!-- 5. RANKING & PERSONAL RECORDS TAB -->
+      <!-- 5. ONLINE REAL-TIME WEEKLY RANKING TAB (TOP #1 = 500 GEMS EVERY WEEK!) -->
       <section id="view-rank" class="tab-view">
-        <div class="cr-panel-header">
-          <h2>K-날씨 생존 랭킹</h2>
-          <p>최고 점수를 경신해 대한민국 극한 날씨 생존 순위를 올려보세요!</p>
+        <div class="rank-live-header">
+          <div class="rank-live-title-col">
+            <div class="rank-live-title-row">
+              <h2>🏆 온라인 실시간 주간 랭킹</h2>
+              <span id="rank-live-pill" class="rank-live-pill"><span class="live-dot"></span>LIVE</span>
+              <span id="rank-online-count" class="rank-online-cnt">접속 중 24명</span>
+            </div>
+            <p id="rank-last-winner" class="rank-last-winner">매주 월요일 00:00(KST) 정산 · 주간 1위 유저에게 💎 500 보석 자동 지급!</p>
+          </div>
+          <button id="btn-rank-refresh" class="bs-hdr-pill prob" type="button">🔄 갱신</button>
+        </div>
+
+        <!-- Weekly Champion 500 Gems Prize Banner -->
+        <div class="rank-prize-banner">
+          <div class="rank-prize-left">
+            <span class="rank-prize-crown">👑</span>
+            <div>
+              <div class="rank-prize-kicker" id="rank-week-label">이번 주 주간 랭킹 1위 보상</div>
+              <div class="rank-prize-main">최고 점수 1위 달성 시 <strong>💎 500 보석</strong> 자동 지급!</div>
+            </div>
+          </div>
+          <div class="rank-prize-timer-box">
+            <span class="rank-timer-lbl">정산까지 남은 시간</span>
+            <strong id="rank-week-countdown" class="rank-timer-val">0일 00:00:00</strong>
+          </div>
         </div>
 
         <div class="rank-my-card">
           <div class="rank-my-top">
-            <img id="rank-my-avatar" src="assets/chars/port_yellow.png?v=20261121hd16" alt="내 캐릭터" class="rank-my-img" />
+            <img id="rank-my-avatar" src="assets/chars/port_yellow.png?v=20261121hd22" alt="내 캐릭터" class="rank-my-img" />
             <div class="rank-my-meta">
-              <div class="rank-my-title">내 현재 순위 <strong id="rank-my-pos">-위</strong></div>
-              <div class="rank-my-sub" id="rank-my-score-line">최고 점수 0점 · 최장 거리 0m</div>
+              <div class="rank-my-title">이번 주 내 순위 <strong id="rank-my-pos">-위</strong></div>
+              <div class="rank-my-sub" id="rank-my-score-line">주간 최고 0점 · 역대 최고 0점 · 최장 0m</div>
             </div>
           </div>
           <div class="rank-stats-grid">
@@ -311,6 +402,19 @@
             <div class="setting-slider-row">
               <input id="rng-sfx-vol" class="arcade-slider" type="range" min="0" max="100" value="80" aria-label="효과음 볼륨" />
               <span id="lbl-sfx-vol" class="vol-num">80%</span>
+            </div>
+          </div>
+
+          <div class="setting-group settings-ice-card settings-account-card">
+            <div class="setting-row">
+              <div class="settings-acc-info">
+                <span id="settings-account-badge" class="prov-chip guest">GUEST</span>
+                <div>
+                  <div id="settings-account-name" class="settings-acc-name">날씨러너</div>
+                  <div id="settings-account-sub" class="settings-acc-sub">게스트 로그인 중</div>
+                </div>
+              </div>
+              <button id="btn-settings-switch-login" class="toggle-pill account-btn" type="button">계정 변경</button>
             </div>
           </div>
 
@@ -601,14 +705,57 @@
       </div>
     </div>
 
+    <!-- ================= REAL-MONEY GEM IN-APP PURCHASE CONFIRM MODAL ================= -->
+    <div id="iap-overlay" class="modal-overlay hidden">
+      <div class="cr-modal settings-arcade-modal iap-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <span class="settings-bar-title">💎 보석 스토어 결제</span>
+          <button id="btn-close-iap" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div class="modal-body iap-body">
+          <div class="iap-showcase">
+            <div class="iap-gem-glow">💎</div>
+            <div id="iap-pack-name" class="iap-pack-name">보석 100개</div>
+            <div id="iap-pack-gems" class="iap-pack-gems">+100 💎 즉시 지급</div>
+            <div id="iap-pack-price" class="iap-pack-price">₩1,000</div>
+          </div>
+          <p id="iap-pay-note" class="iap-pay-note">Google Play / App Store 인앱 결제 (100💎 = ₩1,000)</p>
+          <div class="iap-actions">
+            <button id="btn-iap-cancel" class="item-action-btn locked-chest" type="button">취소</button>
+            <button id="btn-iap-confirm" class="cr-gold-btn iap-buy-btn" type="button">₩1,000 결제하기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= WEEKLY #1 CHAMPION 500 GEMS REWARD MODAL ================= -->
+    <div id="weekly-champ-overlay" class="modal-overlay hidden">
+      <div class="cr-modal settings-arcade-modal champ-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <span class="settings-bar-title">🏆 주간 랭킹 1위 우승!</span>
+        </div>
+        <div class="modal-body iap-body">
+          <div class="iap-showcase champ-showcase">
+            <div class="iap-gem-glow">👑</div>
+            <div id="weekly-champ-week" class="iap-pack-name">지난 주 랭킹 최종 1위</div>
+            <div id="weekly-champ-score" class="champ-score-txt">최고 점수 0점</div>
+            <div id="weekly-champ-gems" class="iap-pack-gems">+500 💎 보석 지급!</div>
+          </div>
+          <p class="iap-pay-note">매주 월요일 00:00(KST) 기준 최고 점수 1위 보상이 지급되었습니다!</p>
+          <button id="btn-claim-weekly-champ" class="cr-gold-btn settings-ok-btn" type="button">💎 500 보석 받기!</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="global-toast" class="global-toast hidden"></div>
   </div>
 
-  <script src="js/data.js?v=20261121hd20"></script>
+  <script src="js/data.js?v=20261121hd22"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/renderer.js?v=20261121hd19"></script>
-  <script src="js/game.js?v=20261121hd20"></script>
+  <script src="js/online.js?v=20261121hd22"></script>
+  <script src="js/renderer.js?v=20261121hd22"></script>
+  <script src="js/game.js?v=20261121hd22"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {
