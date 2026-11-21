@@ -6501,3 +6501,120 @@ input:focus-visible {
     width: 175px;
   }
 }
+
+/* =========================================================================
+   CENTER-SCREEN BIG FLASHING WEATHER EVENT ALERT (황사 · 폭염 · 폭우 · 돌풍)
+   ========================================================================= */
+.weather-center-alert {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  transform: translate(-50%, -50%);
+  z-index: 24;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 24px;
+  border-radius: 18px;
+  background: radial-gradient(ellipse at center, rgba(10, 22, 48, 0.84) 0%, rgba(10, 22, 48, 0.35) 75%, rgba(10, 22, 48, 0) 100%);
+  pointer-events: none;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.weather-center-alert.show {
+  animation: weatherAlertIn 0.32s cubic-bezier(0.22, 1.35, 0.36, 1) forwards;
+}
+
+.weather-alert-kicker {
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ff4757, #c9182b);
+  border: 2px solid #ffe866;
+  color: #ffffff;
+  font-size: clamp(12px, 2vw, 15px);
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  box-shadow: 0 0 16px rgba(255, 71, 87, 0.85);
+  animation: weatherFlashPulse 0.42s ease-in-out infinite;
+}
+
+.weather-alert-title {
+  font-size: clamp(28px, 6.2vw, 48px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  text-shadow:
+    -3px -3px 0 #081226,
+     3px -3px 0 #081226,
+    -3px  3px 0 #081226,
+     3px  3px 0 #081226,
+     0px  5px 0 #081226,
+     0px  0px 26px var(--ev-glow, #5cd6ff);
+  animation: weatherFlashPulse 0.48s ease-in-out infinite;
+}
+
+.weather-alert-sub {
+  padding: 3px 14px;
+  border-radius: 999px;
+  background: rgba(8, 18, 40, 0.88);
+  border: 2px solid var(--ev-glow, #5cd6ff);
+  color: #ffffff;
+  font-size: clamp(13px, 2.3vw, 18px);
+  font-weight: 900;
+  text-shadow: 0 1.5px 0 #081226;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 14px var(--ev-glow, rgba(92, 214, 255, 0.5));
+}
+
+.weather-center-alert.ev-rain { --ev-glow: #5cd6ff; }
+.weather-center-alert.ev-rain .weather-alert-title { color: #b5f0ff; }
+
+.weather-center-alert.ev-flood { --ev-glow: #3ea6ff; }
+.weather-center-alert.ev-flood .weather-alert-title { color: #9ce0ff; }
+
+.weather-center-alert.ev-dust { --ev-glow: #ffd642; }
+.weather-center-alert.ev-dust .weather-alert-title { color: #ffe97a; }
+
+.weather-center-alert.ev-heat { --ev-glow: #ff6e30; }
+.weather-center-alert.ev-heat .weather-alert-title { color: #ffb366; }
+
+.weather-center-alert.ev-gust { --ev-glow: #a6f2ff; }
+.weather-center-alert.ev-gust .weather-alert-title { color: #e0fbff; }
+
+.weather-center-alert.ev-ice_road { --ev-glow: #7ef6ff; }
+.weather-center-alert.ev-ice_road .weather-alert-title { color: #c7fbff; }
+
+@keyframes weatherAlertIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes weatherFlashPulse {
+  0%, 100% {
+    filter: brightness(1.0) drop-shadow(0 0 10px var(--ev-glow, #5cd6ff));
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.38) drop-shadow(0 0 26px var(--ev-glow, #5cd6ff));
+    transform: scale(1.06);
+  }
+}
+
+@media (max-height: 440px), (orientation: portrait) and (max-width: 520px) {
+  .weather-alert-title {
+    font-size: 28px;
+  }
+  .weather-alert-sub {
+    font-size: 13px;
+    padding: 2px 11px;
+  }
+}

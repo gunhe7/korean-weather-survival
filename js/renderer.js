@@ -901,7 +901,63 @@ window.RunRenderer = (function () {
     }
   }
 
-  // ===================== DESIGN SHEET COINS & ITEMS =====================
+  // ===================== GLOSSY TRANSLUCENT BUBBLE CONTAINER FOR ITEMS =====================
+  function drawItemBubbleBack(ctx, x, y, r, tintRgba) {
+    ctx.save();
+    const grad = ctx.createRadialGradient(x - r * 0.25, y - r * 0.25, r * 0.12, x, y, r);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.16)');
+    grad.addColorStop(0.68, tintRgba);
+    grad.addColorStop(1, 'rgba(180, 238, 255, 0.52)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawItemBubbleFront(ctx, x, y, r, rimColor, t) {
+    ctx.save();
+    // Outer glossy crystal rim
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Soft colored outer aura rim
+    ctx.strokeStyle = rimColor;
+    ctx.lineWidth = 1.4;
+    ctx.globalAlpha = 0.72 + Math.sin(t * 9 + x * 0.04) * 0.18;
+    ctx.beginPath();
+    ctx.arc(x, y, r + 1.4, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Bright curved top-left specular crescent highlight
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.72, Math.PI * 1.12, Math.PI * 1.46);
+    ctx.stroke();
+
+    // Crisp specular reflection dot
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x - r * 0.42, y - r * 0.42, 2.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Subtle bottom-right iridescent bounce highlight
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = rimColor;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.76, Math.PI * 0.14, Math.PI * 0.38);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ===================== DESIGN SHEET COINS & BUBBLE-TRAPPED ITEMS =====================
   function drawItem(ctx, it, t) {
     const x = Math.floor(it.x);
     const y = Math.floor(it.y + Math.sin(t * 7 + it.x * 0.05) * 2.5);
@@ -919,28 +975,40 @@ window.RunRenderer = (function () {
         ctx.fillStyle = '#ffd447';
         ctx.beginPath(); ctx.arc(x, y, sz / 2, 0, Math.PI * 2); ctx.fill();
       }
-    } else if (it.kind === 'star') {
+      return;
+    }
+
+    // All power-up / utility items float trapped inside a glossy iridescent bubble!
+    const wobble = Math.sin(t * 6.5 + it.x * 0.04) * 1.0;
+    const bubbleR = 19 + wobble;
+    let tint = 'rgba(130, 224, 255, 0.26)';
+    let rim = '#7ef0ff';
+    if (it.kind === 'star' || it.kind === 'umbrella_fever' || it.kind === 'chest') {
+      tint = 'rgba(255, 224, 92, 0.26)';
+      rim = '#ffe359';
+    } else if (it.kind === 'coffee') {
+      tint = 'rgba(105, 245, 175, 0.26)';
+      rim = '#70f5b3';
+    } else if (it.kind === 'magnet') {
+      tint = 'rgba(255, 118, 162, 0.26)';
+      rim = '#ff8cb5';
+    }
+
+    drawItemBubbleBack(ctx, x, y, bubbleR, tint);
+
+    if (it.kind === 'star') {
       const spr = getSprite('item_star');
-      if (spr) ctx.drawImage(spr, x - 12, y - 12, 24, 24);
+      if (spr) ctx.drawImage(spr, x - 11, y - 11, 22, 22);
     } else if (it.kind === 'coffee') {
       const spr = getSprite('orb_potion');
-      if (spr) ctx.drawImage(spr, x - 15, y - 15, 30, 30);
+      if (spr) ctx.drawImage(spr, x - 13, y - 13, 26, 26);
     } else if (it.kind === 'magnet') {
       const spr = getSprite('orb_magnet');
-      if (spr) ctx.drawImage(spr, x - 15, y - 15, 30, 30);
+      if (spr) ctx.drawImage(spr, x - 13, y - 13, 26, 26);
     } else if (it.kind === 'umbrella_fever') {
       const spr = getSprite('orb_bolt');
-      ctx.fillStyle = 'rgba(255, 224, 92, 0.35)';
-      ctx.beginPath(); ctx.arc(x, y, 17, 0, Math.PI * 2); ctx.fill();
-      if (spr) ctx.drawImage(spr, x - 15, y - 15, 30, 30);
+      if (spr) ctx.drawImage(spr, x - 13, y - 13, 26, 26);
     } else if (it.kind === 'speed_boost') {
-      // Blazing Cyan-Gold Speed Boost Pickup!
-      const pulse = 15 + Math.sin(t * 14) * 2.5;
-      ctx.fillStyle = 'rgba(66, 226, 255, 0.36)';
-      ctx.beginPath(); ctx.arc(x, y, pulse, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#7ef6ff';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.stroke();
       const spr = getSprite('orb_bolt');
       if (spr) {
         ctx.drawImage(spr, x - 13, y - 13, 26, 26);
@@ -949,35 +1017,31 @@ window.RunRenderer = (function () {
         ctx.fillRect(x - 4, y - 8, 8, 16);
       }
     } else if (it.kind === 'shield_item') {
-      // Glowing Shield Pickup!
-      ctx.fillStyle = 'rgba(90, 200, 255, 0.34)';
-      ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill();
       const spr = getSprite('spr_shield');
       if (spr) {
-        ctx.drawImage(spr, x - 13, y - 14, 26, 28);
+        ctx.drawImage(spr, x - 12, y - 13, 24, 26);
       } else {
         ctx.fillStyle = '#5cc8ff';
         ctx.fillRect(x - 9, y - 10, 18, 20);
       }
     } else if (it.kind === 'chest') {
       const spr = getSprite('ui_chest');
-      if (spr) ctx.drawImage(spr, x - 16, y - 14, 32, 28);
+      if (spr) ctx.drawImage(spr, x - 13, y - 11, 26, 22);
     } else if (it.kind === 'norway') {
-      // Glowing Norwegian Meteorological Institute (Yr.no) Badge!
-      ctx.fillStyle = 'rgba(102, 217, 255, 0.35)';
-      ctx.beginPath(); ctx.arc(x, y, 17, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#ba0c2f';
-      ctx.fillRect(x - 12, y - 9, 24, 18);
+      ctx.fillRect(x - 11, y - 8, 22, 16);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x - 6, y - 9, 5, 18);
-      ctx.fillRect(x - 12, y - 2, 24, 5);
+      ctx.fillRect(x - 5, y - 8, 4, 16);
+      ctx.fillRect(x - 11, y - 2, 22, 4);
       ctx.fillStyle = '#00205b';
-      ctx.fillRect(x - 5, y - 9, 3, 18);
-      ctx.fillRect(x - 12, y - 1, 24, 3);
+      ctx.fillRect(x - 4, y - 8, 2, 16);
+      ctx.fillRect(x - 11, y - 1, 22, 2);
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(x - 12, y - 9, 24, 18);
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(x - 11, y - 8, 22, 16);
     }
+
+    drawItemBubbleFront(ctx, x, y, bubbleR, rim, t);
   }
 
   function drawFeverOverlay(ctx, t) {

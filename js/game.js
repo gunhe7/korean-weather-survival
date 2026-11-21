@@ -295,6 +295,10 @@
     fcHeatPill: document.getElementById('fc-heat-pill'),
     mudOverlay: document.getElementById('mud-splatter-overlay'),
     runBanner: document.getElementById('run-banner'),
+    weatherCenterAlert: document.getElementById('weather-center-alert'),
+    weatherAlertKicker: document.getElementById('weather-alert-kicker'),
+    weatherAlertTitle: document.getElementById('weather-alert-title'),
+    weatherAlertSub: document.getElementById('weather-alert-sub'),
 
     btnJump: document.getElementById('btn-jump'),
     btnSlide: document.getElementById('btn-slide'),
@@ -717,6 +721,41 @@
     el.runBanner.classList.remove('hidden');
     if (bannerTimer) clearTimeout(bannerTimer);
     bannerTimer = setTimeout(() => el.runBanner.classList.add('hidden'), ms);
+  }
+
+  let weatherAlertTimer = null;
+  const WEATHER_ALERT_META = {
+    rain:     { title: '🌧️ 국지성 폭우!', sub: '☂️ 우산을 펴세요!' },
+    flood:    { title: '🌊 장마 침수 경보!', sub: '☂️ 우산 ON · 차 지붕을 밟으세요!' },
+    dust:     { title: '😷 황사 · 미세먼지!', sub: '😷 마스크를 착용하세요!' },
+    heat:     { title: '☀️ 폭염 땡볕 경보!', sub: '☂️ 우산(양산)을 펴세요!' },
+    gust:     { title: '💨 태풍 · 강풍 돌풍!', sub: '⚠️ 우산을 접고 슬라이드!' },
+    ice_road: { title: '🧊 겨울 빙판길!', sub: '❄️ 미끄럼 주의!' }
+  };
+
+  function showWeatherCenterAlert(weatherId, wasFake = false) {
+    if (!el.weatherCenterAlert) return;
+    const meta = WEATHER_ALERT_META[weatherId];
+    if (!meta) return;
+    el.weatherCenterAlert.className = `weather-center-alert ev-${weatherId}`;
+    el.weatherAlertKicker.classList.toggle('hidden', !wasFake);
+    el.weatherAlertTitle.textContent = meta.title;
+    el.weatherAlertSub.textContent = meta.sub;
+    // Force clean animation restart on consecutive events
+    void el.weatherCenterAlert.offsetWidth;
+    el.weatherCenterAlert.classList.add('show');
+    if (weatherAlertTimer) clearTimeout(weatherAlertTimer);
+    weatherAlertTimer = setTimeout(() => {
+      if (el.weatherCenterAlert) el.weatherCenterAlert.classList.add('hidden');
+    }, 2400);
+  }
+
+  function hideWeatherCenterAlert() {
+    if (weatherAlertTimer) {
+      clearTimeout(weatherAlertTimer);
+      weatherAlertTimer = null;
+    }
+    if (el.weatherCenterAlert) el.weatherCenterAlert.classList.add('hidden');
   }
 
   // ===================== HOME / MISSIONS / ATTENDANCE / CHARS / SHOP UI RENDER =====================
@@ -1873,6 +1912,7 @@
     el.runPortraitImg.style.filter = getSkinFilter(skinDef);
     el.runCanvasWrap.classList.toggle('fever-active', startFever > 0);
     el.mudOverlay.classList.add('hidden');
+    hideWeatherCenterAlert();
     el.gameoverOverlay.classList.add('hidden');
     el.pauseOverlay.classList.add('hidden');
     el.viewRun.classList.remove('hidden');
@@ -2135,12 +2175,18 @@
     }
 
     const evDef = DATA.WEATHER_EVENTS[nextW];
-    if (wasFake) {
+    if (nextW !== 'clear') {
+      showWeatherCenterAlert(nextW, wasFake);
+      if (wasFake) {
+        run.fakeShockTimer = 2.6;
+        SFX.fakeAlert();
+      }
+    } else if (wasFake) {
       run.fakeShockTimer = 2.6;
       SFX.fakeAlert();
       showRunBanner(`⚠️ 구라청 오보!! 실제 날씨는 [${evDef.label}]`, 2500);
     } else {
-      showRunBanner(`🌦️ 기상 변화: ${evDef.label}`, 2000);
+      showRunBanner(`☀️ 맑음 · 잠시 숨 고르기!`, 1800);
     }
 
     // If a sudden gust hits while umbrella is open -> snap!
@@ -2922,6 +2968,7 @@
     run.umbrellaOn = false;
     run.maskOn = false;
     el.mudOverlay.classList.add('hidden');
+    hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
     SFX.setBgmMode('menu');
     SFX.fail();
@@ -3123,6 +3170,7 @@
     run.dying = false;
     run.dead = true;
     el.mudOverlay.classList.add('hidden');
+    hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
     SFX.setBgmMode('menu');
 
@@ -3177,6 +3225,7 @@
     run = null;
     paused = false;
     el.mudOverlay.classList.add('hidden');
+    hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
     el.pauseOverlay.classList.add('hidden');
     el.gameoverOverlay.classList.add('hidden');
