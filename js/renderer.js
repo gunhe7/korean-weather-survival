@@ -28,7 +28,7 @@ window.RunRenderer = (function () {
 
   const ATLAS_SPRITES = [
     'dog_run_0', 'dog_run_1', 'dog_run_2', 'dog_run_3',
-    'spr_umbrella', 'spr_shield'
+    'spr_umbrella', 'spr_shield', 'spr_mask'
   ];
 
   const WORLD_SPRITES = [
@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd9';
+  const CHAR_ASSET_VER = '20261121hd10';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -677,17 +677,17 @@ window.RunRenderer = (function () {
       }
     }
 
-    // Uploaded Rainbow Umbrella sprite when 우비 소년 glides OR Umbrella Toggle is ON!
+    // Uploaded Sky-Blue & White Umbrella sprite when 우비 소년 glides OR Umbrella Toggle is ON!
     const showUmbrella = !dead && ((col.umbrella && gliding) || umbrellaOn);
     if (showUmbrella) {
       const umbSpr = getSprite('spr_umbrella');
-      const uy = cy - (isProne ? 24 : scaleHeight) - 10;
+      const uy = cy - (isProne ? 26 : scaleHeight) - 8;
       if (umbSpr) {
-        const uh = 34;
+        const uh = 44;
         const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 4), Math.floor(uy - 12), uw, uh);
+        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - 24), uw, uh);
       } else {
         ctx.fillStyle = '#2672d9';
         ctx.fillRect(cx - 18, uy - 10, 40, 7);
@@ -807,14 +807,23 @@ window.RunRenderer = (function () {
       ctx.drawImage(spr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
       if ('filter' in ctx) ctx.filter = 'none';
 
-      // White KF94 Mask overlay when Mask Toggle is ON!
+      // Uploaded KF94 Mask Sprite overlay when Mask Toggle is ON!
       if (maskOn && !dead) {
-        const my = sliding ? Math.floor(-drawH * 0.34) : Math.floor(-drawH * 0.44);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(Math.floor(drawW * 0.04), my, 12, 7);
-        ctx.strokeStyle = '#9bb8d4';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(Math.floor(drawW * 0.04), my, 12, 7);
+        const maskSpr = getSprite('spr_mask');
+        if (maskSpr) {
+          const mw = sliding ? 20 : 22;
+          const mh = Math.round(mw * (maskSpr.naturalHeight / maskSpr.naturalWidth));
+          const mx = sliding ? Math.floor(drawW * 0.04) : Math.floor(-mw * 0.14);
+          const my = sliding ? Math.floor(-drawH * 0.42) : Math.floor(-drawH * 0.50);
+          ctx.drawImage(maskSpr, mx, my, mw, mh);
+        } else {
+          const my = sliding ? Math.floor(-drawH * 0.34) : Math.floor(-drawH * 0.44);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(Math.floor(drawW * 0.04), my, 12, 7);
+          ctx.strokeStyle = '#9bb8d4';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(Math.floor(drawW * 0.04), my, 12, 7);
+        }
       }
 
       if (col.coffeeCup && !isProne) {
