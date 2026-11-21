@@ -405,12 +405,15 @@
 
   // ===================== CHEST GACHA ENGINE (EXACT RATES + DUPLICATE PROTECTION + PITY!) =====================
   function pickSkinOrDupGold(rarity, pityTriggered) {
-    const pool = DATA.SKINS.filter((s) => s.rarity === rarity);
+    let pool = DATA.SKINS.filter((s) => s.rarity === rarity);
+    if (pool.length === 0 && rarity !== 'mythic') {
+      pool = DATA.SKINS.filter((s) => s.rarity === 'common');
+    }
     const unowned = pool.filter((s) => !save.unlockedSkins.includes(s.id));
     if (unowned.length > 0) {
       const picked = unowned[Math.floor(Math.random() * unowned.length)];
       save.unlockedSkins.push(picked.id);
-      return { kind: 'skin', rarity, skin: picked, isDuplicate: false, pityTriggered };
+      return { kind: 'skin', rarity: picked.rarity, skin: picked, isDuplicate: false, pityTriggered };
     }
     // Duplicate skin protection -> grant transparent disclosed gold refund!
     const dupGold = (DATA.SKIN_RARITIES[rarity] && DATA.SKIN_RARITIES[rarity].dupGold) || 300;
