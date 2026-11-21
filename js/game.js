@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd35';
+  const ASSET_VER = '20261121hd36';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -332,7 +332,6 @@
     introAccBadge: document.getElementById('intro-acc-badge'),
     introAccName: document.getElementById('intro-acc-name'),
     btnIntroSwitchAcc: document.getElementById('btn-intro-switch-acc'),
-    btnIntroStart: document.getElementById('btn-intro-start'),
 
     loginOverlay: document.getElementById('login-overlay'),
     btnCloseLogin: document.getElementById('btn-close-login'),
@@ -4685,12 +4684,6 @@
       setTimeout(() => { introLeaving = false; }, 400);
     }
 
-    if (el.btnIntroStart) {
-      el.btnIntroStart.addEventListener('click', (e) => {
-        e.stopPropagation();
-        enterFromIntro(e);
-      });
-    }
     el.introOverlay.addEventListener('click', (e) => {
       if (e.target && e.target.closest && e.target.closest('button')) return;
       enterFromIntro(e);

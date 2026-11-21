@@ -11,7 +11,7 @@ window.RunRenderer = (function () {
   // ===================== PRELOAD ALL CHARACTER + DESIGN + WORLD SPRITES =====================
   const CHAR_SHEET_SKINS = [
     { id: 'yellow', frames: 3, runFrames: 8 },
-    { id: 'blue', frames: 2 },
+    { id: 'blue', frames: 3, runFrames: 8 },
     { id: 'hanbok', frames: 2 },
     { id: 'skier', frames: 2 },
     { id: 'santa', frames: 2 },
@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd35';
+  const CHAR_ASSET_VER = '20261121hd36';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {

@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd35" />
+  <link rel="stylesheet" href="style.css?v=20261121hd36" />
 </head>
 <body>
   <div id="mobile-app">
@@ -22,7 +22,7 @@
       <img
         id="company-logo-img"
         class="company-logo-img"
-        src="assets/company_logo.jpg?v=20261121hd35"
+        src="assets/company_logo.jpg?v=20261121hd36"
         alt="YAGUN STUDIO"
       />
       <button id="btn-company-skip" class="company-ctrl-btn skip" type="button">SKIP ⏭</button>
@@ -67,10 +67,7 @@
             <span id="intro-acc-name" class="intro-acc-name">게스트</span>
             <button id="btn-intro-switch-acc" class="intro-switch-btn" type="button">계정 변경</button>
           </div>
-          <button id="btn-intro-start" class="intro-tap-prompt" type="button">
-            <span class="intro-tap-main">화면을 터치해서 시작하세요</span>
-            <span class="intro-tap-sub">TAP TO START</span>
-          </button>
+          <div id="intro-tap-hint" class="intro-tap-hint" aria-live="polite">화면을 터치하여 시작하세요</div>
         </div>
       </div>
     </div>
@@ -829,11 +826,11 @@
   <!-- Official Firebase Auth SDK (Google & Apple Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd35"></script>
+  <script src="js/data.js?v=20261121hd36"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd35"></script>
-  <script src="js/renderer.js?v=20261121hd35"></script>
-  <script src="js/game.js?v=20261121hd35"></script>
+  <script src="js/online.js?v=20261121hd36"></script>
+  <script src="js/renderer.js?v=20261121hd36"></script>
+  <script src="js/game.js?v=20261121hd36"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

@@ -6936,45 +6936,31 @@ input:focus-visible {
   }
 }
 
-/* ================= TAP-TO-START INTRO PROMPT ================= */
+/* ================= TAP-TO-START INTRO HINT (SINGLE SMALL LINE, NO BUTTON) ================= */
 #intro-overlay {
   flex-direction: column;
   gap: 14px;
 }
 
-.intro-tap-prompt {
+.intro-tap-hint {
   position: relative;
   z-index: 3;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 9px 26px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(16, 46, 98, 0.88) 0%, rgba(8, 22, 52, 0.94) 100%);
-  border: 2.5px solid #8be4ff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 18px rgba(102, 220, 255, 0.45);
-  animation: tapPulse 1.5s ease-in-out infinite;
-}
-
-.intro-tap-main {
-  font-size: 15px;
-  font-weight: 900;
-  color: #ffffff;
-  text-shadow: 0 2px 0 #07132a;
-  letter-spacing: 0.3px;
-}
-
-.intro-tap-sub {
-  font-size: 10px;
+  margin-top: 2px;
+  font-size: 12px;
   font-weight: 800;
-  color: #7ee3ff;
-  letter-spacing: 1.6px;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1.5px 4px rgba(4, 14, 34, 0.95), 0 0 10px rgba(8, 28, 66, 0.85);
+  letter-spacing: 0.4px;
+  pointer-events: none;
+  user-select: none;
+  animation: tapHintBlink 1.8s ease-in-out infinite;
 }
 
-@keyframes tapPulse {
-  0%, 100% { transform: scale(1); opacity: 0.94; }
-  50% { transform: scale(1.05); opacity: 1; }
+@keyframes tapHintBlink {
+  0%, 100% { opacity: 0.52; }
+  50% { opacity: 1; }
 }
 
 /* ================= LOGIN SCREEN OVERLAY (GOOGLE / APPLE ID / GUEST) ================= */
@@ -7833,8 +7819,7 @@ input:focus-visible {
   .bs-offer-img { max-height: 46px; }
   .bs-shop-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .rank-prize-banner { padding: 6px 10px; }
-  .intro-tap-prompt { padding: 7px 20px; }
-  .intro-tap-main { font-size: 13px; }
+  .intro-tap-hint { font-size: 11px; }
 }
 
 /* ================= INTRO LOGO + LOGIN BUTTONS RIGHT BELOW LOGO ================= */

@@ -111,8 +111,9 @@ window.RUN_DATA = (function () {
       icon: '🧥',
       spriteKey: 'blue_idle_0',
       animSkin: 'blue',
-      animFrames: 2,
-      avatar: 'assets/chars/port_blue.png?v=20261121hd9',
+      animFrames: 3,
+      runFrames: 8,
+      avatar: 'assets/chars/port_blue.png?v=20261121hd36',
       auraType: 'padding',
       price: 350,
       baseHp: 5,
@@ -121,9 +122,9 @@ window.RUN_DATA = (function () {
       extraInvuln: 0.65,
       passiveName: '중무장 방한 탱커',
       passiveDesc: '피격 후 무적 시간 +0.65초 대폭 연장! (전 캐릭터 체력 5하트 고정)',
-      desc: '중무장 파란 패딩 탱커! 긴 피격 무적 시간으로 안정적인 생존력을 자랑합니다.',
+      desc: '중무장 화이트 패딩 탱커! 긴 피격 무적 시간으로 안정적인 생존력을 자랑합니다.',
       tag: '무적 시간 +0.65초 · 안정 생존',
-      colors: { top: '#2d74e0', outer: '#1c52ad', pants: '#1a243b', shoes: '#3c5070', hat: '#2d74e0' }
+      colors: { top: '#f4f8ff', outer: '#cfdcf0', pants: '#1a243b', shoes: '#4d82e0', hat: '#ffffff' }
     },
     {
       id: 'short_sleeve',
