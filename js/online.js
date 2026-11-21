@@ -1,19 +1,23 @@
 window.OnlineService = (function () {
-  const BOARD_STORE_KEY = 'kr_weather_online_board_v1';
+  const BOARD_STORE_KEY = 'kr_weather_online_board_v2_real';
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
   const WEEKLY_REWARD_GEMS = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP1_GEMS) || 500;
 
-  // Optional real backend config (fill firebaseDbUrl to sync live players globally via Firebase Realtime DB REST)
-  // Example: window.KWEATHER_ONLINE_CONFIG = { firebaseDbUrl: 'https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app' };
+  // ===================== REAL ONLINE BACKEND CONFIG (FIREBASE REALTIME DATABASE) =====================
+  // 1) Firebase 콘솔(https://console.firebase.google.com)에서 무료 Realtime Database 생성
+  // 2) 아래 DEFAULT_FIREBASE_DB_URL에 본인 DB 주소 입력 (예: 'https://my-game-default-rtdb.asia-southeast1.firebasedatabase.app')
+  // 3) 자세한 3분 설정 방법은 프로젝트의 ONLINE_RANK_SETUP.md 참고!
+  const DEFAULT_FIREBASE_DB_URL = '';
+
   const CONFIG = Object.assign({
-    firebaseDbUrl: '',
+    firebaseDbUrl: DEFAULT_FIREBASE_DB_URL,
     pollIntervalMs: 5000
   }, window.KWEATHER_ONLINE_CONFIG || {});
 
   let channel = null;
   try {
     if (typeof BroadcastChannel !== 'undefined') {
-      channel = new BroadcastChannel('kweather_live_rank_v1');
+      channel = new BroadcastChannel('kweather_real_rank_v2');
     }
   } catch {}
 
@@ -67,10 +71,8 @@ window.OnlineService = (function () {
       kstNow.getUTCDate() + daysUntilMon,
       0, 0, 0, 0
     );
-    const weekStartKstUtc = nextMonKstUtc - 7 * 86400000;
     const nextResetMs = nextMonKstUtc - KST_OFFSET_MS;
     const msRemaining = Math.max(0, nextResetMs - nowMs);
-    const elapsedRatio = Math.max(0.05, Math.min(1, ((nowMs + KST_OFFSET_MS) - weekStartKstUtc) / (7 * 86400000)));
 
     const totalSec = Math.floor(msRemaining / 1000);
     const d = Math.floor(totalSec / 86400);
@@ -88,8 +90,7 @@ window.OnlineService = (function () {
       prevWeekKey: prev.key,
       prevWeekLabel: `${prev.year}년 ${prev.weekNo}주차`,
       msRemaining,
-      countdownText,
-      elapsedRatio
+      countdownText
     };
   }
 
@@ -115,7 +116,6 @@ window.OnlineService = (function () {
     const prov = provider === 'google' || provider === 'apple' ? provider : 'guest';
     const existingUid = opts.existingUid;
 
-    // Optional real Firebase Auth hook if configured on window.KWEATHER_ONLINE_CONFIG
     if (CONFIG.customAuthHandler && typeof CONFIG.customAuthHandler === 'function') {
       const res = await CONFIG.customAuthHandler(prov, opts);
       if (res && res.uid) return res;
@@ -139,55 +139,7 @@ window.OnlineService = (function () {
     };
   }
 
-  // ===================== DETERMINISTIC LIVE WEEKLY SEASON RIVALS =====================
-  function hashStr(str) {
-    let h = 2166136261;
-    for (let i = 0; i < str.length; i++) {
-      h ^= str.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return h >>> 0;
-  }
-
-  const SEASON_POOL = [
-    { name: '한파뚫는패딩왕', charId: 'long_padding', skinId: 'glacier_pad', provider: 'google', baseScore: 14800, dist: 2150, year: 4 },
-    { name: '화이트냥이마스터', charId: 'umbrella_master', skinId: 'catgirl_hoodie', provider: 'apple', baseScore: 12400, dist: 1840, year: 3 },
-    { name: '얼죽아스키장인', charId: 'iced_americano', skinId: 'aurora_skier', provider: 'google', baseScore: 9850, dist: 1520, year: 3 },
-    { name: '구라청저격수', charId: 'fashionista', skinId: 'frost_santa', provider: 'apple', baseScore: 7600, dist: 1240, year: 2 },
-    { name: '장마폭우서퍼', charId: 'umbrella_master', skinId: 'thunder_rain', provider: 'google', baseScore: 5900, dist: 980, year: 2 },
-    { name: '황사철벽마스크', charId: 'short_sleeve', skinId: 'dragon_hanbok', provider: 'guest', baseScore: 4350, dist: 760, year: 2 },
-    { name: '벚꽃질주러너', charId: 'umbrella_master', skinId: 'cherry_rain', provider: 'apple', baseScore: 3100, dist: 560, year: 1 },
-    { name: '폭염양산지존', charId: 'short_sleeve', skinId: 'royal_hanbok', provider: 'google', baseScore: 2150, dist: 410, year: 1 },
-    { name: '태풍회피장인', charId: 'long_padding', skinId: 'crimson_pad', provider: 'guest', baseScore: 1280, dist: 260, year: 1 },
-    { name: '우비소년새싹', charId: 'umbrella_master', skinId: null, provider: 'guest', baseScore: 620, dist: 135, year: 1 }
-  ];
-
-  function buildWeeklySeedRivals(weekKey, elapsedRatio) {
-    const seed = hashStr(weekKey);
-    // Live gentle pulse every 30s so active season board feels alive
-    const pulseSlot = Math.floor(Date.now() / 30000);
-    return SEASON_POOL.map((r, idx) => {
-      const jitter = ((seed >> (idx % 16)) & 0xFF) / 255; // 0..1
-      const scale = 0.72 + elapsedRatio * 0.34 + jitter * 0.14;
-      const liveTick = idx < 4 ? ((hashStr(`${weekKey}_${idx}_${pulseSlot}`) % 18) * 5) : 0;
-      const score = Math.round((r.baseScore * scale + liveTick) / 10) * 10;
-      const dist = Math.round(r.dist * (0.78 + elapsedRatio * 0.28 + jitter * 0.1));
-      return {
-        uid: `season_${weekKey}_${idx}`,
-        nickname: r.name,
-        provider: r.provider,
-        charId: r.charId,
-        skinId: r.skinId,
-        score,
-        dist,
-        year: r.year,
-        updatedAt: Date.now() - ((idx + 1) * 38000),
-        isBot: true
-      };
-    });
-  }
-
-  // ===================== SHARED BOARD STORAGE + OPTIONAL FIREBASE RTDB SYNC =====================
+  // ===================== REAL-USER-ONLY BOARD STORAGE & FIREBASE RTDB SYNC =====================
   function readLocalBoards() {
     try {
       const raw = localStorage.getItem(BOARD_STORE_KEY);
@@ -204,12 +156,17 @@ window.OnlineService = (function () {
     } catch {}
   }
 
+  function getDbUrl() {
+    const url = (window.KWEATHER_ONLINE_CONFIG && window.KWEATHER_ONLINE_CONFIG.firebaseDbUrl) || CONFIG.firebaseDbUrl || '';
+    return String(url).trim().replace(/\/+$/, '');
+  }
+
   function hasRemoteDb() {
-    return Boolean(CONFIG.firebaseDbUrl && /^https?:\/\//i.test(CONFIG.firebaseDbUrl));
+    return /^https?:\/\//i.test(getDbUrl());
   }
 
   function getRemoteWeekUrl(weekKey, uid = null) {
-    const base = CONFIG.firebaseDbUrl.replace(/\/+$/, '');
+    const base = getDbUrl();
     return uid
       ? `${base}/weekly_boards/${encodeURIComponent(weekKey)}/${encodeURIComponent(uid)}.json`
       : `${base}/weekly_boards/${encodeURIComponent(weekKey)}.json`;
@@ -217,6 +174,10 @@ window.OnlineService = (function () {
 
   async function submitWeeklyScore(entry) {
     if (!entry || !entry.uid) return null;
+    const scoreVal = Math.max(0, Math.floor(Number(entry.score) || 0));
+    // Only register real plays with score > 0 onto the leaderboard!
+    if (scoreVal <= 0) return null;
+
     const info = getWeekInfo();
     const weekKey = entry.weekKey || info.weekKey;
     const cleanEntry = {
@@ -225,20 +186,19 @@ window.OnlineService = (function () {
       provider: entry.provider || 'guest',
       charId: entry.charId || 'umbrella_master',
       skinId: entry.skinId || null,
-      score: Math.max(0, Math.floor(Number(entry.score) || 0)),
+      score: scoreVal,
       dist: Math.max(0, Math.floor(Number(entry.dist) || 0)),
       year: Math.max(1, Math.floor(Number(entry.year) || 1)),
       updatedAt: Date.now()
     };
 
-    // 1. Update local shared weekly board (keep highest weekly score per uid)
+    // 1. Update local real-user board (keep highest weekly score per uid)
     const all = readLocalBoards();
     const wk = all[weekKey] || {};
     const prev = wk[cleanEntry.uid];
     if (!prev || cleanEntry.score >= (prev.score || 0)) {
       wk[cleanEntry.uid] = cleanEntry;
     } else {
-      // Still update profile metadata (nickname/skin/provider) while preserving weekly high score!
       wk[cleanEntry.uid] = {
         ...prev,
         nickname: cleanEntry.nickname,
@@ -251,7 +211,7 @@ window.OnlineService = (function () {
     all[weekKey] = wk;
     writeLocalBoards(all);
 
-    // 2. Sync to remote Firebase RTDB if configured
+    // 2. Sync to real Firebase Realtime Database if connected
     if (hasRemoteDb()) {
       try {
         await fetch(getRemoteWeekUrl(weekKey, cleanEntry.uid), {
@@ -272,8 +232,6 @@ window.OnlineService = (function () {
   async function fetchWeeklyBoard(weekKey = null, myUid = null) {
     const info = getWeekInfo();
     const targetWeek = weekKey || info.weekKey;
-    const isCurrentWeek = targetWeek === info.weekKey;
-    const elapsed = isCurrentWeek ? info.elapsedRatio : 1.0;
 
     let remoteEntries = [];
     let syncedOnline = false;
@@ -284,7 +242,9 @@ window.OnlineService = (function () {
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data === 'object') {
-            remoteEntries = Object.values(data).filter((x) => x && typeof x.score === 'number');
+            remoteEntries = Object.values(data).filter(
+              (x) => x && x.uid && typeof x.score === 'number' && x.score > 0
+            );
           }
           syncedOnline = true;
         }
@@ -292,12 +252,12 @@ window.OnlineService = (function () {
     }
 
     const localWeekObj = readLocalBoards()[targetWeek] || {};
-    const localEntries = Object.values(localWeekObj);
-    const seedRivals = buildWeeklySeedRivals(targetWeek, elapsed);
+    const localEntries = Object.values(localWeekObj).filter(
+      (x) => x && x.uid && typeof x.score === 'number' && x.score > 0
+    );
 
-    // Merge unique by uid (remote > local > seed)
+    // Merge ONLY real users (ZERO bots / ZERO fake rivals!)
     const map = new Map();
-    seedRivals.forEach((e) => map.set(e.uid, e));
     localEntries.forEach((e) => {
       const prev = map.get(e.uid);
       if (!prev || (e.score || 0) >= (prev.score || 0)) map.set(e.uid, e);
@@ -307,30 +267,30 @@ window.OnlineService = (function () {
       if (!prev || (e.score || 0) >= (prev.score || 0)) map.set(e.uid, e);
     });
 
-    const board = Array.from(map.values())
-      .sort((a, b) => (b.score - a.score) || ((a.updatedAt || 0) - (b.updatedAt || 0)))
-      .slice(0, 50)
+    const allSorted = Array.from(map.values())
+      .sort((a, b) => (b.score - a.score) || ((a.updatedAt || 0) - (b.updatedAt || 0)));
+
+    const totalParticipants = allSorted.length;
+    const board = allSorted
+      .slice(0, 100)
       .map((entry, idx) => ({
         ...entry,
         rank: idx + 1,
         isMe: Boolean(myUid && entry.uid === myUid)
       }));
 
-    // Live online runner counter
-    const baseOnline = 18 + (hashStr(`${targetWeek}_${Math.floor(Date.now() / 15000)}`) % 27);
-    const onlineCount = syncedOnline ? Math.max(remoteEntries.length, 1) : baseOnline;
-
     return {
       weekKey: targetWeek,
       weekInfo: info,
       board,
       syncedOnline,
-      onlineCount,
+      hasRemoteConfig: hasRemoteDb(),
+      totalParticipants,
       fetchedAt: Date.now()
     };
   }
 
-  // ===================== WEEKLY #1 CHAMPION 500 GEM PAYOUT CHECK =====================
+  // ===================== WEEKLY #1 CHAMPION 500 GEM PAYOUT CHECK (REAL USERS ONLY) =====================
   async function checkWeeklyChampionPayout(save) {
     if (!save || !save.auth || !save.auth.uid) return null;
     const info = getWeekInfo();
@@ -339,7 +299,6 @@ window.OnlineService = (function () {
     const claimed = Array.isArray(wr.claimedWeeks) ? wr.claimedWeeks : [];
     if (claimed.includes(prevKey)) return null;
 
-    // Check if the player had a score recorded in prevWeekKey
     const histScore = wr.history && wr.history[prevKey] ? wr.history[prevKey].score : 0;
     const localPrev = (readLocalBoards()[prevKey] || {})[save.auth.uid];
     const myPrevScore = Math.max(histScore || 0, (localPrev && localPrev.score) || 0);

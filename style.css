@@ -7546,6 +7546,47 @@ input:focus-visible {
   font-weight: 900;
 }
 
+.rank-live-pill.local {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #7dd3fc;
+  color: #bae6fd;
+}
+
+.rank-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 6px;
+  padding: 22px 16px;
+  border-radius: 16px;
+  border: 2px dashed rgba(130, 214, 255, 0.45);
+  background: rgba(10, 26, 58, 0.72);
+}
+
+.rank-empty-ico {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.rank-empty-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.rank-empty-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #b7dcff;
+  line-height: 1.45;
+}
+
+.rank-empty-sub strong {
+  color: #ffe45e;
+}
+
 .live-dot {
   width: 7px;
   height: 7px;

@@ -1173,9 +1173,9 @@
     }
     if (seq !== rankRenderSeq || !curRes) return;
 
-    // Ensure current player is always visible in the live standings even at 0 pts
+    // Real users ONLY (zero bots/fake rivals — only entries with score > 0!)
     let board = curRes.board.slice();
-    if (!board.some((r) => r.isMe)) {
+    if (weeklyBest > 0 && !board.some((r) => r.isMe)) {
       board.push({
         uid: myUid,
         nickname: myNick,
@@ -1192,19 +1192,46 @@
     }
 
     const myEntry = board.find((r) => r.isMe);
-    el.rankMyPos.textContent = myEntry ? `${myEntry.rank}위` : '-';
+    el.rankMyPos.textContent = myEntry ? `${myEntry.rank}위` : '미참여';
 
+    if (el.rankLivePill) {
+      if (curRes.syncedOnline) {
+        el.rankLivePill.className = 'rank-live-pill';
+        el.rankLivePill.innerHTML = '<span class="live-dot"></span>LIVE 서버';
+      } else {
+        el.rankLivePill.className = 'rank-live-pill local';
+        el.rankLivePill.innerHTML = '📱 로컬 모드';
+      }
+    }
     if (el.rankOnlineCount) {
       el.rankOnlineCount.textContent = curRes.syncedOnline
-        ? `실시간 서버 · ${curRes.onlineCount}명 참여`
-        : `실시간 시즌 · ${curRes.onlineCount}명 접속 중`;
+        ? `실제 참여 유저 ${board.length}명`
+        : (curRes.hasRemoteConfig
+          ? `서버 재연결 중 · 기록 ${board.length}명`
+          : `실제 기록 ${board.length}명 (Firebase DB 연결 시 전체 유저 연동)`);
     }
-    if (el.rankLastWinner && prevRes && prevRes.board && prevRes.board[0]) {
-      const w = prevRes.board[0];
-      el.rankLastWinner.textContent = `지난 주(${info.prevWeekLabel}) 1위: 👑 ${w.nickname} (${w.score.toLocaleString('ko-KR')}점 · 💎500 지급)`;
+    if (el.rankLastWinner) {
+      if (prevRes && prevRes.board && prevRes.board[0]) {
+        const w = prevRes.board[0];
+        el.rankLastWinner.textContent = `지난 주(${info.prevWeekLabel}) 1위: 👑 ${w.nickname} (${w.score.toLocaleString('ko-KR')}점 · 💎500 지급)`;
+      } else {
+        el.rankLastWinner.textContent = '매주 월요일 00:00(KST) 정산 · 실제 유저 중 최고 점수 1위에게 💎 500 보석 지급!';
+      }
     }
 
     el.rankBoardList.innerHTML = '';
+    if (board.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'rank-empty-card';
+      empty.innerHTML = `
+        <div class="rank-empty-ico">🏆</div>
+        <div class="rank-empty-title">아직 이번 주 랭킹 기록이 없습니다</div>
+        <div class="rank-empty-sub">봇이나 가짜 기록 없이 <strong>실제 유저 기록만</strong> 표시됩니다.<br/>지금 첫 플레이로 주간 1위(💎500)를 선점해 보세요!</div>
+      `;
+      el.rankBoardList.appendChild(empty);
+      return;
+    }
+
     board.forEach((entry) => {
       const rank = entry.rank;
       const chDef = getCharDef(entry.charId);

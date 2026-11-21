@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd23" />
+  <link rel="stylesheet" href="style.css?v=20261121hd24" />
 </head>
 <body>
   <div id="mobile-app">
@@ -251,7 +251,7 @@
             <div class="rank-live-title-row">
               <h2>🏆 온라인 실시간 주간 랭킹</h2>
               <span id="rank-live-pill" class="rank-live-pill"><span class="live-dot"></span>LIVE</span>
-              <span id="rank-online-count" class="rank-online-cnt">접속 중 24명</span>
+              <span id="rank-online-count" class="rank-online-cnt">실제 참여 유저 0명</span>
             </div>
             <p id="rank-last-winner" class="rank-last-winner">매주 월요일 00:00(KST) 정산 · 주간 1위 유저에게 💎 500 보석 자동 지급!</p>
           </div>
@@ -751,11 +751,11 @@
     <div id="global-toast" class="global-toast hidden"></div>
   </div>
 
-  <script src="js/data.js?v=20261121hd23"></script>
+  <script src="js/data.js?v=20261121hd24"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd23"></script>
-  <script src="js/renderer.js?v=20261121hd23"></script>
-  <script src="js/game.js?v=20261121hd23"></script>
+  <script src="js/online.js?v=20261121hd24"></script>
+  <script src="js/renderer.js?v=20261121hd24"></script>
+  <script src="js/game.js?v=20261121hd24"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {
@@ -765,7 +765,7 @@
           refreshing = true;
           window.location.reload();
         });
-        navigator.serviceWorker.register('./sw.js?v=20261121hd23', { updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=20261121hd24', { updateViaCache: 'none' })
           .then((reg) => { try { reg.update(); } catch {} })
           .catch(() => {});
       });
