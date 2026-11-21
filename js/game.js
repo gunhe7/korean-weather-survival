@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd36';
+  const ASSET_VER = '20261121hd37';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -319,10 +319,6 @@
 
   // ===================== DOM REFERENCES =====================
   const el = {
-    companySplashOverlay: document.getElementById('company-splash-overlay'),
-    companyLogoImg: document.getElementById('company-logo-img'),
-    btnCompanySkip: document.getElementById('btn-company-skip'),
-
     introOverlay: document.getElementById('intro-overlay'),
     introLoginBox: document.getElementById('intro-login-box'),
     btnIntroGoogle: document.getElementById('btn-intro-google'),
@@ -2048,7 +2044,6 @@
 
   function updateHomeRunningHero(t) {
     if (currentTab !== 'home') return;
-    if (el.companySplashOverlay && !el.companySplashOverlay.classList.contains('hidden')) return;
     if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
     if (el.loginOverlay && !el.loginOverlay.classList.contains('hidden')) return;
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
@@ -4697,13 +4692,6 @@
 
     // Desktop Keyboard Controls (Space/↑ Jump, ↓ Slide, Q Umbrella, E Mask, Esc Pause)
     window.addEventListener('keydown', (e) => {
-      if (el.companySplashOverlay && !el.companySplashOverlay.classList.contains('hidden')) {
-        if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
-          e.preventDefault();
-          finishCompanySplash();
-        }
-        return;
-      }
       if (!el.introOverlay.classList.contains('hidden')) {
         if (e.code === 'Space' || e.code === 'Enter') {
           e.preventDefault();
@@ -4751,51 +4739,6 @@
     });
   }
 
-  // ===================== YAGUN STUDIO COMPANY LOGO SPLASH =====================
-  let companySplashDone = false;
-  let companySplashTimer = null;
-
-  function finishCompanySplash(silent = false) {
-    if (companySplashDone) return;
-    companySplashDone = true;
-    if (companySplashTimer) { clearTimeout(companySplashTimer); companySplashTimer = null; }
-    const ov = el.companySplashOverlay;
-    if (ov && !ov.classList.contains('hidden')) {
-      ov.classList.add('leaving');
-      setTimeout(() => {
-        ov.classList.add('hidden');
-        ov.classList.remove('leaving');
-        if (!silent) {
-          try { SFX.introJingle(); } catch {}
-        }
-      }, 520);
-    } else if (!silent) {
-      try { SFX.introJingle(); } catch {}
-    }
-  }
-
-  function startCompanySplash() {
-    const ov = el.companySplashOverlay;
-    if (!ov) {
-      companySplashDone = true;
-      try { SFX.introJingle(); } catch {}
-      return;
-    }
-
-    const skipHandler = (e) => {
-      if (e) e.stopPropagation();
-      finishCompanySplash(false);
-    };
-
-    if (el.btnCompanySkip) {
-      el.btnCompanySkip.addEventListener('click', skipHandler);
-    }
-    ov.addEventListener('click', skipHandler);
-
-    // Show crisp YAGUN STUDIO splash image for 2.3s, then smoothly fade into Game Launch Intro
-    companySplashTimer = setTimeout(() => finishCompanySplash(false), 2300);
-  }
-
   // ===================== GLOBAL ERROR GUARD & BOOT =====================
   window.addEventListener('error', (ev) => {
     try {
@@ -4805,14 +4748,13 @@
   setupEvents();
   refreshAllMenus();
   renderIntroAuthState();
-  startCompanySplash();
+  try { SFX.introJingle(); } catch {}
 
   // Handle Real Firebase OAuth Redirect / Persistent Session Restoration!
   if (ONLINE && ONLINE.hasFirebaseAuth()) {
     const startAuthListeners = () => {
       ONLINE.checkRedirectLoginResult().then(async (redirectProfile) => {
         if (redirectProfile) {
-          finishCompanySplash(true);
           await switchToAccount(redirectProfile, { carryGuestSave: save.auth && save.auth.provider === 'guest' });
           dismissIntroToHome();
         }
