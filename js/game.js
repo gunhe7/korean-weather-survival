@@ -2988,6 +2988,10 @@
     run.hp = Math.max(0, run.hp - 1);
     const lostScore = Math.floor(run.score * 0.2);
     run.score = Math.max(0, run.score - lostScore);
+    if (el.runScoreText) {
+      el.runScoreText.classList.add('score-hit');
+      setTimeout(() => { if (el.runScoreText) el.runScoreText.classList.remove('score-hit'); }, 360);
+    }
     run.invulnTimer = 1.5 + (ch.extraInvuln || 0) + save.upgrades.defense * 0.2;
     run.hitPoseTimer = 0.45;
     run.hitFlashTimer = 0.3;
