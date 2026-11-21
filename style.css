@@ -8047,7 +8047,7 @@ input:focus-visible {
   }
 }
 
-/* ================= YAGUN STUDIO COMPANY LOGO VIDEO SPLASH ================= */
+/* ================= YAGUN STUDIO COMPANY LOGO SPLASH ================= */
 .company-splash-overlay {
   position: absolute;
   inset: 0;
@@ -8057,6 +8057,7 @@ input:focus-visible {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer;
   transition: opacity 0.52s ease;
 }
 
@@ -8065,12 +8066,30 @@ input:focus-visible {
   pointer-events: none;
 }
 
-.company-logo-video {
+.company-logo-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   background: #000000;
   display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  animation: companyLogoReveal 2.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes companyLogoReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  26% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
 }
 
 .company-ctrl-btn {
@@ -8089,66 +8108,10 @@ input:focus-visible {
   cursor: pointer;
 }
 
-.company-ctrl-btn.unmute {
-  left: max(16px, env(safe-area-inset-left, 16px));
-}
-
 .company-ctrl-btn.skip {
   right: max(16px, env(safe-area-inset-right, 16px));
 }
 
 .company-ctrl-btn:active {
   transform: scale(0.95);
-}
-
-/* Cinematic YAGUN STUDIO Fallback (Only Used if Browser Lacks HEVC Decoder) */
-.company-logo-fallback {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-  animation: yagunFadeIn 0.85s ease forwards;
-}
-
-.yagun-orbit {
-  position: absolute;
-  width: 280px;
-  height: 92px;
-  border-radius: 50%;
-  border: 2px solid rgba(220, 238, 255, 0.75);
-  box-shadow: 0 0 22px rgba(170, 220, 255, 0.6);
-  transform: rotate(-16deg);
-  animation: yagunOrbitPulse 2.4s ease-in-out infinite;
-}
-
-.yagun-wordmark {
-  position: relative;
-  z-index: 2;
-  font-size: clamp(32px, 7vw, 56px);
-  font-weight: 900;
-  letter-spacing: 10px;
-  color: #ffffff;
-  text-shadow: 0 0 24px rgba(190, 226, 255, 0.75);
-}
-
-.yagun-submark {
-  position: relative;
-  z-index: 2;
-  font-size: clamp(11px, 2vw, 15px);
-  font-weight: 700;
-  letter-spacing: 8px;
-  color: rgba(220, 236, 255, 0.85);
-}
-
-@keyframes yagunFadeIn {
-  0% { opacity: 0; transform: scale(0.92); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes yagunOrbitPulse {
-  0%, 100% { opacity: 0.65; transform: rotate(-16deg) scale(1); }
-  50% { opacity: 1; transform: rotate(-14deg) scale(1.04); }
 }

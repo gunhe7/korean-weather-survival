@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd34';
+  const ASSET_VER = '20261121hd35';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -320,9 +320,7 @@
   // ===================== DOM REFERENCES =====================
   const el = {
     companySplashOverlay: document.getElementById('company-splash-overlay'),
-    companyLogoVideo: document.getElementById('company-logo-video'),
-    companyLogoFallback: document.getElementById('company-logo-fallback'),
-    btnCompanyUnmute: document.getElementById('btn-company-unmute'),
+    companyLogoImg: document.getElementById('company-logo-img'),
     btnCompanySkip: document.getElementById('btn-company-skip'),
 
     introOverlay: document.getElementById('intro-overlay'),
@@ -4760,21 +4758,15 @@
     });
   }
 
-  // ===================== YAGUN STUDIO COMPANY LOGO VIDEO SPLASH =====================
+  // ===================== YAGUN STUDIO COMPANY LOGO SPLASH =====================
   let companySplashDone = false;
   let companySplashTimer = null;
-  let companyFallbackTimer = null;
 
   function finishCompanySplash(silent = false) {
     if (companySplashDone) return;
     companySplashDone = true;
     if (companySplashTimer) { clearTimeout(companySplashTimer); companySplashTimer = null; }
-    if (companyFallbackTimer) { clearTimeout(companyFallbackTimer); companyFallbackTimer = null; }
     const ov = el.companySplashOverlay;
-    const vid = el.companyLogoVideo;
-    if (vid) {
-      try { vid.pause(); } catch {}
-    }
     if (ov && !ov.classList.contains('hidden')) {
       ov.classList.add('leaving');
       setTimeout(() => {
@@ -4789,75 +4781,26 @@
     }
   }
 
-  function showCompanyFallbackSplash() {
-    if (companySplashDone) return;
-    if (el.companyLogoVideo) el.companyLogoVideo.classList.add('hidden');
-    if (el.btnCompanyUnmute) el.btnCompanyUnmute.classList.add('hidden');
-    if (el.companyLogoFallback) el.companyLogoFallback.classList.remove('hidden');
-    if (companyFallbackTimer) clearTimeout(companyFallbackTimer);
-    companyFallbackTimer = setTimeout(() => finishCompanySplash(false), 2900);
-  }
-
   function startCompanySplash() {
     const ov = el.companySplashOverlay;
-    const vid = el.companyLogoVideo;
-    if (!ov || !vid) {
+    if (!ov) {
       companySplashDone = true;
       try { SFX.introJingle(); } catch {}
       return;
     }
 
+    const skipHandler = (e) => {
+      if (e) e.stopPropagation();
+      finishCompanySplash(false);
+    };
+
     if (el.btnCompanySkip) {
-      el.btnCompanySkip.addEventListener('click', (e) => {
-        e.stopPropagation();
-        finishCompanySplash(false);
-      });
+      el.btnCompanySkip.addEventListener('click', skipHandler);
     }
-    if (el.btnCompanyUnmute) {
-      el.btnCompanyUnmute.addEventListener('click', (e) => {
-        e.stopPropagation();
-        try {
-          vid.muted = false;
-          vid.volume = 1;
-          vid.play().catch(() => {});
-        } catch {}
-        el.btnCompanyUnmute.classList.add('hidden');
-      });
-    }
+    ov.addEventListener('click', skipHandler);
 
-    vid.addEventListener('ended', () => finishCompanySplash(false));
-    vid.addEventListener('error', () => showCompanyFallbackSplash());
-
-    // Hard safety timeout so splash ALWAYS transitions to Game Intro even on poor networks
-    companySplashTimer = setTimeout(() => finishCompanySplash(false), 13000);
-
-    // If codec (HEVC) fails to start rendering frames within 2.8s, smoothly show YAGUN STUDIO fallback!
-    const decodeWatch = setTimeout(() => {
-      if (!companySplashDone && (vid.readyState < 2 || vid.videoWidth === 0)) {
-        showCompanyFallbackSplash();
-      }
-    }, 2800);
-    vid.addEventListener('playing', () => {
-      if (vid.videoWidth > 0) clearTimeout(decodeWatch);
-    });
-
-    // Try unmuted autoplay first; if blocked by browser policy, immediately autoplay muted + show Unmute pill!
-    try {
-      vid.muted = false;
-      const p = vid.play();
-      if (p && typeof p.catch === 'function') {
-        p.catch(() => {
-          vid.muted = true;
-          if (el.btnCompanyUnmute) el.btnCompanyUnmute.classList.remove('hidden');
-          const p2 = vid.play();
-          if (p2 && typeof p2.catch === 'function') {
-            p2.catch(() => showCompanyFallbackSplash());
-          }
-        });
-      }
-    } catch {
-      showCompanyFallbackSplash();
-    }
+    // Show crisp YAGUN STUDIO splash image for 2.3s, then smoothly fade into Game Launch Intro
+    companySplashTimer = setTimeout(() => finishCompanySplash(false), 2300);
   }
 
   // ===================== GLOBAL ERROR GUARD & BOOT =====================
