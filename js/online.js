@@ -7,7 +7,7 @@ window.OnlineService = (function () {
   // 1) Firebase 콘솔(https://console.firebase.google.com)에서 무료 Realtime Database 생성
   // 2) 아래 DEFAULT_FIREBASE_DB_URL에 본인 DB 주소 입력 (예: 'https://my-game-default-rtdb.asia-southeast1.firebasedatabase.app')
   // 3) 자세한 3분 설정 방법은 프로젝트의 ONLINE_RANK_SETUP.md 참고!
-  const DEFAULT_FIREBASE_DB_URL = '';
+  const DEFAULT_FIREBASE_DB_URL = 'https://korean-weather-survival-default-rtdb.asia-southeast1.firebasedatabase.app';
 
   const CONFIG = Object.assign({
     firebaseDbUrl: DEFAULT_FIREBASE_DB_URL,
