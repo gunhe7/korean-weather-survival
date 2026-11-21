@@ -29,7 +29,7 @@
 ```json
 {
   "rules": {
-    "weekly_boards": {
+    "weekly_boards_v2": {
       "$weekKey": {
         ".read": true,
         "$uid": {
@@ -38,7 +38,7 @@
         }
       }
     },
-    "user_saves": {
+    "user_saves_v2": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"

@@ -1,5 +1,7 @@
 window.OnlineService = (function () {
-  const BOARD_STORE_KEY = 'kr_weather_online_board_v3_linked';
+  const BOARD_STORE_KEY = 'kr_weather_online_board_v4_clean';
+  const RTDB_BOARD_ROOT = '/weekly_boards_v2';
+  const RTDB_SAVES_ROOT = '/user_saves_v2';
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
   const WEEKLY_REWARD_GEMS = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP1_GEMS) || 500;
 
@@ -301,11 +303,11 @@ window.OnlineService = (function () {
     return token ? `${base}${path}?auth=${encodeURIComponent(token)}` : `${base}${path}`;
   }
 
-  // ===================== PER-USER CLOUD SAVE (/user_saves/{uid}.json) =====================
+  // ===================== PER-USER CLOUD SAVE (/user_saves_v2/{uid}.json) =====================
   async function loadCloudUserSave(uid) {
     if (!uid || !hasRemoteDb()) return null;
     try {
-      const url = await buildAuthedUrl(`/user_saves/${encodeURIComponent(uid)}.json`);
+      const url = await buildAuthedUrl(`${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`);
       const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) return null;
       const data = await res.json();
@@ -319,7 +321,7 @@ window.OnlineService = (function () {
     if (!uid || !saveData || !hasRemoteDb()) return false;
     try {
       const payload = { ...saveData, cloudUpdatedAt: Date.now() };
-      const url = await buildAuthedUrl(`/user_saves/${encodeURIComponent(uid)}.json`);
+      const url = await buildAuthedUrl(`${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`);
       const res = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -390,7 +392,7 @@ window.OnlineService = (function () {
 
     if (hasRemoteDb()) {
       try {
-        const url = await buildAuthedUrl(`/weekly_boards/${encodeURIComponent(weekKey)}/${encodeURIComponent(cleanEntry.uid)}.json`);
+        const url = await buildAuthedUrl(`${RTDB_BOARD_ROOT}/${encodeURIComponent(weekKey)}/${encodeURIComponent(cleanEntry.uid)}.json`);
         await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -415,7 +417,7 @@ window.OnlineService = (function () {
 
     if (hasRemoteDb()) {
       try {
-        const url = `${getDbUrl()}/weekly_boards/${encodeURIComponent(targetWeek)}.json`;
+        const url = `${getDbUrl()}${RTDB_BOARD_ROOT}/${encodeURIComponent(targetWeek)}.json`;
         const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();

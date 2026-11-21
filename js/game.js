@@ -8,6 +8,25 @@
   const SAVE_BACKUP_KEY = 'kr_weather_runner_save_v1_backup';
   const ACTIVE_AUTH_KEY = 'kr_weather_active_auth_v2';
   const GUEST_SAVE_KEY = 'kr_weather_save_v2_guest';
+  const RESET_EPOCH_KEY = 'kr_weather_reset_epoch';
+  const CURRENT_RESET_EPOCH = '20261121_all_accounts_reset_v1';
+
+  // One-time full wipe of all previously created local accounts, saves, and cached boards!
+  let didEpochReset = false;
+  try {
+    if (localStorage.getItem(RESET_EPOCH_KEY) !== CURRENT_RESET_EPOCH) {
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('kr_weather_') || k.startsWith('firebase:'))) {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+      localStorage.setItem(RESET_EPOCH_KEY, CURRENT_RESET_EPOCH);
+      didEpochReset = true;
+    }
+  } catch {}
 
   function getAccountSaveKey(auth) {
     if (auth && (auth.provider === 'google' || auth.provider === 'apple') && auth.uid) {
@@ -64,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd30';
+  const ASSET_VER = '20261121hd31';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -4597,18 +4616,27 @@
 
   // Handle Real Firebase OAuth Redirect / Persistent Session Restoration!
   if (ONLINE && ONLINE.hasFirebaseAuth()) {
-    ONLINE.checkRedirectLoginResult().then(async (redirectProfile) => {
-      if (redirectProfile) {
-        await switchToAccount(redirectProfile, { carryGuestSave: save.auth && save.auth.provider === 'guest' });
-        dismissIntroToHome();
-      }
-    }).catch(() => {});
+    const startAuthListeners = () => {
+      ONLINE.checkRedirectLoginResult().then(async (redirectProfile) => {
+        if (redirectProfile) {
+          await switchToAccount(redirectProfile, { carryGuestSave: save.auth && save.auth.provider === 'guest' });
+          dismissIntroToHome();
+        }
+      }).catch(() => {});
 
-    ONLINE.onAuthStateReady(async (fbProfile) => {
-      if (fbProfile && (!save.auth || !save.auth.loggedIn || save.auth.uid !== fbProfile.uid)) {
-        await switchToAccount(fbProfile, { carryGuestSave: false });
-      }
-    });
+      ONLINE.onAuthStateReady(async (fbProfile) => {
+        if (fbProfile && (!save.auth || !save.auth.loggedIn || save.auth.uid !== fbProfile.uid)) {
+          await switchToAccount(fbProfile, { carryGuestSave: false });
+        }
+      });
+    };
+
+    if (didEpochReset) {
+      // Ensure any previously signed-in Firebase browser session is also cleanly signed out on reset!
+      ONLINE.signOutOAuth().finally(startAuthListeners);
+    } else {
+      startAuthListeners();
+    }
   }
 
   try { tryAutoLockLandscape(false); } catch {}
