@@ -327,7 +327,7 @@ window.RUN_DATA = (function () {
       customAnimFrames: 3,
       customIdleFrames: 8,
       customRunFrames: 8,
-      customAvatar: 'assets/chars/port_hades.png?v=20261121hd47',
+      customAvatar: 'assets/chars/port_hades.png?v=20261121hd48',
       customUmbrella: 'hades_umbrella',
       customMask: 'hades_mask',
       customShieldPrefix: 'hades_shield',

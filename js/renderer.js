@@ -56,7 +56,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd47';
+  const CHAR_ASSET_VER = '20261121hd48';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -971,14 +971,14 @@ window.RunRenderer = (function () {
         dashSpr = getSprite(feverTimer > 0 ? 'fx_dash_gold' : 'fx_dash_blue');
       }
       if (dashSpr) {
-        const pulse = 0.94 + Math.sin(t * 24) * 0.08;
-        const dh = Math.round((isCustomBooster ? (isProne ? 42 : 54) : (isProne ? 26 : 34)) * pulse);
+        const pulse = 0.95 + Math.sin(t * 22) * 0.06;
+        const dh = Math.round((isCustomBooster ? (isProne ? 36 : 44) : (isProne ? 26 : 34)) * pulse);
         const dw = Math.round(dh * (dashSpr.naturalWidth / dashSpr.naturalHeight));
         ctx.save();
-        ctx.globalAlpha = isCustomBooster ? 0.96 : 0.88;
+        ctx.globalAlpha = isCustomBooster ? 0.94 : 0.88;
         ctx.imageSmoothingEnabled = true;
-        const offsetBack = isCustomBooster ? -6 : 2;
-        ctx.drawImage(dashSpr, Math.floor(cx - dw - offsetBack), Math.floor(cy - (isProne ? 20 : scaleHeight * 0.50) - dh / 2), dw, dh);
+        const offsetBack = isCustomBooster ? 6 : 2;
+        ctx.drawImage(dashSpr, Math.floor(cx - dw - offsetBack), Math.floor(cy - (isProne ? 18 : scaleHeight * 0.48) - dh / 2), dw, dh);
         ctx.restore();
       }
     }
@@ -989,13 +989,13 @@ window.RunRenderer = (function () {
         const af = Math.floor(t * 14) % (skinDef.customAuraFrames || 6);
         const auraSpr = getSprite(`${skinDef.customAuraPrefix}_${af}`) || getSprite(`${skinDef.customAuraPrefix}_0`);
         if (auraSpr) {
-          const pulse = 1.0 + Math.sin(t * 10) * 0.06;
-          const aSz = Math.round((isProne ? 64 : scaleHeight * 1.48) * pulse);
+          const pulse = 1.0 + Math.sin(t * 10) * 0.05;
+          const aSz = Math.round((isProne ? 58 : scaleHeight * 1.38) * pulse);
           ctx.save();
-          ctx.globalAlpha = 0.92;
+          ctx.globalAlpha = 0.84;
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(auraSpr, Math.floor(cx - aSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.50) - aSz / 2), aSz, aSz);
+          ctx.drawImage(auraSpr, Math.floor(cx - aSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.48) - aSz / 2), aSz, aSz);
           ctx.restore();
         }
       } else {
@@ -1014,10 +1014,10 @@ window.RunRenderer = (function () {
         ringSpr = getSprite((skinDef && skinDef.customShieldVfx) || 'fx_shield_ring');
       }
       if (ringSpr) {
-        const pulse = 1 + Math.sin(t * 8) * 0.05;
-        const rSz = Math.round((isProne ? 54 : scaleHeight * 1.30) * pulse);
+        const pulse = 1 + Math.sin(t * 8) * 0.04;
+        const rSz = Math.round((isProne ? 52 : scaleHeight * 1.24) * pulse);
         ctx.save();
-        ctx.globalAlpha = 0.90;
+        ctx.globalAlpha = skinDef && skinDef.customShieldPrefix ? 0.72 : 0.88;
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(ringSpr, Math.floor(cx - rSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - rSz / 2), rSz, rSz);
@@ -1036,8 +1036,8 @@ window.RunRenderer = (function () {
     const customUmb = skinDef && skinDef.customUmbrella ? getSprite(skinDef.customUmbrella) : null;
     const umbSpr = customUmb || getSprite('spr_umbrella');
     if (showUmbrella && umbSpr) {
-      const uy = cy - (isProne ? 26 : scaleHeight) - (customUmb ? 10 : 8);
-      const uh = customUmb ? 56 : 44;
+      const uy = cy - (isProne ? 26 : scaleHeight) - 8;
+      const uh = customUmb ? 46 : 44;
       const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
       ctx.save();
       ctx.imageSmoothingEnabled = true;
@@ -1050,7 +1050,7 @@ window.RunRenderer = (function () {
         ctx.rotate(tilt);
         ctx.drawImage(umbSpr, Math.floor(-uw / 2), Math.floor(-uh * 0.52), uw, uh);
       } else {
-        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - (customUmb ? 30 : 24)), uw, uh);
+        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - 24), uw, uh);
       }
       ctx.restore();
     } else if (!dead && umbrellaBrokenTimer > 4.25 && umbSpr) {
@@ -1058,7 +1058,7 @@ window.RunRenderer = (function () {
       const prog = Math.max(0, Math.min(1, (5.0 - umbrellaBrokenTimer) / 0.75));
       const uy = cy - scaleHeight - 10 - prog * 34;
       const ux = cx + 6 - prog * 46;
-      const uh = customUmb ? 48 : 40;
+      const uh = customUmb ? 42 : 40;
       const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
       ctx.save();
       ctx.globalAlpha = Math.max(0, 1 - prog);
@@ -1106,40 +1106,50 @@ window.RunRenderer = (function () {
     if (running && !dead && skinDef && skinDef.trail) {
       const tr = skinDef.trail;
       const isHigh = skinDef.rarity === 'legendary' || skinDef.rarity === 'mythic' || skinDef.rarity === 'epic';
-      const cnt = isHigh ? 6 : 3;
-      for (let k = 0; k < cnt; k++) {
-        const ox = ((t * (isHigh ? 74 : 52) + k * 11) % 38);
-        const oy = Math.sin(t * 9 + k * 1.9) * (isHigh ? 14 : 8);
-        ctx.fillStyle = tr[k % tr.length];
-        const sz = isHigh && k % 2 === 0 ? 4 : 3;
-        ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - scaleHeight * 0.48 + oy), sz, sz);
-      }
-      if (isHigh) {
-        let customAura = null;
-        if (skinDef.customAuraPrefix) {
-          const af = Math.floor(t * 11) % (skinDef.customAuraFrames || 6);
-          customAura = getSprite(`${skinDef.customAuraPrefix}_${af}`) || getSprite(`${skinDef.customAuraPrefix}_0`);
-        } else if (skinDef.customShieldVfx) {
-          customAura = getSprite(skinDef.customShieldVfx);
-        }
-        if (customAura) {
-          const pulse = 0.96 + Math.sin(t * 7) * 0.06;
-          const aSz = Math.round((isProne ? 50 : scaleHeight * 1.24) * pulse);
-          ctx.save();
-          ctx.globalAlpha = (skinDef.customAuraPrefix ? 0.56 : 0.34) + Math.sin(t * 6) * 0.12;
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(customAura, Math.floor(cx - aSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - aSz / 2), aSz, aSz);
-          ctx.restore();
-        } else {
-          ctx.save();
-          ctx.strokeStyle = skinDef.glow || tr[0];
-          ctx.globalAlpha = 0.42 + Math.sin(t * 8) * 0.16;
-          ctx.lineWidth = skinDef.rarity === 'mythic' ? 2.5 : 1.8;
+      if (skinDef.customAuraPrefix) {
+        // Clean delicate drifting underworld flame embers behind Hades (zero blocky squares or muddying ring during normal run!)
+        ctx.save();
+        for (let k = 0; k < 4; k++) {
+          const prog = ((t * 1.65 + k * 0.25) % 1);
+          const ox = 16 + prog * 34;
+          const oy = Math.sin(t * 7 + k * 2.1) * 10 - prog * 8;
+          ctx.globalAlpha = Math.max(0, (1 - prog) * 0.75);
+          ctx.fillStyle = tr[k % tr.length];
           ctx.beginPath();
-          ctx.arc(cx, cy - (isProne ? 16 : scaleHeight * 0.5), isProne ? 26 : scaleHeight * 0.54, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
+          ctx.arc(cx - ox, cy - scaleHeight * 0.45 + oy, 2.2 * (1 - prog * 0.4), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      } else {
+        const cnt = isHigh ? 6 : 3;
+        for (let k = 0; k < cnt; k++) {
+          const ox = ((t * (isHigh ? 74 : 52) + k * 11) % 38);
+          const oy = Math.sin(t * 9 + k * 1.9) * (isHigh ? 14 : 8);
+          ctx.fillStyle = tr[k % tr.length];
+          const sz = isHigh && k % 2 === 0 ? 4 : 3;
+          ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - scaleHeight * 0.48 + oy), sz, sz);
+        }
+        if (isHigh) {
+          const customAura = skinDef.customShieldVfx ? getSprite(skinDef.customShieldVfx) : null;
+          if (customAura) {
+            const pulse = 0.96 + Math.sin(t * 7) * 0.06;
+            const aSz = Math.round((isProne ? 46 : scaleHeight * 1.12) * pulse);
+            ctx.save();
+            ctx.globalAlpha = 0.34 + Math.sin(t * 6) * 0.10;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(customAura, Math.floor(cx - aSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - aSz / 2), aSz, aSz);
+            ctx.restore();
+          } else {
+            ctx.save();
+            ctx.strokeStyle = skinDef.glow || tr[0];
+            ctx.globalAlpha = 0.42 + Math.sin(t * 8) * 0.16;
+            ctx.lineWidth = skinDef.rarity === 'mythic' ? 2.5 : 1.8;
+            ctx.beginPath();
+            ctx.arc(cx, cy - (isProne ? 16 : scaleHeight * 0.5), isProne ? 26 : scaleHeight * 0.54, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
         }
       }
     } else if (running && !dead && charDef.auraType) {
@@ -1209,10 +1219,10 @@ window.RunRenderer = (function () {
         const customMsk = skinDef && skinDef.customMask ? getSprite(skinDef.customMask) : null;
         const maskSpr = customMsk || getSprite('spr_mask');
         if (maskSpr) {
-          const mw = customMsk ? (sliding ? 24 : 28) : (sliding ? 20 : 22);
+          const mw = customMsk ? (sliding ? 19 : 21) : (sliding ? 20 : 22);
           const mh = Math.round(mw * (maskSpr.naturalHeight / maskSpr.naturalWidth));
-          const mx = sliding ? Math.floor(drawW * 0.02) : Math.floor(-mw * (customMsk ? 0.10 : 0.14));
-          const my = sliding ? Math.floor(-drawH * 0.44) : Math.floor(-drawH * 0.51);
+          const mx = sliding ? Math.floor(drawW * 0.06) : Math.floor(-mw * (customMsk ? 0.06 : 0.14));
+          const my = sliding ? Math.floor(-drawH * 0.40) : Math.floor(-drawH * 0.47);
           ctx.drawImage(maskSpr, mx, my, mw, mh);
         } else {
           const my = sliding ? Math.floor(-drawH * 0.34) : Math.floor(-drawH * 0.44);
