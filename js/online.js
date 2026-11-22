@@ -15,8 +15,26 @@ window.OnlineService = (function () {
 
   let fbApp = null;
   let fbAuth = null;
+  let authReadyResolved = false;
+  let authReadyPromise = null;
+  let resolveAuthReady = null;
+  let cachedIdToken = '';
+  let cachedIdTokenUid = '';
+  let cachedIdTokenAt = 0;
   let lastCloudSyncOk = null;
   let lastCloudSyncStatus = 0;
+  let lastCloudSyncAt = 0;
+  let lastCloudSyncError = '';
+
+  const cloudStatusListeners = new Set();
+  function notifyCloudSyncStatus() {
+    const snap = getCloudSyncStatus();
+    cloudStatusListeners.forEach((fn) => { try { fn(snap); } catch {} });
+  }
+  function onCloudSyncStatusChange(fn) {
+    cloudStatusListeners.add(fn);
+    return () => cloudStatusListeners.delete(fn);
+  }
 
   function hasFirebaseAuth() {
     return Boolean(
@@ -42,10 +60,44 @@ window.OnlineService = (function () {
           fbAuth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
         }
       } catch {}
+      if (!authReadyPromise) {
+        authReadyPromise = new Promise((resolve) => { resolveAuthReady = resolve; });
+        fbAuth.onAuthStateChanged((u) => {
+          if (!authReadyResolved) {
+            authReadyResolved = true;
+            if (resolveAuthReady) resolveAuthReady(u || null);
+          }
+          if (u) {
+            u.getIdToken(false).then((tok) => {
+              if (tok) {
+                cachedIdToken = tok;
+                cachedIdTokenUid = u.uid || '';
+                cachedIdTokenAt = Date.now();
+              }
+            }).catch(() => {});
+          } else {
+            cachedIdToken = '';
+            cachedIdTokenUid = '';
+            cachedIdTokenAt = 0;
+          }
+        });
+      }
       return fbAuth;
     } catch {
       return null;
     }
+  }
+
+  async function waitForAuthReady(timeoutMs = 3500) {
+    const auth = ensureFirebaseAuth();
+    if (!auth) return null;
+    if (auth.currentUser) return auth.currentUser;
+    if (authReadyResolved) return auth.currentUser || null;
+    if (!authReadyPromise) return auth.currentUser || null;
+    return Promise.race([
+      authReadyPromise,
+      new Promise((resolve) => setTimeout(() => resolve(auth.currentUser || null), timeoutMs))
+    ]);
   }
 
   let channel = null;
@@ -166,11 +218,21 @@ window.OnlineService = (function () {
     };
   }
 
-  async function getAuthIdToken(forceRefresh = false) {
+  async function getAuthIdToken(forceRefresh = false, waitAuth = true) {
     const auth = ensureFirebaseAuth();
-    if (!auth || !auth.currentUser) return '';
+    if (!auth) return '';
+    if (!auth.currentUser && waitAuth) {
+      await waitForAuthReady(3500);
+    }
+    if (!auth.currentUser) return '';
     try {
-      return await auth.currentUser.getIdToken(forceRefresh);
+      const tok = await auth.currentUser.getIdToken(forceRefresh);
+      if (tok) {
+        cachedIdToken = tok;
+        cachedIdTokenUid = auth.currentUser.uid || '';
+        cachedIdTokenAt = Date.now();
+      }
+      return tok;
     } catch {
       return '';
     }
@@ -357,6 +419,9 @@ window.OnlineService = (function () {
   }
 
   async function signOutOAuth() {
+    cachedIdToken = '';
+    cachedIdTokenUid = '';
+    cachedIdTokenAt = 0;
     const auth = ensureFirebaseAuth();
     if (!auth) return;
     try { await auth.signOut(); } catch {}
@@ -387,46 +452,101 @@ window.OnlineService = (function () {
     return /^https?:\/\//i.test(getDbUrl());
   }
 
-  async function buildAuthedUrl(path, forceRefreshToken = false) {
+  async function buildAuthedUrl(path, forceRefreshToken = false, waitAuth = true) {
     const base = getDbUrl();
-    const token = await getAuthIdToken(forceRefreshToken);
-    return token ? `${base}${path}?auth=${encodeURIComponent(token)}` : `${base}${path}`;
+    const token = await getAuthIdToken(forceRefreshToken, waitAuth);
+    return {
+      url: token ? `${base}${path}?auth=${encodeURIComponent(token)}` : `${base}${path}`,
+      hasToken: Boolean(token)
+    };
   }
 
   function getCloudSyncStatus() {
-    return { ok: lastCloudSyncOk, status: lastCloudSyncStatus };
+    return {
+      ok: lastCloudSyncOk,
+      status: lastCloudSyncStatus,
+      lastSyncAt: lastCloudSyncAt,
+      error: lastCloudSyncError
+    };
   }
 
   // ===================== CROSS-DEVICE PER-USER CLOUD SAVE (/user_saves/{uid}.json) =====================
   async function loadCloudUserSave(uid) {
-    if (!uid || !hasRemoteDb()) return null;
-    // Try primary /user_saves/{uid} first, then fallback /user_saves_v2/{uid}
-    const paths = [`${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`, `/user_saves_v2/${encodeURIComponent(uid)}.json`];
-    for (const p of paths) {
+    if (!uid || !hasRemoteDb()) {
+      return { ok: false, data: null, status: 0, hasToken: false, error: 'no_db' };
+    }
+    const path = `${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`;
+    for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const url = await buildAuthedUrl(p);
+        const forceRefresh = attempt === 1;
+        const { url, hasToken } = await buildAuthedUrl(path, forceRefresh, true);
+        if (!hasToken) {
+          lastCloudSyncOk = false;
+          lastCloudSyncStatus = 0;
+          lastCloudSyncError = 'no_auth_token';
+          notifyCloudSyncStatus();
+          return { ok: false, data: null, status: 0, hasToken: false, error: 'no_auth_token' };
+        }
         const res = await fetch(url, { cache: 'no-store' });
         lastCloudSyncStatus = res.status;
         if (res.ok) {
           lastCloudSyncOk = true;
+          lastCloudSyncAt = Date.now();
+          lastCloudSyncError = '';
           const data = await res.json();
-          if (data && typeof data === 'object') return data;
-        } else if (res.status === 401 || res.status === 403) {
-          lastCloudSyncOk = false;
+          notifyCloudSyncStatus();
+          return { ok: true, data: (data && typeof data === 'object') ? data : null, status: res.status, hasToken: true };
         }
-      } catch {}
+        if ((res.status === 401 || res.status === 403) && attempt === 0) {
+          continue; // Retry once with freshly refreshed Firebase ID token!
+        }
+        lastCloudSyncOk = false;
+        lastCloudSyncError = res.status === 401 || res.status === 403 ? 'permission_denied' : `http_${res.status}`;
+        notifyCloudSyncStatus();
+        return { ok: false, data: null, status: res.status, hasToken, error: lastCloudSyncError };
+      } catch (err) {
+        lastCloudSyncOk = false;
+        lastCloudSyncStatus = 0;
+        lastCloudSyncError = 'network_error';
+        notifyCloudSyncStatus();
+        return { ok: false, data: null, status: 0, hasToken: false, error: (err && err.message) || 'network_error' };
+      }
     }
-    return null;
+    return { ok: false, data: null, status: lastCloudSyncStatus, hasToken: false, error: lastCloudSyncError || 'unknown' };
   }
 
   async function saveCloudUserSave(uid, saveData, useKeepalive = false) {
-    if (!uid || !saveData || !hasRemoteDb()) return false;
-    const payload = JSON.stringify({ ...saveData, cloudUpdatedAt: Date.now() });
-    const paths = [`${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`, `/user_saves_v2/${encodeURIComponent(uid)}.json`];
+    if (!uid || !saveData || !hasRemoteDb()) {
+      return { ok: false, status: 0, hasToken: false, error: 'no_db' };
+    }
+    const updatedAt = Number(saveData.cloudUpdatedAt) || Date.now();
+    const payload = JSON.stringify({ ...saveData, cloudUpdatedAt: updatedAt });
+    const path = `${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`;
 
-    for (const p of paths) {
+    // Fast synchronous keepalive path for pagehide / visibilitychange so mobile/desktop browsers never abort before token await!
+    if (useKeepalive && cachedIdToken && cachedIdTokenUid === uid && (Date.now() - cachedIdTokenAt) < 50 * 60 * 1000) {
       try {
-        const url = await buildAuthedUrl(p);
+        const fastUrl = `${getDbUrl()}${path}?auth=${encodeURIComponent(cachedIdToken)}`;
+        fetch(fastUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true
+        }).catch(() => {});
+        return { ok: true, status: 200, hasToken: true, updatedAt, keepalive: true };
+      } catch {
+        return { ok: false, status: 0, hasToken: true, error: 'keepalive_error' };
+      }
+    }
+
+    const maxAttempts = useKeepalive ? 1 : 2;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const forceRefresh = attempt === 1;
+        const { url, hasToken } = await buildAuthedUrl(path, forceRefresh, !useKeepalive);
+        if (!hasToken) {
+          return { ok: false, status: 0, hasToken: false, error: 'no_auth_token' };
+        }
         const res = await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -436,14 +556,29 @@ window.OnlineService = (function () {
         lastCloudSyncStatus = res.status;
         if (res && res.ok) {
           lastCloudSyncOk = true;
-          return true;
+          lastCloudSyncAt = Date.now();
+          lastCloudSyncError = '';
+          notifyCloudSyncStatus();
+          return { ok: true, status: res.status, hasToken: true, updatedAt };
         }
-        if (res && (res.status === 401 || res.status === 403)) {
+        if (res && (res.status === 401 || res.status === 403) && attempt === 0 && !useKeepalive) {
+          continue; // Retry once with freshly refreshed Firebase ID token!
+        }
+        lastCloudSyncOk = false;
+        lastCloudSyncError = (res && (res.status === 401 || res.status === 403)) ? 'permission_denied' : `http_${res ? res.status : 0}`;
+        notifyCloudSyncStatus();
+        return { ok: false, status: res ? res.status : 0, hasToken, error: lastCloudSyncError };
+      } catch (err) {
+        if (!useKeepalive) {
           lastCloudSyncOk = false;
+          lastCloudSyncStatus = 0;
+          lastCloudSyncError = 'network_error';
+          notifyCloudSyncStatus();
         }
-      } catch {}
+        return { ok: false, status: 0, hasToken: false, error: (err && err.message) || 'network_error' };
+      }
     }
-    return false;
+    return { ok: false, status: lastCloudSyncStatus, hasToken: false, error: lastCloudSyncError || 'unknown' };
   }
 
   // ===================== LINKED-USERS-ONLY WEEKLY LEADERBOARD (ALL REAL USERS SHARED LIVE!) =====================
@@ -511,7 +646,7 @@ window.OnlineService = (function () {
       ];
       for (const path of targets) {
         try {
-          const url = await buildAuthedUrl(path);
+          const { url } = await buildAuthedUrl(path, false, true);
           const res = await fetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -631,6 +766,8 @@ window.OnlineService = (function () {
     hasRemoteDb,
     isRankedProvider,
     getCloudSyncStatus,
+    onCloudSyncStatusChange,
+    waitForAuthReady,
     getWeekInfo,
     getProviderMeta,
     sanitizeNickname,

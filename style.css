@@ -9262,3 +9262,21 @@ input:focus-visible {
     margin-left: -74px;
   }
 }
+
+.login-cur-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.intro-switch-btn.sync {
+  background: linear-gradient(180deg, #2fb8ff, #1474c9);
+  border-color: #091d3e;
+  color: #ffffff;
+}
+
+.intro-switch-btn.sync:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

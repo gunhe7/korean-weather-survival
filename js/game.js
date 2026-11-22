@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd49';
+  const ASSET_VER = '20261121hd50';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -146,6 +146,7 @@
       stageMilestonesClaimed: {},
       scoreRoadClaimed: {},
       tutorialDone: false,
+      cloudUpdatedAt: 0,
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
       auth: cleanAuth,
       weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] }
@@ -205,6 +206,7 @@
       stageMilestonesClaimed: { ...(raw.stageMilestonesClaimed || {}) },
       scoreRoadClaimed: { ...(raw.scoreRoadClaimed || {}) },
       tutorialDone: Boolean(raw.tutorialDone || (Number(raw.playCount) || 0) > 0 || (Number(raw.bestScore) || 0) > 0),
+      cloudUpdatedAt: typeof raw.cloudUpdatedAt === 'number' && Number.isFinite(raw.cloudUpdatedAt) ? Math.max(0, Math.floor(raw.cloudUpdatedAt)) : 0,
       audioSettings: { ...def.audioSettings, ...(raw.audioSettings || {}) },
       auth: {
         ...cleanAuth,
@@ -228,7 +230,7 @@
           bestDist: sameWeek ? (Number(wr.bestDist) || 0) : 0,
           bestYear: sameWeek ? (Number(wr.bestYear) || 1) : 1,
           history: hist,
-          claimedWeeks: Array.isArray(wr.claimedWeeks) ? [...wr.claimedWeeks] : []
+          claimedWeeks: toSafeArray(wr.claimedWeeks).filter((w) => typeof w === 'string')
         };
       })()
     };
@@ -270,8 +272,14 @@
   }
 
   let cloudSaveTimer = null;
+  let cloudHydratedUid = '';
+  let cloudSyncInFlight = false;
+  let lastCloudPullAt = 0;
 
-  function persistSave(immediateCloud = false) {
+  function persistSave(immediateCloud = false, opts = {}) {
+    if (!opts.keepTimestamp) {
+      save.cloudUpdatedAt = Date.now();
+    }
     try {
       const slotKey = getAccountSaveKey(save.auth || activeAuth);
       const json = JSON.stringify(save);
@@ -288,9 +296,15 @@
       // ignore storage errors
     }
 
-    // Auto cloud backup to Firebase /user_saves/{uid} for linked Google & Apple accounts!
+    if (opts.localOnly) return;
+
+    // Auto cloud backup to Firebase /user_saves/{uid} ONLY after initial cloud pull completed for this UID!
+    // (Prevents a freshly opened device with stale localStorage from ever overwriting newer cloud progress!)
     const auth = save.auth;
     if (ONLINE && auth && auth.loggedIn && ONLINE.isRankedProvider(auth.provider) && auth.uid) {
+      if (!opts.forceCloud && cloudHydratedUid !== auth.uid) {
+        return;
+      }
       if (cloudSaveTimer) {
         clearTimeout(cloudSaveTimer);
         cloudSaveTimer = null;
@@ -301,10 +315,10 @@
         const uidSnap = auth.uid;
         cloudSaveTimer = setTimeout(() => {
           cloudSaveTimer = null;
-          if (save.auth && save.auth.uid === uidSnap && ONLINE.isRankedProvider(save.auth.provider)) {
+          if (save.auth && save.auth.uid === uidSnap && ONLINE.isRankedProvider(save.auth.provider) && cloudHydratedUid === uidSnap) {
             try { ONLINE.saveCloudUserSave(uidSnap, save); } catch {}
           }
-        }, 1200);
+        }, 900);
       }
     }
   }
@@ -338,6 +352,7 @@
     loginCurBadge: document.getElementById('login-cur-badge'),
     loginCurName: document.getElementById('login-cur-name'),
     loginCurSub: document.getElementById('login-cur-sub'),
+    btnLoginSync: document.getElementById('btn-login-sync'),
     btnLoginLogout: document.getElementById('btn-login-logout'),
     loginNicknameInput: document.getElementById('login-nickname-input'),
     btnSaveNickname: document.getElementById('btn-save-nickname'),
@@ -1377,27 +1392,31 @@
 
     setProviderChip(el.settingsAccountBadge, auth.provider, false);
     if (el.settingsAccountName) el.settingsAccountName.textContent = nick;
+    const syncSt = (ONLINE && ONLINE.getCloudSyncStatus) ? ONLINE.getCloudSyncStatus() : { ok: null, status: 0, error: '' };
+    const isPermErr = syncSt.ok === false && (syncSt.status === 401 || syncSt.status === 403 || syncSt.error === 'permission_denied');
+    const syncStateTxt = !isLinked
+      ? '게스트 모드 (기기 저장 · 랭킹 미표시)'
+      : (isPermErr
+        ? `${meta.label} · ⚠️ 클라우드 DB 규칙(user_saves) 미게시 (HTTP ${syncSt.status || 401})`
+        : (syncSt.ok === false
+          ? `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · ⚠️ 동기화 재시도 필요`
+          : (syncSt.ok === true
+            ? `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · ☁️ 클라우드 동기화 완료`
+            : `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · ☁️ 모든 기기 자동 동기화`)));
+
     if (el.settingsAccountSub) {
-      el.settingsAccountSub.textContent = isLinked
-        ? `${meta.label}${auth.email ? ` · ${auth.email}` : ''} (클라우드 저장 · 랭킹 참여)`
-        : '게스트 모드 (기기 저장 · 랭킹 미표시)';
+      el.settingsAccountSub.textContent = syncStateTxt;
     }
 
     setProviderChip(el.loginCurBadge, auth.provider, false);
     if (el.loginCurName) el.loginCurName.textContent = auth.loggedIn ? nick : '미로그인';
     if (el.loginCurSub) {
-      const syncSt = (ONLINE && ONLINE.getCloudSyncStatus) ? ONLINE.getCloudSyncStatus() : { ok: null };
-      const cloudTag = !isLinked
-        ? '게스트 모드 (랭킹 미등록 · 연동 권장)'
-        : (syncSt.ok === false
-          ? `${meta.label} · ⚠️ 클라우드 DB 규칙(user_saves) 게시 필요`
-          : `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · ☁️ 모든 기기 자동 동기화`);
-      el.loginCurSub.textContent = !auth.loggedIn ? '계정을 선택해 로그인하세요' : cloudTag;
+      el.loginCurSub.textContent = !auth.loggedIn ? '계정을 선택해 로그인하세요' : syncStateTxt;
     }
+    if (el.btnLoginSync) el.btnLoginSync.classList.toggle('hidden', !auth.loggedIn || !isLinked);
     if (el.btnLoginLogout) el.btnLoginLogout.classList.toggle('hidden', !auth.loggedIn);
     if (el.loginSetupNotice && ONLINE) {
-      const syncSt = ONLINE.getCloudSyncStatus ? ONLINE.getCloudSyncStatus() : { ok: null };
-      el.loginSetupNotice.classList.toggle('hidden', ONLINE.hasFirebaseAuth() && syncSt.ok !== false);
+      el.loginSetupNotice.classList.toggle('hidden', ONLINE.hasFirebaseAuth() && !isPermErr);
     }
     renderIntroAuthState();
   }
@@ -1426,6 +1445,19 @@
     );
   }
 
+  function getSaveProgressWeight(s) {
+    if (!s) return 0;
+    const cb = s.chestBag || {};
+    const bagWeight = (cb.wood || 0) * 80 + (cb.silver || 0) * 180 + (cb.gold || 0) * 400 + (cb.diamond || 0) * 900;
+    return (s.bestScore || 0)
+      + (s.playCount || 0) * 120
+      + (s.unlockedSkins ? s.unlockedSkins.length : 0) * 600
+      + (s.unlockedChars ? Math.max(0, s.unlockedChars.length - 1) : 0) * 500
+      + (s.gold || 0)
+      + (s.gems || 0) * 15
+      + bagWeight;
+  }
+
   function mergeCrossDeviceSaves(cloudRaw, localRaw, authProfile) {
     const c = hydrateSaveData(cloudRaw, authProfile);
     const l = hydrateSaveData(localRaw, authProfile);
@@ -1436,8 +1468,13 @@
 
     const cTs = Number(cloudRaw && cloudRaw.cloudUpdatedAt) || 0;
     const lTs = Number(localRaw && localRaw.cloudUpdatedAt) || 0;
-    const primary = cTs >= lTs ? c : l;
-    const secondary = cTs >= lTs ? l : c;
+    // When both devices have real timestamps, newest play wins; during one-time legacy merge (ts === 0), richer progress wins!
+    let cloudWins = cTs >= lTs;
+    if (cTs === 0 || lTs === 0) {
+      cloudWins = getSaveProgressWeight(c) >= getSaveProgressWeight(l);
+    }
+    const primary = cloudWins ? c : l;
+    const secondary = cloudWins ? l : c;
 
     const mergedChars = Array.from(new Set([...(primary.unlockedChars || []), ...(secondary.unlockedChars || [])]));
     const mergedSkins = Array.from(new Set([...(primary.unlockedSkins || []), ...(secondary.unlockedSkins || [])]));
@@ -1456,6 +1493,7 @@
 
     return {
       ...primary,
+      cloudUpdatedAt: Math.max(cTs, lTs),
       unlockedChars: mergedChars,
       unlockedSkins: mergedSkins,
       charLevels: mergedCharLv,
@@ -1644,20 +1682,119 @@
     }, 340);
   }
 
+  function getSaveVisualSig(s) {
+    if (!s) return '';
+    const cb = s.chestBag || {};
+    return `${s.gold}|${s.gems}|${s.bestScore}|${s.playCount}|${(s.unlockedSkins || []).length}|${(s.unlockedChars || []).length}|${cb.wood || 0},${cb.silver || 0},${cb.gold || 0},${cb.diamond || 0}|${s.selectedChar}|${JSON.stringify(s.equippedSkins || {})}|${JSON.stringify(s.upgrades || {})}|${JSON.stringify(s.charLevels || {})}`;
+  }
+
+  async function syncAccountWithCloud(profile, opts = {}) {
+    const auth = profile || (save && save.auth);
+    if (!ONLINE || !auth || !auth.loggedIn || !ONLINE.isRankedProvider(auth.provider) || !auth.uid) {
+      return { ok: false, reason: 'not_linked' };
+    }
+    if (cloudSyncInFlight) return { ok: false, reason: 'busy' };
+    if (opts.minIntervalMs && (Date.now() - lastCloudPullAt) < opts.minIntervalMs) {
+      return { ok: true, skipped: true };
+    }
+
+    cloudSyncInFlight = true;
+    if (el.btnLoginSync) {
+      el.btnLoginSync.disabled = true;
+      el.btnLoginSync.textContent = '동기화 중...';
+    }
+    try {
+      const uid = auth.uid;
+      const cloudRes = await ONLINE.loadCloudUserSave(uid);
+      lastCloudPullAt = Date.now();
+
+      if (!cloudRes || !cloudRes.ok) {
+        renderProfileUI();
+        if (opts.manual) {
+          const st = cloudRes ? cloudRes.status : 0;
+          if (st === 401 || st === 403 || (cloudRes && cloudRes.error === 'permission_denied')) {
+            showToast('⚠️ 클라우드 권한 오류(401) · Firebase DB 규칙에 user_saves 게시가 필요합니다!');
+          } else if (cloudRes && cloudRes.error === 'no_auth_token') {
+            showToast('⚠️ Google 로그인 세션이 만료되었습니다. Google 계정을 다시 연동해 주세요.');
+          } else {
+            showToast('⚠️ 클라우드 서버 연결 실패 · 네트워크를 확인 후 다시 시도해 주세요.');
+          }
+        }
+        return { ok: false, status: cloudRes ? cloudRes.status : 0 };
+      }
+
+      // Initial cloud read succeeded -> safe to enable cloud writes for this UID!
+      cloudHydratedUid = uid;
+      const cloudData = cloudRes.data;
+      const beforeSig = getSaveVisualSig(save);
+      const localTsBefore = Number(save.cloudUpdatedAt) || 0;
+      const cloudTs = Number(cloudData && cloudData.cloudUpdatedAt) || 0;
+
+      if (cloudData) {
+        const merged = mergeCrossDeviceSaves(cloudData, save, { ...auth, loggedIn: true });
+        const savedNick = (cloudData.auth && cloudData.auth.nickname) || (save.auth && save.auth.nickname) || auth.nickname;
+        merged.auth = { ...auth, loggedIn: true, nickname: savedNick };
+        save = merged;
+        SFX.applySettings(save.audioSettings);
+        previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === save.selectedChar));
+
+        const afterSig = getSaveVisualSig(save);
+        const cloudSig = getSaveVisualSig(hydrateSaveData(cloudData, merged.auth));
+        const localChanged = afterSig !== beforeSig;
+        const needPushUp = afterSig !== cloudSig || localTsBefore > cloudTs;
+
+        persistSave(false, { localOnly: true, keepTimestamp: !needPushUp });
+        if (needPushUp) {
+          await ONLINE.saveCloudUserSave(uid, save);
+        }
+        renderProfileUI();
+        refreshAllMenus();
+        try { syncMyWeeklyScore(); } catch {}
+
+        if (opts.manual) {
+          showToast('☁️ 클라우드 최신 데이터 동기화 완료!');
+        } else if (localChanged && !opts.silent) {
+          showToast('☁️ 다른 기기의 최신 골드 · 스킨 · 기록을 불러왔습니다!');
+        }
+        return { ok: true, updated: localChanged };
+      } else {
+        // First time pushing this account's save to Firebase Cloud
+        save.cloudUpdatedAt = save.cloudUpdatedAt || Date.now();
+        persistSave(false, { localOnly: true, keepTimestamp: true });
+        const pushRes = await ONLINE.saveCloudUserSave(uid, save);
+        renderProfileUI();
+        if (opts.manual) {
+          showToast(pushRes && pushRes.ok
+            ? '☁️ 현재 계정 데이터를 클라우드에 백업했습니다!'
+            : '⚠️ 클라우드 업로드 실패 · Firebase 규칙(user_saves)을 확인해 주세요.');
+        }
+        return { ok: Boolean(pushRes && pushRes.ok), uploaded: true };
+      }
+    } finally {
+      cloudSyncInFlight = false;
+      if (el.btnLoginSync) {
+        el.btnLoginSync.disabled = false;
+        el.btnLoginSync.textContent = '☁️ 동기화';
+      }
+    }
+  }
+
   async function switchToAccount(profile, opts = {}) {
     if (!profile) return;
-    // 1. Flush previous account's save ONLY if previously logged into a DIFFERENT valid account
+    // 1. Flush previous different account locally only (Firebase Auth currentUser may already be the newly signed-in account!)
     if (save && save.auth && save.auth.loggedIn && save.auth.uid && save.auth.uid !== profile.uid) {
-      persistSave(true);
+      persistSave(false, { localOnly: true });
     }
 
     const isLinked = ONLINE && ONLINE.isRankedProvider(profile.provider);
     const slotKey = getAccountSaveKey(profile);
     const localSlot = parseStorageJson(slotKey);
-    let cloudSlot = null;
+    let cloudRes = { ok: false, data: null, status: 0 };
     if (isLinked && ONLINE && profile.uid) {
-      try { cloudSlot = await ONLINE.loadCloudUserSave(profile.uid); } catch {}
+      try { cloudRes = await ONLINE.loadCloudUserSave(profile.uid); } catch {}
+      lastCloudPullAt = Date.now();
     }
+    const cloudSlot = cloudRes && cloudRes.ok ? cloudRes.data : null;
 
     activeAuth = { ...profile, loggedIn: true };
     persistActiveAuth(activeAuth);
@@ -1686,7 +1823,19 @@
 
     SFX.applySettings(save.audioSettings);
     previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === save.selectedChar));
-    persistSave(true);
+
+    if (isLinked && cloudRes && cloudRes.ok) {
+      cloudHydratedUid = profile.uid;
+      // Only push back up if cloud had no save yet or local contributed merged progress
+      const cloudSig = cloudSlot ? getSaveVisualSig(hydrateSaveData(cloudSlot, save.auth)) : '';
+      const mergedSig = getSaveVisualSig(save);
+      const shouldPush = !cloudSlot || cloudSig !== mergedSig;
+      persistSave(shouldPush, { localOnly: !shouldPush, keepTimestamp: !shouldPush, forceCloud: shouldPush });
+    } else {
+      // Cloud read failed (e.g., 401 rules missing or offline) or guest account: save locally ONLY, NEVER overwrite cloud!
+      cloudHydratedUid = '';
+      persistSave(false, { localOnly: true, keepTimestamp: true });
+    }
 
     if (el.loginOverlay) el.loginOverlay.classList.add('hidden');
     renderProfileUI();
@@ -1699,10 +1848,14 @@
 
     const meta = ONLINE ? ONLINE.getProviderMeta(save.auth.provider) : { label: '계정' };
     if (isLinked) {
-      const restored = Boolean(cloudSlot);
-      showToast(restored
-        ? `☁️ ${meta.label} [${save.auth.nickname}] 클라우드 데이터 불러오기 완료!`
-        : `✅ ${meta.label} [${save.auth.nickname}] 연동 완료! (클라우드 저장 · 랭킹 참여)`);
+      if (cloudRes && !cloudRes.ok && (cloudRes.status === 401 || cloudRes.status === 403 || cloudRes.error === 'permission_denied')) {
+        showToast('⚠️ 클라우드 DB 권한(401) 오류! Firebase 규칙에 user_saves를 게시해 주세요.');
+      } else {
+        const restored = Boolean(cloudSlot);
+        showToast(restored
+          ? `☁️ ${meta.label} [${save.auth.nickname}] 클라우드 데이터 불러오기 완료!`
+          : `✅ ${meta.label} [${save.auth.nickname}] 연동 완료! (클라우드 저장 · 랭킹 참여)`);
+      }
     } else {
       showToast('👤 게스트로 입장했습니다. (랭킹은 Google 연동 시 참여)');
     }
@@ -1745,7 +1898,16 @@
 
   async function handleLogout() {
     try { SFX.click(); } catch {}
-    persistSave(true);
+    if (cloudSaveTimer) {
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = null;
+    }
+    const prevAuth = save && save.auth;
+    persistSave(false, { localOnly: true });
+    if (ONLINE && prevAuth && prevAuth.loggedIn && ONLINE.isRankedProvider(prevAuth.provider) && prevAuth.uid && cloudHydratedUid === prevAuth.uid) {
+      try { await ONLINE.saveCloudUserSave(prevAuth.uid, save); } catch {}
+    }
+    cloudHydratedUid = '';
     if (ONLINE) {
       try { await ONLINE.signOutOAuth(); } catch {}
     }
@@ -5100,6 +5262,12 @@
       });
     }
     if (el.btnSaveNickname) el.btnSaveNickname.addEventListener('click', saveEditedNickname);
+    if (el.btnLoginSync) {
+      el.btnLoginSync.addEventListener('click', () => {
+        SFX.click();
+        syncAccountWithCloud(save.auth, { manual: true });
+      });
+    }
     if (el.btnLoginLogout) el.btnLoginLogout.addEventListener('click', handleLogout);
     if (el.btnLoginGoogle) {
       el.btnLoginGoogle.addEventListener('click', () => handleOAuthLogin('google', false));
@@ -5346,20 +5514,25 @@
     });
     if (el.btnLandscapeRun) el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
 
-    // Auto-pause active run + keepalive cloud save flush when leaving tab / switching devices!
+    // Auto-pause active run + keepalive cloud save flush on leave + auto cloud pull on return!
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         if (run && run.active && !paused) {
           paused = true;
           el.pauseOverlay.classList.remove('hidden');
         }
-        if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid) {
+        if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid && cloudHydratedUid === save.auth.uid) {
           try { ONLINE.saveCloudUserSave(save.auth.uid, save, true); } catch {}
+        }
+      } else if (!run || !run.active) {
+        // Returning from another device/tab -> pull latest cloud progress automatically!
+        if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid) {
+          syncAccountWithCloud(save.auth, { minIntervalMs: 8000 });
         }
       }
     });
     window.addEventListener('pagehide', () => {
-      if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid) {
+      if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid && cloudHydratedUid === save.auth.uid) {
         try { ONLINE.saveCloudUserSave(save.auth.uid, save, true); } catch {}
       }
     });
@@ -5513,7 +5686,12 @@
   renderIntroAuthState();
   try { SFX.introJingle(); } catch {}
 
-  // Handle Real Firebase OAuth Redirect / Persistent Session Restoration!
+  // Handle Real Firebase OAuth Redirect / Persistent Session Restoration & Cross-Device Cloud Pull!
+  if (ONLINE && ONLINE.onCloudSyncStatusChange) {
+    ONLINE.onCloudSyncStatusChange(() => {
+      try { renderProfileUI(); } catch {}
+    });
+  }
   if (ONLINE && ONLINE.hasFirebaseAuth()) {
     const startAuthListeners = () => {
       ONLINE.checkRedirectLoginResult().then(async (redirectProfile) => {
@@ -5524,8 +5702,12 @@
       }).catch(() => {});
 
       ONLINE.onAuthStateReady(async (fbProfile) => {
-        if (fbProfile && (!save.auth || !save.auth.loggedIn || save.auth.uid !== fbProfile.uid)) {
+        if (!fbProfile) return;
+        if (!save.auth || !save.auth.loggedIn || save.auth.uid !== fbProfile.uid) {
           await switchToAccount(fbProfile, { carryGuestSave: false });
+        } else {
+          // Same Google account already cached on this device -> ALWAYS pull & merge latest cloud save!
+          await syncAccountWithCloud(fbProfile, { silent: false });
         }
       });
     };
