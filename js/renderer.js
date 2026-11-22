@@ -61,7 +61,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd54';
+  const CHAR_ASSET_VER = '20261121hd55';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -1532,10 +1532,23 @@ window.RunRenderer = (function () {
 
     // All power-up / utility items float trapped inside a glossy iridescent bubble!
     const wobble = Math.sin(t * 6.5 + it.x * 0.04) * 1.0;
-    const bubbleR = 19 + wobble;
+    const isDropChest = it.kind === 'chest_wood' || it.kind === 'chest_silver' || it.kind === 'chest_gold' || it.kind === 'chest_diamond';
+    const bubbleR = (isDropChest ? 21 : 19) + wobble;
     let tint = 'rgba(130, 224, 255, 0.26)';
     let rim = '#7ef0ff';
-    if (it.kind === 'star' || it.kind === 'umbrella_fever' || it.kind === 'chest') {
+    if (it.kind === 'chest_wood') {
+      tint = 'rgba(224, 154, 66, 0.30)';
+      rim = '#f2b866';
+    } else if (it.kind === 'chest_silver') {
+      tint = 'rgba(130, 200, 255, 0.32)';
+      rim = '#9ce2ff';
+    } else if (it.kind === 'chest_gold') {
+      tint = 'rgba(255, 216, 69, 0.36)';
+      rim = '#ffe966';
+    } else if (it.kind === 'chest_diamond') {
+      tint = 'rgba(140, 220, 255, 0.40)';
+      rim = '#d38eff';
+    } else if (it.kind === 'star' || it.kind === 'umbrella_fever' || it.kind === 'chest') {
       tint = 'rgba(255, 224, 92, 0.26)';
       rim = '#ffe359';
     } else if (it.kind === 'coffee') {
@@ -1548,7 +1561,23 @@ window.RunRenderer = (function () {
 
     drawItemBubbleBack(ctx, x, y, bubbleR, tint);
 
-    if (it.kind === 'star') {
+    if (isDropChest) {
+      const tierKey = it.kind.replace('chest_', '');
+      const spr = getSprite(`chest_${tierKey}_0`) || getSprite('ui_chest');
+      if (spr) {
+        const cSz = tierKey === 'diamond' ? 30 : (tierKey === 'gold' ? 29 : 27);
+        ctx.drawImage(spr, Math.floor(x - cSz / 2), Math.floor(y - cSz / 2), cSz, cSz);
+      }
+      if (tierKey === 'diamond' || tierKey === 'gold') {
+        const spAlpha = 0.55 + Math.sin(t * 10 + x) * 0.4;
+        ctx.save();
+        ctx.globalAlpha = spAlpha;
+        ctx.fillStyle = tierKey === 'diamond' ? '#a6f6ff' : '#fff08a';
+        ctx.fillRect(x - 14, y - 14, 4, 4);
+        ctx.fillRect(x + 11, y + 9, 3, 3);
+        ctx.restore();
+      }
+    } else if (it.kind === 'star') {
       const spr = getSprite('item_star');
       if (spr) ctx.drawImage(spr, x - 12, y - 12, 24, 24);
     } else if (it.kind === 'coffee') {

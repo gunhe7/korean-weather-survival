@@ -267,40 +267,47 @@ window.RUN_DATA = (function () {
     { id: 'weekly_year2', metric: 'year2Runs', title: '2년 차 이상 생존 3회', icon: '🔥', target: 3, unit: '회', rewardChest: 'diamond' }
   ];
 
-  // 스킨 등급 정의 (등급별 보석 가격 + 중복 시 골드 보상 투명 공개! 신화는 상자 미출현)
+  // 스킨 등급 정의 (오직 4등급: 희귀 · 영웅 · 전설 · 신화! 마일리지 교환 가격 & 중복 골드 보상)
   const SKIN_RARITIES = {
-    common:    { id: 'common',    name: '일반', color: '#a3c8eb', bg: '#2c4469', dupGold: 120,  gemPrice: 10 },
-    uncommon:  { id: 'uncommon',  name: '고급', color: '#5ef29d', bg: '#166341', dupGold: 200,  gemPrice: 50 },
-    rare:      { id: 'rare',      name: '희귀', color: '#47c8ff', bg: '#18548a', dupGold: 300,  gemPrice: 80 },
-    epic:      { id: 'epic',      name: '영웅', color: '#d084ff', bg: '#5a238a', dupGold: 650,  gemPrice: 120 },
-    legendary: { id: 'legendary', name: '전설', color: '#ffca42', bg: '#8f5200', dupGold: 1200, gemPrice: 400 },
-    mythic:    { id: 'mythic',    name: '신화', color: '#ff5ea8', bg: '#8a144d', dupGold: 2500, gemPrice: 1000 }
+    rare:      { id: 'rare',      name: '희귀', color: '#47c8ff', bg: '#18548a', dupGold: 300,  mileagePrice: 10 },
+    epic:      { id: 'epic',      name: '영웅', color: '#d084ff', bg: '#5a238a', dupGold: 650,  mileagePrice: 30 },
+    legendary: { id: 'legendary', name: '전설', color: '#ffca42', bg: '#8f5200', dupGold: 1200, mileagePrice: 50 },
+    mythic:    { id: 'mythic',    name: '신화', color: '#ff5ea8', bg: '#8a144d', dupGold: 2500, mileagePrice: 200 }
+  };
+  const SKIN_RARITY_ORDER = ['mythic', 'legendary', 'epic', 'rare'];
+
+  // 스킨 전용 뽑기 & 인게임 상자 드랍 설정
+  const SKIN_GACHA = {
+    gemCostPerPull: 200,
+    mileagePerPull: 2,
+    rates: { rare: 70, epic: 20, legendary: 8, mythic: 2 },
+    runChestDropWeights: { wood: 56, silver: 27, gold: 13, diamond: 4 }
   };
 
-  // 22종 수집형 스킨 (일반 20종 · 신화 2종: 화이트 냥이 후드, 명계의 군주 하데스!)
+  // 22종 수집형 스킨 (희귀 20종 · 신화 2종: 화이트 냥이 후드, 명계의 군주 하데스!)
   const SKINS = [
-    // 일반 (20)
-    { id: 'mint_rain',        name: '민트 우비',       rarity: 'common', charId: 'umbrella_master', filter: 'hue-rotate(92deg) saturate(1.15)', glow: '#5ef5c8', trail: ['#5ef5c8', '#ffffff'] },
-    { id: 'coral_rain',       name: '코랄 우비',       rarity: 'common', charId: 'umbrella_master', filter: 'hue-rotate(-28deg) saturate(1.25)', glow: '#ff8a6b', trail: ['#ff8a6b', '#ffe0b5'] },
-    { id: 'teal_pad',         name: '청록 패딩',       rarity: 'common', charId: 'long_padding',    filter: 'hue-rotate(-38deg) saturate(1.15)', glow: '#4ce0d2', trail: ['#4ce0d2', '#c8fff9'] },
-    { id: 'jade_hanbok',      name: '비취 한복',       rarity: 'common', charId: 'short_sleeve',    filter: 'hue-rotate(78deg) saturate(1.15)',  glow: '#78ebb4', trail: ['#78ebb4', '#e0fff0'] },
-    { id: 'pine_santa',       name: '숲속 산타',       rarity: 'common', charId: 'fashionista',     filter: 'hue-rotate(112deg) saturate(1.1)',  glow: '#5cd67d', trail: ['#5cd67d', '#ffe86b'] },
-    { id: 'cherry_rain',      name: '벚꽃 우비',       rarity: 'common', charId: 'umbrella_master', filter: 'hue-rotate(-68deg) saturate(1.3) brightness(1.06)', glow: '#ff8ec7', trail: ['#ff8ec7', '#ffe6f2'] },
-    { id: 'crimson_pad',      name: '크림슨 패딩',     rarity: 'common', charId: 'long_padding',    filter: 'hue-rotate(138deg) saturate(1.35)', glow: '#ff5e78', trail: ['#ff5e78', '#ffd1d9'] },
-    { id: 'royal_hanbok',     name: '어사 한복',       rarity: 'common', charId: 'short_sleeve',    filter: 'hue-rotate(-45deg) saturate(1.35) brightness(1.04)', glow: '#ffd659', trail: ['#ffd659', '#ff9944'] },
-    { id: 'aurora_skier',     name: '오로라 스키어',   rarity: 'common', charId: 'iced_americano',  filter: 'hue-rotate(64deg) saturate(1.35)',  glow: '#6bffd8', trail: ['#6bffd8', '#78aaff'] },
-    { id: 'gold_santa',       name: '황금 산타',       rarity: 'common', charId: 'fashionista',     filter: 'hue-rotate(42deg) saturate(1.45) brightness(1.08)', glow: '#ffdf4d', trail: ['#ffdf4d', '#ffffff'] },
-    { id: 'thunder_rain',     name: '뇌우 폭풍 우비',  rarity: 'common', charId: 'umbrella_master', filter: 'hue-rotate(175deg) saturate(1.4) contrast(1.06)', glow: '#78c4ff', trail: ['#78c4ff', '#ffe959'] },
-    { id: 'glacier_pad',      name: '빙하 수호대원',   rarity: 'common', charId: 'long_padding',    filter: 'hue-rotate(-18deg) saturate(1.3) brightness(1.14)', glow: '#8cf4ff', trail: ['#8cf4ff', '#ffffff'] },
-    { id: 'eclipse_hanbok',   name: '월식 선비',       rarity: 'common', charId: 'short_sleeve',    filter: 'hue-rotate(195deg) saturate(1.45)', glow: '#c87aff', trail: ['#c87aff', '#75d8ff'] },
-    { id: 'cyber_skier',      name: '사이버 스키어',   rarity: 'common', charId: 'iced_americano',  filter: 'hue-rotate(115deg) saturate(1.55) contrast(1.06)', glow: '#ff6be6', trail: ['#ff6be6', '#5ef2ff'] },
-    { id: 'solar_rain',       name: '태양신 우비',     rarity: 'common', charId: 'umbrella_master', filter: 'hue-rotate(-14deg) saturate(1.55) brightness(1.12)', glow: '#ffbb29', trail: ['#fff078', '#ff7b29'] },
-    { id: 'phoenix_pad',      name: '불사조 패딩',     rarity: 'common', charId: 'long_padding',    filter: 'hue-rotate(162deg) saturate(1.65) brightness(1.1)', glow: '#ff6b2b', trail: ['#ff6b2b', '#ffe852'] },
-    { id: 'dragon_hanbok',    name: '청룡 도령',       rarity: 'common', charId: 'short_sleeve',    filter: 'hue-rotate(148deg) saturate(1.5) brightness(1.1)', glow: '#38e8ff', trail: ['#38e8ff', '#ffe259'] },
-    { id: 'frost_santa',      name: '겨울왕국 산타',   rarity: 'common', charId: 'fashionista',     filter: 'hue-rotate(198deg) saturate(1.45) brightness(1.12)', glow: '#75e6ff', trail: ['#75e6ff', '#ffffff'] },
-    { id: 'mythic_typhoon',   name: '태풍의 지배자',   rarity: 'common', charId: 'umbrella_master', filter: 'hue-rotate(225deg) saturate(1.75) brightness(1.12)', glow: '#ff52b8', trail: ['#ff52b8', '#5ef5ff', '#ffe859'] },
-    { id: 'mythic_celestial', name: '천상의 기상술사', rarity: 'common', charId: 'iced_americano',  filter: 'hue-rotate(265deg) saturate(1.7) brightness(1.14)',  glow: '#c96bff', trail: ['#c96bff', '#ffe866', '#66f2ff'] },
-    // 신화 스페셜 스킨 (상점 보석 1,000💎 전용!)
+    // 희귀 (20)
+    { id: 'mint_rain',        name: '민트 우비',       rarity: 'rare', charId: 'umbrella_master', filter: 'hue-rotate(92deg) saturate(1.15)', glow: '#5ef5c8', trail: ['#5ef5c8', '#ffffff'] },
+    { id: 'coral_rain',       name: '코랄 우비',       rarity: 'rare', charId: 'umbrella_master', filter: 'hue-rotate(-28deg) saturate(1.25)', glow: '#ff8a6b', trail: ['#ff8a6b', '#ffe0b5'] },
+    { id: 'teal_pad',         name: '청록 패딩',       rarity: 'rare', charId: 'long_padding',    filter: 'hue-rotate(-38deg) saturate(1.15)', glow: '#4ce0d2', trail: ['#4ce0d2', '#c8fff9'] },
+    { id: 'jade_hanbok',      name: '비취 한복',       rarity: 'rare', charId: 'short_sleeve',    filter: 'hue-rotate(78deg) saturate(1.15)',  glow: '#78ebb4', trail: ['#78ebb4', '#e0fff0'] },
+    { id: 'pine_santa',       name: '숲속 산타',       rarity: 'rare', charId: 'fashionista',     filter: 'hue-rotate(112deg) saturate(1.1)',  glow: '#5cd67d', trail: ['#5cd67d', '#ffe86b'] },
+    { id: 'cherry_rain',      name: '벚꽃 우비',       rarity: 'rare', charId: 'umbrella_master', filter: 'hue-rotate(-68deg) saturate(1.3) brightness(1.06)', glow: '#ff8ec7', trail: ['#ff8ec7', '#ffe6f2'] },
+    { id: 'crimson_pad',      name: '크림슨 패딩',     rarity: 'rare', charId: 'long_padding',    filter: 'hue-rotate(138deg) saturate(1.35)', glow: '#ff5e78', trail: ['#ff5e78', '#ffd1d9'] },
+    { id: 'royal_hanbok',     name: '어사 한복',       rarity: 'rare', charId: 'short_sleeve',    filter: 'hue-rotate(-45deg) saturate(1.35) brightness(1.04)', glow: '#ffd659', trail: ['#ffd659', '#ff9944'] },
+    { id: 'aurora_skier',     name: '오로라 스키어',   rarity: 'rare', charId: 'iced_americano',  filter: 'hue-rotate(64deg) saturate(1.35)',  glow: '#6bffd8', trail: ['#6bffd8', '#78aaff'] },
+    { id: 'gold_santa',       name: '황금 산타',       rarity: 'rare', charId: 'fashionista',     filter: 'hue-rotate(42deg) saturate(1.45) brightness(1.08)', glow: '#ffdf4d', trail: ['#ffdf4d', '#ffffff'] },
+    { id: 'thunder_rain',     name: '뇌우 폭풍 우비',  rarity: 'rare', charId: 'umbrella_master', filter: 'hue-rotate(175deg) saturate(1.4) contrast(1.06)', glow: '#78c4ff', trail: ['#78c4ff', '#ffe959'] },
+    { id: 'glacier_pad',      name: '빙하 수호대원',   rarity: 'rare', charId: 'long_padding',    filter: 'hue-rotate(-18deg) saturate(1.3) brightness(1.14)', glow: '#8cf4ff', trail: ['#8cf4ff', '#ffffff'] },
+    { id: 'eclipse_hanbok',   name: '월식 선비',       rarity: 'rare', charId: 'short_sleeve',    filter: 'hue-rotate(195deg) saturate(1.45)', glow: '#c87aff', trail: ['#c87aff', '#75d8ff'] },
+    { id: 'cyber_skier',      name: '사이버 스키어',   rarity: 'rare', charId: 'iced_americano',  filter: 'hue-rotate(115deg) saturate(1.55) contrast(1.06)', glow: '#ff6be6', trail: ['#ff6be6', '#5ef2ff'] },
+    { id: 'solar_rain',       name: '태양신 우비',     rarity: 'rare', charId: 'umbrella_master', filter: 'hue-rotate(-14deg) saturate(1.55) brightness(1.12)', glow: '#ffbb29', trail: ['#fff078', '#ff7b29'] },
+    { id: 'phoenix_pad',      name: '불사조 패딩',     rarity: 'rare', charId: 'long_padding',    filter: 'hue-rotate(162deg) saturate(1.65) brightness(1.1)', glow: '#ff6b2b', trail: ['#ff6b2b', '#ffe852'] },
+    { id: 'dragon_hanbok',    name: '청룡 도령',       rarity: 'rare', charId: 'short_sleeve',    filter: 'hue-rotate(148deg) saturate(1.5) brightness(1.1)', glow: '#38e8ff', trail: ['#38e8ff', '#ffe259'] },
+    { id: 'frost_santa',      name: '겨울왕국 산타',   rarity: 'rare', charId: 'fashionista',     filter: 'hue-rotate(198deg) saturate(1.45) brightness(1.12)', glow: '#75e6ff', trail: ['#75e6ff', '#ffffff'] },
+    { id: 'mythic_typhoon',   name: '태풍의 지배자',   rarity: 'rare', charId: 'umbrella_master', filter: 'hue-rotate(225deg) saturate(1.75) brightness(1.12)', glow: '#ff52b8', trail: ['#ff52b8', '#5ef5ff', '#ffe859'] },
+    { id: 'mythic_celestial', name: '천상의 기상술사', rarity: 'rare', charId: 'iced_americano',  filter: 'hue-rotate(265deg) saturate(1.7) brightness(1.14)',  glow: '#c96bff', trail: ['#c96bff', '#ffe866', '#66f2ff'] },
+    // 신화 스페셜 스킨 (스킨 뽑기 · 마일리지 200 교환!)
     {
       id: 'catgirl_hoodie',
       name: '화이트 냥이 후드',
@@ -312,7 +319,6 @@ window.RUN_DATA = (function () {
       customRunFrames: 8,
       customAvatar: 'assets/chars/port_catgirl.png?v=20261121hd32',
       customShieldVfx: 'catgirl_fx_paw',
-      gemPrice: 1000,
       glow: '#ff96dc',
       trail: ['#ff96dc', '#ffffff', '#ffc4ee'],
       desc: '8프레임 전용 풀애니메이션(달리기·점프·슬라이드) & 핑크 냥이 발바닥 오라!'
@@ -335,14 +341,13 @@ window.RUN_DATA = (function () {
       customBoosterFrames: 12,
       customAuraPrefix: 'hades_aura',
       customAuraFrames: 6,
-      gemPrice: 1000,
       glow: '#a84cff',
       trail: ['#a84cff', '#d28eff', '#6f2dff'],
       desc: '뒤에서 은은하게 빛나는 명계 오라 · 전용 보라 우산 & 마스크 · 6프레임 보호막 · 12프레임 불꽃 부스터!'
     }
   ];
 
-  // 4종 상자 정의 (정확한 보상 확률 + 골드/다이아 지급 범위 + 천장 설정!)
+  // 4종 상자 정의 (나무·은: 골드 구매 | 황금 40💎 · 다이아 100💎 | 뽑기권 교환 비율 포함!)
   const CHESTS = {
     wood: {
       id: 'wood',
@@ -350,14 +355,15 @@ window.RUN_DATA = (function () {
       icon: 'assets/chests/chest_wood_0.png',
       accent: '#e09a42',
       glow: 'rgba(255, 198, 92, 0.55)',
-      source: '일반 플레이 (400m+ 일일 최대 3회) · 출석 보상',
+      source: '달리기 중 획득 · 400m+ 일일 최대 3회 · 출석 · 상점',
       shopGold: 300,
       shopGems: null,
+      ticketCost: 15,
       goldRange: [100, 250],
       gemRange: [1, 2],
       pityTarget: null,
       pityMinRarity: null,
-      rates: { gold: 75, common: 18, rare: 5, epic: 1.5, legendary: 0, mythic: 0, diamond: 0.5 }
+      rates: { gold: 75, rare: 23, epic: 1.5, legendary: 0, mythic: 0, diamond: 0.5 }
     },
     silver: {
       id: 'silver',
@@ -365,14 +371,15 @@ window.RUN_DATA = (function () {
       icon: 'assets/chests/chest_silver_0.png',
       accent: '#82c8ff',
       glow: 'rgba(112, 206, 255, 0.6)',
-      source: '연속 출석 · 업적 보상 · 상점',
+      source: '달리기 중 획득 · 연속 출석 · 업적 · 상점',
       shopGold: 700,
       shopGems: null,
+      ticketCost: 10,
       goldRange: [250, 500],
       gemRange: [2, 4],
       pityTarget: null,
       pityMinRarity: null,
-      rates: { gold: 65, common: 15, rare: 15, epic: 3, legendary: 0, mythic: 0, diamond: 2 }
+      rates: { gold: 65, rare: 30, epic: 3, legendary: 0, mythic: 0, diamond: 2 }
     },
     gold: {
       id: 'gold',
@@ -380,14 +387,15 @@ window.RUN_DATA = (function () {
       icon: 'assets/chests/chest_gold_0.png',
       accent: '#ffd845',
       glow: 'rgba(255, 214, 62, 0.72)',
-      source: '일일 퀘스트 완료 · 고득점 업적 · 상점',
-      shopGold: 1500,
-      shopGems: 15,
+      source: '달리기 중 획득 · 일일 퀘스트 · 업적 · 보석 상점(40💎)',
+      shopGold: null,
+      shopGems: 40,
+      ticketCost: 5,
       goldRange: [500, 1000],
       gemRange: [5, 10],
       pityTarget: 10,
       pityMinRarity: 'epic',
-      rates: { gold: 50, common: 0, rare: 25, epic: 17, legendary: 3, mythic: 0, diamond: 5 }
+      rates: { gold: 50, rare: 25, epic: 17, legendary: 3, mythic: 0, diamond: 5 }
     },
     diamond: {
       id: 'diamond',
@@ -395,14 +403,15 @@ window.RUN_DATA = (function () {
       icon: 'assets/chests/chest_diamond_0.png',
       accent: '#78e6ff',
       glow: 'rgba(148, 128, 255, 0.78)',
-      source: '주간 퀘스트 완료 · 고난도 업적 · 7일 출석 · 상점',
+      source: '달리기 중 희귀 등장 · 주간 퀘스트 · 7일 출석 · 보석 상점(100💎)',
       shopGold: null,
-      shopGems: 35,
+      shopGems: 100,
+      ticketCost: 2,
       goldRange: [1000, 2000],
       gemRange: [10, 20],
       pityTarget: 15,
       pityMinRarity: 'legendary',
-      rates: { gold: 25, common: 0, uncommon: 0, rare: 10, epic: 30, legendary: 25, mythic: 0, diamond: 10 }
+      rates: { gold: 25, rare: 10, epic: 30, legendary: 25, mythic: 0, diamond: 10 }
     }
   };
   const CHEST_ORDER = ['wood', 'silver', 'gold', 'diamond'];
@@ -646,7 +655,7 @@ window.RUN_DATA = (function () {
     { id: 'gem_pack_100',  productId: 'com.gunhe7.kweathersurvival.gems100',  name: '보석 100개',   gems: 100,  krwPrice: 1000,  badge: '스타터',      accent: '#39e38a', tier: 'sm' },
     { id: 'gem_pack_300',  productId: 'com.gunhe7.kweathersurvival.gems300',  name: '보석 300개',   gems: 300,  krwPrice: 3000,  badge: '인기!',       accent: '#2fd8ff', tier: 'md' },
     { id: 'gem_pack_500',  productId: 'com.gunhe7.kweathersurvival.gems500',  name: '보석 500개',   gems: 500,  krwPrice: 5000,  badge: '추천!',       accent: '#a96dff', tier: 'lg' },
-    { id: 'gem_pack_1000', productId: 'com.gunhe7.kweathersurvival.gems1000', name: '보석 1,000개', gems: 1000, krwPrice: 10000, badge: '신화 스킨 팩', accent: '#ff5ea8', tier: 'xl' }
+    { id: 'gem_pack_1000', productId: 'com.gunhe7.kweathersurvival.gems1000', name: '보석 1,000개', gems: 1000, krwPrice: 10000, badge: '스킨 뽑기 팩', accent: '#ff5ea8', tier: 'xl' }
   ];
 
   return {
@@ -665,6 +674,8 @@ window.RUN_DATA = (function () {
     DAILY_MISSIONS,
     WEEKLY_MISSIONS,
     SKIN_RARITIES,
+    SKIN_RARITY_ORDER,
+    SKIN_GACHA,
     SKINS,
     CHESTS,
     CHEST_ORDER,

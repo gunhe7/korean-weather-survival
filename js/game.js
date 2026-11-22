@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd54';
+  const ASSET_VER = '20261121hd55';
 
   function getSpawnRight() {
     return (Renderer && Renderer.getSpawnX) ? Renderer.getSpawnX() : Renderer.W;
@@ -139,6 +139,9 @@
       unlockedSkins: [],
       equippedSkins: {},
       chestBag: { wood: 0, silver: 0, gold: 0, diamond: 0 },
+      gachaTickets: 0,
+      mileage: 0,
+      gachaHistory: [],
       pity: { gold: 0, diamond: 0 },
       dailyWoodChestDrops: { date: today, count: 0 },
       upgrades: { hp: 0, magnet: 0, defense: 0, score: 0 },
@@ -191,6 +194,9 @@
       unlockedSkins: toSafeArray(raw.unlockedSkins).filter((id) => typeof id === 'string'),
       equippedSkins: raw.equippedSkins && typeof raw.equippedSkins === 'object' ? { ...raw.equippedSkins } : {},
       chestBag: { wood: 0, silver: 0, gold: 0, diamond: 0, ...(raw.chestBag || {}) },
+      gachaTickets: typeof raw.gachaTickets === 'number' && Number.isFinite(raw.gachaTickets) ? Math.max(0, Math.floor(raw.gachaTickets)) : 0,
+      mileage: typeof raw.mileage === 'number' && Number.isFinite(raw.mileage) ? Math.max(0, Math.floor(raw.mileage)) : 0,
+      gachaHistory: toSafeArray(raw.gachaHistory).filter((x) => x && typeof x === 'object').slice(0, 50),
       pity: { gold: 0, diamond: 0, ...(raw.pity || {}) },
       dailyWoodChestDrops: { date: today, count: Number(rawDrops.count) || 0 },
       upgrades: { ...def.upgrades, ...(raw.upgrades || {}) },
@@ -335,7 +341,7 @@
 
   // ===================== APP UI STATE =====================
   let currentTab = 'home';
-  let currentShopSubtab = 'chests';
+  let currentShopSubtab = 'gacha';
   let currentQuestSubtab = 'daily';
   let previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === save.selectedChar));
   let detailCharIdx = null;
@@ -579,8 +585,23 @@
 
     vaultOverlay: document.getElementById('vault-overlay'),
     vaultTotalPill: document.getElementById('vault-total-pill'),
+    vaultTicketPill: document.getElementById('vault-ticket-pill'),
+    btnVaultGoGacha: document.getElementById('btn-vault-go-gacha'),
     vaultModalGrid: document.getElementById('vault-modal-grid'),
     btnCloseVault: document.getElementById('btn-close-vault'),
+
+    gachaResultOverlay: document.getElementById('gacha-result-overlay'),
+    gachaResTitle: document.getElementById('gacha-res-title'),
+    gachaResMileage: document.getElementById('gacha-res-mileage'),
+    gachaResGrid: document.getElementById('gacha-res-grid'),
+    gachaResSummary: document.getElementById('gacha-res-summary'),
+    btnGachaResEquip: document.getElementById('btn-gacha-res-equip'),
+    btnGachaResAgain: document.getElementById('btn-gacha-res-again'),
+    btnGachaResClose: document.getElementById('btn-gacha-res-close'),
+
+    gachaHistoryOverlay: document.getElementById('gacha-history-overlay'),
+    btnCloseGachaHistory: document.getElementById('btn-close-gacha-history'),
+    gachaHistoryList: document.getElementById('gacha-history-list'),
 
     tutRunHud: document.getElementById('tut-run-hud'),
     tutRunStepPill: document.getElementById('tut-run-step-pill'),
@@ -650,16 +671,205 @@
     return min + Math.floor(Math.random() * (max - min + 1));
   }
 
-  // ===================== CHEST GACHA ENGINE (EXACT RATES + DUPLICATE PROTECTION + PITY!) =====================
-  function getSkinGemPrice(sk) {
+  // ===================== CHEST & SKIN GACHA ENGINE (4 RARITIES · MILEAGE · TICKETS!) =====================
+  function getSkinMileagePrice(sk) {
     if (!sk) return 10;
-    if (typeof sk.gemPrice === 'number' && sk.gemPrice > 0) return sk.gemPrice;
+    if (typeof sk.mileagePrice === 'number' && sk.mileagePrice > 0) return sk.mileagePrice;
     const rar = DATA.SKIN_RARITIES[sk.rarity];
-    return (rar && rar.gemPrice) || 10;
+    return (rar && rar.mileagePrice) || 10;
+  }
+
+  function computeGachaCost(count) {
+    const c = Math.max(1, Math.floor(count || 1));
+    const tickets = Math.max(0, Math.floor(save.gachaTickets || 0));
+    const gemPerPull = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.gemCostPerPull) || 200;
+    const useTickets = Math.min(tickets, c);
+    const needGems = (c - useTickets) * gemPerPull;
+    const canAfford = (save.gems || 0) >= needGems;
+    return { count: c, useTickets, needGems, canAfford };
+  }
+
+  function rollOneGachaSkin() {
+    const rates = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates) || { rare: 70, epic: 20, legendary: 8, mythic: 2 };
+    const order = ['rare', 'epic', 'legendary', 'mythic'];
+    const totalW = order.reduce((s, k) => s + (rates[k] || 0), 0) || 100;
+    const r = Math.random() * totalW;
+    let acc = 0;
+    let hitRarity = 'rare';
+    for (const k of order) {
+      acc += rates[k] || 0;
+      if (r < acc) { hitRarity = k; break; }
+    }
+
+    let pool = DATA.SKINS.filter((s) => s.rarity === hitRarity);
+    if (pool.length === 0) {
+      // Gracefully fall back to rare skins if an intermediate tier has no skins yet (Mythic stays strictly at its exact rate!)
+      pool = DATA.SKINS.filter((s) => s.rarity === 'rare');
+      if (pool.length === 0) pool = DATA.SKINS;
+    }
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    const rarObj = DATA.SKIN_RARITIES[picked.rarity] || DATA.SKIN_RARITIES.rare;
+    const alreadyOwned = save.unlockedSkins.includes(picked.id);
+    let dupGold = 0;
+    if (!alreadyOwned) {
+      save.unlockedSkins.push(picked.id);
+    } else {
+      dupGold = rarObj.dupGold || 300;
+      save.gold = (save.gold || 0) + dupGold;
+    }
+
+    const milGain = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.mileagePerPull) || 2;
+    save.mileage = (save.mileage || 0) + milGain;
+    if (!Array.isArray(save.gachaHistory)) save.gachaHistory = [];
+    save.gachaHistory.unshift({
+      skinId: picked.id,
+      name: picked.name,
+      rarity: picked.rarity,
+      isNew: !alreadyOwned,
+      dupGold,
+      at: Date.now()
+    });
+    if (save.gachaHistory.length > 50) save.gachaHistory.length = 50;
+
+    return { skin: picked, rarity: picked.rarity, isNew: !alreadyOwned, dupGold, milGain };
+  }
+
+  let lastGachaPullCount = 1;
+  function performSkinGacha(count = 1) {
+    const cost = computeGachaCost(count);
+    if (!cost.canAfford) {
+      SFX.click();
+      showToast(`🎟️ 뽑기권(상자 보관함 교환) 또는 💎 보석(${cost.needGems.toLocaleString('ko-KR')}💎)이 부족합니다!`);
+      return;
+    }
+    save.gachaTickets = Math.max(0, (save.gachaTickets || 0) - cost.useTickets);
+    save.gems = Math.max(0, (save.gems || 0) - cost.needGems);
+
+    const results = [];
+    for (let i = 0; i < cost.count; i++) {
+      results.push(rollOneGachaSkin());
+    }
+    lastGachaPullCount = cost.count;
+    persistSave(true);
+    refreshAllMenus();
+
+    const hasBig = results.some((x) => x.rarity === 'mythic' || x.rarity === 'legendary' || x.isNew);
+    if (hasBig) SFX.chestJackpot();
+    else SFX.chestOpen();
+
+    showGachaResultModal(results, cost.count);
+  }
+
+  function showGachaResultModal(results, count) {
+    if (!el.gachaResultOverlay || !el.gachaResGrid) return;
+    const totalMileage = results.reduce((s, x) => s + (x.milGain || 2), 0);
+    const totalDupGold = results.reduce((s, x) => s + (x.dupGold || 0), 0);
+    const newSkins = results.filter((x) => x.isNew);
+    const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
+    const bestNew = newSkins.slice().sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0))[0] || null;
+
+    if (el.gachaResTitle) {
+      el.gachaResTitle.textContent = count > 1 ? `🌟 스킨 ${count}회 연속 뽑기 결과!` : '🌟 스킨 1회 뽑기 결과!';
+    }
+    if (el.gachaResMileage) {
+      el.gachaResMileage.textContent = `✨ +${totalMileage} 마일리지 적립 (보유 ${(save.mileage || 0).toLocaleString('ko-KR')})`;
+    }
+
+    el.gachaResGrid.className = `gacha-res-grid ${count === 1 ? 'single' : 'multi'}`;
+    el.gachaResGrid.innerHTML = '';
+
+    results.forEach((item, idx) => {
+      const sk = item.skin;
+      const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
+      const ownerChar = getCharDef(sk.charId);
+      const skAv = getSkinAvatar(ownerChar, sk);
+      const skFlt = getSkinFilter(sk);
+
+      const card = document.createElement('div');
+      card.className = `gacha-res-card rar-${sk.rarity}${item.isNew ? ' is-new' : ''}`;
+      card.style.animationDelay = `${Math.min(idx * 55, 550)}ms`;
+      card.innerHTML = `
+        <div class="gacha-rc-top">
+          <span class="gacha-rc-rar" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
+          ${item.isNew ? '<span class="gacha-rc-new">NEW!</span>' : '<span class="gacha-rc-dup">중복</span>'}
+        </div>
+        <div class="gacha-rc-art">
+          <img src="${skAv}" alt="${sk.name}" style="${skFlt ? `filter:${skFlt};` : ''}" />
+        </div>
+        <div class="gacha-rc-name">${sk.name}</div>
+        <div class="gacha-rc-sub">${item.isNew ? ownerChar.name : `+${item.dupGold.toLocaleString('ko-KR')} G`}</div>
+      `;
+      el.gachaResGrid.appendChild(card);
+    });
+
+    if (el.gachaResSummary) {
+      const parts = [];
+      if (newSkins.length > 0) parts.push(`✨ 신규 스킨 ${newSkins.length}종 획득!`);
+      if (totalDupGold > 0) parts.push(`🪙 중복 보상 +${totalDupGold.toLocaleString('ko-KR')} G`);
+      parts.push(`✨ 마일리지 +${totalMileage}`);
+      el.gachaResSummary.textContent = parts.join(' · ');
+    }
+
+    if (el.btnGachaResEquip) {
+      if (bestNew) {
+        el.btnGachaResEquip.classList.remove('hidden');
+        el.btnGachaResEquip.textContent = `✨ [${bestNew.skin.name}] 장착`;
+        el.btnGachaResEquip.onclick = () => {
+          SFX.levelUp();
+          save.equippedSkins[bestNew.skin.charId] = bestNew.skin.id;
+          if (isCharUnlocked(bestNew.skin.charId)) {
+            save.selectedChar = bestNew.skin.charId;
+            previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === bestNew.skin.charId));
+          }
+          persistSave();
+          el.gachaResultOverlay.classList.add('hidden');
+          refreshAllMenus();
+          showToast(`✨ [${bestNew.skin.name}] 스킨 장착 완료!`);
+        };
+      } else {
+        el.btnGachaResEquip.classList.add('hidden');
+        el.btnGachaResEquip.onclick = null;
+      }
+    }
+
+    if (el.btnGachaResAgain) {
+      const nextCost = computeGachaCost(count);
+      const costStr = nextCost.useTickets > 0 && nextCost.needGems > 0
+        ? `🎟️${nextCost.useTickets} + 💎${nextCost.needGems.toLocaleString('ko-KR')}`
+        : (nextCost.useTickets > 0 ? `🎟️ ${nextCost.useTickets}` : `💎 ${nextCost.needGems.toLocaleString('ko-KR')}`);
+      el.btnGachaResAgain.textContent = `🎰 ${count}회 다시 뽑기 (${costStr})`;
+      el.btnGachaResAgain.onclick = () => performSkinGacha(count);
+    }
+
+    el.gachaResultOverlay.classList.remove('hidden');
+  }
+
+  function openGachaHistoryModal() {
+    if (!el.gachaHistoryOverlay || !el.gachaHistoryList) return;
+    SFX.click();
+    const list = Array.isArray(save.gachaHistory) ? save.gachaHistory : [];
+    if (list.length === 0) {
+      el.gachaHistoryList.innerHTML = '<div class="gacha-hist-empty">아직 스킨 뽑기 내역이 없습니다.<br/>스킨 뽑기를 이용하면 최근 50회 기록이 표시됩니다!</div>';
+    } else {
+      el.gachaHistoryList.innerHTML = list.map((h) => {
+        const rar = DATA.SKIN_RARITIES[h.rarity] || DATA.SKIN_RARITIES.rare;
+        const d = h.at ? new Date(h.at) : null;
+        const ts = d ? `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+        return `
+          <div class="gacha-hist-row">
+            <span class="gacha-rc-rar" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
+            <strong class="gacha-hist-name">${h.name}</strong>
+            <span class="gacha-hist-tag ${h.isNew ? 'new' : 'dup'}">${h.isNew ? 'NEW!' : `중복 +${(h.dupGold || 0).toLocaleString('ko-KR')}G`}</span>
+            <span class="gacha-hist-time">${ts}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    el.gachaHistoryOverlay.classList.remove('hidden');
   }
 
   function pickSkinOrDupGold(rarity, pityTriggered) {
-    // 신화(mythic) 등급은 상자에서 절대 출현하지 않음!
+    // 신화(mythic) 등급은 상자에서 절대 출현하지 않음! (스킨 뽑기 / 마일리지 200 전용)
     if (rarity === 'mythic') rarity = 'legendary';
     let pool = DATA.SKINS.filter((s) => s.rarity === rarity && s.rarity !== 'mythic');
     if (pool.length === 0) {
@@ -672,9 +882,10 @@
       return { kind: 'skin', rarity: picked.rarity, skin: picked, isDuplicate: false, pityTriggered };
     }
     // Duplicate skin protection -> grant transparent disclosed gold refund!
-    const dupGold = (DATA.SKIN_RARITIES[rarity] && DATA.SKIN_RARITIES[rarity].dupGold) || 300;
+    const effRar = DATA.SKIN_RARITIES[rarity] ? rarity : 'rare';
+    const dupGold = (DATA.SKIN_RARITIES[effRar] && DATA.SKIN_RARITIES[effRar].dupGold) || 300;
     save.gold += dupGold;
-    return { kind: 'dup_gold', rarity, amount: dupGold, isDuplicate: true, pityTriggered };
+    return { kind: 'dup_gold', rarity: effRar, amount: dupGold, isDuplicate: true, pityTriggered };
   }
 
   function rollChestReward(tierId) {
@@ -701,7 +912,7 @@
       result = pickSkinOrDupGold('legendary', true);
     } else {
       // 2. Exact Weighted Probability Roll (uses totalWeight for safety; Mythic excluded from chests!)
-      const order = ['gold', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'diamond'];
+      const order = ['gold', 'rare', 'epic', 'legendary', 'diamond'];
       const totalWeight = order.reduce((sum, k) => sum + (chest.rates[k] || 0), 0) || 100;
       const r = Math.random() * totalWeight;
       let acc = 0;
@@ -859,9 +1070,9 @@
       el.chestRewardRarity.style.color = '#7ef6ff';
       el.chestRewardVisual.innerHTML = `<span class="rw-big-emoji">💎</span>`;
       el.chestRewardName.textContent = `+${rw.amount} 다이아`;
-      el.chestRewardSub.textContent = `희귀 보석 재화 획득! 다이아 상자 · 전용 스킨에 사용하세요!`;
+      el.chestRewardSub.textContent = `희귀 보석 재화 획득! 스킨 뽑기(200💎) · 황금/다이아 상자에 사용하세요!`;
     } else if (rw.kind === 'skin') {
-      const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.common;
+      const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.rare;
       const ownerChar = getCharDef(rw.skin.charId);
       el.chestRewardRarity.textContent = `✨ ${rar.name} 스킨 획득!`;
       el.chestRewardRarity.style.background = rar.bg;
@@ -886,7 +1097,7 @@
         showToast(`✨ [${rw.skin.name}] 스킨 장착 완료!`);
       };
     } else if (rw.kind === 'dup_gold') {
-      const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.common;
+      const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.rare;
       el.chestRewardRarity.textContent = `🔄 ${rar.name} 스킨 전체 보유 (중복 대체)`;
       el.chestRewardRarity.style.background = rar.bg;
       el.chestRewardRarity.style.color = rar.color;
@@ -922,44 +1133,49 @@
     SFX.click();
     const gPity = save.pity.gold || 0;
     const dPity = save.pity.diamond || 0;
+    const gRates = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates) || { rare: 70, epic: 20, legendary: 8, mythic: 2 };
     el.probModalBody.innerHTML = `
+      <div class="prob-section">
+        <h4>🎰 스킨 전용 뽑기 확률 &amp; 마일리지 교환 (4등급 체계)</h4>
+        <table class="prob-table">
+          <thead>
+            <tr><th>등급</th><th>뽑기 확률</th><th>마일리지 교환</th><th>중복 시 골드</th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="color:#47c8ff">희귀 (RARE)</td><td>${gRates.rare}%</td><td>✨ 10 마일리지</td><td>300 G</td></tr>
+            <tr><td style="color:#d084ff">영웅 (EPIC)</td><td>${gRates.epic}%</td><td>✨ 30 마일리지</td><td>650 G</td></tr>
+            <tr><td style="color:#ffca42">전설 (LEGENDARY)</td><td>${gRates.legendary}%</td><td>✨ 50 마일리지</td><td>1,200 G</td></tr>
+            <tr><td style="color:#ff5ea8">신화 (MYTHIC)</td><td>${gRates.mythic}%</td><td>✨ 200 마일리지</td><td>2,500 G</td></tr>
+          </tbody>
+        </table>
+        <ul class="prob-rules" style="margin-top:6px;">
+          <li><strong>뽑기 비용:</strong> 🎟️ 뽑기권 1장/회 (뽑기권 부족 시 💎 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립!</strong></li>
+          <li><strong>🎟️ 상자 → 뽑기권 교환 (상자 보관함):</strong> 나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 뽑기권 1장</li>
+          <li>미출시 중간 등급(영웅·전설)은 희귀 스킨 풀로 자동 전환되며, 신화 스킨 확률(${gRates.mythic}%)은 그대로 유지됩니다.</li>
+        </ul>
+      </div>
       <div class="prob-section">
         <h4>📊 상자별 보상 확률 (합계 100%)</h4>
         <table class="prob-table">
           <thead>
-            <tr><th>보상</th><th>🪵 나무</th><th>🥈 은</th><th>👑 황금</th><th>💎 다이아</th></tr>
+            <tr><th>보상</th><th>🪵 나무(300G)</th><th>🥈 은(700G)</th><th>👑 황금(40💎)</th><th>💎 다이아(100💎)</th></tr>
           </thead>
           <tbody>
             <tr><td>🪙 골드</td><td>75%</td><td>65%</td><td>50%</td><td>25%</td></tr>
-            <tr><td style="color:#a3c8eb">일반 스킨</td><td>18%</td><td>15%</td><td>-</td><td>-</td></tr>
-            <tr><td style="color:#47c8ff">희귀 스킨</td><td>5%</td><td>15%</td><td>25%</td><td>10%</td></tr>
+            <tr><td style="color:#47c8ff">희귀 스킨</td><td>23%</td><td>30%</td><td>25%</td><td>10%</td></tr>
             <tr><td style="color:#d084ff">영웅 스킨</td><td>1.5%</td><td>3%</td><td>17%</td><td>30%</td></tr>
             <tr><td style="color:#ffca42">전설 스킨</td><td>-</td><td>-</td><td>3%</td><td>25%</td></tr>
-            <tr><td style="color:#ff5ea8">신화 스킨</td><td colspan="4">상자 미출현 (상점 보석 1,000💎 전용)</td></tr>
+            <tr><td style="color:#ff5ea8">신화 스킨</td><td colspan="4">상자 미출현 (🎰 스킨 뽑기 · ✨ 마일리지 200 교환)</td></tr>
             <tr><td style="color:#7ef6ff">💎 다이아</td><td>0.5%</td><td>2%</td><td>5%</td><td>10%</td></tr>
           </tbody>
         </table>
       </div>
       <div class="prob-section">
-        <h4>💰 골드 · 💎 다이아 지급 범위</h4>
-        <table class="prob-table">
-          <thead><tr><th>상자</th><th>골드 획득 시</th><th>다이아 획득 시</th><th>획득 경로</th></tr></thead>
-          <tbody>
-            <tr><td>🪵 나무</td><td>100 ~ 250G</td><td>1 ~ 2💎</td><td>일반 주행(400m+) · 출석</td></tr>
-            <tr><td>🥈 은</td><td>250 ~ 500G</td><td>2 ~ 4💎</td><td>연속 출석 · 업적 · 상점</td></tr>
-            <tr><td>👑 황금</td><td>500 ~ 1,000G</td><td>5 ~ 10💎</td><td>일일 퀘스트 · 업적 · 상점</td></tr>
-            <tr><td>💎 다이아</td><td>1,000 ~ 2,000G</td><td>10 ~ 20💎</td><td>주간 퀘스트 · 고난도 업적 · 7일 출석</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="prob-section">
-        <h4>🛡️ 중복 방지 &amp; 천장 시스템 (현재 진행도)</h4>
+        <h4>🛡️ 인게임 상자 드랍 &amp; 천장 시스템</h4>
         <ul class="prob-rules">
-          <li><strong>미보유 스킨 우선 지급:</strong> 해당 등급에 미보유 스킨이 있으면 100% 새 스킨이 나옵니다. (신화 스킨은 상자에서 출현하지 않습니다)</li>
-          <li><strong>등급별 보석 가격:</strong> 일반 10💎 · 고급 50💎 · 희귀 80💎 · 영웅 120💎 · 전설 400💎 · 신화 1,000💎</li>
-          <li><strong>등급 완료 시 대체 골드:</strong> 일반 120G · 고급 200G · 희귀 300G · 영웅 650G · 전설 1,200G</li>
-          <li><strong>👑 황금 상자 천장 (10회):</strong> 영웅 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong> · 남은 ${10 - gPity}회)</li>
-          <li><strong>💎 다이아 상자 천장 (15회):</strong> 전설 스킨 미획득 시 15회차 확정! (현재 <strong>${dPity} / 15회</strong> · 남은 ${15 - dPity}회)</li>
+          <li><strong>달리기 중 상자 등장:</strong> 나무(56%) &gt; 은(27%) &gt; 황금(13%) &gt; 다이아(4%) 비율로 등장하며 획득 시 상자 보관함에 자동 저장!</li>
+          <li><strong>👑 황금 상자 천장 (10회):</strong> 영웅 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong>)</li>
+          <li><strong>💎 다이아 상자 천장 (15회):</strong> 전설 스킨 미획득 시 15회차 확정! (현재 <strong>${dPity} / 15회</strong>)</li>
         </ul>
       </div>
     `;
@@ -1315,11 +1531,13 @@
     if (!el.vaultModalGrid) return;
     const total = getTotalBagChests();
     if (el.vaultTotalPill) el.vaultTotalPill.textContent = `보유 ${total}개`;
+    if (el.vaultTicketPill) el.vaultTicketPill.textContent = `🎟️ 뽑기권 ${(save.gachaTickets || 0).toLocaleString('ko-KR')}장`;
     el.vaultModalGrid.innerHTML = '';
 
     DATA.CHEST_ORDER.forEach((tierId) => {
       const chest = DATA.CHESTS[tierId];
       const qty = (save.chestBag && save.chestBag[tierId]) || 0;
+      const ticketCost = chest.ticketCost || 15;
       const pityLine = tierId === 'gold'
         ? `영웅+ 천장 ${save.pity.gold || 0}/10회`
         : (tierId === 'diamond'
@@ -1338,6 +1556,9 @@
         </div>
         <div class="vault-card-sub">${pityLine}</div>
       `;
+      const btnRow = document.createElement('div');
+      btnRow.className = 'vault-card-actions';
+
       const btn = document.createElement('button');
       btn.type = 'button';
       if (qty > 0) {
@@ -1360,7 +1581,27 @@
           switchTab('shop');
         };
       }
-      card.appendChild(btn);
+      btnRow.appendChild(btn);
+
+      // Chest -> Skin Gacha Ticket Exchange Button (Wood 15, Silver 10, Gold 5, Diamond 2 = 1 Ticket!)
+      const exBtn = document.createElement('button');
+      exBtn.type = 'button';
+      const canEx = qty >= ticketCost;
+      exBtn.className = `vault-ticket-ex-btn${canEx ? ' ready' : ''}`;
+      exBtn.textContent = `🎟️ 뽑기권 1장 (${ticketCost}개)`;
+      exBtn.disabled = !canEx;
+      exBtn.onclick = () => {
+        if ((save.chestBag[tierId] || 0) < ticketCost) return;
+        SFX.buy();
+        save.chestBag[tierId] -= ticketCost;
+        save.gachaTickets = (save.gachaTickets || 0) + 1;
+        persistSave();
+        refreshAllMenus();
+        showToast(`🎟️ ${chest.name} ${ticketCost}개 → 스킨 뽑기권 1장 교환 완료! (보유 ${save.gachaTickets}장)`);
+      };
+      btnRow.appendChild(exBtn);
+
+      card.appendChild(btnRow);
       el.vaultModalGrid.appendChild(card);
     });
   }
@@ -1462,7 +1703,9 @@
       skins.length > 0 ||
       chars.length > 1 ||
       (Number(raw.gems) || 0) > 0 ||
-      (Number(raw.gold) || 0) > 80
+      (Number(raw.gold) || 0) > 80 ||
+      (Number(raw.gachaTickets) || 0) > 0 ||
+      (Number(raw.mileage) || 0) > 0
     );
   }
 
@@ -1476,6 +1719,8 @@
       + (s.unlockedChars ? Math.max(0, s.unlockedChars.length - 1) : 0) * 500
       + (s.gold || 0)
       + (s.gems || 0) * 15
+      + (s.gachaTickets || 0) * 1200
+      + (s.mileage || 0) * 40
       + bagWeight;
   }
 
@@ -2064,7 +2309,7 @@
   function getSaveVisualSig(s) {
     if (!s) return '';
     const cb = s.chestBag || {};
-    return `${s.gold}|${s.gems}|${s.bestScore}|${s.playCount}|${(s.unlockedSkins || []).length}|${(s.unlockedChars || []).length}|${cb.wood || 0},${cb.silver || 0},${cb.gold || 0},${cb.diamond || 0}|${s.selectedChar}|${JSON.stringify(s.equippedSkins || {})}|${JSON.stringify(s.upgrades || {})}|${JSON.stringify(s.charLevels || {})}`;
+    return `${s.gold}|${s.gems}|${s.gachaTickets || 0}|${s.mileage || 0}|${s.bestScore}|${s.playCount}|${(s.unlockedSkins || []).length}|${(s.unlockedChars || []).length}|${cb.wood || 0},${cb.silver || 0},${cb.gold || 0},${cb.diamond || 0}|${s.selectedChar}|${JSON.stringify(s.equippedSkins || {})}|${JSON.stringify(s.upgrades || {})}|${JSON.stringify(s.charLevels || {})}`;
   }
 
   async function syncAccountWithCloud(profile, opts = {}) {
@@ -3112,15 +3357,15 @@
       DATA.getSkinsForChar(ch.id).forEach((sk) => {
         const owned = save.unlockedSkins.includes(sk.id);
         const isEq = equippedSkin && equippedSkin.id === sk.id;
-        const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.common;
-        const gemPrice = getSkinGemPrice(sk);
+        const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
+        const milPrice = getSkinMileagePrice(sk);
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = `skin-chip rar-${sk.rarity}${isEq ? ' active' : ''}${owned ? '' : ' locked'}`;
         chip.innerHTML = `
           <span class="skin-dot" style="background:${sk.glow || rar.color}"></span>
           <span>${sk.name}</span>
-          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : `💎${gemPrice.toLocaleString()}`}</span>
+          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : `✨${milPrice}M`}</span>
         `;
         chip.onclick = () => {
           if (owned) {
@@ -3134,7 +3379,7 @@
             closeCharDetail();
             currentShopSubtab = 'skins';
             switchTab('shop');
-            showToast(`💎 상점 스킨 탭에서 ${gemPrice.toLocaleString()} 다이아로 구매할 수 있습니다!`);
+            showToast(`✨ 상점 [스킨 교환]에서 ${milPrice} 마일리지로 교환하거나 [뽑기]에서 획득하세요!`);
           }
         };
         el.detailSkinsRow.appendChild(chip);
@@ -3245,8 +3490,8 @@
   }
 
   function renderShopList() {
-    if (!['chests', 'skins', 'gold', 'gems', 'upgrades'].includes(currentShopSubtab)) {
-      currentShopSubtab = 'chests';
+    if (!['gacha', 'chests', 'skins', 'gold', 'gems', 'upgrades'].includes(currentShopSubtab)) {
+      currentShopSubtab = 'gacha';
     }
     document.querySelectorAll('.subtab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.shoptab === currentShopSubtab);
@@ -3254,13 +3499,140 @@
 
     el.shopItemsList.innerHTML = '';
 
-    if (currentShopSubtab === 'chests') {
+    if (currentShopSubtab === 'gacha') {
+      // COOKIE RUN STYLE COSMIC SKIN GACHA SCREEN (1-PULL / 10-PULL · SKINS ONLY · ALL RARITIES!)
+      const cost1 = computeGachaCost(1);
+      const cost10 = computeGachaCost(10);
+      const fmtCostHtml = (c) => {
+        if (c.useTickets > 0 && c.needGems > 0) {
+          return `<span class="gc-cost-line">🎟️ ${c.useTickets} + 💎 ${c.needGems.toLocaleString('ko-KR')}</span>`;
+        }
+        if (c.useTickets > 0) {
+          return `<span class="gc-cost-line">🎟️ ${c.useTickets}</span>`;
+        }
+        return `<span class="gc-cost-line">💎 ${c.needGems.toLocaleString('ko-KR')}</span>`;
+      };
+
+      const stage = document.createElement('div');
+      stage.className = 'gacha-screen';
+      stage.innerHTML = `
+        <aside class="gacha-sidebar">
+          <div class="gacha-side-title">🎰 스킨 뽑기</div>
+          <button type="button" class="gacha-banner-thumb active" data-gaction="stay">
+            <span class="gacha-pickup-tag">PickUp!</span>
+            <img src="assets/chars/port_hades.png?v=${ASSET_VER}" alt="상시 스킨 뽑기" class="gacha-thumb-art" />
+            <div class="gacha-thumb-txt">
+              <strong>상시 스킨 뽑기</strong>
+              <span>전 등급 출현</span>
+            </div>
+          </button>
+          <button type="button" class="gacha-banner-thumb exchange" data-gaction="exchange">
+            <img src="assets/chars/port_catgirl.png?v=${ASSET_VER}" alt="마일리지 스킨 교환" class="gacha-thumb-art" />
+            <div class="gacha-thumb-txt">
+              <strong>✨ 스킨 교환소</strong>
+              <span>보유 ${(save.mileage || 0).toLocaleString('ko-KR')}M</span>
+            </div>
+          </button>
+          <button type="button" class="gacha-banner-thumb vault" data-gaction="vault">
+            <img src="assets/chests/chest_diamond_0.png?v=${ASSET_VER}" alt="뽑기권 교환" class="gacha-thumb-art" />
+            <div class="gacha-thumb-txt">
+              <strong>🎟️ 뽑기권 교환</strong>
+              <span>보관함 상자 사용</span>
+            </div>
+          </button>
+        </aside>
+
+        <div class="gacha-main-stage">
+          <div class="gacha-stars" aria-hidden="true"></div>
+          <div class="gacha-nebula" aria-hidden="true"></div>
+
+          <div class="gacha-top-row">
+            <button type="button" class="gacha-pill-btn" data-gaction="history">📜 뽑기 내역</button>
+            <div class="gacha-cur-bar">
+              <button type="button" class="gacha-cur-chip mileage" data-gaction="exchange" title="마일리지 스킨 교환">
+                <span>✨</span><strong>${(save.mileage || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
+              </button>
+              <button type="button" class="gacha-cur-chip ticket" data-gaction="vault" title="상자 보관함에서 뽑기권 교환">
+                <span>🎟️</span><strong>${(save.gachaTickets || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
+              </button>
+              <button type="button" class="gacha-cur-chip gem" data-gaction="gems" title="보석 상점">
+                <span>💎</span><strong>${(save.gems || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
+              </button>
+            </div>
+          </div>
+
+          <div class="gacha-hero-zone">
+            <div class="gacha-title-col">
+              <div class="gacha-main-title">상시 스킨 뽑기</div>
+              <div class="gacha-sub-strip">
+                <span>1회 뽑기마다 <strong>✨ +2 마일리지</strong> 적립! · 희귀·영웅·전설·<strong>신화</strong> 출현</span>
+              </div>
+              <div class="gacha-rate-chips">
+                <span class="gr-chip mythic">신화 2%</span>
+                <span class="gr-chip leg">전설 8%</span>
+                <span class="gr-chip epic">영웅 20%</span>
+                <span class="gr-chip rare">희귀 70%</span>
+              </div>
+            </div>
+
+            <div class="gacha-showcase-collage" aria-hidden="true">
+              <img src="assets/chars/hades_aura_0.png?v=${ASSET_VER}" alt="" class="gc-art-aura" />
+              <img src="assets/chars/port_hanbok.png?v=${ASSET_VER}" alt="" class="gc-art-side left-far" />
+              <img src="assets/chars/port_catgirl.png?v=${ASSET_VER}" alt="" class="gc-art-side left" />
+              <img src="assets/chars/port_hades.png?v=${ASSET_VER}" alt="" class="gc-art-center" />
+              <img src="assets/chars/port_blue.png?v=${ASSET_VER}" alt="" class="gc-art-side right" />
+              <img src="assets/chars/port_yellow.png?v=${ASSET_VER}" alt="" class="gc-art-side right-far" />
+            </div>
+          </div>
+
+          <div class="gacha-bottom-row">
+            <button type="button" class="gacha-pill-btn prob" data-gaction="prob">📊 상세 확률</button>
+            <div class="gacha-pull-group">
+              <div class="gacha-pull-note">🎟️ 뽑기권 우선 사용 · 부족 시 💎 200 보석 / 1회</div>
+              <div class="gacha-pull-btns">
+                <button type="button" class="gacha-green-btn pull-1" data-gaction="pull1">
+                  ${fmtCostHtml(cost1)}
+                  <span class="gc-pull-lbl">1회 뽑기</span>
+                </button>
+                <button type="button" class="gacha-green-btn pull-10" data-gaction="pull10">
+                  ${fmtCostHtml(cost10)}
+                  <span class="gc-pull-lbl">10회 연속 뽑기</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      stage.querySelectorAll('[data-gaction]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const act = btn.dataset.gaction;
+          if (act === 'pull1') performSkinGacha(1);
+          else if (act === 'pull10') performSkinGacha(10);
+          else if (act === 'history') openGachaHistoryModal();
+          else if (act === 'prob') openProbModal();
+          else if (act === 'exchange') {
+            SFX.click();
+            currentShopSubtab = 'skins';
+            renderShopList();
+          } else if (act === 'vault') {
+            openVaultModal();
+          } else if (act === 'gems') {
+            SFX.click();
+            currentShopSubtab = 'gems';
+            renderShopList();
+          }
+        });
+      });
+
+      el.shopItemsList.appendChild(stage);
+    } else if (currentShopSubtab === 'chests') {
       const sec = document.createElement('div');
       sec.className = 'bs-shop-section';
       sec.innerHTML = `
         <div class="bs-shop-sec-head chests">
           <span class="bs-shop-sec-title">🎁 상자 상점</span>
-          <span class="bs-shop-sec-sub">골드·보석으로 스킨 &amp; 보석 획득! (신화 스킨 상자 미출현)</span>
+          <span class="bs-shop-sec-sub">나무·은 상자는 골드, 황금(40💎)·다이아(100💎)는 보석 구매! 보관함에서 뽑기권 교환 가능</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -3274,9 +3646,9 @@
             ? `💎 전설 천장 ${save.pity.diamond || 0}/15`
             : `🪙 ${chest.goldRange[0]}~${chest.goldRange[1]}G`);
         const rateSummary = tierId === 'wood'
-          ? '일반 18% · 희귀 5% · 💎 0.5%'
+          ? '희귀 23% · 영웅 1.5% · 💎 0.5%'
           : (tierId === 'silver'
-            ? '일반 15% · 희귀 15% · 영웅 3%'
+            ? '희귀 30% · 영웅 3% · 💎 2%'
             : (tierId === 'gold'
               ? '희귀 25% · 영웅 17% · 전설 3%'
               : '영웅 30% · 전설 25% · 💎 10%'));
@@ -3335,25 +3707,43 @@
       sec.appendChild(grid);
       el.shopItemsList.appendChild(sec);
     } else if (currentShopSubtab === 'skins') {
-      const rarRank = { mythic: 6, legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+      // MILEAGE SKIN EXCHANGE TAB (NO GEM DIRECT PURCHASE! 희귀 10M · 영웅 30M · 전설 50M · 신화 200M)
+      const curMileage = save.mileage || 0;
+      const topBar = document.createElement('div');
+      topBar.className = 'mileage-exchange-bar';
+      topBar.innerHTML = `
+        <div class="mil-bar-left">
+          <span class="mil-bar-badge">✨ 보유 마일리지 <strong>${curMileage.toLocaleString('ko-KR')}</strong></span>
+          <span class="mil-bar-rates">희귀 10M · 영웅 30M · 전설 50M · 신화 200M (보석 직접 구매 불가)</span>
+        </div>
+        <button type="button" class="cr-gold-btn mil-go-gacha-btn">🎰 스킨 뽑기 (+2M/회)</button>
+      `;
+      topBar.querySelector('.mil-go-gacha-btn').onclick = () => {
+        SFX.click();
+        currentShopSubtab = 'gacha';
+        renderShopList();
+      };
+      el.shopItemsList.appendChild(topBar);
+
+      const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
       const sortedSkins = [...DATA.SKINS].sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
       const mythicSkins = sortedSkins.filter((s) => s.rarity === 'mythic');
       const otherSkins = sortedSkins.filter((s) => s.rarity !== 'mythic');
 
-      // Featured Mythic Brawl-Style Hero Showcase Banner!
+      // Featured Mythic Showcase Banner (Mileage 200 Exchange!)
       if (mythicSkins.length > 0) {
         const featSec = document.createElement('div');
         featSec.className = 'bs-shop-section';
         featSec.innerHTML = `
           <div class="bs-shop-sec-head mythic">
-            <span class="bs-shop-sec-title">🌟 신화 스페셜 스킨 (상자 미출현)</span>
-            <span class="bs-shop-sec-sub">오직 보석 상점에서만 획득 가능!</span>
+            <span class="bs-shop-sec-title">🌟 신화 스페셜 스킨 (스킨 뽑기 · ✨ 200 마일리지)</span>
+            <span class="bs-shop-sec-sub">스킨 뽑기에서 획득하거나 200 마일리지로 확정 교환!</span>
           </div>
         `;
         mythicSkins.forEach((sk) => {
           const owned = save.unlockedSkins.includes(sk.id);
           const ownerChar = getCharDef(sk.charId);
-          const gemPrice = getSkinGemPrice(sk);
+          const milPrice = getSkinMileagePrice(sk);
           const isEq = save.equippedSkins[sk.charId] === sk.id;
           const hero = document.createElement('div');
           hero.className = 'bs-mythic-hero-banner';
@@ -3365,10 +3755,10 @@
             <div class="bs-mythic-info">
               <div class="bs-mythic-badges">
                 <span class="skin-rar-pill" style="background:#8a144d;color:#ff80c2">신화 MYTHIC</span>
-                <span class="bs-mythic-exclusive">보석 직구매 전용</span>
+                <span class="bs-mythic-exclusive">뽑기 · 마일리지 교환</span>
               </div>
               <div class="bs-mythic-name">${sk.name}</div>
-              <div class="bs-mythic-desc">${ownerChar.name} · ${sk.desc || '전용 애니메이션 & 핑크 발바닥 오라'}</div>
+              <div class="bs-mythic-desc">${ownerChar.name} · ${sk.desc || '전용 애니메이션 & 이펙트'}</div>
             </div>
           `;
           const btn = document.createElement('button');
@@ -3385,23 +3775,23 @@
               showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
             };
           } else {
-            btn.className = 'bs-buy-btn gem big';
-            btn.textContent = `💎 ${gemPrice.toLocaleString('ko-KR')}`;
+            btn.className = 'bs-buy-btn mileage big';
+            btn.textContent = `✨ ${milPrice} 마일리지`;
             btn.onclick = () => {
-              if ((save.gems || 0) < gemPrice) {
+              if ((save.mileage || 0) < milPrice) {
                 SFX.click();
-                currentShopSubtab = 'gems';
+                currentShopSubtab = 'gacha';
                 renderShopList();
-                showToast(`💎 보석이 부족합니다! 보석 상점에서 충전할 수 있어요.`);
+                showToast(`✨ 마일리지가 부족합니다! (보유 ${save.mileage || 0} / 필요 ${milPrice}) 스킨 뽑기 1회당 +2 마일리지!`);
                 return;
               }
               SFX.chestJackpot();
-              save.gems -= gemPrice;
+              save.mileage -= milPrice;
               save.unlockedSkins.push(sk.id);
               save.equippedSkins[sk.charId] = sk.id;
-              persistSave();
+              persistSave(true);
               refreshAllMenus();
-              showToast(`💎 [${sk.name}] 구매 및 즉시 장착 완료!`);
+              showToast(`✨ [${sk.name}] 마일리지 교환 및 즉시 장착 완료!`);
             };
           }
           hero.appendChild(btn);
@@ -3410,13 +3800,13 @@
         el.shopItemsList.appendChild(featSec);
       }
 
-      // Brawl Stars Skin Showcase Grid (All Other Tiers)
+      // Skin Exchange Grid (Rare 10M · Epic 30M · Legendary 50M)
       const gridSec = document.createElement('div');
       gridSec.className = 'bs-shop-section';
       gridSec.innerHTML = `
         <div class="bs-shop-sec-head skins">
-          <span class="bs-shop-sec-title">✨ 스킨 카탈로그</span>
-          <span class="bs-shop-sec-sub">일반 10💎 · 고급 50💎 · 희귀 80💎 · 영웅 120💎 · 전설 400💎</span>
+          <span class="bs-shop-sec-title">✨ 스킨 마일리지 교환소</span>
+          <span class="bs-shop-sec-sub">희귀 10M · 영웅 30M · 전설 50M · 신화 200M</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -3425,8 +3815,8 @@
       otherSkins.forEach((sk) => {
         const owned = save.unlockedSkins.includes(sk.id);
         const ownerChar = getCharDef(sk.charId);
-        const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.common;
-        const gemPrice = getSkinGemPrice(sk);
+        const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
+        const milPrice = getSkinMileagePrice(sk);
         const isEq = save.equippedSkins[sk.charId] === sk.id;
         const skAv = getSkinAvatar(ownerChar, sk);
         const skFlt = getSkinFilter(sk);
@@ -3459,23 +3849,23 @@
             showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
           };
         } else {
-          btn.className = 'bs-buy-btn gem';
-          btn.textContent = `💎 ${gemPrice.toLocaleString('ko-KR')}`;
+          btn.className = 'bs-buy-btn mileage';
+          btn.textContent = `✨ ${milPrice}M`;
           btn.onclick = () => {
-            if ((save.gems || 0) < gemPrice) {
+            if ((save.mileage || 0) < milPrice) {
               SFX.click();
-              currentShopSubtab = 'gems';
+              currentShopSubtab = 'gacha';
               renderShopList();
-              showToast('💎 보석이 부족합니다! 보석 상점에서 충전할 수 있어요.');
+              showToast(`✨ 마일리지가 부족합니다! (보유 ${save.mileage || 0}M / 필요 ${milPrice}M) 스킨 뽑기를 이용해 보세요!`);
               return;
             }
             SFX.chestJackpot();
-            save.gems -= gemPrice;
+            save.mileage -= milPrice;
             save.unlockedSkins.push(sk.id);
             save.equippedSkins[sk.charId] = sk.id;
-            persistSave();
+            persistSave(true);
             refreshAllMenus();
-            showToast(`💎 [${sk.name}] 구매 및 즉시 장착 완료!`);
+            showToast(`✨ [${sk.name}] 마일리지 교환 및 장착 완료!`);
           };
         }
         foot.appendChild(btn);
@@ -3545,7 +3935,7 @@
       sec.innerHTML = `
         <div class="bs-shop-sec-head gems">
           <span class="bs-shop-sec-title">💎 보석 상점</span>
-          <span class="bs-shop-sec-sub">100💎 = ₩1,000 정가 · 스킨·골드·상자 구매에 사용!</span>
+          <span class="bs-shop-sec-sub">100💎 = ₩1,000 정가 · 스킨 뽑기(200💎) · 골드 · 황금/다이아 상자 구매에 사용!</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -4417,19 +4807,34 @@
     return (comboExtraWidth / Math.max(190, run.speed || 196)) + (isCovid ? 0.35 : 0);
   }
 
+  function pickRunDropChestKind() {
+    const w = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.runChestDropWeights) || { wood: 56, silver: 27, gold: 13, diamond: 4 };
+    const tiers = ['wood', 'silver', 'gold', 'diamond'];
+    const total = tiers.reduce((s, k) => s + (w[k] || 0), 0) || 100;
+    const r = Math.random() * total;
+    let acc = 0;
+    for (const k of tiers) {
+      acc += w[k] || 0;
+      if (r < acc) return `chest_${k}`;
+    }
+    return 'chest_wood';
+  }
+
   function spawnUtilityPickup() {
     const r = Math.random();
-    let kind = 'chest';
-    if (r < 0.24) kind = 'coffee';
-    else if (r < 0.44) kind = 'star';
-    else if (r < 0.61) kind = 'magnet';
-    else if (r < 0.77) kind = 'speed_boost';
-    else if (r < 0.89) kind = 'shield_item';
-    else if (r < 0.95) kind = 'umbrella_fever';
+    let kind = 'coffee';
+    if (r < 0.20) kind = 'coffee';
+    else if (r < 0.37) kind = 'star';
+    else if (r < 0.52) kind = 'magnet';
+    else if (r < 0.65) kind = 'speed_boost';
+    else if (r < 0.76) kind = 'shield_item';
+    else if (r < 0.82) kind = 'umbrella_fever';
+    else kind = pickRunDropChestKind(); // 18% chance: Wood(56%) > Silver(27%) > Gold(13%) > Diamond(4%) stored to Vault!
 
+    const isDropChest = kind.startsWith('chest_');
     const prefHigh = Math.random() < 0.5;
-    const laneYs = kind === 'chest'
-      ? [Renderer.GROUND_Y - 24, Renderer.GROUND_Y - 84]
+    const laneYs = isDropChest
+      ? [Renderer.GROUND_Y - 26, Renderer.GROUND_Y - 84]
       : (prefHigh ? [Renderer.GROUND_Y - 88, Renderer.GROUND_Y - 30] : [Renderer.GROUND_Y - 30, Renderer.GROUND_Y - 88]);
     const xOffsets = [28, 76, 124];
 
@@ -5061,7 +5466,8 @@
       const pcy = pBox.y + pBox.h / 2;
       const dist = Math.hypot(it.x - pcx, it.y - pcy);
 
-      if ((it.kind === 'coin' || it.kind === 'big_coin' || it.kind === 'star') && dist < magnetRadius && dist > 16) {
+      const isPullable = it.kind === 'coin' || it.kind === 'big_coin' || it.kind === 'star' || (hasSuperMagnet && it.kind.startsWith('chest_'));
+      if (isPullable && dist < magnetRadius && dist > 16) {
         const pull = (hasSuperMagnet ? 420 : 230) * dt;
         it.x += ((pcx - it.x) / dist) * pull;
         it.y += ((pcy - it.y) / dist) * pull;
@@ -5112,6 +5518,22 @@
           SFX.shieldUp();
           Renderer.spawnPickupEffect(it.x, it.y, '#7ad8ff', true);
           Renderer.spawnFloater('🛡️ 기상 보호막 획득!', '#8ce2ff', run.playerX + 12, run.playerY - 44);
+        } else if (it.kind === 'chest_wood' || it.kind === 'chest_silver' || it.kind === 'chest_gold' || it.kind === 'chest_diamond') {
+          const tierId = it.kind.replace('chest_', '');
+          const chestDef = DATA.CHESTS[tierId] || DATA.CHESTS.wood;
+          save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
+          save.chestBag[tierId] = (save.chestBag[tierId] || 0) + 1;
+          persistSave();
+          const tierIco = tierId === 'diamond' ? '💎' : (tierId === 'gold' ? '👑' : (tierId === 'silver' ? '🥈' : '🪵'));
+          const burstColor = chestDef.accent || '#ffd847';
+          run.score += Math.round((tierId === 'diamond' ? 400 : (tierId === 'gold' ? 300 : 200)) * upgradeScoreMult);
+          addFeverCharge(tierId === 'diamond' ? 12 : 8);
+          run.itemPoseTimer = 0.5;
+          if (tierId === 'diamond' || tierId === 'gold') SFX.chestJackpot();
+          else SFX.reward();
+          haptic(tierId === 'diamond' ? 24 : 14);
+          Renderer.spawnPickupEffect(it.x, it.y, burstColor, true);
+          Renderer.spawnFloater(`${tierIco} ${chestDef.name} 보관함 저장!`, burstColor, it.x, it.y - 16);
         } else if (it.kind === 'chest') {
           const bonusG = Math.round(12 * run.goldMult);
           run.gold += bonusG;
@@ -5910,6 +6332,44 @@
     if (el.vaultOverlay) {
       el.vaultOverlay.addEventListener('click', (e) => {
         if (e.target === el.vaultOverlay) el.vaultOverlay.classList.add('hidden');
+      });
+    }
+    if (el.btnVaultGoGacha) {
+      el.btnVaultGoGacha.addEventListener('click', () => {
+        SFX.click();
+        if (el.vaultOverlay) el.vaultOverlay.classList.add('hidden');
+        currentShopSubtab = 'gacha';
+        switchTab('shop');
+      });
+    }
+
+    // Cookie Run Style Skin Gacha Result & Pull History Modals
+    if (el.btnGachaResClose) {
+      el.btnGachaResClose.addEventListener('click', () => {
+        SFX.click();
+        if (el.gachaResultOverlay) el.gachaResultOverlay.classList.add('hidden');
+      });
+    }
+    if (el.gachaResultOverlay) {
+      el.gachaResultOverlay.addEventListener('click', (e) => {
+        if (e.target === el.gachaResultOverlay) {
+          SFX.click();
+          el.gachaResultOverlay.classList.add('hidden');
+        }
+      });
+    }
+    if (el.btnCloseGachaHistory) {
+      el.btnCloseGachaHistory.addEventListener('click', () => {
+        SFX.click();
+        if (el.gachaHistoryOverlay) el.gachaHistoryOverlay.classList.add('hidden');
+      });
+    }
+    if (el.gachaHistoryOverlay) {
+      el.gachaHistoryOverlay.addEventListener('click', (e) => {
+        if (e.target === el.gachaHistoryOverlay) {
+          SFX.click();
+          el.gachaHistoryOverlay.classList.add('hidden');
+        }
       });
     }
 
