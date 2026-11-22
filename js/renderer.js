@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd42';
+  const CHAR_ASSET_VER = '20261121hd43';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {

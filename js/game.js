@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd42';
+  const ASSET_VER = '20261121hd43';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -324,7 +324,6 @@
     introOverlay: document.getElementById('intro-overlay'),
     introLoginBox: document.getElementById('intro-login-box'),
     btnIntroGoogle: document.getElementById('btn-intro-google'),
-    btnIntroApple: document.getElementById('btn-intro-apple'),
     btnIntroGuest: document.getElementById('btn-intro-guest'),
     introStartBox: document.getElementById('intro-start-box'),
     introAccBadge: document.getElementById('intro-acc-badge'),
@@ -341,15 +340,8 @@
     loginNicknameInput: document.getElementById('login-nickname-input'),
     btnSaveNickname: document.getElementById('btn-save-nickname'),
     btnLoginGoogle: document.getElementById('btn-login-google'),
-    btnLoginApple: document.getElementById('btn-login-apple'),
     btnLoginGuest: document.getElementById('btn-login-guest'),
     loginSetupNotice: document.getElementById('login-setup-notice'),
-    loginAppleEmailPanel: document.getElementById('login-apple-email-panel'),
-    loginAppleEmail: document.getElementById('login-apple-email'),
-    loginApplePw: document.getElementById('login-apple-pw'),
-    loginAppleNick: document.getElementById('login-apple-nick'),
-    btnAppleEmailBack: document.getElementById('btn-apple-email-back'),
-    btnAppleEmailSubmit: document.getElementById('btn-apple-email-submit'),
 
     btnHeaderProfile: document.getElementById('btn-header-profile'),
     btnHeaderProfileName: document.getElementById('btn-header-profile-name'),
@@ -419,7 +411,6 @@
     navMissionDot: document.getElementById('nav-mission-dot'),
     btnTabOpenAttendance: document.getElementById('btn-tab-open-attendance'),
     btnQuestProb: document.getElementById('btn-quest-prob'),
-    questVaultBadge: document.getElementById('quest-vault-badge'),
     questResetLabel: document.getElementById('quest-reset-label'),
     pityGoldChip: document.getElementById('pity-gold-chip'),
     pityDiamondChip: document.getElementById('pity-diamond-chip'),
@@ -1082,6 +1073,18 @@
     return info;
   }
 
+  function setProviderChip(node, provider, mini = false) {
+    if (!node) return;
+    const prov = provider || 'guest';
+    const meta = ONLINE ? ONLINE.getProviderMeta(prov) : { badge: 'GUEST' };
+    node.className = `prov-chip${mini ? ' mini' : ''} ${prov}`;
+    if (prov === 'google') {
+      node.innerHTML = `<img src="assets/ui/google_logo.png?v=${ASSET_VER}" alt="Google" class="prov-google-img" />`;
+    } else {
+      node.textContent = meta.badge;
+    }
+  }
+
   function renderIntroAuthState() {
     const auth = (save && save.auth) || activeAuth || { loggedIn: false, provider: 'guest', nickname: '' };
     const isLogged = Boolean(auth.loggedIn);
@@ -1089,10 +1092,7 @@
     if (el.introStartBox) el.introStartBox.classList.toggle('hidden', !isLogged);
     if (isLogged) {
       const meta = ONLINE ? ONLINE.getProviderMeta(auth.provider) : { badge: 'GUEST', label: '게스트' };
-      if (el.introAccBadge) {
-        el.introAccBadge.textContent = meta.badge;
-        el.introAccBadge.className = `prov-chip ${auth.provider || 'guest'}`;
-      }
+      setProviderChip(el.introAccBadge, auth.provider, false);
       if (el.introAccName) {
         el.introAccName.textContent = auth.nickname || meta.label;
       }
@@ -1360,16 +1360,10 @@
       el.hdrScoreRoadDot.textContent = unclaimedCnt > 9 ? '9+' : String(unclaimedCnt);
     }
 
-    if (el.hdrProfileBadge) {
-      el.hdrProfileBadge.textContent = meta.badge;
-      el.hdrProfileBadge.className = `prov-chip mini ${auth.provider || 'guest'}`;
-    }
+    setProviderChip(el.hdrProfileBadge, auth.provider, true);
     if (el.hdrProfileName) el.hdrProfileName.textContent = nick;
 
-    if (el.settingsAccountBadge) {
-      el.settingsAccountBadge.textContent = meta.badge;
-      el.settingsAccountBadge.className = `prov-chip ${auth.provider || 'guest'}`;
-    }
+    setProviderChip(el.settingsAccountBadge, auth.provider, false);
     if (el.settingsAccountName) el.settingsAccountName.textContent = nick;
     if (el.settingsAccountSub) {
       el.settingsAccountSub.textContent = isLinked
@@ -1377,10 +1371,7 @@
         : '게스트 모드 (기기 저장 · 랭킹 미표시)';
     }
 
-    if (el.loginCurBadge) {
-      el.loginCurBadge.textContent = meta.badge;
-      el.loginCurBadge.className = `prov-chip ${auth.provider || 'guest'}`;
-    }
+    setProviderChip(el.loginCurBadge, auth.provider, false);
     if (el.loginCurName) el.loginCurName.textContent = auth.loggedIn ? nick : '미로그인';
     if (el.loginCurSub) {
       const syncSt = (ONLINE && ONLINE.getCloudSyncStatus) ? ONLINE.getCloudSyncStatus() : { ok: null };
@@ -1399,27 +1390,13 @@
     renderIntroAuthState();
   }
 
-  let appleEmailFromIntro = false;
-
   function openLoginOverlay() {
     if (!el.loginOverlay) return;
     if (el.loginMainPanel) el.loginMainPanel.classList.remove('hidden');
-    if (el.loginAppleEmailPanel) el.loginAppleEmailPanel.classList.add('hidden');
     renderProfileUI();
     if (el.loginNicknameInput) {
       el.loginNicknameInput.value = (save.auth && save.auth.nickname) || '';
     }
-    el.loginOverlay.classList.remove('hidden');
-  }
-
-  function openAppleEmailPanel(fromIntro = false) {
-    appleEmailFromIntro = Boolean(fromIntro);
-    if (!el.loginOverlay) return;
-    if (el.loginMainPanel) el.loginMainPanel.classList.add('hidden');
-    if (el.loginAppleEmailPanel) el.loginAppleEmailPanel.classList.remove('hidden');
-    if (el.loginAppleEmail) el.loginAppleEmail.value = (save.auth && save.auth.email) || '';
-    if (el.loginApplePw) el.loginApplePw.value = '';
-    if (el.loginAppleNick) el.loginAppleNick.value = (save.auth && save.auth.provider !== 'guest' && save.auth.nickname) || '';
     el.loginOverlay.classList.remove('hidden');
   }
 
@@ -1565,7 +1542,7 @@
         ? `☁️ ${meta.label} [${save.auth.nickname}] 클라우드 데이터 불러오기 완료!`
         : `✅ ${meta.label} [${save.auth.nickname}] 연동 완료! (클라우드 저장 · 랭킹 참여)`);
     } else {
-      showToast('👤 게스트로 입장했습니다. (랭킹은 구글/애플 연동 시 참여)');
+      showToast('👤 게스트로 입장했습니다. (랭킹은 Google 연동 시 참여)');
     }
   }
 
@@ -1580,9 +1557,6 @@
         const carryGuest = Boolean(!fromIntro && save.auth && save.auth.provider === 'guest');
         await switchToAccount(res.profile, { carryGuestSave: carryGuest });
         if (fromIntro) dismissIntroToHome();
-      } else if (res && res.appleNeedsEmailFallback) {
-        showToast(' 웹 Apple ID(이메일) 로그인 화면으로 전환합니다.');
-        openAppleEmailPanel(fromIntro);
       } else if (res && res.needsSetup) {
         showToast(`⚙️ ${res.message}`);
         openLoginOverlay();
@@ -1591,27 +1565,6 @@
         showToast('🔄 로그인 페이지로 이동 중입니다...');
       } else if (res && !res.cancelled && res.message) {
         showToast(`⚠️ ${res.message}`);
-      }
-    } finally {
-      oauthInFlight = false;
-    }
-  }
-
-  async function handleAppleEmailSubmit() {
-    if (oauthInFlight || !ONLINE) return;
-    try { SFX.click(); } catch {}
-    const email = el.loginAppleEmail ? el.loginAppleEmail.value.trim() : '';
-    const pw = el.loginApplePw ? el.loginApplePw.value : '';
-    const nick = el.loginAppleNick ? el.loginAppleNick.value.trim() : '';
-    oauthInFlight = true;
-    try {
-      const res = await ONLINE.signInWithAppleEmail(email, pw, nick);
-      if (res && res.ok && res.profile) {
-        const carryGuest = Boolean(!appleEmailFromIntro && save.auth && save.auth.provider === 'guest');
-        await switchToAccount(res.profile, { carryGuestSave: carryGuest });
-        if (appleEmailFromIntro) dismissIntroToHome();
-      } else {
-        showToast(`⚠️ ${(res && res.message) || 'Apple ID 로그인에 실패했습니다.'}`);
       }
     } finally {
       oauthInFlight = false;
@@ -1796,12 +1749,7 @@
     const hasWeekly = DATA.WEEKLY_MISSIONS.some((m) => (wProg[m.metric] || 0) >= m.target && !wClaimed[m.id]);
     const hasAch = DATA.ACHIEVEMENTS.some((a) => getAchievementMetricValue(a.metric) >= a.target && !(save.achievementsClaimed && save.achievementsClaimed[a.id]));
     const hasAtt = canClaimAttendanceToday();
-    const bagCnt = getTotalBagChests();
-    el.navMissionDot.classList.toggle('hidden', !(hasDaily || hasWeekly || hasAch || hasAtt || bagCnt > 0));
-    if (el.questVaultBadge) {
-      el.questVaultBadge.textContent = String(bagCnt);
-      el.questVaultBadge.classList.toggle('hidden', bagCnt === 0);
-    }
+    el.navMissionDot.classList.toggle('hidden', !(hasDaily || hasWeekly || hasAch || hasAtt));
   }
 
   let rankRenderSeq = 0;
@@ -1834,7 +1782,7 @@
     el.rankMyAvatar.style.filter = getSkinFilter(mySkin);
     el.rankMyScoreLine.textContent = isLinkedUser
       ? `이번 주 ${weeklyBest.toLocaleString('ko-KR')}점 · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`
-      : `게스트 기록(비공개) · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · Google/Apple 연동 시 랭킹 등록`;
+      : `게스트 기록(비공개) · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · Google 연동 시 랭킹 등록`;
     el.rankStatYear.textContent = `${save.bestYear || 1}년 차`;
     el.rankStatCoins.textContent = `${(save.totalCoinsEver || 0).toLocaleString('ko-KR')}개`;
     el.rankStatCombo.textContent = `${save.maxDodgeComboEver || 0}연속`;
@@ -1893,7 +1841,7 @@
         const w = prevRes.board[0];
         el.rankLastWinner.textContent = `지난 주(${info.prevWeekLabel}) 1위: 👑 ${w.nickname} (${w.score.toLocaleString('ko-KR')}점 · 💎500 지급)`;
       } else {
-        el.rankLastWinner.textContent = '매주 월요일 00:00(KST) 정산 · Google/Apple 연동 유저 1위에게 💎 500 보석 지급!';
+        el.rankLastWinner.textContent = '매주 월요일 00:00(KST) 정산 · Google 연동 유저 1위에게 💎 500 보석 지급!';
       }
     }
 
@@ -1904,7 +1852,7 @@
       empty.innerHTML = `
         <div class="rank-empty-ico">🏆</div>
         <div class="rank-empty-title">아직 이번 주 연동 유저 랭킹 기록이 없습니다</div>
-        <div class="rank-empty-sub">게스트와 봇을 제외하고 <strong>Google·Apple 연동 실제 유저만</strong> 표시됩니다.<br/>계정을 연동하고 첫 1위(💎500)를 선점해 보세요!</div>
+        <div class="rank-empty-sub">게스트와 봇을 제외하고 <strong>Google 연동 실제 유저만</strong> 표시됩니다.<br/>계정을 연동하고 첫 1위(💎500)를 선점해 보세요!</div>
       `;
       el.rankBoardList.appendChild(empty);
       return;
@@ -1917,6 +1865,9 @@
       const avSrc = getSkinAvatar(chDef, skDef);
       const avFlt = getSkinFilter(skDef);
       const prov = ONLINE.getProviderMeta(entry.provider);
+      const provHtml = entry.provider === 'google'
+        ? `<img src="assets/ui/google_logo.png?v=${ASSET_VER}" alt="Google" class="prov-google-img" />`
+        : prov.badge;
 
       const row = document.createElement('div');
       const topClass = rank === 1 ? ' top1' : (rank === 2 ? ' top2' : (rank === 3 ? ' top3' : ''));
@@ -1927,7 +1878,7 @@
         <img src="${avSrc}" alt="" class="rank-row-avatar" style="${avFlt ? `filter:${avFlt};` : ''}" />
         <div class="rank-row-info">
           <div class="rank-row-name">
-            <span class="prov-chip mini ${entry.provider || 'guest'}">${prov.badge}</span>
+            <span class="prov-chip mini ${entry.provider || 'guest'}">${provHtml}</span>
             <span>${entry.nickname}</span>
             ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
             ${rank === 1 ? '<span class="rank-top1-prize">👑 500💎</span>' : ''}
@@ -2113,6 +2064,9 @@
 
   function renderBrawlQuests() {
     ensureTodayMissions();
+    if (currentQuestSubtab !== 'daily' && currentQuestSubtab !== 'weekly' && currentQuestSubtab !== 'ach') {
+      currentQuestSubtab = 'daily';
+    }
     document.querySelectorAll('.bs-qtab').forEach((b) => {
       b.classList.toggle('active', b.dataset.qtab === currentQuestSubtab);
     });
@@ -2234,54 +2188,6 @@
             showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
           }
         }));
-      });
-    } else {
-      const dropsToday = (save.dailyWoodChestDrops && save.dailyWoodChestDrops.count) || 0;
-      if (el.questResetLabel) el.questResetLabel.textContent = `🎁 보관함 · 오늘 일반 주행(400m+) 나무 상자 드랍 ${dropsToday}/3회`;
-      DATA.CHEST_ORDER.forEach((tierId) => {
-        const chest = DATA.CHESTS[tierId];
-        const qty = (save.chestBag && save.chestBag[tierId]) || 0;
-        const pityLine = tierId === 'gold'
-          ? `영웅+ 천장 ${save.pity.gold || 0}/10회`
-          : (tierId === 'diamond' ? `전설 천장 ${save.pity.diamond || 0}/15회` : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
-
-        const card = document.createElement('div');
-        card.className = `bs-quest-card bs-vault-card tier-${tierId}${qty > 0 ? ' ready' : ''}`;
-        card.innerHTML = `
-          <div class="bs-vault-left">
-            <img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="bs-vault-chest-img" />
-            <span class="bs-vault-qty">×${qty}</span>
-          </div>
-          <div class="bs-qcard-main">
-            <div class="bs-qcard-top">
-              <span class="bs-qtag">${chest.name}</span>
-              <span class="bs-qsub">${pityLine}</span>
-            </div>
-            <div class="bs-vault-src">${chest.source}</div>
-          </div>
-        `;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        if (qty > 0) {
-          btn.className = 'bs-vault-open-btn ready';
-          btn.textContent = '열기!';
-          btn.onclick = () => {
-            if ((save.chestBag[tierId] || 0) <= 0) return;
-            save.chestBag[tierId] -= 1;
-            persistSave();
-            refreshAllMenus();
-            openChestModal(tierId);
-          };
-        } else {
-          btn.className = 'bs-vault-open-btn empty';
-          btn.textContent = '상점';
-          btn.onclick = () => {
-            currentShopSubtab = 'chests';
-            switchTab('shop');
-          };
-        }
-        card.appendChild(btn);
-        grid.appendChild(card);
       });
     }
   }
@@ -4733,17 +4639,11 @@
       });
     }
 
-    // Intro Login Buttons Directly Below Logo (Google / Apple / Guest)
+    // Intro Login Buttons Directly Below Logo (Google / Guest)
     if (el.btnIntroGoogle) {
       el.btnIntroGoogle.addEventListener('click', (e) => {
         e.stopPropagation();
         handleOAuthLogin('google', true);
-      });
-    }
-    if (el.btnIntroApple) {
-      el.btnIntroApple.addEventListener('click', (e) => {
-        e.stopPropagation();
-        handleOAuthLogin('apple', true);
       });
     }
     if (el.btnIntroGuest) {
@@ -4760,7 +4660,7 @@
       });
     }
 
-    // Account Link Modal Buttons (Google / Apple / Guest / Nickname / Logout)
+    // Account Link Modal Buttons (Google / Guest / Nickname / Logout)
     if (el.btnCloseLogin) {
       el.btnCloseLogin.addEventListener('click', () => {
         SFX.click();
@@ -4779,21 +4679,8 @@
     if (el.btnLoginGoogle) {
       el.btnLoginGoogle.addEventListener('click', () => handleOAuthLogin('google', false));
     }
-    if (el.btnLoginApple) {
-      el.btnLoginApple.addEventListener('click', () => handleOAuthLogin('apple', false));
-    }
     if (el.btnLoginGuest) {
       el.btnLoginGuest.addEventListener('click', () => handleGuestLogin(false));
-    }
-    if (el.btnAppleEmailBack) {
-      el.btnAppleEmailBack.addEventListener('click', () => {
-        SFX.click();
-        if (el.loginAppleEmailPanel) el.loginAppleEmailPanel.classList.add('hidden');
-        if (el.loginMainPanel) el.loginMainPanel.classList.remove('hidden');
-      });
-    }
-    if (el.btnAppleEmailSubmit) {
-      el.btnAppleEmailSubmit.addEventListener('click', handleAppleEmailSubmit);
     }
     if (el.btnRankLinkAccount) {
       el.btnRankLinkAccount.addEventListener('click', () => {
