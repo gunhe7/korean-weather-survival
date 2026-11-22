@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd45';
+  const ASSET_VER = '20261121hd46';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -2974,7 +2974,7 @@
   // ===================== RUNNER ENGINE (WEATHER PHYSICS + GEAR + CORONA EVENT) =====================
   const GEAR_DURATION = 10.0;
   const MASK_PARRY_WINDOW = 1.85;
-  const UMBRELLA_BROKEN_CD = 0.85;
+  const UMBRELLA_BROKEN_CD = 5.0;
   const COVID_WALKER_PRESET = {
     id: 'covid_walker',
     name: '코로나 확진자',
@@ -3184,6 +3184,11 @@
 
   function toggleUmbrella() {
     if (!run || !run.active || paused) return;
+    if (run.umbrellaBrokenTimer > 0) {
+      SFX.hit();
+      Renderer.spawnFloater(`우산 파손! ${Math.ceil(run.umbrellaBrokenTimer)}초간 사용 불가`, '#ff9e9e', run.playerX + 10, run.playerY - 42);
+      return;
+    }
 
     if (run.umbrellaOn) {
       const foldedForGust = run.weatherEvent === 'gust';
@@ -3204,7 +3209,6 @@
     } else {
       run.umbrellaOn = true;
       run.umbrellaActiveTimer = GEAR_DURATION;
-      run.umbrellaBrokenTimer = 0;
       run.rainExposeTimer = 0;
       run.gustExposeTimer = 0;
       SFX.click();
@@ -3235,8 +3239,8 @@
     SFX.umbrellaBreak();
     run.hp = Math.max(0, run.hp - 1);
     run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 강풍 속에 우산을 접지 않아 뒤집혀 쓰러졌습니다!`;
-    Renderer.spawnFloater('강풍에 우산 파손!! -1 ❤️', '#ff5c5c', run.playerX + 16, run.playerY - 48);
-    showRunBanner('💨 돌풍에 우산이 뒤집혔습니다!! (-1 ❤️)', 2200);
+    Renderer.spawnFloater(`강풍에 우산 파손!! -1 ❤️ (${UMBRELLA_BROKEN_CD}초 불가)`, '#ff5c5c', run.playerX + 16, run.playerY - 48);
+    showRunBanner(`💨 돌풍에 우산이 뒤집혔습니다!! (${UMBRELLA_BROKEN_CD}초간 사용 불가 · -1 ❤️)`, 2200);
   }
 
   function toggleMask() {
@@ -4527,14 +4531,17 @@
       el.mudOverlay.classList.add('hidden');
     }
 
-    // Umbrella & Mask Toggle Buttons (Zero Cooldown · 10s Live Countdown + Urgent Visual Pulse)
+    // Umbrella & Mask Toggle Buttons (Zero Cooldown · 10s Live Countdown · 5s Broken Lockout)
     const umbBroken = run.umbrellaBrokenTimer > 0;
     el.btnToggleUmbrella.classList.toggle('on', run.umbrellaOn);
     el.btnToggleUmbrella.classList.toggle('broken', umbBroken);
     el.btnToggleUmbrella.classList.remove('cooldown');
     el.btnToggleUmbrella.classList.toggle('urgent-fold', needFoldUmb);
     el.btnToggleUmbrella.classList.toggle('urgent-open', needOpenUmb && !umbBroken);
-    if (needFoldUmb) {
+    if (umbBroken) {
+      el.gearUmbrellaState.textContent = `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`;
+      el.gearUmbrellaBar.style.width = `${((run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD) * 100).toFixed(1)}%`;
+    } else if (needFoldUmb) {
       const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
       el.gearUmbrellaState.textContent = `접기! ${rem.toFixed(1)}s`;
       el.gearUmbrellaBar.style.width = `${Math.min(100, ((run.gustExposeTimer || 0) / gustLimit) * 100).toFixed(1)}%`;

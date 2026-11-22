@@ -12,7 +12,7 @@ window.RunRenderer = (function () {
   const CHAR_SHEET_SKINS = [
     { id: 'yellow', frames: 3, runFrames: 8 },
     { id: 'blue', frames: 3, runFrames: 8 },
-    { id: 'hanbok', frames: 2 },
+    { id: 'hanbok', frames: 3, runFrames: 8 },
     { id: 'skier', frames: 2 },
     { id: 'santa', frames: 2 },
     { id: 'catgirl', frames: 4, runFrames: 8 }
@@ -48,7 +48,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd45';
+  const CHAR_ASSET_VER = '20261121hd46';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -1012,9 +1012,9 @@ window.RunRenderer = (function () {
         ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - 24), uw, uh);
       }
       ctx.restore();
-    } else if (!dead && umbrellaBrokenTimer > 0 && umbSpr) {
+    } else if (!dead && umbrellaBrokenTimer > 4.25 && umbSpr) {
       // Crisp flipped real umbrella sprite flying backward when snapped by typhoon!
-      const prog = Math.max(0, Math.min(1, 1 - umbrellaBrokenTimer / 0.85));
+      const prog = Math.max(0, Math.min(1, (5.0 - umbrellaBrokenTimer) / 0.75));
       const uy = cy - scaleHeight - 10 - prog * 34;
       const ux = cx + 6 - prog * 46;
       const uh = 40;
