@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd44" />
+  <link rel="stylesheet" href="style.css?v=20261121hd45" />
 </head>
 <body>
   <div id="mobile-app">
@@ -614,7 +614,7 @@
       <div id="mobile-controls" class="cookie-controls">
         <!-- Left Thumb Stack: Small Umbrella ON TOP + Big Jump BELOW -->
         <div class="ctrl-stack left">
-          <button id="btn-toggle-umbrella" class="img-ctrl-btn gear-img-btn" type="button" aria-label="우산 토글" title="우산 펴기/접기 (Q)">
+          <button id="btn-toggle-umbrella" class="img-ctrl-btn gear-img-btn" type="button" aria-label="우산 토글" title="우산 펴기/접기 (Q · 10초 자동 해제)">
             <span class="ctrl-img-wrap">
               <img src="assets/ctrl/btn_umbrella_up.png" alt="우산" class="ctrl-img up" />
               <img src="assets/ctrl/btn_umbrella_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
@@ -645,7 +645,7 @@
 
         <!-- Right Thumb Stack: Small Mask ON TOP + Big Slide BELOW -->
         <div class="ctrl-stack right">
-          <button id="btn-toggle-mask" class="img-ctrl-btn gear-img-btn" type="button" aria-label="마스크 토글" title="마스크 쓰기 (E · 황사 종료까지 유지)">
+          <button id="btn-toggle-mask" class="img-ctrl-btn gear-img-btn" type="button" aria-label="마스크 토글" title="마스크 쓰기/벗기 (E · 10초 자동 해제)">
             <span class="ctrl-img-wrap">
               <img src="assets/ctrl/btn_mask_up.png" alt="마스크" class="ctrl-img up" />
               <img src="assets/ctrl/btn_mask_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
@@ -826,11 +826,11 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd44"></script>
+  <script src="js/data.js?v=20261121hd45"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd44"></script>
-  <script src="js/renderer.js?v=20261121hd44"></script>
-  <script src="js/game.js?v=20261121hd44"></script>
+  <script src="js/online.js?v=20261121hd45"></script>
+  <script src="js/renderer.js?v=20261121hd45"></script>
+  <script src="js/game.js?v=20261121hd45"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

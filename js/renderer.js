@@ -43,11 +43,12 @@ window.RunRenderer = (function () {
     'sp_winter_tree', 'sp_snowman', 'sp_snow_pile', 'sp_ice_spikes', 'sp_ice_tile',
     'sp_snowflake', 'sp_icicles', 'sp_snow_cloud', 'sp_ice_crystal', 'sp_snow_rock',
     'sp_mace', 'sp_spike_strip', 'sp_spike_stump', 'sp_spring_pad', 'sp_barricade',
-    'sp_crate', 'sp_hazard_barrel', 'sp_green_bush', 'sp_metal_box', 'sp_siren_post'
+    'sp_crate', 'sp_hazard_barrel', 'sp_green_bush', 'sp_metal_box', 'sp_siren_post',
+    'sp_covid_walker', 'sp_covid_virus'
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd44';
+  const CHAR_ASSET_VER = '20261121hd45';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -261,12 +262,17 @@ window.RunRenderer = (function () {
     let mid = lerpHex(prevSeason.sky[1], season.sky[1], f);
     let bot = lerpHex(prevSeason.sky[2], season.sky[2], f);
 
-    // Stormy cloud darkening during rain / flood / gust
+    // Stormy cloud darkening during rain / flood / gust, or crimson biohazard sky during covid!
     const isStormy = weatherEvent === 'rain' || weatherEvent === 'flood' || weatherEvent === 'gust';
+    const isCovid = weatherEvent === 'covid';
     if (isStormy) {
       top = lerpHex(season.sky[0], '#2c4166', 0.55);
       mid = lerpHex(season.sky[1], '#4d658a', 0.45);
       bot = lerpHex(season.sky[2], '#8aa0bf', 0.4);
+    } else if (isCovid) {
+      top = lerpHex(season.sky[0], '#5a1834', 0.62);
+      mid = lerpHex(season.sky[1], '#9c2d4e', 0.48);
+      bot = lerpHex(season.sky[2], '#f29eb0', 0.42);
     }
 
     const grad = ctx.createLinearGradient(0, 0, 0, groundY);
@@ -277,8 +283,8 @@ window.RunRenderer = (function () {
     ctx.fillRect(0, 0, w, groundY);
 
     // Soft glossy cartoon clouds (plump rounded puffs matching HD art style!)
-    const cloudShadow = isStormy ? 'rgba(92, 112, 146, 0.72)' : 'rgba(184, 214, 255, 0.65)';
-    const cloudMain = isStormy ? 'rgba(176, 194, 222, 0.90)' : 'rgba(255, 255, 255, 0.93)';
+    const cloudShadow = isCovid ? 'rgba(148, 56, 84, 0.65)' : (isStormy ? 'rgba(92, 112, 146, 0.72)' : 'rgba(184, 214, 255, 0.65)');
+    const cloudMain = isCovid ? 'rgba(255, 224, 232, 0.88)' : (isStormy ? 'rgba(176, 194, 222, 0.90)' : 'rgba(255, 255, 255, 0.93)');
     for (let i = 0; i < 4; i++) {
       const cx = ((i * 155 - scroll * 0.055 + t * 5.5) % (w + 130) + (w + 130)) % (w + 130) - 75;
       const cy = 28 + (i % 2) * 19;
@@ -512,10 +518,15 @@ window.RunRenderer = (function () {
         drawRoundRect(ctx, ix, GROUND_Y - 1, 16, 2.5, 1.2);
         ctx.fill();
       }
+    } else if (weatherEvent === 'covid') {
+      const pulse = 0.10 + Math.sin(t * 5) * 0.04;
+      ctx.fillStyle = `rgba(210, 26, 68, ${pulse.toFixed(3)})`;
+      ctx.fillRect(0, 0, w, h);
     }
 
     const heavyRain = weatherEvent === 'rain' || weatherEvent === 'flood';
     const heavyDust = weatherEvent === 'dust';
+    const isCovidParticles = weatherEvent === 'covid';
     const isBlizzard = seasonId === 'winter' && (weatherEvent === 'gust' || weatherEvent === 'ice_road');
 
     particles.forEach((p, idx) => {
@@ -523,7 +534,15 @@ window.RunRenderer = (function () {
       const usePrev = prevSeasonId && blend < 1 && (idx / particles.length) > blend;
       const effSeason = usePrev ? prevSeasonId : seasonId;
 
-      if (heavyRain) {
+      if (isCovidParticles) {
+        p.x -= 95 * dt * p.v;
+        p.y += Math.sin(t * 5 + p.p) * 24 * dt;
+        const r = p.s === 1 ? 2.6 : 1.9;
+        ctx.fillStyle = p.s === 1 ? 'rgba(255, 58, 98, 0.85)' : 'rgba(255, 130, 155, 0.72)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (heavyRain) {
         p.x -= 165 * dt * p.v;
         p.y += 315 * dt * p.v;
         ctx.strokeStyle = 'rgba(195, 234, 255, 0.86)';
@@ -719,6 +738,141 @@ window.RunRenderer = (function () {
     }
   }
 
+  function drawCovidAttack(ctx, attack, playerX, playerY, t) {
+    if (!attack) return;
+    const spr = getSprite('sp_covid_virus');
+    const ax = attack.x;
+    const ay = attack.y;
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    if (attack.phase === 'warn') {
+      const ratio = Math.max(0, Math.min(1, attack.timer / (attack.maxTimer || 1.45)));
+      const blink = Math.floor(t * 14) % 2 === 0;
+      const targetX = playerX + 10;
+      const targetY = playerY - 30;
+
+      // Dashed crimson aim laser toward runner
+      ctx.save();
+      ctx.strokeStyle = blink ? 'rgba(255, 45, 85, 0.82)' : 'rgba(255, 196, 72, 0.72)';
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([7, 5]);
+      ctx.lineDashOffset = -t * 75;
+      ctx.beginPath();
+      ctx.moveTo(ax - 18, ay);
+      ctx.lineTo(targetX, targetY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Shrinking timing-lock halo around hovering virus
+      const lockR = 24 + ratio * 26;
+      ctx.save();
+      ctx.strokeStyle = ratio < 0.38 ? '#ffe247' : '#ff385c';
+      ctx.lineWidth = ratio < 0.38 ? 3.2 : 2.2;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.arc(ax, ay, lockR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Pulsing danger glow behind virus
+      const glowGrad = ctx.createRadialGradient(ax, ay, 4, ax, ay, 36);
+      glowGrad.addColorStop(0, 'rgba(255, 40, 82, 0.55)');
+      glowGrad.addColorStop(1, 'rgba(255, 40, 82, 0)');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(ax, ay, 36, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Trembling angry coronavirus sprite
+      const jitterX = Math.sin(t * 48) * 2.2;
+      const jitterY = Math.cos(t * 42) * 2.2;
+      const sz = Math.round(52 + (1 - ratio) * 8);
+      if (spr) {
+        ctx.drawImage(spr, Math.floor(ax + jitterX - sz / 2), Math.floor(ay + jitterY - sz / 2), sz, sz);
+      } else {
+        ctx.fillStyle = '#ff2b55';
+        ctx.beginPath();
+        ctx.arc(ax + jitterX, ay + jitterY, 22, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Glossy cartoon warning pill directly above virus
+      const bx = Math.min(W - 144, Math.max(8, ax - 70));
+      const by = Math.max(12, ay - 56);
+      const bw = 136;
+      const bh = 24;
+      const pGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
+      pGrad.addColorStop(0, blink ? '#ff335c' : '#ff9814');
+      pGrad.addColorStop(1, blink ? '#b80e32' : '#d65c00');
+      drawRoundRect(ctx, bx, by, bw, bh, 12);
+      ctx.fillStyle = pGrad;
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = '#09152e';
+      ctx.stroke();
+      drawRoundRect(ctx, bx + 2, by + 2, bw - 4, bh - 4, 10);
+      ctx.lineWidth = 1.1;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
+      ctx.stroke();
+      ctx.font = '900 10.5px "Paperlogy", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 2.6;
+      ctx.strokeStyle = '#09152e';
+      ctx.strokeText('🦠 돌진! 마스크 착용!', bx + bw / 2, by + 16);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('🦠 돌진! 마스크 착용!', bx + bw / 2, by + 16);
+    } else if (attack.phase === 'charge') {
+      // High-speed crimson shockwave trail behind charging virus
+      for (let k = 1; k <= 3; k++) {
+        ctx.save();
+        ctx.globalAlpha = 0.28 - k * 0.07;
+        ctx.fillStyle = '#ff2b55';
+        ctx.beginPath();
+        ctx.arc(ax + k * 15, ay, Math.max(10, 24 - k * 4), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Fast spinning charging virus
+      const sz = 54;
+      ctx.translate(ax, ay);
+      ctx.rotate(-t * 14);
+      if (spr) {
+        const outlined = getOutlinedObstacleSprite('sp_covid_virus_rush', spr);
+        if (outlined) {
+          const px = sz * outlined.padRatioX;
+          const py = sz * outlined.padRatioY;
+          ctx.drawImage(outlined.canvas, -sz / 2 - px, -sz / 2 - py, sz + px * 2, sz + py * 2);
+        } else {
+          ctx.drawImage(spr, -sz / 2, -sz / 2, sz, sz);
+        }
+      } else {
+        ctx.fillStyle = '#ff2b55';
+        ctx.beginPath();
+        ctx.arc(0, 0, 22, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (attack.phase === 'deflected') {
+      const alpha = Math.max(0, Math.min(1, (attack.deflectTimer || 0) / 0.55));
+      ctx.globalAlpha = alpha;
+      const sz = 48;
+      ctx.translate(ax, ay);
+      ctx.rotate(t * 20);
+      if (spr) {
+        ctx.drawImage(spr, -sz / 2, -sz / 2, sz, sz);
+      } else {
+        ctx.fillStyle = '#ff5e7e';
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
   // ===================== 4-FRAME ANIMATED SHIBA PUPPY COMPANION PET =====================
   function drawPuppyPet(ctx, x, y, t, customH = 30) {
     const frame = Math.floor(t * 10) % 4;
@@ -772,7 +926,7 @@ window.RunRenderer = (function () {
     const {
       sliding, inAir, gliding, invulnTimer, shield, feverTimer, running,
       dead = false, speedBoostTimer = 0, skinDef = null,
-      umbrellaOn = false, maskOn = false, umbrellaBrokenTimer = 0,
+      umbrellaOn = false, maskOn = false, maskParryTimer = 0, umbrellaBrokenTimer = 0,
       gustWarning = false,
       scaleHeight = 52
     } = opts;
@@ -858,9 +1012,9 @@ window.RunRenderer = (function () {
         ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - 24), uw, uh);
       }
       ctx.restore();
-    } else if (!dead && umbrellaBrokenTimer > 5.3 && umbSpr) {
+    } else if (!dead && umbrellaBrokenTimer > 0 && umbSpr) {
       // Crisp flipped real umbrella sprite flying backward when snapped by typhoon!
-      const prog = Math.max(0, Math.min(1, (6.0 - umbrellaBrokenTimer) / 0.7));
+      const prog = Math.max(0, Math.min(1, 1 - umbrellaBrokenTimer / 0.85));
       const uy = cy - scaleHeight - 10 - prog * 34;
       const ux = cx + 6 - prog * 46;
       const uh = 40;
@@ -871,6 +1025,27 @@ window.RunRenderer = (function () {
       ctx.rotate(-0.5 - prog * 2.4);
       ctx.scale(1, -0.82);
       ctx.drawImage(umbSpr, Math.floor(-uw / 2), Math.floor(-uh / 2), uw, uh);
+      ctx.restore();
+    }
+
+    // Glowing emerald-cyan KF94 Timing Seal Ring while fresh mask parry window is active!
+    if (!dead && maskOn && maskParryTimer > 0) {
+      const pRatio = Math.max(0, Math.min(1, maskParryTimer / 1.85));
+      const pR = isProne ? 25 : Math.round(scaleHeight * 0.56);
+      const pCy = cy - (isProne ? 14 : scaleHeight * 0.48);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(84, 255, 190, 0.28)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, pCy, pR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#5effbe';
+      ctx.lineWidth = 2.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, pCy, pR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pRatio);
+      ctx.stroke();
       ctx.restore();
     }
 
@@ -1145,6 +1320,18 @@ window.RunRenderer = (function () {
         const spd = ob.sprite === 'sp_mace' ? -5.5 : (ob.sprite === 'sp_snowflake' ? -3.4 : Math.sin(t * 7) * 0.35);
         ctx.rotate(ob.sprite === 'sp_red_umbrella' ? spd : t * spd);
         ctx.drawImage(drawImg, -dw / 2, -dh / 2, dw, dh);
+      } else if (ob.sprite === 'sp_covid_walker') {
+        // Tired infected pedestrian walking toward the player with natural step bob & sway!
+        const stepPhase = t * 9.5 + (ob.stepSeed || 0);
+        const walkBob = Math.abs(Math.sin(stepPhase)) * 3.0;
+        const walkSway = Math.sin(stepPhase) * 0.055;
+        ctx.fillStyle = 'rgba(8, 16, 36, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(x + ob.w / 2, y + ob.h, ob.w * 0.44, 3.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.translate(x + ob.w / 2, y + ob.h - walkBob);
+        ctx.rotate(walkSway);
+        ctx.drawImage(drawImg, -dw / 2, -dh + py, dw, dh);
       } else {
         ctx.drawImage(drawImg, x - px, y - py, dw, dh);
       }
@@ -1424,6 +1611,7 @@ window.RunRenderer = (function () {
       deathProgress: run.dying ? (1 - Math.max(0, run.deathAnimTimer || 0) / 0.58) : 1,
       umbrellaOn: run.umbrellaOn,
       maskOn: run.maskOn,
+      maskParryTimer: run.maskParryTimer || 0,
       umbrellaBrokenTimer: run.umbrellaBrokenTimer || 0,
       gustWarning: Boolean(run.weatherEvent === 'gust' && run.umbrellaOn && run.feverTimer <= 0),
       hitPoseTimer: run.hitPoseTimer || 0,
@@ -1435,6 +1623,9 @@ window.RunRenderer = (function () {
       squashY: run.squashY !== undefined ? run.squashY : 1,
       scaleHeight: 62
     }, t);
+
+    // Corona Virus Timed Rush Attack!
+    drawCovidAttack(ctx, run.covidAttack, run.playerX, run.playerY, t);
 
     // Dynamic High-Speed Wind Momentum Streaks (ramps smoothly as speed climbs past 220 px/s!)
     const speedRatio = (run.speed || 196) / 196;

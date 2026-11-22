@@ -215,11 +215,11 @@ window.RUN_DATA = (function () {
     {
       id: 'defense',
       name: '기상 대응력 강화',
-      icon: 'assets/design/ui_chest.png?v=20261121hd38',
+      icon: 'assets/design/ui_chest.png?v=20261121hd45',
       maxLv: 5,
       basePrice: 160,
       priceStep: 130,
-      desc: (lv) => `우산·마스크 쿨타임 -${((lv + 1) * 0.35).toFixed(1)}초 & 피격 무적 +${((lv + 1) * 0.2).toFixed(1)}초`
+      desc: (lv) => `피격 무적 시간 +${((lv + 1) * 0.2).toFixed(1)}초 & 기상 위기 방어력 강화`
     },
     {
       id: 'score',
@@ -446,6 +446,10 @@ window.RUN_DATA = (function () {
     ice_road: {
       id: 'ice_road', icon: '🧊', label: '겨울 빙판길',
       actionTip: '미끄럼 · 슬라이드 가속 주의!', color: '#8ee8ff'
+    },
+    covid: {
+      id: 'covid', icon: '🦠', label: '코로나 바이러스 경보',
+      actionTip: '돌진 타이밍에 맞춰 마스크 착용!', color: '#ff3b5c'
     }
   };
 

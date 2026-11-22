@@ -6638,6 +6638,11 @@ input:focus-visible {
 .weather-center-alert.ev-ice_road { --ev-glow: #7ef6ff; }
 .weather-center-alert.ev-ice_road .weather-alert-title { color: #c7fbff; }
 
+.weather-center-alert.ev-covid,
+.weather-center-alert.ev-covid_rush { --ev-glow: #ff385c; }
+.weather-center-alert.ev-covid .weather-alert-title,
+.weather-center-alert.ev-covid_rush .weather-alert-title { color: #ff99ac; }
+
 @keyframes weatherAlertIn {
   0% {
     opacity: 0;

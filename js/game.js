@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd44';
+  const ASSET_VER = '20261121hd45';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -955,12 +955,14 @@
 
   let weatherAlertTimer = null;
   const WEATHER_ALERT_META = {
-    rain:     { title: '🌧️ 국지성 폭우!', sub: '☂️ 우산을 펴세요!' },
-    flood:    { title: '🌊 장마 침수 경보!', sub: '☂️ 우산 ON · 차 지붕을 밟으세요!' },
-    dust:     { title: '😷 황사 · 미세먼지!', sub: '😷 마스크를 착용하세요!' },
-    heat:     { title: '☀️ 폭염 땡볕 경보!', sub: '☂️ 우산(양산)을 펴세요!' },
-    gust:     { title: '💨 태풍 · 강풍 돌풍!', sub: '☂️ 우산을 접고 슬라이드!' },
-    ice_road: { title: '🧊 겨울 빙판길!', sub: '❄️ 미끄럼 주의!' }
+    rain:       { title: '🌧️ 국지성 폭우!', sub: '☂️ 우산을 펴세요!' },
+    flood:      { title: '🌊 장마 침수 경보!', sub: '☂️ 우산 ON · 차 지붕을 밟으세요!' },
+    dust:       { title: '😷 황사 · 미세먼지!', sub: '😷 마스크를 착용하세요!' },
+    heat:       { title: '☀️ 폭염 땡볕 경보!', sub: '☂️ 우산(양산)을 펴세요!' },
+    gust:       { title: '💨 태풍 · 강풍 돌풍!', sub: '☂️ 우산을 접고 슬라이드!' },
+    ice_road:   { title: '🧊 겨울 빙판길!', sub: '❄️ 미끄럼 주의!' },
+    covid:      { title: '🦠 코로나 경보!', sub: '😷 확진자 회피 · 돌진 직전 마스크!' },
+    covid_rush: { title: '🦠 코로나 바이러스 발생!', sub: '😷 마스크를 쓰세요!' }
   };
 
   function showWeatherCenterAlert(weatherId, customSub = null) {
@@ -2969,10 +2971,20 @@
     refreshAllMenus();
   }
 
-  // ===================== RUNNER ENGINE (WEATHER PHYSICS + GEAR + FORECAST) =====================
-  const GEAR_DURATION = 6.0;
-  const GEAR_COOLDOWN = 5.0;
-  const UMBRELLA_BROKEN_CD = 7.0;
+  // ===================== RUNNER ENGINE (WEATHER PHYSICS + GEAR + CORONA EVENT) =====================
+  const GEAR_DURATION = 10.0;
+  const MASK_PARRY_WINDOW = 1.85;
+  const UMBRELLA_BROKEN_CD = 0.85;
+  const COVID_WALKER_PRESET = {
+    id: 'covid_walker',
+    name: '코로나 확진자',
+    lane: 'low',
+    w: 32,
+    h: 52,
+    tag: 'covid',
+    sprite: 'sp_covid_walker',
+    speedBonus: 28
+  };
 
   function triggerCameraShake(intensity = 6, dur = 0.25) {
     if (!run) return;
@@ -3076,13 +3088,14 @@
       coinStreak: 0,
       coinStreakTimer: 0,
 
-      // Strategic Gear Toggles with Duration & Cooldown + Weather Exposure Timers
+      // Strategic Gear Toggles (Zero Cooldown · 10s Auto-Off) + Weather Exposure Timers
       umbrellaOn: false,
       umbrellaActiveTimer: 0,
       umbrellaCooldown: 0,
       umbrellaBrokenTimer: 0,
       maskOn: false,
       maskActiveTimer: 0,
+      maskParryTimer: 0,
       maskCooldown: 0,
       rainExposeTimer: 0,
       dustExposeTimer: 0,
@@ -3114,12 +3127,14 @@
       pendingWeather: null,
       weatherPrepTimer: 0,
 
-      // Street Features & Passing Car
+      // Street Features, Passing Car & Corona Virus Rush Event
       features: [],
       featureCd: 2.2,
       convStoreCd: 13.0,
       passingCar: null,
       passingCarCd: 5.5,
+      covidAttack: null,
+      covidAttackCd: 0,
 
       // Obstacles & Collectibles
       obstacleCd: 1.5,
@@ -3167,30 +3182,15 @@
     return w === 'dust';
   }
 
-  function getEffectiveGearCooldown() {
-    return Math.max(2.5, Number((GEAR_COOLDOWN - save.upgrades.defense * 0.35).toFixed(2)));
-  }
-
   function toggleUmbrella() {
     if (!run || !run.active || paused) return;
-    if (run.umbrellaBrokenTimer > 0) {
-      SFX.hit();
-      Renderer.spawnFloater(`우산 파손 수리 중 (${Math.ceil(run.umbrellaBrokenTimer)}초)`, '#ff9e9e', run.playerX + 10, run.playerY - 42);
-      return;
-    }
-    if (!run.umbrellaOn && run.umbrellaCooldown > 0) {
-      SFX.hit();
-      Renderer.spawnFloater(`우산 쿨타임 (${Math.ceil(run.umbrellaCooldown)}초)`, '#ffcb7a', run.playerX + 10, run.playerY - 42);
-      return;
-    }
 
-    const cd = getEffectiveGearCooldown();
     if (run.umbrellaOn) {
       const foldedForGust = run.weatherEvent === 'gust';
       run.umbrellaOn = false;
       run.umbrellaActiveTimer = 0;
       run.gustExposeTimer = 0;
-      run.umbrellaCooldown = foldedForGust ? 1.0 : cd;
+      run.umbrellaCooldown = 0;
       if (foldedForGust) {
         run.score += Math.round(50 * run.scoreMult);
         SFX.guard();
@@ -3199,11 +3199,12 @@
       } else {
         SFX.click();
         haptic(10);
-        Renderer.spawnFloater(`우산 접기 (쿨타임 ${cd}초)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
+        Renderer.spawnFloater('☂️ 우산 접기', '#8ce0ff', run.playerX + 10, run.playerY - 42);
       }
     } else {
       run.umbrellaOn = true;
       run.umbrellaActiveTimer = GEAR_DURATION;
+      run.umbrellaBrokenTimer = 0;
       run.rainExposeTimer = 0;
       run.gustExposeTimer = 0;
       SFX.click();
@@ -3212,8 +3213,7 @@
         run.gustExposeTimer = 0.05;
         Renderer.spawnFloater('💨 태풍 중! 빨리 우산을 접으세요!', '#ff9b54', run.playerX + 12, run.playerY - 44);
       } else {
-        const persistTxt = isUmbrellaWeather(run.weatherEvent) ? '날씨 종료까지 유지!' : `${GEAR_DURATION}초 지속`;
-        Renderer.spawnFloater(`우산 ON! (${persistTxt})`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
+        Renderer.spawnFloater(`☂️ 우산 ON! (${GEAR_DURATION}초 자동 해제)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
       }
     }
     updateRunHud();
@@ -3223,7 +3223,7 @@
     run.umbrellaOn = false;
     run.umbrellaActiveTimer = 0;
     run.umbrellaBrokenTimer = UMBRELLA_BROKEN_CD;
-    run.umbrellaCooldown = UMBRELLA_BROKEN_CD;
+    run.umbrellaCooldown = 0;
     run.hitPoseTimer = 0.5;
     run.hitFlashTimer = 0.28;
     run.hitStopTimer = 0.055;
@@ -3234,35 +3234,47 @@
     haptic(35);
     SFX.umbrellaBreak();
     run.hp = Math.max(0, run.hp - 1);
-    run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 강풍 속에 우산을 펴다 뒤집혀 쓰러졌습니다!`;
+    run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 강풍 속에 우산을 접지 않아 뒤집혀 쓰러졌습니다!`;
     Renderer.spawnFloater('강풍에 우산 파손!! -1 ❤️', '#ff5c5c', run.playerX + 16, run.playerY - 48);
-    showRunBanner(`💨 돌풍에 우산이 뒤집혔습니다!! (${UMBRELLA_BROKEN_CD}초 사용 불가)`, 2200);
+    showRunBanner('💨 돌풍에 우산이 뒤집혔습니다!! (-1 ❤️)', 2200);
   }
 
   function toggleMask() {
     if (!run || !run.active || paused) return;
-    if (!run.maskOn && run.maskCooldown > 0) {
-      SFX.hit();
-      Renderer.spawnFloater(`마스크 쿨타임 (${Math.ceil(run.maskCooldown)}초)`, '#ffcb7a', run.playerX + 10, run.playerY - 42);
-      return;
-    }
 
-    const cd = getEffectiveGearCooldown();
-    if (run.maskOn) {
-      run.maskOn = false;
-      run.maskActiveTimer = 0;
-      run.maskCooldown = cd;
-      SFX.click();
-      haptic(10);
-      Renderer.spawnFloater(`마스크 벗기 (쿨타임 ${cd}초)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
-    } else {
+    const covidIncoming = Boolean(
+      run.covidAttack &&
+      (run.covidAttack.phase === 'warn' || run.covidAttack.phase === 'charge') &&
+      !run.covidAttack.checked
+    );
+
+    if (covidIncoming) {
+      // 코로나 바이러스 돌진 중 마스크 버튼을 누르면 실수로 벗겨지지 않고 정확한 타이밍 차단을 장전!
       run.maskOn = true;
       run.maskActiveTimer = GEAR_DURATION;
+      run.maskParryTimer = MASK_PARRY_WINDOW;
+      run.maskCooldown = 0;
       run.dustExposeTimer = 0;
       SFX.click();
       haptic(14);
-      const persistTxt = isMaskWeather(run.weatherEvent) ? '황사 종료까지 유지!' : `${GEAR_DURATION}초 지속`;
-      Renderer.spawnFloater(`KF94 마스크 ON! (${persistTxt})`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
+      Renderer.spawnFloater('😷 마스크 타이밍 장전! 차단 준비!', '#5effbe', run.playerX + 12, run.playerY - 46);
+    } else if (run.maskOn) {
+      run.maskOn = false;
+      run.maskActiveTimer = 0;
+      run.maskParryTimer = 0;
+      run.maskCooldown = 0;
+      SFX.click();
+      haptic(10);
+      Renderer.spawnFloater('😷 마스크 해제', '#a6ffcf', run.playerX + 10, run.playerY - 42);
+    } else {
+      run.maskOn = true;
+      run.maskActiveTimer = GEAR_DURATION;
+      run.maskParryTimer = MASK_PARRY_WINDOW;
+      run.maskCooldown = 0;
+      run.dustExposeTimer = 0;
+      SFX.click();
+      haptic(14);
+      Renderer.spawnFloater(`😷 KF94 마스크 ON! (${GEAR_DURATION}초 자동 해제)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
     }
     updateRunHud();
   }
@@ -3363,7 +3375,12 @@
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const pool = DATA.SEASON_WEATHER_POOL[run.seasonId] || ['rain', 'gust', 'dust'];
     const candidates = pool.filter((w) => w !== run.weatherEvent);
-    const nextW = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
+    let nextW = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
+
+    // 1년(60초) 경과 후 2년 차부터 코로나 이벤트가 랜덤하게 발생!
+    if (run.year >= 2 && run.weatherEvent !== 'covid' && Math.random() < 0.34) {
+      nextW = 'covid';
+    }
 
     run.pendingWeather = nextW;
     run.weatherPrepTimer = Math.max(1.2, 2.0 / Math.min(1.65, diff.weatherPaceMult));
@@ -3371,33 +3388,37 @@
 
   function activatePendingWeather() {
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
-    const prevW = run.weatherEvent;
     const nextW = run.pendingWeather || 'clear';
 
     run.weatherEvent = nextW;
     run.pendingWeather = null;
-    run.weatherEventTimer = Math.max(5.2, (8.5 + Math.random() * 2.5) / diff.weatherPaceMult);
+    run.weatherEventTimer = nextW === 'covid'
+      ? Math.max(10.0, 13.5 / Math.min(1.35, diff.weatherPaceMult))
+      : Math.max(5.2, (8.5 + Math.random() * 2.5) / diff.weatherPaceMult);
     run.rainExposeTimer = 0;
     run.dustExposeTimer = 0;
     run.gustExposeTimer = 0;
 
-    // Auto-fold Umbrella when Rain/Flood/Heatwave ends smoothly (during Gust, player folds it within grace window!)
-    if (run.umbrellaOn && isUmbrellaWeather(prevW) && !isUmbrellaWeather(nextW) && nextW !== 'gust') {
-      run.umbrellaOn = false;
-      run.umbrellaActiveTimer = 0;
-      run.umbrellaCooldown = 1.0;
-      Renderer.spawnFloater('날씨 종료! 우산 자동 접기', '#8ce0ff', run.playerX + 10, run.playerY - 44);
-    }
-
-    // Auto-remove Mask when Yellow Dust ends!
-    if (run.maskOn && isMaskWeather(prevW) && !isMaskWeather(nextW)) {
-      run.maskOn = false;
-      run.maskActiveTimer = 0;
-      run.maskCooldown = 1.0;
-      Renderer.spawnFloater('황사 종료! 마스크 자동 해제', '#a6ffcf', run.playerX + 10, run.playerY - 44);
-    }
-
-    if (nextW === 'gust') {
+    if (nextW === 'covid') {
+      run.covidAttack = null;
+      run.covidAttackCd = 1.25;
+      // 아직 화면 진입 전인 대기 장애물도 코로나 확진자 보행 장애물로 즉시 교체!
+      for (let i = 0; i < run.obstacles.length; i++) {
+        const ob = run.obstacles[i];
+        if (ob.x > Renderer.W - 8) {
+          run.obstacles[i] = {
+            ...COVID_WALKER_PRESET,
+            x: ob.x,
+            y: Renderer.GROUND_Y - COVID_WALKER_PRESET.h,
+            passed: false,
+            nearMissed: false,
+            stepSeed: Math.random() * Math.PI * 2,
+            extraSpeed: (COVID_WALKER_PRESET.speedBonus || 0) * diff.extraObsSpeedMult
+          };
+        }
+      }
+      showWeatherCenterAlert('covid');
+    } else if (nextW === 'gust') {
       const subTxt = run.umbrellaOn ? '⚠️ 제한 시간 안에 우산을 접으세요!' : '💨 맞바람 주의! 슬라이드로 돌파!';
       showWeatherCenterAlert('gust', subTxt);
     } else if (nextW !== 'clear') {
@@ -3422,7 +3443,9 @@
 
   function spawnObstacleWave() {
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
-    const pool = DATA.OBSTACLES_BY_SEASON[run.seasonId];
+    const pool = run.weatherEvent === 'covid'
+      ? [COVID_WALKER_PRESET]
+      : DATA.OBSTACLES_BY_SEASON[run.seasonId];
     const preset = pool[Math.floor(Math.random() * pool.length)];
 
     // During flood, leave ground room for submerged car / box platforming!
@@ -3450,6 +3473,7 @@
       y,
       passed: false,
       nearMissed: false,
+      stepSeed: Math.random() * Math.PI * 2,
       extraSpeed: (preset.speedBonus || 0) * diff.extraObsSpeedMult
     });
 
@@ -3466,6 +3490,7 @@
         y: sy2,
         passed: false,
         nearMissed: false,
+        stepSeed: Math.random() * Math.PI * 2,
         extraSpeed: (second.speedBonus || 0) * diff.extraObsSpeedMult
       });
       comboExtraWidth += gapX;
@@ -3481,6 +3506,7 @@
           y: sy3,
           passed: false,
           nearMissed: false,
+          stepSeed: Math.random() * Math.PI * 2,
           extraSpeed: (third.speedBonus || 0) * diff.extraObsSpeedMult
         });
         comboExtraWidth += gapX3;
@@ -3666,41 +3692,29 @@
       run.feverCharge = (run.feverTimer / 4.5) * 100;
     }
 
-    // Umbrella & Mask Duration: Maintained until Rain/Flood/Heatwave or Yellow Dust ends!
-    const effGearCd = getEffectiveGearCooldown();
-    const keepUmbrella = isUmbrellaWeather(run.weatherEvent);
-    const keepMask = isMaskWeather(run.weatherEvent);
+    // Umbrella & Mask: Zero Cooldown · Auto-Turn-Off every 10 seconds!
+    run.umbrellaCooldown = 0;
+    run.maskCooldown = 0;
+    if (run.maskParryTimer > 0) run.maskParryTimer = Math.max(0, run.maskParryTimer - dt);
 
     if (run.umbrellaOn) {
-      if (keepUmbrella) {
-        run.umbrellaActiveTimer = GEAR_DURATION;
-      } else {
-        run.umbrellaActiveTimer = Math.max(0, run.umbrellaActiveTimer - dt);
-        if (run.umbrellaActiveTimer <= 0) {
-          run.umbrellaOn = false;
-          run.umbrellaCooldown = effGearCd;
-          SFX.click();
-          Renderer.spawnFloater(`우산 종료 (쿨타임 ${effGearCd}초)`, '#9fd9ff', run.playerX + 10, run.playerY - 42);
-        }
+      run.umbrellaActiveTimer = Math.max(0, run.umbrellaActiveTimer - dt);
+      if (run.umbrellaActiveTimer <= 0) {
+        run.umbrellaOn = false;
+        run.gustExposeTimer = 0;
+        SFX.click();
+        Renderer.spawnFloater('☂️ 우산 자동 해제 (10초 경과)', '#9fd9ff', run.playerX + 10, run.playerY - 42);
       }
-    } else if (run.umbrellaCooldown > 0) {
-      run.umbrellaCooldown = Math.max(0, run.umbrellaCooldown - dt);
     }
 
     if (run.maskOn) {
-      if (keepMask) {
-        run.maskActiveTimer = GEAR_DURATION;
-      } else {
-        run.maskActiveTimer = Math.max(0, run.maskActiveTimer - dt);
-        if (run.maskActiveTimer <= 0) {
-          run.maskOn = false;
-          run.maskCooldown = effGearCd;
-          SFX.click();
-          Renderer.spawnFloater(`마스크 종료 (쿨타임 ${effGearCd}초)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
-        }
+      run.maskActiveTimer = Math.max(0, run.maskActiveTimer - dt);
+      if (run.maskActiveTimer <= 0) {
+        run.maskOn = false;
+        run.maskParryTimer = 0;
+        SFX.click();
+        Renderer.spawnFloater('😷 마스크 자동 해제 (10초 경과)', '#a6ffcf', run.playerX + 10, run.playerY - 42);
       }
-    } else if (run.maskCooldown > 0) {
-      run.maskCooldown = Math.max(0, run.maskCooldown - dt);
     }
 
     // Ice Road slide inertia
@@ -3950,6 +3964,121 @@
         run.passingCarCd = Math.max(3.6, (6.5 + Math.random() * 2.5) / diff.weatherPaceMult);
         run.passingCar = { phase: 'warn', timer: Math.max(0.85, 1.15 / Math.min(1.35, diff.weatherPaceMult)), x: Renderer.W + 30 };
         SFX.fakeAlert();
+      }
+    }
+
+    // ---- CORONA VIRUS TIMED RUSH EVENT (YEAR 2+ RANDOM COVID EVENT) ----
+    if (run.covidAttack) {
+      const atk = run.covidAttack;
+      if (atk.phase === 'warn') {
+        atk.timer -= dt;
+        const targetY = Math.max(76, Math.min(Renderer.GROUND_Y - 36, run.playerY - 30));
+        atk.y += (targetY - atk.y) * Math.min(1, dt * 6);
+        if (atk.timer <= 0) {
+          atk.phase = 'charge';
+          atk.vx = 540 + run.speed * 0.45;
+          atk.checked = false;
+        }
+      } else if (atk.phase === 'charge') {
+        atk.x -= atk.vx * dt;
+        const targetY = Math.max(76, Math.min(Renderer.GROUND_Y - 26, run.playerY - 28));
+        atk.y += (targetY - atk.y) * Math.min(1, dt * 7);
+        if (!atk.checked && atk.x <= run.playerX + 26) {
+          atk.checked = true;
+          if (run.feverTimer > 0) {
+            atk.phase = 'deflected';
+            atk.deflectTimer = 0.55;
+            atk.vx = 280;
+            atk.vy = -260;
+            run.score += Math.round(250 * run.scoreMult * upgradeScoreMult);
+            SFX.guard();
+            Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#ffe866', true);
+            Renderer.spawnFloater('🔥 피버! 코로나 격파 +250', '#ffe866', run.playerX + 14, run.playerY - 50);
+          } else if (run.maskOn && run.maskParryTimer > 0) {
+            const isPerfect = run.maskParryTimer >= 0.85;
+            const bonusPts = isPerfect ? 350 : 250;
+            const feverGain = isPerfect ? 14 : 10;
+            atk.phase = 'deflected';
+            atk.deflectTimer = 0.55;
+            atk.vx = 300;
+            atk.vy = -280;
+            run.score += Math.round(bonusPts * run.scoreMult * upgradeScoreMult);
+            run.feverCharge = Math.min(100, run.feverCharge + feverGain);
+            if (run.feverCharge >= 100 && run.feverTimer <= 0) {
+              run.feverTimer = 4.5;
+              run.winPoseTimer = 0.7;
+              SFX.feverStart();
+            } else {
+              SFX.guard();
+            }
+            haptic(16);
+            Renderer.spawnPickupEffect(run.playerX + 16, run.playerY - 30, '#5effbe', true);
+            Renderer.spawnFloater(
+              isPerfect ? `😷 완벽 타이밍 차단! +${bonusPts}` : `😷 코로나 차단 성공! +${bonusPts}`,
+              '#5effbe',
+              run.playerX + 14,
+              run.playerY - 50
+            );
+          } else if (run.shield) {
+            run.shield = false;
+            run.invulnTimer = 1.25;
+            atk.phase = 'deflected';
+            atk.deflectTimer = 0.55;
+            atk.vx = 260;
+            atk.vy = -240;
+            SFX.guard();
+            Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#82e2ff', true);
+            Renderer.spawnFloater('🛡️ 기상 보호막으로 코로나 방어!', '#82e2ff', run.playerX + 14, run.playerY - 48);
+          } else {
+            const staleMask = run.maskOn;
+            run.hp = Math.max(0, run.hp - 1);
+            run.hitPoseTimer = 0.45;
+            run.hitFlashTimer = 0.3;
+            run.hitStopTimer = 0.055;
+            run.squashX = 1.24;
+            run.squashY = 0.78;
+            run.dodgeCombo = 0;
+            triggerCameraShake(7, 0.28);
+            haptic(35);
+            SFX.hit();
+            run.lastHitCause = staleMask
+              ? `${run.year}년 차 코로나 이벤트, 바이러스 돌진 타이밍에 맞춰 마스크를 누르지 못해 감염되었습니다!`
+              : `${run.year}년 차 코로나 이벤트, 마스크를 쓰지 않아 코로나 바이러스에 감염되었습니다!`;
+            Renderer.spawnFloater(
+              staleMask ? '🦠 타이밍 실패! -1 ❤️ (돌진 직전 마스크!)' : '🦠 코로나 감염! -1 ❤️ (마스크 착용!)',
+              '#ff5c7c',
+              run.playerX + 14,
+              run.playerY - 48
+            );
+          }
+        }
+        if (atk.x < -70) run.covidAttack = null;
+      } else if (atk.phase === 'deflected') {
+        atk.x += (atk.vx || 280) * dt;
+        atk.y += (atk.vy || -260) * dt;
+        atk.vy = (atk.vy || -260) + 520 * dt;
+        atk.deflectTimer -= dt;
+        if (atk.deflectTimer <= 0 || atk.x > Renderer.W + 70) {
+          run.covidAttack = null;
+        }
+      }
+    } else if (run.weatherEvent === 'covid') {
+      run.covidAttackCd -= dt;
+      if (run.covidAttackCd <= 0) {
+        const warnDur = Math.max(1.20, 1.45 / Math.min(1.25, diff.weatherPaceMult));
+        run.covidAttackCd = Math.max(3.4, 4.5 / Math.min(1.3, diff.weatherPaceMult));
+        run.covidAttack = {
+          phase: 'warn',
+          timer: warnDur,
+          maxTimer: warnDur,
+          x: Renderer.W - 56,
+          y: Math.max(84, run.playerY - 34),
+          vx: 0,
+          vy: 0,
+          checked: false
+        };
+        SFX.fakeAlert();
+        showWeatherCenterAlert('covid_rush');
       }
     }
 
@@ -4212,6 +4341,8 @@
     run.sliding = false;
     run.umbrellaOn = false;
     run.maskOn = false;
+    run.maskParryTimer = 0;
+    run.covidAttack = null;
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
@@ -4307,16 +4438,28 @@
 
     const activeEv = run.weatherEvent || 'clear';
     const incomingEv = (run.pendingWeather && run.pendingWeather !== 'clear') ? run.pendingWeather : null;
+    const covidUrgent = Boolean(
+      run.covidAttack &&
+      (run.covidAttack.phase === 'warn' || run.covidAttack.phase === 'charge') &&
+      !run.covidAttack.checked &&
+      run.feverTimer <= 0
+    );
+    const needCovidMask = covidUrgent && !(run.maskOn && run.maskParryTimer > 0);
     const needFoldUmb = activeEv === 'gust' && run.umbrellaOn && run.feverTimer <= 0;
     const needOpenUmb = (activeEv === 'rain' || activeEv === 'flood' || (activeEv === 'heat' && !ch.summerImmune)) && !run.umbrellaOn && run.feverTimer <= 0;
     const needOpenMask = activeEv === 'dust' && !run.maskOn && run.feverTimer <= 0;
 
     if (el.runWeatherBar) {
-      const showBar = activeEv !== 'clear' || Boolean(incomingEv) || run.heatGauge > 5;
+      const showBar = activeEv !== 'clear' || Boolean(incomingEv) || covidUrgent || run.heatGauge > 5;
       el.runWeatherBar.classList.toggle('hidden', !showBar);
-      el.runWeatherBar.classList.toggle('urgent-danger', needFoldUmb);
+      el.runWeatherBar.classList.toggle('urgent-danger', needFoldUmb || needCovidMask);
       if (showBar) {
-        if (activeEv !== 'clear') {
+        if (covidUrgent) {
+          if (el.weatherStatusBadge) el.weatherStatusBadge.textContent = '🦠 코로나 바이러스 발생!';
+          if (el.weatherStatusTip) {
+            el.weatherStatusTip.textContent = needCovidMask ? '마스크를 쓰세요!' : '😷 차단 준비 완료!';
+          }
+        } else if (activeEv !== 'clear') {
           const curDef = DATA.WEATHER_EVENTS[activeEv] || DATA.WEATHER_EVENTS.clear;
           if (el.weatherStatusBadge) el.weatherStatusBadge.textContent = `${curDef.icon || ''} ${curDef.label}`;
           if (el.weatherStatusTip) {
@@ -4331,8 +4474,19 @@
       }
     }
 
-    // Live Exposure / Fold Countdown Pill!
-    if (needFoldUmb) {
+    // Live Exposure / Fold / Corona Rush Countdown Pill!
+    if (covidUrgent) {
+      el.fcHeatPill.classList.remove('hidden');
+      if (needCovidMask) {
+        el.fcHeatPill.classList.add('urgent');
+        el.fcHeatPill.textContent = run.covidAttack.phase === 'warn'
+          ? `😷 마스크! ${Math.max(0, run.covidAttack.timer).toFixed(1)}s`
+          : '🦠 돌진! 지금 마스크!';
+      } else {
+        el.fcHeatPill.classList.remove('urgent');
+        el.fcHeatPill.textContent = '🛡️ 마스크 차단 준비!';
+      }
+    } else if (needFoldUmb) {
       const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
       el.fcHeatPill.classList.remove('hidden');
       el.fcHeatPill.classList.add('urgent');
@@ -4373,51 +4527,38 @@
       el.mudOverlay.classList.add('hidden');
     }
 
-    // Umbrella & Mask Toggle Buttons with Urgent Visual Pulse + Cooldown Fill Bars
-    const effGearCd = getEffectiveGearCooldown();
+    // Umbrella & Mask Toggle Buttons (Zero Cooldown · 10s Live Countdown + Urgent Visual Pulse)
     const umbBroken = run.umbrellaBrokenTimer > 0;
-    const umbCd = !umbBroken && !run.umbrellaOn && run.umbrellaCooldown > 0;
-    const umbHeldByWeather = run.umbrellaOn && isUmbrellaWeather(run.weatherEvent);
     el.btnToggleUmbrella.classList.toggle('on', run.umbrellaOn);
     el.btnToggleUmbrella.classList.toggle('broken', umbBroken);
-    el.btnToggleUmbrella.classList.toggle('cooldown', umbCd);
+    el.btnToggleUmbrella.classList.remove('cooldown');
     el.btnToggleUmbrella.classList.toggle('urgent-fold', needFoldUmb);
-    el.btnToggleUmbrella.classList.toggle('urgent-open', needOpenUmb && !umbBroken && !umbCd);
-    if (umbBroken) {
-      el.gearUmbrellaState.textContent = `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`;
-      el.gearUmbrellaBar.style.width = `${((run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD) * 100).toFixed(1)}%`;
-    } else if (needFoldUmb) {
+    el.btnToggleUmbrella.classList.toggle('urgent-open', needOpenUmb && !umbBroken);
+    if (needFoldUmb) {
       const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
       el.gearUmbrellaState.textContent = `접기! ${rem.toFixed(1)}s`;
       el.gearUmbrellaBar.style.width = `${Math.min(100, ((run.gustExposeTimer || 0) / gustLimit) * 100).toFixed(1)}%`;
-    } else if (umbHeldByWeather) {
-      el.gearUmbrellaState.textContent = '유지 중';
-      el.gearUmbrellaBar.style.width = '100%';
     } else if (run.umbrellaOn) {
       el.gearUmbrellaState.textContent = `${run.umbrellaActiveTimer.toFixed(1)}s`;
       el.gearUmbrellaBar.style.width = `${((run.umbrellaActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
-    } else if (umbCd) {
-      el.gearUmbrellaState.textContent = `쿨 ${Math.ceil(run.umbrellaCooldown)}s`;
-      el.gearUmbrellaBar.style.width = `${((run.umbrellaCooldown / effGearCd) * 100).toFixed(1)}%`;
     } else {
       el.gearUmbrellaState.textContent = '우산';
       el.gearUmbrellaBar.style.width = '0%';
     }
 
-    const maskCd = !run.maskOn && run.maskCooldown > 0;
-    const maskHeldByWeather = run.maskOn && isMaskWeather(run.weatherEvent);
     el.btnToggleMask.classList.toggle('on', run.maskOn);
-    el.btnToggleMask.classList.toggle('cooldown', maskCd);
-    el.btnToggleMask.classList.toggle('urgent-open', needOpenMask && !maskCd);
-    if (maskHeldByWeather) {
-      el.gearMaskState.textContent = '유지 중';
+    el.btnToggleMask.classList.remove('cooldown');
+    el.btnToggleMask.classList.toggle('urgent-fold', needCovidMask);
+    el.btnToggleMask.classList.toggle('urgent-open', !needCovidMask && needOpenMask);
+    if (needCovidMask) {
+      el.gearMaskState.textContent = '타이밍!';
       el.gearMaskBar.style.width = '100%';
+    } else if (covidUrgent && run.maskOn && run.maskParryTimer > 0) {
+      el.gearMaskState.textContent = '차단 ON';
+      el.gearMaskBar.style.width = `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
     } else if (run.maskOn) {
       el.gearMaskState.textContent = `${run.maskActiveTimer.toFixed(1)}s`;
       el.gearMaskBar.style.width = `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
-    } else if (maskCd) {
-      el.gearMaskState.textContent = `쿨 ${Math.ceil(run.maskCooldown)}s`;
-      el.gearMaskBar.style.width = `${((run.maskCooldown / effGearCd) * 100).toFixed(1)}%`;
     } else {
       el.gearMaskState.textContent = '마스크';
       el.gearMaskBar.style.width = '0%';
