@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd56';
+  const ASSET_VER = '20261121hd57';
 
   function ticketIconHtml(cls = '') {
     return `<img src="assets/ui/gacha_ticket.png?v=${ASSET_VER}" alt="뽑기권" class="ticket-ico${cls ? ` ${cls}` : ''}" />`;
@@ -148,7 +148,6 @@
       gachaHistory: [],
       pity: { gold: 0, diamond: 0 },
       dailyWoodChestDrops: { date: today, count: 0 },
-      upgrades: { hp: 0, magnet: 0, defense: 0, score: 0 },
       boosters: { norway: 0, shield: 0, boost: 0 },
       bestScore: 0,
       bestYear: 1,
@@ -203,7 +202,6 @@
       gachaHistory: toSafeArray(raw.gachaHistory).filter((x) => x && typeof x === 'object').slice(0, 50),
       pity: { gold: 0, diamond: 0, ...(raw.pity || {}) },
       dailyWoodChestDrops: { date: today, count: Number(rawDrops.count) || 0 },
-      upgrades: { ...def.upgrades, ...(raw.upgrades || {}) },
       boosters: { ...def.boosters, ...(raw.boosters || {}) },
       bestScore: typeof raw.bestScore === 'number' && Number.isFinite(raw.bestScore) ? Math.max(0, Math.floor(raw.bestScore)) : 0,
       bestYear: typeof raw.bestYear === 'number' && Number.isFinite(raw.bestYear) ? Math.max(1, Math.floor(raw.bestYear)) : 1,
@@ -594,6 +592,12 @@
     vaultModalGrid: document.getElementById('vault-modal-grid'),
     btnCloseVault: document.getElementById('btn-close-vault'),
 
+    gachaWishOverlay: document.getElementById('gacha-wish-overlay'),
+    gachaWishCanvas: document.getElementById('gacha-wish-canvas'),
+    gachaWishFlash: document.getElementById('gacha-wish-flash'),
+    gachaWishBanner: document.getElementById('gacha-wish-banner'),
+    btnGachaWishSkip: document.getElementById('btn-gacha-wish-skip'),
+
     gachaResultOverlay: document.getElementById('gacha-result-overlay'),
     gachaResTitle: document.getElementById('gacha-res-title'),
     gachaResMileage: document.getElementById('gacha-res-mileage'),
@@ -638,7 +642,7 @@
   }
 
   function getCharStats(charDef) {
-    return DATA.getCharEffectiveStats(charDef, getCharLevel(charDef.id), save.upgrades, save.unlockedChars.length);
+    return DATA.getCharEffectiveStats(charDef, getCharLevel(charDef.id), save.unlockedChars.length);
   }
 
   function getMaxHp(charDef) {
@@ -712,40 +716,501 @@
       if (pool.length === 0) pool = DATA.SKINS;
     }
     const picked = pool[Math.floor(Math.random() * pool.length)];
-    const rarObj = DATA.SKIN_RARITIES[picked.rarity] || DATA.SKIN_RARITIES.rare;
     const alreadyOwned = save.unlockedSkins.includes(picked.id);
-    let dupGold = 0;
+    const milGain = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.mileagePerPull) || 2;
+    let dupMileage = 0;
     if (!alreadyOwned) {
       save.unlockedSkins.push(picked.id);
     } else {
-      dupGold = rarObj.dupGold || 300;
-      save.gold = (save.gold || 0) + dupGold;
+      // Duplicate skin in Skin Gacha awards +2 extra Mileage!
+      dupMileage = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.dupMileageBonus) || 2;
     }
 
-    const milGain = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.mileagePerPull) || 2;
-    save.mileage = (save.mileage || 0) + milGain;
+    save.mileage = (save.mileage || 0) + milGain + dupMileage;
     if (!Array.isArray(save.gachaHistory)) save.gachaHistory = [];
     save.gachaHistory.unshift({
       skinId: picked.id,
       name: picked.name,
       rarity: picked.rarity,
       isNew: !alreadyOwned,
-      dupGold,
+      dupMileage,
+      dupGold: 0,
       at: Date.now()
     });
     if (save.gachaHistory.length > 50) save.gachaHistory.length = 50;
 
-    return { skin: picked, rarity: picked.rarity, isNew: !alreadyOwned, dupGold, milGain };
+    return { skin: picked, rarity: picked.rarity, isNew: !alreadyOwned, dupMileage, dupGold: 0, milGain };
+  }
+
+  // ===================== GENSHIN IMPACT STYLE SHOOTING STAR WISH ANIMATION =====================
+  let activeWishAnim = null;
+
+  function finishActiveWishAnimation(skipped = false) {
+    if (!activeWishAnim) return;
+    const sess = activeWishAnim;
+    activeWishAnim = null;
+    if (sess.rafId) cancelAnimationFrame(sess.rafId);
+    if (el.gachaWishOverlay) el.gachaWishOverlay.classList.add('hidden');
+    if (el.gachaWishBanner) {
+      el.gachaWishBanner.classList.add('hidden');
+      el.gachaWishBanner.className = 'gacha-wish-banner hidden';
+    }
+    if (el.gachaWishFlash) {
+      el.gachaWishFlash.style.opacity = '0';
+    }
+    if (skipped) {
+      try { SFX.click(); } catch {}
+      const hasBig = sess.results.some((x) => x.rarity === 'mythic' || x.rarity === 'legendary' || x.isNew);
+      if (hasBig) SFX.chestJackpot();
+      else SFX.chestOpen();
+    }
+    showGachaResultModal(sess.results, sess.count);
+  }
+
+  function playGachaWishAnimation(results, count) {
+    if (!el.gachaWishOverlay || !el.gachaWishCanvas) {
+      showGachaResultModal(results, count);
+      return;
+    }
+    if (activeWishAnim && activeWishAnim.rafId) {
+      cancelAnimationFrame(activeWishAnim.rafId);
+    }
+
+    const rarRank = { rare: 1, epic: 2, legendary: 3, mythic: 4 };
+    let bestRarity = 'rare';
+    results.forEach((r) => {
+      if ((rarRank[r.rarity] || 1) > (rarRank[bestRarity] || 1)) bestRarity = r.rarity;
+    });
+
+    const PALETTES = {
+      rare:      { main: '#4ad8ff', trail: '#1b88ff', alt: '#b3f2ff', flash: 'rgba(180, 240, 255, 0.92)', label: '✦ 희귀 스킨 소환! ✦' },
+      epic:      { main: '#d27bff', trail: '#8a35ff', alt: '#f5c7ff', flash: 'rgba(232, 196, 255, 0.94)', label: '★ 영웅 스킨 출현! ★' },
+      legendary: { main: '#ffd545', trail: '#ff9614', alt: '#fff5b3', flash: 'rgba(255, 244, 196, 0.97)', label: '★★ 전설 스킨 강림! ★★' },
+      mythic:    { main: '#ff5eb8', trail: '#a855f7', alt: '#ffe46b', flash: 'rgba(255, 224, 246, 0.98)', label: '✦ 신화 MYTHIC 스킨 강림!! ✦' }
+    };
+    const initPal = PALETTES.rare;
+    const targetPal = PALETTES[bestRarity] || PALETTES.rare;
+
+    el.gachaWishOverlay.classList.remove('hidden');
+    if (el.gachaWishFlash) {
+      el.gachaWishFlash.style.background = targetPal.flash;
+      el.gachaWishFlash.style.opacity = '0';
+    }
+    if (el.gachaWishBanner) {
+      el.gachaWishBanner.textContent = targetPal.label;
+      el.gachaWishBanner.className = `gacha-wish-banner rar-${bestRarity} hidden`;
+    }
+
+    const canvas = el.gachaWishCanvas;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = Math.max(320, el.gachaWishOverlay.clientWidth || window.innerWidth || 960);
+    const H = Math.max(240, el.gachaWishOverlay.clientHeight || window.innerHeight || 540);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    const ctx = canvas.getContext('2d');
+
+    // Background twinkling cosmos + soft horizon clouds
+    const bgStars = Array.from({ length: 115 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H * 0.92,
+      r: 0.7 + Math.random() * 1.9,
+      phase: Math.random() * Math.PI * 2,
+      spd: 2.2 + Math.random() * 3.8,
+      cross: Math.random() < 0.14
+    }));
+
+    const clouds = Array.from({ length: 9 }, (_, i) => ({
+      x: (i / 8) * W * 1.15 - W * 0.08,
+      y: H * (0.83 + (i % 3) * 0.045),
+      rx: W * (0.14 + (i % 3) * 0.04),
+      ry: H * (0.08 + (i % 2) * 0.03),
+      drift: (i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 4)
+    }));
+
+    // Lead meteor Bezier control points (upper-left -> high sky arc -> center impact!)
+    const p0 = { x: W * 0.07, y: H * 0.16 };
+    const p1 = { x: W * 0.44, y: H * 0.03 };
+    const p2 = { x: W * 0.76, y: H * 0.24 };
+    const p3 = { x: W * 0.50, y: H * 0.53 };
+
+    function evalCubic(a, b, c, d, u) {
+      const m = 1 - u;
+      return {
+        x: m * m * m * a.x + 3 * m * m * u * b.x + 3 * m * u * u * c.x + u * u * u * d.x,
+        y: m * m * m * a.y + 3 * m * m * u * b.y + 3 * m * u * u * c.y + u * u * u * d.y
+      };
+    }
+
+    // Companion shooting stars for 10-pull meteor shower!
+    const companions = [];
+    if (count > 1) {
+      for (let i = 1; i < Math.min(results.length, 10); i++) {
+        const pal = PALETTES[results[i].rarity] || PALETTES.rare;
+        const spreadY = ((i % 2 === 0 ? 1 : -1) * (0.035 + (i * 0.011))) * H;
+        const spreadX = ((i - 5) * 0.025) * W;
+        companions.push({
+          delay: 0.08 + i * 0.055,
+          pal,
+          ox: spreadX,
+          oy: spreadY,
+          trail: []
+        });
+      }
+    }
+
+    const leadTrail = [];
+    const trailSparks = [];
+    const burstSparks = [];
+
+    function drawFourPointStar(cx, cy, outerR, innerR, color, alpha, rot = 0) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot);
+      ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const rad = i % 2 === 0 ? outerR : innerR;
+        const ang = (i * Math.PI) / 4;
+        const px = Math.cos(ang) * rad;
+        const py = Math.sin(ang) * rad;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const SHIFT_T = 0.82;
+    const IMPACT_T = 1.72;
+    const END_T = 2.62;
+    const startMs = performance.now();
+    let shiftedSfx = false;
+    let impactSfx = false;
+    let bannerShown = false;
+
+    const sess = { results, count, rafId: 0 };
+    activeWishAnim = sess;
+
+    try { SFX.wishLaunch(); } catch {}
+
+    function frame(nowMs) {
+      if (activeWishAnim !== sess) return;
+      const t = (nowMs - startMs) / 1000;
+      if (t >= END_T) {
+        finishActiveWishAnimation(false);
+        return;
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      // 1. Deep Genshin Twilight-to-Cosmos Night Sky
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+      skyGrad.addColorStop(0, '#020616');
+      skyGrad.addColorStop(0.42, '#081438');
+      skyGrad.addColorStop(0.78, '#162b63');
+      skyGrad.addColorStop(1, '#2a4180');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Soft Diagonal Milky Way Band
+      ctx.save();
+      ctx.translate(W * 0.5, H * 0.36);
+      ctx.rotate(-0.28);
+      const milky = ctx.createRadialGradient(0, 0, 10, 0, 0, W * 0.56);
+      milky.addColorStop(0, 'rgba(130, 180, 255, 0.22)');
+      milky.addColorStop(0.45, 'rgba(128, 92, 224, 0.12)');
+      milky.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = milky;
+      ctx.fillRect(-W * 0.7, -H * 0.3, W * 1.4, H * 0.6);
+      ctx.restore();
+
+      // Twinkling Cosmic Stars
+      for (let i = 0; i < bgStars.length; i++) {
+        const s = bgStars[i];
+        const tw = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * s.spd + s.phase));
+        ctx.fillStyle = `rgba(235, 246, 255, ${tw.toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+        if (s.cross && tw > 0.72) {
+          drawFourPointStar(s.x, s.y, s.r * 4.5, s.r * 0.7, '#ffffff', tw * 0.65);
+        }
+      }
+
+      // Soft Horizon Sea of Clouds (Genshin Signature Sky!)
+      for (let i = 0; i < clouds.length; i++) {
+        const cl = clouds[i];
+        const cx = cl.x + cl.drift * t;
+        const cg = ctx.createRadialGradient(cx, cl.y, 4, cx, cl.y, cl.rx);
+        cg.addColorStop(0, 'rgba(154, 198, 255, 0.22)');
+        cg.addColorStop(0.55, 'rgba(72, 118, 206, 0.14)');
+        cg.addColorStop(1, 'rgba(20, 40, 96, 0)');
+        ctx.fillStyle = cg;
+        ctx.beginPath();
+        ctx.ellipse(cx, cl.y, cl.rx, cl.ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Trigger Mid-Air Rarity Color Shift!
+      if (t >= SHIFT_T && !shiftedSfx) {
+        shiftedSfx = true;
+        try { SFX.wishColorShift(bestRarity); } catch {}
+      }
+
+      const shifted = t >= SHIFT_T;
+      const curPal = shifted ? targetPal : initPal;
+
+      // 2. Phase A: Shooting Star Meteor Flight (0 -> IMPACT_T)
+      if (t < IMPACT_T) {
+        const rawU = Math.max(0, Math.min(1, t / IMPACT_T));
+        // Smooth launch -> graceful zenith hang -> blazing dive acceleration!
+        const easedU = rawU < 0.5
+          ? 2 * rawU * rawU * 0.75 + rawU * 0.25
+          : 0.5 + Math.pow((rawU - 0.5) * 2, 1.45) * 0.5;
+        const head = evalCubic(p0, p1, p2, p3, Math.min(1, easedU));
+        leadTrail.push({ x: head.x, y: head.y, pal: curPal });
+        if (leadTrail.length > 34) leadTrail.shift();
+
+        // Spawn glittering stardust along the meteor path
+        const sparkCount = shifted && (bestRarity === 'mythic' || bestRarity === 'legendary') ? 4 : 2;
+        for (let k = 0; k < sparkCount; k++) {
+          trailSparks.push({
+            x: head.x + (Math.random() - 0.5) * 18,
+            y: head.y + (Math.random() - 0.5) * 18,
+            vx: (Math.random() - 0.5) * 65,
+            vy: (Math.random() - 0.5) * 65 + 14,
+            life: 0.45 + Math.random() * 0.45,
+            maxLife: 0.9,
+            size: 2.2 + Math.random() * 3.6,
+            color: (shifted && bestRarity === 'mythic' && Math.random() < 0.45) ? targetPal.alt : curPal.main
+          });
+        }
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Companion 10-Pull Shooting Stars
+        for (let ci = 0; ci < companions.length; ci++) {
+          const cp = companions[ci];
+          const cu = (t - cp.delay) / (IMPACT_T - cp.delay * 0.5);
+          if (cu <= 0 || cu > 1.05) continue;
+          const ce = Math.min(1, cu * cu * 0.65 + cu * 0.35);
+          const pos = evalCubic(
+            { x: p0.x + cp.ox * 0.8, y: p0.y + cp.oy },
+            { x: p1.x + cp.ox,       y: p1.y + cp.oy * 0.8 },
+            { x: p2.x + cp.ox * 0.6, y: p2.y + cp.oy * 0.5 },
+            { x: p3.x + cp.ox * 0.18, y: p3.y + cp.oy * 0.18 },
+            ce
+          );
+          cp.trail.push(pos);
+          if (cp.trail.length > 16) cp.trail.shift();
+          const cCol = shifted ? cp.pal.main : initPal.main;
+          for (let j = 1; j < cp.trail.length; j++) {
+            const frac = j / cp.trail.length;
+            ctx.strokeStyle = cCol;
+            ctx.globalAlpha = frac * 0.55;
+            ctx.lineWidth = Math.max(1.2, frac * 5.5);
+            ctx.beginPath();
+            ctx.moveTo(cp.trail[j - 1].x, cp.trail[j - 1].y);
+            ctx.lineTo(cp.trail[j].x, cp.trail[j].y);
+            ctx.stroke();
+          }
+          drawFourPointStar(pos.x, pos.y, 13, 3.2, '#ffffff', 0.95, t * 4 + ci);
+          drawFourPointStar(pos.x, pos.y, 20, 4.5, cCol, 0.72, -t * 3);
+        }
+
+        // Lead Meteor Luminous Tapered Ribbon Trail
+        ctx.lineCap = 'round';
+        for (let j = 1; j < leadTrail.length; j++) {
+          const frac = j / leadTrail.length;
+          const prev = leadTrail[j - 1];
+          const curr = leadTrail[j];
+          // Outer halo ribbon
+          ctx.strokeStyle = curr.pal.trail;
+          ctx.globalAlpha = frac * 0.42;
+          ctx.lineWidth = frac * 26;
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(curr.x, curr.y);
+          ctx.stroke();
+          // Mid vivid color beam
+          ctx.strokeStyle = curr.pal.main;
+          ctx.globalAlpha = frac * 0.78;
+          ctx.lineWidth = frac * 12;
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(curr.x, curr.y);
+          ctx.stroke();
+          // White-hot core spine
+          ctx.strokeStyle = '#ffffff';
+          ctx.globalAlpha = frac * 0.92;
+          ctx.lineWidth = frac * 4.5;
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(curr.x, curr.y);
+          ctx.stroke();
+        }
+
+        // Mid-Air Color Shift Expanding Flare Ring (at t = SHIFT_T .. SHIFT_T + 0.45)
+        if (t >= SHIFT_T && t < SHIFT_T + 0.48) {
+          const st = (t - SHIFT_T) / 0.48;
+          const ringR = 16 + st * 135;
+          ctx.strokeStyle = targetPal.main;
+          ctx.globalAlpha = (1 - st) * 0.92;
+          ctx.lineWidth = (1 - st) * 7 + 1.5;
+          ctx.beginPath();
+          ctx.arc(head.x, head.y, ringR, 0, Math.PI * 2);
+          ctx.stroke();
+          if (bestRarity === 'mythic' || bestRarity === 'legendary') {
+            ctx.strokeStyle = targetPal.alt;
+            ctx.globalAlpha = (1 - st) * 0.85;
+            ctx.lineWidth = (1 - st) * 4 + 1;
+            ctx.beginPath();
+            ctx.arc(head.x, head.y, ringR * 0.68, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        // Glowing Meteor Head + Genshin 4-Point Diamond Lens Flare!
+        const headGlow = ctx.createRadialGradient(head.x, head.y, 2, head.x, head.y, shifted ? 74 : 52);
+        headGlow.addColorStop(0, '#ffffff');
+        headGlow.addColorStop(0.28, curPal.main);
+        headGlow.addColorStop(0.62, curPal.trail);
+        headGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.globalAlpha = 0.96;
+        ctx.fillStyle = headGlow;
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, shifted ? 74 : 52, 0, Math.PI * 2);
+        ctx.fill();
+
+        drawFourPointStar(head.x, head.y, shifted ? 58 : 38, shifted ? 8 : 5, curPal.main, 0.9, t * 2.4);
+        drawFourPointStar(head.x, head.y, shifted ? 42 : 28, shifted ? 5 : 3.5, '#ffffff', 1.0, 0);
+        ctx.restore();
+      } else {
+        // 3. Phase B: Supernova Impact & Radiance Burst! (IMPACT_T -> END_T)
+        const bt = t - IMPACT_T;
+        if (!impactSfx) {
+          impactSfx = true;
+          try { SFX.wishImpact(bestRarity); } catch {}
+          haptic(bestRarity === 'mythic' || bestRarity === 'legendary' ? 32 : 16);
+          const cnt = bestRarity === 'mythic' ? 115 : (bestRarity === 'legendary' ? 95 : 70);
+          for (let i = 0; i < cnt; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 120 + Math.random() * (Math.max(W, H) * 0.68);
+            const colPick = bestRarity === 'mythic'
+              ? (i % 3 === 0 ? targetPal.main : (i % 3 === 1 ? targetPal.alt : '#8be8ff'))
+              : (i % 2 === 0 ? targetPal.main : targetPal.alt);
+            burstSparks.push({
+              x: p3.x,
+              y: p3.y,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd,
+              size: 3 + Math.random() * 6,
+              color: colPick,
+              rot: Math.random() * Math.PI
+            });
+          }
+        }
+
+        // Show glowing rarity banner right after initial white flash peak
+        if (bt >= 0.16 && !bannerShown && el.gachaWishBanner) {
+          bannerShown = true;
+          el.gachaWishBanner.classList.remove('hidden');
+        }
+
+        // Peak screen light bloom
+        if (el.gachaWishFlash) {
+          const flashAlpha = bt < 0.16
+            ? (bt / 0.16) * 0.92
+            : Math.max(0, 0.92 * (1 - (bt - 0.16) / 0.56));
+          el.gachaWishFlash.style.opacity = flashAlpha.toFixed(3);
+        }
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Radiant Supernova Backdrop Halo
+        const maxRad = Math.max(W, H) * 0.72;
+        const prog = Math.min(1, bt / 0.85);
+        const halo = ctx.createRadialGradient(p3.x, p3.y, 4, p3.x, p3.y, maxRad * (0.35 + prog * 0.65));
+        halo.addColorStop(0, '#ffffff');
+        halo.addColorStop(0.22, targetPal.alt);
+        halo.addColorStop(0.55, targetPal.main);
+        halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.globalAlpha = Math.max(0, 0.95 - prog * 0.55);
+        ctx.fillStyle = halo;
+        ctx.fillRect(0, 0, W, H);
+
+        // Staggered Expanding Shockwave Rings
+        const ringCols = bestRarity === 'mythic'
+          ? [targetPal.main, targetPal.alt, '#6beeff']
+          : [targetPal.main, targetPal.alt, '#ffffff'];
+        for (let ri = 0; ri < 3; ri++) {
+          const rProg = (bt - ri * 0.08) / 0.68;
+          if (rProg <= 0 || rProg >= 1) continue;
+          const rRad = 24 + Math.pow(rProg, 0.72) * maxRad * 0.88;
+          ctx.strokeStyle = ringCols[ri];
+          ctx.globalAlpha = (1 - rProg) * 0.92;
+          ctx.lineWidth = (1 - rProg) * 11 + 1.5;
+          ctx.beginPath();
+          ctx.arc(p3.x, p3.y, rRad, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Giant Rotating Genshin Cross Star Flare
+        const flareScale = 1 + prog * 0.55;
+        drawFourPointStar(p3.x, p3.y, 190 * flareScale, 18 * flareScale, targetPal.main, Math.max(0, 0.95 - prog * 0.65), bt * 0.7);
+        drawFourPointStar(p3.x, p3.y, 130 * flareScale, 12 * flareScale, '#ffffff', Math.max(0, 1 - prog * 0.75), -bt * 0.45);
+
+        // Radial Supernova Stardust Sparks
+        for (let i = 0; i < burstSparks.length; i++) {
+          const sp = burstSparks[i];
+          const damp = Math.pow(0.92, bt * 18);
+          const sx = sp.x + sp.vx * bt * (0.55 + 0.45 * damp);
+          const sy = sp.y + sp.vy * bt * (0.55 + 0.45 * damp);
+          const alpha = Math.max(0, 1 - bt / 0.88);
+          drawFourPointStar(sx, sy, sp.size * (1.2 + alpha), sp.size * 0.35, sp.color, alpha, sp.rot + bt * 3);
+        }
+        ctx.restore();
+      }
+
+      // Render drifting trail sparkles
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (let i = trailSparks.length - 1; i >= 0; i--) {
+        const sp = trailSparks[i];
+        sp.x += sp.vx * 0.016;
+        sp.y += sp.vy * 0.016;
+        sp.life -= 0.016;
+        if (sp.life <= 0) {
+          trailSparks.splice(i, 1);
+          continue;
+        }
+        const a = Math.max(0, sp.life / sp.maxLife);
+        drawFourPointStar(sp.x, sp.y, sp.size * 2.1, sp.size * 0.45, sp.color, a, sp.life * 6);
+      }
+      ctx.restore();
+
+      ctx.restore();
+      sess.rafId = requestAnimationFrame(frame);
+    }
+
+    sess.rafId = requestAnimationFrame(frame);
   }
 
   let lastGachaPullCount = 1;
   function performSkinGacha(count = 1) {
+    if (activeWishAnim) return;
     const cost = computeGachaCost(count);
     if (!cost.canAfford) {
       SFX.click();
       showToast(`🎟️ 뽑기권(상자 보관함 교환) 또는 💎 보석(${cost.needGems.toLocaleString('ko-KR')}💎)이 부족합니다!`);
       return;
     }
+    if (el.gachaResultOverlay) el.gachaResultOverlay.classList.add('hidden');
     save.gachaTickets = Math.max(0, (save.gachaTickets || 0) - cost.useTickets);
     save.gems = Math.max(0, (save.gems || 0) - cost.needGems);
 
@@ -757,17 +1222,14 @@
     persistSave(true);
     refreshAllMenus();
 
-    const hasBig = results.some((x) => x.rarity === 'mythic' || x.rarity === 'legendary' || x.isNew);
-    if (hasBig) SFX.chestJackpot();
-    else SFX.chestOpen();
-
-    showGachaResultModal(results, cost.count);
+    playGachaWishAnimation(results, cost.count);
   }
 
   function showGachaResultModal(results, count) {
     if (!el.gachaResultOverlay || !el.gachaResGrid) return;
-    const totalMileage = results.reduce((s, x) => s + (x.milGain || 2), 0);
-    const totalDupGold = results.reduce((s, x) => s + (x.dupGold || 0), 0);
+    const baseMileage = results.reduce((s, x) => s + (x.milGain || 2), 0);
+    const dupMileageTotal = results.reduce((s, x) => s + (x.dupMileage || 0), 0);
+    const totalMileage = baseMileage + dupMileageTotal;
     const newSkins = results.filter((x) => x.isNew);
     const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
     const bestNew = newSkins.slice().sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0))[0] || null;
@@ -801,7 +1263,7 @@
           <img src="${skAv}" alt="${sk.name}" style="${skFlt ? `filter:${skFlt};` : ''}" />
         </div>
         <div class="gacha-rc-name">${sk.name}</div>
-        <div class="gacha-rc-sub">${item.isNew ? ownerChar.name : `+${item.dupGold.toLocaleString('ko-KR')} G`}</div>
+        <div class="gacha-rc-sub">${item.isNew ? ownerChar.name : `✨ 중복 +${item.dupMileage || 2}M`}</div>
       `;
       el.gachaResGrid.appendChild(card);
     });
@@ -809,8 +1271,8 @@
     if (el.gachaResSummary) {
       const parts = [];
       if (newSkins.length > 0) parts.push(`✨ 신규 스킨 ${newSkins.length}종 획득!`);
-      if (totalDupGold > 0) parts.push(`🪙 중복 보상 +${totalDupGold.toLocaleString('ko-KR')} G`);
-      parts.push(`✨ 마일리지 +${totalMileage}`);
+      if (dupMileageTotal > 0) parts.push(`🔄 중복 보너스 +${dupMileageTotal} 마일리지`);
+      parts.push(`✨ 총 마일리지 +${totalMileage} (뽑기 +${baseMileage}${dupMileageTotal > 0 ? ` · 중복 +${dupMileageTotal}` : ''})`);
       el.gachaResSummary.textContent = parts.join(' · ');
     }
 
@@ -859,11 +1321,14 @@
         const rar = DATA.SKIN_RARITIES[h.rarity] || DATA.SKIN_RARITIES.rare;
         const d = h.at ? new Date(h.at) : null;
         const ts = d ? `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+        const dupLabel = h.dupMileage > 0
+          ? `중복 ✨+${h.dupMileage}M`
+          : (h.dupGold > 0 ? `중복 +${h.dupGold.toLocaleString('ko-KR')}G` : '중복 ✨+2M');
         return `
           <div class="gacha-hist-row">
             <span class="gacha-rc-rar" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
             <strong class="gacha-hist-name">${h.name}</strong>
-            <span class="gacha-hist-tag ${h.isNew ? 'new' : 'dup'}">${h.isNew ? 'NEW!' : `중복 +${(h.dupGold || 0).toLocaleString('ko-KR')}G`}</span>
+            <span class="gacha-hist-tag ${h.isNew ? 'new' : 'dup'}">${h.isNew ? 'NEW!' : dupLabel}</span>
             <span class="gacha-hist-time">${ts}</span>
           </div>
         `;
@@ -1143,17 +1608,17 @@
         <h4>🎰 스킨 전용 뽑기 확률 &amp; 마일리지 교환 (4등급 체계)</h4>
         <table class="prob-table">
           <thead>
-            <tr><th>등급</th><th>뽑기 확률</th><th>마일리지 교환</th><th>중복 시 골드</th></tr>
+            <tr><th>등급</th><th>뽑기 확률</th><th>마일리지 교환</th><th>뽑기 중복 보상</th></tr>
           </thead>
           <tbody>
-            <tr><td style="color:#47c8ff">희귀 (RARE)</td><td>${gRates.rare}%</td><td>✨ 10 마일리지</td><td>300 G</td></tr>
-            <tr><td style="color:#d084ff">영웅 (EPIC)</td><td>${gRates.epic}%</td><td>✨ 30 마일리지</td><td>650 G</td></tr>
-            <tr><td style="color:#ffca42">전설 (LEGENDARY)</td><td>${gRates.legendary}%</td><td>✨ 50 마일리지</td><td>1,200 G</td></tr>
-            <tr><td style="color:#ff5ea8">신화 (MYTHIC)</td><td>${gRates.mythic}%</td><td>✨ 200 마일리지</td><td>2,500 G</td></tr>
+            <tr><td style="color:#47c8ff">희귀 (RARE)</td><td>${gRates.rare}%</td><td>✨ 10 마일리지</td><td>✨ +2 마일리지</td></tr>
+            <tr><td style="color:#d084ff">영웅 (EPIC)</td><td>${gRates.epic}%</td><td>✨ 30 마일리지</td><td>✨ +2 마일리지</td></tr>
+            <tr><td style="color:#ffca42">전설 (LEGENDARY)</td><td>${gRates.legendary}%</td><td>✨ 50 마일리지</td><td>✨ +2 마일리지</td></tr>
+            <tr><td style="color:#ff5ea8">신화 (MYTHIC)</td><td>${gRates.mythic}%</td><td>✨ 200 마일리지</td><td>✨ +2 마일리지</td></tr>
           </tbody>
         </table>
         <ul class="prob-rules" style="margin-top:6px;">
-          <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 💎 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립!</strong></li>
+          <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 💎 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립 + 중복 스킨 출현 시 ✨ +2 마일리지 추가 지급!</strong></li>
           <li><strong>${ticketIconHtml('xs')} 상자 → 뽑기권 교환 (상자 보관함):</strong> 나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 뽑기권 1장</li>
           <li>미출시 중간 등급(영웅·전설)은 희귀 스킨 풀로 자동 전환되며, 신화 스킨 확률(${gRates.mythic}%)은 그대로 유지됩니다.</li>
         </ul>
@@ -1752,10 +2217,6 @@
     Object.keys(mergedCharLv).forEach((k) => {
       mergedCharLv[k] = Math.max(Number(c.charLevels[k]) || 1, Number(l.charLevels[k]) || 1);
     });
-    const mergedUpg = { ...secondary.upgrades, ...primary.upgrades };
-    Object.keys(mergedUpg).forEach((k) => {
-      mergedUpg[k] = Math.max(Number(c.upgrades[k]) || 0, Number(l.upgrades[k]) || 0);
-    });
     const curWk = getWeekKey();
     const cWkScore = (c.weeklyRank && c.weeklyRank.weekKey === curWk) ? (c.weeklyRank.bestScore || 0) : 0;
     const lWkScore = (l.weeklyRank && l.weeklyRank.weekKey === curWk) ? (l.weeklyRank.bestScore || 0) : 0;
@@ -1767,7 +2228,6 @@
       unlockedChars: mergedChars,
       unlockedSkins: mergedSkins,
       charLevels: mergedCharLv,
-      upgrades: mergedUpg,
       bestScore: Math.max(c.bestScore || 0, l.bestScore || 0),
       bestYear: Math.max(c.bestYear || 1, l.bestYear || 1),
       bestDistanceM: Math.max(c.bestDistanceM || 0, l.bestDistanceM || 0),
@@ -2313,7 +2773,7 @@
   function getSaveVisualSig(s) {
     if (!s) return '';
     const cb = s.chestBag || {};
-    return `${s.gold}|${s.gems}|${s.gachaTickets || 0}|${s.mileage || 0}|${s.bestScore}|${s.playCount}|${(s.unlockedSkins || []).length}|${(s.unlockedChars || []).length}|${cb.wood || 0},${cb.silver || 0},${cb.gold || 0},${cb.diamond || 0}|${s.selectedChar}|${JSON.stringify(s.equippedSkins || {})}|${JSON.stringify(s.upgrades || {})}|${JSON.stringify(s.charLevels || {})}`;
+    return `${s.gold}|${s.gems}|${s.gachaTickets || 0}|${s.mileage || 0}|${s.bestScore}|${s.playCount}|${(s.unlockedSkins || []).length}|${(s.unlockedChars || []).length}|${cb.wood || 0},${cb.silver || 0},${cb.gold || 0},${cb.diamond || 0}|${s.selectedChar}|${JSON.stringify(s.equippedSkins || {})}|${JSON.stringify(s.charLevels || {})}`;
   }
 
   async function syncAccountWithCloud(profile, opts = {}) {
@@ -3494,7 +3954,7 @@
   }
 
   function renderShopList() {
-    if (!['gacha', 'chests', 'skins', 'gold', 'gems', 'upgrades'].includes(currentShopSubtab)) {
+    if (!['gacha', 'chests', 'skins', 'gold', 'gems', 'boosters'].includes(currentShopSubtab)) {
       currentShopSubtab = 'gacha';
     }
     document.querySelectorAll('.subtab-btn').forEach((b) => {
@@ -3569,7 +4029,7 @@
             <div class="gacha-title-col">
               <div class="gacha-main-title">상시 스킨 뽑기</div>
               <div class="gacha-sub-strip">
-                <span>1회 뽑기마다 <strong>✨ +2 마일리지</strong> 적립! · 희귀·영웅·전설·<strong>신화</strong> 출현</span>
+                <span>1회 뽑기 <strong>✨ +2M</strong> · 중복 스킨 시 <strong>✨ +2M 추가!</strong> · 희귀·영웅·전설·<strong>신화</strong> 출현</span>
               </div>
               <div class="gacha-rate-chips">
                 <span class="gr-chip mythic">신화 2%</span>
@@ -3972,62 +4432,7 @@
       sec.appendChild(grid);
       el.shopItemsList.appendChild(sec);
     } else {
-      // UPGRADES + 1-RUN BOOSTERS IN BRAWL STARS SHOWCASE GRID
-      const upgSec = document.createElement('div');
-      upgSec.className = 'bs-shop-section';
-      upgSec.innerHTML = `
-        <div class="bs-shop-sec-head upgrades">
-          <span class="bs-shop-sec-title">⬆️ 영구 능력 강화</span>
-          <span class="bs-shop-sec-sub">골드로 생존 능력을 영구적으로 강화하세요!</span>
-        </div>
-      `;
-      const upgGrid = document.createElement('div');
-      upgGrid.className = 'bs-shop-grid four';
-
-      DATA.UPGRADES.forEach((upg) => {
-        const lv = save.upgrades[upg.id] || 0;
-        const isMax = lv >= upg.maxLv;
-        const price = DATA.getUpgradePrice(upg, lv);
-
-        const card = document.createElement('div');
-        card.className = 'bs-offer-card upg-card';
-        card.innerHTML = `
-          <div class="bs-offer-ribbon">Lv.${lv} / ${upg.maxLv}</div>
-          <div class="bs-offer-stage">
-            <img src="${upg.icon}" alt="${upg.name}" class="bs-offer-img upg" />
-          </div>
-          <div class="bs-offer-name">${upg.name}</div>
-          <div class="bs-offer-sub">${isMax ? '최대 레벨 달성!' : upg.desc(lv)}</div>
-        `;
-        const foot = document.createElement('div');
-        foot.className = 'bs-offer-foot';
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        if (isMax) {
-          btn.className = 'bs-buy-btn done';
-          btn.textContent = 'MAX';
-          btn.disabled = true;
-        } else {
-          btn.className = 'bs-buy-btn gold';
-          btn.textContent = `🪙 ${price.toLocaleString('ko-KR')}`;
-          btn.disabled = save.gold < price;
-          btn.onclick = () => {
-            if (save.gold < price) return;
-            SFX.buy();
-            save.gold -= price;
-            save.upgrades[upg.id] = lv + 1;
-            persistSave();
-            refreshAllMenus();
-            showToast(`${upg.name} Lv.${lv + 1} 강화 성공!`);
-          };
-        }
-        foot.appendChild(btn);
-        card.appendChild(foot);
-        upgGrid.appendChild(card);
-      });
-      upgSec.appendChild(upgGrid);
-      el.shopItemsList.appendChild(upgSec);
-
+      // 1-RUN WEATHER BOOSTERS (PERMANENT UPGRADES REMOVED!)
       const bstSec = document.createElement('div');
       bstSec.className = 'bs-shop-section';
       bstSec.innerHTML = `
@@ -4916,7 +5321,6 @@
 
     const ch = getCharDef(run.charId);
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
-    const upgradeScoreMult = 1 + save.upgrades.score * 0.12;
 
     if (!run.isTutorial) {
       run.elapsed += dt;
@@ -5058,7 +5462,7 @@
     run.speed = run.baseSpeed * diff.speedMult * feverBoost * weatherSpeedMult;
     run.scroll += run.speed * dt;
     run.distanceM = Math.floor(run.scroll / 14);
-    run.score += run.speed * dt * 0.16 * run.scoreMult * diff.scoreMult * upgradeScoreMult * iceScoreBonus * boostScoreMult;
+    run.score += run.speed * dt * 0.16 * run.scoreMult * diff.scoreMult * iceScoreBonus * boostScoreMult;
 
     // Gust Headwind Horizontal Push-Back vs Slide Push-Forward!
     if (run.weatherEvent === 'gust' && run.feverTimer <= 0) {
@@ -5145,7 +5549,7 @@
         run.squashX = 0.80;
         run.squashY = 1.24;
         haptic(14);
-        run.score += Math.round(120 * run.scoreMult * upgradeScoreMult);
+        run.score += Math.round(120 * run.scoreMult);
         if (run.feverTimer <= 0) run.feverCharge = Math.min(100, run.feverCharge + 5);
         SFX.doubleJump();
         Renderer.spawnPickupEffect(f.x + 22, Renderer.GROUND_Y - 18, '#ff7675', true);
@@ -5156,9 +5560,8 @@
     }
 
     // ---- ACTIVE WEATHER EXPOSURE SYSTEM (RAIN/HEAT WITHOUT UMBRELLA · YELLOW DUST WITHOUT MASK -> -1 HEART!) ----
-    const graceBonus = (save.upgrades.hp || 0) * 0.3;
-    const rainExposeLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0) + graceBonus;
-    const dustExposeLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty) + graceBonus;
+    const rainExposeLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
+    const dustExposeLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
     const isRainingNow = run.weatherEvent === 'rain' || run.weatherEvent === 'flood';
     const isDustNow = run.weatherEvent === 'dust';
 
@@ -5202,7 +5605,7 @@
         if (run.umbrellaOn) {
           run.heatGauge = Math.max(0, run.heatGauge - 46 * dt);
         } else {
-          const heatRate = Math.max(10, 19 * diff.heatRateMult - graceBonus * 2.2);
+          const heatRate = Math.max(10, 19 * diff.heatRateMult);
           run.heatGauge = Math.min(100, run.heatGauge + heatRate * dt);
           if (run.heatGauge >= 100) {
             run.heatGauge = 55;
@@ -5219,7 +5622,7 @@
         run.heatGauge = Math.max(0, run.heatGauge - 28 * dt);
       }
       // 4. Typhoon / Strong Gust with Umbrella still open -> Grace period to fold, else snap & -1 Heart!
-      const gustFoldLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty) + graceBonus;
+      const gustFoldLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty);
       if (run.weatherEvent === 'gust' && run.umbrellaOn) {
         run.gustExposeTimer += dt;
         if (run.gustExposeTimer >= gustFoldLimit) {
@@ -5251,7 +5654,7 @@
         if (!car.checked && car.x <= run.playerX + 18 && car.x + 70 >= run.playerX) {
           car.checked = true;
           if (run.playerY < Renderer.GROUND_Y - 18 || run.feverTimer > 0) {
-            run.score += Math.round(130 * upgradeScoreMult);
+            run.score += 130;
             SFX.guard();
             Renderer.spawnFloater('물벼락 점프 회피! +130', '#7affb3', run.playerX + 12, run.playerY - 46);
           } else {
@@ -5300,7 +5703,7 @@
             atk.deflectTimer = 0.55;
             atk.vx = 280;
             atk.vy = -260;
-            run.score += Math.round(250 * run.scoreMult * upgradeScoreMult);
+            run.score += Math.round(250 * run.scoreMult);
             SFX.guard();
             Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#ffe866', true);
             Renderer.spawnFloater('🔥 피버! 코로나 격파 +250', '#ffe866', run.playerX + 14, run.playerY - 50);
@@ -5312,7 +5715,7 @@
             atk.deflectTimer = 0.55;
             atk.vx = 300;
             atk.vy = -280;
-            run.score += Math.round(bonusPts * run.scoreMult * upgradeScoreMult);
+            run.score += Math.round(bonusPts * run.scoreMult);
             run.feverCharge = Math.min(100, run.feverCharge + feverGain);
             if (run.feverCharge >= 100 && run.feverTimer <= 0) {
               run.feverTimer = 4.5;
@@ -5460,7 +5863,7 @@
     }
 
     const hasSuperMagnet = run.feverTimer > 0 || run.magnetTimer > 0;
-    const magnetRadius = hasSuperMagnet ? 145 : 24 + save.upgrades.magnet * 16;
+    const magnetRadius = hasSuperMagnet ? 145 : 24;
 
     for (let i = run.items.length - 1; i >= 0; i--) {
       const it = run.items[i];
@@ -5482,7 +5885,7 @@
         if (it.kind === 'coin' || it.kind === 'big_coin') {
           const baseG = (it.kind === 'big_coin' ? 4 : 1) + diff.goldBonus;
           const gainedG = Math.max(1, Math.round(baseG * run.goldMult));
-          const gainedS = Math.round((it.kind === 'big_coin' ? 120 : 30) * run.scoreMult * upgradeScoreMult);
+          const gainedS = Math.round((it.kind === 'big_coin' ? 120 : 30) * run.scoreMult);
           run.gold += gainedG;
           run.coinsCollected += it.kind === 'big_coin' ? 2 : 1;
           run.score += gainedS;
@@ -5498,7 +5901,7 @@
             run.coinStreakTimer = 0.65;
           }
         } else if (it.kind === 'star') {
-          run.score += Math.round(160 * run.scoreMult * upgradeScoreMult);
+          run.score += Math.round(160 * run.scoreMult);
           addFeverCharge(9);
           SFX.bigCoin();
           Renderer.spawnPickupEffect(it.x, it.y, '#ffe866', true);
@@ -5512,7 +5915,7 @@
         } else if (it.kind === 'speed_boost') {
           run.speedBoostTimer = 4.0;
           run.itemPoseTimer = 0.45;
-          run.score += Math.round(140 * run.scoreMult * upgradeScoreMult);
+          run.score += Math.round(140 * run.scoreMult);
           SFX.speedBoost();
           Renderer.spawnPickupEffect(it.x, it.y, '#59e8ff', true);
           Renderer.spawnFloater('⚡ 스피드 부스트! (4초 무적 질주)', '#66f2ff', run.playerX + 16, run.playerY - 46);
@@ -5530,7 +5933,7 @@
           persistSave();
           const tierIco = tierId === 'diamond' ? '💎' : (tierId === 'gold' ? '👑' : (tierId === 'silver' ? '🥈' : '🪵'));
           const burstColor = chestDef.accent || '#ffd847';
-          run.score += Math.round((tierId === 'diamond' ? 400 : (tierId === 'gold' ? 300 : 200)) * upgradeScoreMult);
+          run.score += tierId === 'diamond' ? 400 : (tierId === 'gold' ? 300 : 200);
           addFeverCharge(tierId === 'diamond' ? 12 : 8);
           run.itemPoseTimer = 0.5;
           if (tierId === 'diamond' || tierId === 'gold') SFX.chestJackpot();
@@ -5542,7 +5945,7 @@
           const bonusG = Math.round(12 * run.goldMult);
           run.gold += bonusG;
           run.coinsCollected += 4;
-          run.score += Math.round(250 * upgradeScoreMult);
+          run.score += 250;
           addFeverCharge(8);
           SFX.reward();
           Renderer.spawnPickupEffect(it.x, it.y, '#ffd847', true);
@@ -5552,7 +5955,7 @@
           const bonusSc = ch.icedBonus ? 280 : 120;
           const feverGain = ch.icedBonus ? 9 : 6;
           run.heatGauge = Math.max(0, run.heatGauge - 25);
-          run.score += Math.round(bonusSc * run.scoreMult * upgradeScoreMult);
+          run.score += Math.round(bonusSc * run.scoreMult);
           addFeverCharge(feverGain);
           run.itemPoseTimer = 0.55;
           SFX.heal();
@@ -5633,7 +6036,7 @@
         if (run.feverTimer > 0 || run.speedBoostTimer > 0) {
           run.obstacles.splice(i, 1);
           const bonusPts = run.feverTimer > 0 ? 150 : 120;
-          run.score += Math.round(bonusPts * run.scoreMult * upgradeScoreMult);
+          run.score += Math.round(bonusPts * run.scoreMult);
           SFX.guard();
           Renderer.spawnPickupEffect(ob.x + ob.w / 2, ob.y + ob.h / 2, run.feverTimer > 0 ? '#ffe866' : '#59e8ff', false);
           Renderer.spawnFloater(run.feverTimer > 0 ? '돌파 +150!' : '스피드 돌파 +120!', run.feverTimer > 0 ? '#ffe866' : '#6ef2ff', ob.x, ob.y);
@@ -5649,10 +6052,10 @@
           run.dodgesTotal = (run.dodgesTotal || 0) + 1;
           run.dodgeCombo += 1;
           if (run.dodgeCombo > run.maxDodgeCombo) run.maxDodgeCombo = run.dodgeCombo;
-          run.score += Math.round(15 * run.scoreMult * upgradeScoreMult);
+          run.score += Math.round(15 * run.scoreMult);
           SFX.dodge();
           if (run.dodgeCombo > 0 && run.dodgeCombo % 5 === 0) {
-            const comboBonus = Math.round(60 * run.scoreMult * upgradeScoreMult);
+            const comboBonus = Math.round(60 * run.scoreMult);
             run.score += comboBonus;
             Renderer.spawnFloater(`${run.dodgeCombo}연속 회피! +${comboBonus}`, '#9ef5ff', run.playerX + 12, run.playerY - 48);
           }
@@ -5661,7 +6064,7 @@
           ob.nearMissed = true;
           const vertDist = Math.min(Math.abs(pBox.y - (oBox.y + oBox.h)), Math.abs((pBox.y + pBox.h) - oBox.y));
           if (vertDist < 28) {
-            run.score += Math.round(120 * upgradeScoreMult);
+            run.score += 120;
             run.gold += 2;
             SFX.coin();
             Renderer.spawnFloater('NEAR MISS +2G!', '#ff9ce6', run.playerX + 10, run.playerY - 45);
@@ -5735,7 +6138,7 @@
 
     // Every obstacle hit deducts 1 heart (no score deduction!)
     run.hp = Math.max(0, run.hp - 1);
-    run.invulnTimer = 1.5 + (ch.extraInvuln || 0) + save.upgrades.defense * 0.2;
+    run.invulnTimer = 1.5 + (ch.extraInvuln || 0);
     run.hitPoseTimer = 0.45;
     run.hitFlashTimer = 0.3;
     run.hitStopTimer = 0.055;
@@ -5797,10 +6200,9 @@
     el.runYearFill.style.width = `${yearPct.toFixed(1)}%`;
 
     // Live Active Weather Status Pill (Cleanly hidden during calm clear sky — NO Weather Agency clutter!)
-    const graceBonusHud = (save.upgrades.hp || 0) * 0.3;
-    const rainLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0) + graceBonusHud;
-    const dustLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty) + graceBonusHud;
-    const gustLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty) + graceBonusHud;
+    const rainLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
+    const dustLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
+    const gustLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty);
 
     const activeEv = run.weatherEvent || 'clear';
     const incomingEv = (run.pendingWeather && run.pendingWeather !== 'clear') ? run.pendingWeather : null;
@@ -6344,6 +6746,14 @@
         if (el.vaultOverlay) el.vaultOverlay.classList.add('hidden');
         currentShopSubtab = 'gacha';
         switchTab('shop');
+      });
+    }
+
+    // Genshin Impact Style Skin Gacha Wish Animation Skip Button
+    if (el.btnGachaWishSkip) {
+      el.btnGachaWishSkip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        finishActiveWishAnimation(true);
       });
     }
 

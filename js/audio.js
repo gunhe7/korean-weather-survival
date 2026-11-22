@@ -785,7 +785,57 @@ window.SFX = (function () {
     },
     chestJackpot() {
       slideTone(420, 1680, 0.26, 'triangle', 0.085);
-      [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.16, 'triangle', 0.085, 0.1 + i * 0.055));
+      [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.16, 'triangle', 0.085, i * 0.055 + 0.1));
+    },
+    wishLaunch() {
+      // Genshin-style airy celestial comet whoosh + shimmering starry chime rise
+      playNoiseBurst({ bufType: 'pink', dur: 0.78, filterType: 'bandpass', startFreq: 320, midFreq: 1450, endFreq: 780, Q: 1.6, gainVal: 0.16, attack: 0.14 });
+      slideTone(293.66, 880, 0.62, 'sine', 0.065, 0.02);
+      [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
+        tone(f, 0.24, 'sine', 0.05, 0.06 + i * 0.085);
+      });
+    },
+    wishColorShift(rarity = 'rare') {
+      // Mid-air meteor color transformation flare!
+      if (rarity === 'mythic') {
+        playNoiseBurst({ bufType: 'white', dur: 0.55, filterType: 'bandpass', startFreq: 900, midFreq: 3400, endFreq: 1800, Q: 1.8, gainVal: 0.16, attack: 0.05 });
+        slideTone(440, 1760, 0.45, 'triangle', 0.085, 0);
+        [659.25, 880, 1174.66, 1318.51, 1760, 2093].forEach((f, i) => tone(f, 0.28, 'triangle', 0.072, i * 0.055));
+      } else if (rarity === 'legendary') {
+        playNoiseBurst({ bufType: 'pink', dur: 0.5, filterType: 'bandpass', startFreq: 720, midFreq: 2600, endFreq: 1400, Q: 1.7, gainVal: 0.15, attack: 0.05 });
+        slideTone(392, 1568, 0.42, 'triangle', 0.08, 0);
+        [587.33, 880, 1174.66, 1567.98, 1760].forEach((f, i) => tone(f, 0.25, 'triangle', 0.068, i * 0.06));
+      } else if (rarity === 'epic') {
+        playNoiseBurst({ bufType: 'pink', dur: 0.42, filterType: 'bandpass', startFreq: 600, midFreq: 1950, endFreq: 1100, Q: 1.8, gainVal: 0.13, attack: 0.05 });
+        slideTone(349.23, 1174.66, 0.36, 'sine', 0.07, 0);
+        [523.25, 659.25, 987.77, 1318.51].forEach((f, i) => tone(f, 0.22, 'sine', 0.06, i * 0.065));
+      } else {
+        slideTone(330, 987.77, 0.32, 'sine', 0.055, 0);
+        [523.25, 783.99, 1046.5].forEach((f, i) => tone(f, 0.18, 'sine', 0.05, i * 0.07));
+      }
+    },
+    wishImpact(rarity = 'rare') {
+      // Resonant supernova impact + heavenly reveal chord
+      const isBig = rarity === 'mythic' || rarity === 'legendary';
+      playNoiseBurst({ bufType: 'pink', dur: isBig ? 0.65 : 0.4, filterType: 'lowpass', startFreq: isBig ? 2400 : 1500, endFreq: 180, Q: 0.9, gainVal: isBig ? 0.22 : 0.14, attack: 0.01 });
+      slideTone(isBig ? 140 : 120, 48, 0.38, 'sine', isBig ? 0.14 : 0.09, 0);
+      if (rarity === 'mythic') {
+        [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98, 2093, 2637.02].forEach((f, i) => {
+          tone(f, 0.42, i < 4 ? 'triangle' : 'sine', 0.08, i * 0.042);
+        });
+      } else if (rarity === 'legendary') {
+        [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98, 2093].forEach((f, i) => {
+          tone(f, 0.36, 'triangle', 0.075, i * 0.048);
+        });
+      } else if (rarity === 'epic') {
+        [440, 554.37, 659.25, 880, 1108.73, 1318.51].forEach((f, i) => {
+          tone(f, 0.30, 'triangle', 0.07, i * 0.05);
+        });
+      } else {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+          tone(f, 0.24, 'sine', 0.065, i * 0.052);
+        });
+      }
     }
   };
 })();

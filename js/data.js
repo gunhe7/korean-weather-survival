@@ -187,49 +187,9 @@ window.RUN_DATA = (function () {
       nearMissBonus: true,
       passiveName: '산타의 선물 보따리',
       passiveDesc: '코인·골드 획득 +45% & 장애물 아슬아슬 회피 시 NEAR MISS +2G 보너스!',
-      desc: '사계절 코인 잭팟 러너! 상점 강화와 캐릭터 성장을 위한 골드 파밍 최강자.',
+      desc: '사계절 코인 잭팟 러너! 상점과 캐릭터 성장을 위한 골드 파밍 최강자.',
       tag: '코인 +45% · 회피 골드 보너스',
       colors: { top: '#d93232', outer: '#b82222', pants: '#2a2a33', shoes: '#362720', hat: null }
-    }
-  ];
-
-  // 상점 영구 업그레이드
-  const UPGRADES = [
-    {
-      id: 'hp',
-      name: '기상 내성 강화',
-      icon: 'assets/design/orb_potion.png?v=20261121hd38',
-      maxLv: 5,
-      basePrice: 120,
-      priceStep: 110,
-      desc: (lv) => `비·황사·폭염 노출 유예 +${((lv + 1) * 0.3).toFixed(1)}초 (체력 5하트 고정)`
-    },
-    {
-      id: 'magnet',
-      name: '골드 자석 강화',
-      icon: 'assets/design/orb_magnet.png?v=20261121hd38',
-      maxLv: 5,
-      basePrice: 140,
-      priceStep: 120,
-      desc: (lv) => `코인 자동 흡수 범위 대폭 확대 (현재 Lv.${lv})`
-    },
-    {
-      id: 'defense',
-      name: '기상 대응력 강화',
-      icon: 'assets/design/ui_chest.png?v=20261121hd45',
-      maxLv: 5,
-      basePrice: 160,
-      priceStep: 130,
-      desc: (lv) => `피격 무적 시간 +${((lv + 1) * 0.2).toFixed(1)}초 & 기상 위기 방어력 강화`
-    },
-    {
-      id: 'score',
-      name: '생존 점수 배율',
-      icon: 'assets/design/orb_star.png?v=20261121hd38',
-      maxLv: 5,
-      basePrice: 180,
-      priceStep: 150,
-      desc: (lv) => `모든 점수 획득 +${(lv + 1) * 12}% (현재 +${lv * 12}%)`
     }
   ];
 
@@ -280,6 +240,7 @@ window.RUN_DATA = (function () {
   const SKIN_GACHA = {
     gemCostPerPull: 200,
     mileagePerPull: 2,
+    dupMileageBonus: 2,
     rates: { rare: 70, epic: 20, legendary: 8, mythic: 2 },
     runChestDropWeights: { wood: 56, silver: 27, gold: 13, diamond: 4 }
   };
@@ -575,15 +536,11 @@ window.RUN_DATA = (function () {
     return SKINS.filter((s) => s.charId === charId);
   }
 
-  function getUpgradePrice(upg, currentLv) {
-    return upg.basePrice + currentLv * upg.priceStep;
-  }
-
   function getCharLevelPrice(currentLv) {
     return 140 + Math.max(0, currentLv - 1) * 130;
   }
 
-  function getCharEffectiveStats(charDef, charLv = 1, upgrades = {}, unlockedCount = 1) {
+  function getCharEffectiveStats(charDef, charLv = 1, unlockedCount = 1) {
     const lv = Math.max(1, Math.min(MAX_CHAR_LEVEL, charLv || 1));
     const lvExtra = lv - 1;
     const dexScoreBonus = Math.max(0, unlockedCount - 1) * 0.03; // 도감 수집 보너스: 추가 해금당 점수 +3%!
@@ -669,7 +626,6 @@ window.RUN_DATA = (function () {
     GEM_PACKS,
     SEASONS,
     CHARACTERS,
-    UPGRADES,
     BOOSTERS,
     DAILY_MISSIONS,
     WEEKLY_MISSIONS,
@@ -686,7 +642,6 @@ window.RUN_DATA = (function () {
     SEASON_WEATHER_POOL,
     OBSTACLES_BY_SEASON,
     getYearDifficulty,
-    getUpgradePrice,
     getCharLevelPrice,
     getCharEffectiveStats,
     getSkinById,

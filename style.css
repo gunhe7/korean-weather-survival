@@ -10776,3 +10776,113 @@ input:focus-visible {
   height: 36px;
   filter: drop-shadow(0 3px 6px rgba(176, 98, 255, 0.65));
 }
+
+/* =========================================================================
+   GENSHIN IMPACT STYLE SKIN GACHA SHOOTING STAR WISH ANIMATION
+   ========================================================================= */
+.gacha-wish-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  padding: 0 !important;
+  background: #020616;
+  overflow: hidden;
+}
+
+.gacha-wish-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.gacha-wish-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.gacha-wish-banner {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  padding: 10px 26px;
+  border-radius: 999px;
+  border: 2.5px solid rgba(255, 255, 255, 0.85);
+  background: rgba(7, 14, 38, 0.78);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: clamp(19px, 3.8vw, 32px);
+  font-weight: 900;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 0 34px rgba(130, 210, 255, 0.85);
+  animation: wishBannerPop 0.42s cubic-bezier(0.22, 1.35, 0.36, 1) forwards;
+}
+
+.gacha-wish-banner.rar-rare {
+  border-color: #7ee8ff;
+  color: #c2f4ff;
+  text-shadow: 0 2px 0 #072245, 0 0 18px #4ad8ff;
+  box-shadow: 0 0 36px rgba(74, 216, 255, 0.85);
+}
+
+.gacha-wish-banner.rar-epic {
+  border-color: #eab3ff;
+  color: #f6dcff;
+  text-shadow: 0 2px 0 #26094d, 0 0 22px #c978ff;
+  box-shadow: 0 0 42px rgba(201, 120, 255, 0.9);
+}
+
+.gacha-wish-banner.rar-legendary {
+  border-color: #fff2a6;
+  color: #ffe96b;
+  background: linear-gradient(90deg, rgba(84, 46, 4, 0.85), rgba(140, 82, 8, 0.85), rgba(84, 46, 4, 0.85));
+  text-shadow: 0 2.5px 0 #3d1d00, 0 0 26px #ffd43b;
+  box-shadow: 0 0 52px rgba(255, 212, 59, 0.95);
+}
+
+.gacha-wish-banner.rar-mythic {
+  border-color: #ffd8f0;
+  color: #ffffff;
+  background: linear-gradient(90deg, rgba(118, 12, 76, 0.9), rgba(102, 24, 150, 0.9), rgba(150, 24, 96, 0.9));
+  text-shadow: 0 2.5px 0 #330522, 0 0 28px #ff5eb8, 0 0 12px #ffe46b;
+  box-shadow: 0 0 60px rgba(255, 94, 184, 0.98), 0 0 26px rgba(255, 228, 107, 0.85);
+}
+
+@keyframes wishBannerPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.62); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.gacha-wish-skip-btn {
+  position: absolute;
+  top: calc(max(14px, var(--safe-top)) + 4px);
+  right: calc(max(16px, var(--safe-right)) + 4px);
+  z-index: 5;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(8, 15, 38, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+
+.gacha-wish-skip-btn:active {
+  transform: scale(0.95);
+  background: rgba(24, 42, 92, 0.9);
+}
