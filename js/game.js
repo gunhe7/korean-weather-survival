@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd41';
+  const ASSET_VER = '20261121hd42';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -1265,7 +1265,7 @@
 
   function renderVaultModal() {
     if (!el.vaultModalGrid) return;
-    const total = getTotalVaultChests();
+    const total = getTotalBagChests();
     if (el.vaultTotalPill) el.vaultTotalPill.textContent = `보유 ${total}개`;
     el.vaultModalGrid.innerHTML = '';
 
@@ -2354,7 +2354,7 @@
     el.homeCharName.textContent = ch.name;
 
     // Brawl Stars Bottom-Left Chest Vault Button (상자 보관함)
-    const vaultTotal = getTotalVaultChests();
+    const vaultTotal = getTotalBagChests();
     if (el.homeVaultCount) el.homeVaultCount.textContent = `보유 ${vaultTotal}개`;
     if (el.btnHomeVault) el.btnHomeVault.classList.toggle('has-chests', vaultTotal > 0);
     if (el.homeVaultDot) {

@@ -7241,8 +7241,8 @@ input:focus-visible {
   flex-direction: column;
   gap: 3px;
   margin-left: -6px;
-  min-width: 152px;
-  max-width: 196px;
+  min-width: 170px;
+  max-width: 222px;
 }
 
 .bs-prof-unskew {
@@ -7441,8 +7441,8 @@ input:focus-visible {
     bottom: -4px;
   }
   .bs-prof-body {
-    min-width: 132px;
-    max-width: 168px;
+    min-width: 152px;
+    max-width: 194px;
     gap: 2px;
   }
   .bs-prof-name-strip {
@@ -8426,7 +8426,8 @@ input:focus-visible {
   max-height: 88dvh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #1b4394 0%, #102556 100%);
+  overflow: hidden;
+  background: linear-gradient(180deg, #1b4394 0%, #0e214d 100%) !important;
   border: 3px solid #7fe2ff;
   box-shadow: 0 18px 46px rgba(4, 12, 32, 0.78), 0 5px 0 #071228;
 }
@@ -8486,9 +8487,28 @@ input:focus-visible {
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 10px 14px 16px;
+  padding: 10px 14px 14px;
+  background: linear-gradient(180deg, rgba(9, 23, 56, 0.45), rgba(7, 17, 42, 0.85));
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: #55c8ff #0b193b;
+}
+
+.score-road-track::-webkit-scrollbar {
+  height: 7px;
+  background: #0b193b;
+}
+
+.score-road-track::-webkit-scrollbar-track {
+  background: #0b193b;
+  border-radius: 999px;
+}
+
+.score-road-track::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #4ec6ff, #ffe052);
+  border-radius: 999px;
+  border: 1px solid #071226;
 }
 
 .sr-node {
@@ -8664,6 +8684,8 @@ input:focus-visible {
   max-height: 88dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1b4394 0%, #0e214d 100%) !important;
 }
 
 .vault-modal-grid {
@@ -8672,6 +8694,9 @@ input:focus-visible {
   gap: 8px;
   padding: 10px 14px 16px;
   overflow-y: auto;
+  background: linear-gradient(180deg, rgba(9, 23, 56, 0.35), rgba(7, 17, 42, 0.72));
+  scrollbar-width: thin;
+  scrollbar-color: #55c8ff #0b193b;
 }
 
 .vault-card {
