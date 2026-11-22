@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd46" />
+  <link rel="stylesheet" href="style.css?v=20261121hd47" />
 </head>
 <body>
   <div id="mobile-app">
@@ -460,7 +460,10 @@
 
           <div class="settings-footer-row">
             <div class="save-safe-note">💾 게임 데이터 자동 저장 보호 중</div>
-            <button id="btn-settings-ok" class="cr-gold-btn settings-ok-btn" type="button">확인</button>
+            <div class="settings-footer-btns">
+              <button id="btn-replay-tutorial" class="toggle-pill tutorial-replay-btn" type="button">📖 튜토리얼</button>
+              <button id="btn-settings-ok" class="cr-gold-btn settings-ok-btn" type="button">확인</button>
+            </div>
           </div>
         </div>
       </div>
@@ -819,6 +822,28 @@
       </div>
     </div>
 
+    <!-- ================= NEW PLAYER INTERACTIVE TUTORIAL MODAL ================= -->
+    <div id="tutorial-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="초보자 튜토리얼">
+      <div class="cr-modal settings-arcade-modal tutorial-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <div class="score-road-title-wrap">
+            <span class="settings-bar-title">📖 생존 튜토리얼</span>
+            <span id="tut-step-pill" class="score-road-best-pill">1 / 4</span>
+          </div>
+          <button id="btn-tut-skip" class="tut-skip-btn" type="button">건너뛰기</button>
+        </div>
+        <div class="tut-body">
+          <div id="tut-content" class="tut-content"></div>
+          <div id="tut-dots" class="tut-dots" aria-hidden="true"></div>
+          <div class="tut-actions">
+            <button id="btn-tut-prev" class="cr-blue-btn tut-nav-btn hidden" type="button">◀ 이전</button>
+            <button id="btn-tut-next" class="cr-gold-btn tut-next-btn" type="button">다음 ▶</button>
+            <button id="btn-tut-play" class="cr-gold-btn tut-play-btn hidden" type="button">🏃 첫 달리기 출발!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="global-toast" class="global-toast hidden"></div>
   </div>
@@ -826,11 +851,11 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd46"></script>
+  <script src="js/data.js?v=20261121hd47"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd46"></script>
-  <script src="js/renderer.js?v=20261121hd46"></script>
-  <script src="js/game.js?v=20261121hd46"></script>
+  <script src="js/online.js?v=20261121hd47"></script>
+  <script src="js/renderer.js?v=20261121hd47"></script>
+  <script src="js/game.js?v=20261121hd47"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

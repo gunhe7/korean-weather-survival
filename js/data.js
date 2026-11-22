@@ -277,7 +277,7 @@ window.RUN_DATA = (function () {
     mythic:    { id: 'mythic',    name: '신화', color: '#ff5ea8', bg: '#8a144d', dupGold: 2500, gemPrice: 1000 }
   };
 
-  // 21종 수집형 스킨 (일반 20종 · 신화 1종: 화이트 냥이 후드!)
+  // 22종 수집형 스킨 (일반 20종 · 신화 2종: 화이트 냥이 후드, 명계의 군주 하데스!)
   const SKINS = [
     // 일반 (20)
     { id: 'mint_rain',        name: '민트 우비',       rarity: 'common', charId: 'umbrella_master', filter: 'hue-rotate(92deg) saturate(1.15)', glow: '#5ef5c8', trail: ['#5ef5c8', '#ffffff'] },
@@ -300,7 +300,7 @@ window.RUN_DATA = (function () {
     { id: 'frost_santa',      name: '겨울왕국 산타',   rarity: 'common', charId: 'fashionista',     filter: 'hue-rotate(198deg) saturate(1.45) brightness(1.12)', glow: '#75e6ff', trail: ['#75e6ff', '#ffffff'] },
     { id: 'mythic_typhoon',   name: '태풍의 지배자',   rarity: 'common', charId: 'umbrella_master', filter: 'hue-rotate(225deg) saturate(1.75) brightness(1.12)', glow: '#ff52b8', trail: ['#ff52b8', '#5ef5ff', '#ffe859'] },
     { id: 'mythic_celestial', name: '천상의 기상술사', rarity: 'common', charId: 'iced_americano',  filter: 'hue-rotate(265deg) saturate(1.7) brightness(1.14)',  glow: '#c96bff', trail: ['#c96bff', '#ffe866', '#66f2ff'] },
-    // 유일한 신화 스페셜 스킨 (화이트 냥이 후드!)
+    // 신화 스페셜 스킨 (상점 보석 1,000💎 전용!)
     {
       id: 'catgirl_hoodie',
       name: '화이트 냥이 후드',
@@ -316,6 +316,30 @@ window.RUN_DATA = (function () {
       glow: '#ff96dc',
       trail: ['#ff96dc', '#ffffff', '#ffc4ee'],
       desc: '8프레임 전용 풀애니메이션(달리기·점프·슬라이드) & 핑크 냥이 발바닥 오라!'
+    },
+    {
+      id: 'hades_mythic',
+      name: '명계의 군주 하데스',
+      rarity: 'mythic',
+      charId: 'umbrella_master',
+      filter: 'none',
+      customAnimSkin: 'hades',
+      customAnimFrames: 3,
+      customIdleFrames: 8,
+      customRunFrames: 8,
+      customAvatar: 'assets/chars/port_hades.png?v=20261121hd47',
+      customUmbrella: 'hades_umbrella',
+      customMask: 'hades_mask',
+      customShieldPrefix: 'hades_shield',
+      customShieldFrames: 6,
+      customBoosterPrefix: 'hades_booster',
+      customBoosterFrames: 12,
+      customAuraPrefix: 'hades_aura',
+      customAuraFrames: 6,
+      gemPrice: 1000,
+      glow: '#a84cff',
+      trail: ['#a84cff', '#ff5ee8', '#6028ff'],
+      desc: '명계의 불꽃 풀애니메이션 · 전용 해골 우산 & 마스크 · 6프레임 보호막 · 12프레임 불꽃 부스터 & 피버 오라!'
     }
   ];
 

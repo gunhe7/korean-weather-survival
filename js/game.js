@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd46';
+  const ASSET_VER = '20261121hd47';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -145,6 +145,7 @@
       achievementsClaimed: {},
       stageMilestonesClaimed: {},
       scoreRoadClaimed: {},
+      tutorialDone: false,
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
       auth: cleanAuth,
       weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] }
@@ -203,6 +204,7 @@
       achievementsClaimed: { ...(raw.achievementsClaimed || {}) },
       stageMilestonesClaimed: { ...(raw.stageMilestonesClaimed || {}) },
       scoreRoadClaimed: { ...(raw.scoreRoadClaimed || {}) },
+      tutorialDone: Boolean(raw.tutorialDone || (Number(raw.playCount) || 0) > 0 || (Number(raw.bestScore) || 0) > 0),
       audioSettings: { ...def.audioSettings, ...(raw.audioSettings || {}) },
       auth: {
         ...cleanAuth,
@@ -384,6 +386,7 @@
     settingsAccountName: document.getElementById('settings-account-name'),
     settingsAccountSub: document.getElementById('settings-account-sub'),
     btnSettingsSwitchLogin: document.getElementById('btn-settings-switch-login'),
+    btnReplayTutorial: document.getElementById('btn-replay-tutorial'),
     btnSettingsOk: document.getElementById('btn-settings-ok'),
 
     homeHeroStage: document.getElementById('home-hero-stage'),
@@ -552,6 +555,15 @@
     vaultTotalPill: document.getElementById('vault-total-pill'),
     vaultModalGrid: document.getElementById('vault-modal-grid'),
     btnCloseVault: document.getElementById('btn-close-vault'),
+
+    tutorialOverlay: document.getElementById('tutorial-overlay'),
+    tutStepPill: document.getElementById('tut-step-pill'),
+    btnTutSkip: document.getElementById('btn-tut-skip'),
+    tutContent: document.getElementById('tut-content'),
+    tutDots: document.getElementById('tut-dots'),
+    btnTutPrev: document.getElementById('btn-tut-prev'),
+    btnTutNext: document.getElementById('btn-tut-next'),
+    btnTutPlay: document.getElementById('btn-tut-play'),
 
     globalToast: document.getElementById('global-toast')
   };
@@ -1456,12 +1468,159 @@
       achievementsClaimed: { ...(secondary.achievementsClaimed || {}), ...(primary.achievementsClaimed || {}) },
       stageMilestonesClaimed: { ...(secondary.stageMilestonesClaimed || {}), ...(primary.stageMilestonesClaimed || {}) },
       scoreRoadClaimed: { ...(secondary.scoreRoadClaimed || {}), ...(primary.scoreRoadClaimed || {}) },
+      tutorialDone: Boolean(c.tutorialDone || l.tutorialDone),
       weeklyRank: {
         ...bestWkObj,
         history: { ...((secondary.weeklyRank && secondary.weeklyRank.history) || {}), ...((primary.weeklyRank && primary.weeklyRank.history) || {}) },
         claimedWeeks: Array.from(new Set([...((c.weeklyRank && c.weeklyRank.claimedWeeks) || []), ...((l.weeklyRank && l.weeklyRank.claimedWeeks) || [])]))
       }
     };
+  }
+
+  // ===================== NEW PLAYER INTERACTIVE TUTORIAL =====================
+  let tutStepIdx = 0;
+  const TUTORIAL_STEPS = [
+    {
+      icon: '🏃',
+      title: '1. 기본 조작 · 빨간 테두리 장애물 회피!',
+      desc: '지상 장애물은 점프로, 공중 장애물은 슬라이드로 피하세요. 모든 위험 장애물에는 빨간 테두리가 표시됩니다.',
+      cards: [
+        {
+          ico: '⬆️',
+          title: '점프 & 2단 점프 <span class="tut-key-badge">Space / ↑</span>',
+          desc: '낮은 장애물은 1단 점프, 높은 장애물은 공중에서 한 번 더 눌러 2단 점프!'
+        },
+        {
+          ico: '⬇️',
+          title: '슬라이드 & 급강하 <span class="tut-key-badge">↓</span>',
+          desc: '날아오는 구름·강풍은 슬라이드로 통과! 공중에서 누르면 빠르게 착지합니다.'
+        }
+      ]
+    },
+    {
+      icon: '🌦️',
+      title: '2. 한국 날씨 대응 · 우산 & 마스크!',
+      desc: '우산과 마스크는 쿨타임이 없고 켜면 10초마다 자동 해제됩니다. 날씨에 맞게 바로 눌러 대응하세요!',
+      cards: [
+        {
+          ico: '☂️',
+          title: '우산(양산) <span class="tut-key-badge">Q</span>',
+          desc: '폭우·장마·폭염엔 우산 ON! 단, 태풍 돌풍 땐 제한 시간 안에 접어야 파손(5초 불가)을 막습니다.'
+        },
+        {
+          ico: '😷',
+          title: 'KF94 마스크 <span class="tut-key-badge">E</span>',
+          desc: '황사·미세먼지 경보가 뜨면 바로 마스크를 착용해 체력을 지키세요!'
+        }
+      ]
+    },
+    {
+      icon: '🦠',
+      title: '3. 2년 차 코로나 이벤트 & FEVER 무적!',
+      desc: '1년(60초)을 버티면 2년 차부터 코로나 이벤트가 랜덤으로 등장합니다!',
+      cards: [
+        {
+          ico: '😷',
+          accent: 'accent-red',
+          title: '바이러스 돌진 차단!',
+          desc: '"코로나 바이러스 발생! 마스크를 쓰세요!" 경고가 뜨면 마스크를 눌러 바이러스를 튕겨내고 보너스 점수를 받으세요!'
+        },
+        {
+          ico: '★',
+          accent: 'accent-gold',
+          title: 'FEVER 무적 질주',
+          desc: '코인·별·아이템을 모아 피버 100% 달성 시 무적 질주 + 자석 발동!'
+        }
+      ]
+    },
+    {
+      icon: '🎁',
+      title: '4. 최고점수 보상 로드 & 상자 보관함!',
+      desc: '달릴수록 보상이 쌓입니다! 이제 첫 생존 달리기를 시작해 보세요!',
+      cards: [
+        {
+          icoImg: 'assets/design/item_coin.png',
+          accent: 'accent-gold',
+          title: '최고점수 로드 (1,000점 간격)',
+          desc: '홈 왼쪽 위 최고점수를 누르면 1,000점마다 골드 · 보석 · 상자 보상을 받을 수 있습니다.'
+        },
+        {
+          icoImg: 'assets/design/ui_chest.png',
+          title: '상자 보관함 & 신화 스킨',
+          desc: '얻은 상자는 홈 왼쪽 아래 보관함에서 열어 22종 스킨과 캐릭터를 수집해 보세요!'
+        }
+      ]
+    }
+  ];
+
+  function renderTutorialStep() {
+    if (!el.tutorialOverlay || !el.tutContent) return;
+    const total = TUTORIAL_STEPS.length;
+    tutStepIdx = Math.max(0, Math.min(total - 1, tutStepIdx));
+    const step = TUTORIAL_STEPS[tutStepIdx];
+    const isLast = tutStepIdx === total - 1;
+
+    if (el.tutStepPill) el.tutStepPill.textContent = `${tutStepIdx + 1} / ${total}`;
+
+    const cardsHtml = step.cards.map((c) => {
+      const icoHtml = c.icoImg
+        ? `<img src="${c.icoImg}?v=${ASSET_VER}" alt="" />`
+        : c.ico;
+      return `
+        <div class="tut-card ${c.accent || ''}">
+          <div class="tut-card-ico">${icoHtml}</div>
+          <div class="tut-card-txt">
+            <strong>${c.title}</strong>
+            <span>${c.desc}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    el.tutContent.innerHTML = `
+      <div class="tut-headline">
+        <div class="tut-big-ico">${step.icon}</div>
+        <div class="tut-title-box">
+          <h4>${step.title}</h4>
+          <p>${step.desc}</p>
+        </div>
+      </div>
+      <div class="tut-cards">${cardsHtml}</div>
+    `;
+
+    if (el.tutDots) {
+      el.tutDots.innerHTML = TUTORIAL_STEPS.map((_, idx) =>
+        `<span class="tut-dot${idx === tutStepIdx ? ' active' : ''}"></span>`
+      ).join('');
+    }
+    if (el.btnTutPrev) el.btnTutPrev.classList.toggle('hidden', tutStepIdx === 0);
+    if (el.btnTutNext) el.btnTutNext.classList.toggle('hidden', isLast);
+    if (el.btnTutPlay) el.btnTutPlay.classList.toggle('hidden', !isLast);
+  }
+
+  function openTutorialModal() {
+    if (!el.tutorialOverlay) return;
+    tutStepIdx = 0;
+    renderTutorialStep();
+    el.tutorialOverlay.classList.remove('hidden');
+  }
+
+  function closeTutorialModal(startImmediately = false) {
+    if (el.tutorialOverlay) el.tutorialOverlay.classList.add('hidden');
+    if (!save.tutorialDone) {
+      save.tutorialDone = true;
+      persistSave();
+    }
+    if (startImmediately) {
+      try {
+        const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
+        if (isCharUnlocked(ch.id)) {
+          save.selectedChar = ch.id;
+          persistSave();
+        }
+        startRun();
+      } catch {}
+    }
   }
 
   function dismissIntroToHome() {
@@ -1478,6 +1637,9 @@
       el.introOverlay.classList.remove('playing', 'leaving');
       try { syncMyWeeklyScore(); } catch {}
       try { checkAndAwardWeeklyChampion(); } catch {}
+      if (!save.tutorialDone) {
+        openTutorialModal();
+      }
     }, 340);
   }
 
@@ -2248,7 +2410,8 @@
 
     el.homeHeroStage.className = `bs-home-stage ${tierCls}${unlocked ? '' : ' locked'}`;
     lastHomeHeroSrc = '';
-    el.homeHeroImg.src = `assets/chars/${anim.skin}_run_0.png?v=${ASSET_VER}`;
+    const homePose = (skin && skin.customIdleFrames) ? 'idle' : 'run';
+    el.homeHeroImg.src = `assets/chars/${anim.skin}_${homePose}_0.png?v=${ASSET_VER}`;
     el.homeHeroImg.alt = skin ? `${ch.name} (${skin.name})` : ch.name;
     el.homeHeroImg.style.filter = getSkinFilter(skin);
     el.homeHeroImg.style.setProperty('--skin-glow', skin ? skin.glow : '');
@@ -2297,9 +2460,11 @@
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const skin = getEquippedSkin(ch.id);
     const anim = getCharAnimSpec(ch, skin);
-    const fps = anim.frames >= 6 ? 13 : (anim.frames >= 3 ? 9.5 : 7.5);
-    const frame = Math.floor(t * fps) % anim.frames;
-    const src = `assets/chars/${anim.skin}_run_${frame}.png?v=${ASSET_VER}`;
+    const useIdle = Boolean(skin && skin.customIdleFrames);
+    const frameCnt = useIdle ? skin.customIdleFrames : anim.frames;
+    const fps = useIdle ? 6.5 : (frameCnt >= 6 ? 13 : (frameCnt >= 3 ? 9.5 : 7.5));
+    const frame = Math.floor(t * fps) % frameCnt;
+    const src = `assets/chars/${anim.skin}_${useIdle ? 'idle' : 'run'}_${frame}.png?v=${ASSET_VER}`;
     const readySrc = getPreloadedHomeHeroSrc(src);
     if (readySrc && readySrc !== lastHomeHeroSrc) {
       lastHomeHeroSrc = readySrc;
@@ -2973,17 +3138,17 @@
 
   // ===================== RUNNER ENGINE (WEATHER PHYSICS + GEAR + CORONA EVENT) =====================
   const GEAR_DURATION = 10.0;
-  const MASK_PARRY_WINDOW = 1.85;
+  const MASK_PARRY_WINDOW = 3.5;
   const UMBRELLA_BROKEN_CD = 5.0;
   const COVID_WALKER_PRESET = {
     id: 'covid_walker',
     name: '코로나 확진자',
     lane: 'low',
-    w: 32,
-    h: 52,
+    w: 28,
+    h: 44,
     tag: 'covid',
     sprite: 'sp_covid_walker',
-    speedBonus: 28
+    speedBonus: 8
   };
 
   function triggerCameraShake(intensity = 6, dur = 0.25) {
@@ -3397,7 +3562,7 @@
     run.weatherEvent = nextW;
     run.pendingWeather = null;
     run.weatherEventTimer = nextW === 'covid'
-      ? Math.max(10.0, 13.5 / Math.min(1.35, diff.weatherPaceMult))
+      ? Math.max(9.5, 11.0 / Math.min(1.18, diff.weatherPaceMult))
       : Math.max(5.2, (8.5 + Math.random() * 2.5) / diff.weatherPaceMult);
     run.rainExposeTimer = 0;
     run.dustExposeTimer = 0;
@@ -3405,7 +3570,7 @@
 
     if (nextW === 'covid') {
       run.covidAttack = null;
-      run.covidAttackCd = 1.25;
+      run.covidAttackCd = 2.0;
       // 아직 화면 진입 전인 대기 장애물도 코로나 확진자 보행 장애물로 즉시 교체!
       for (let i = 0; i < run.obstacles.length; i++) {
         const ob = run.obstacles[i];
@@ -3445,9 +3610,62 @@
     return followPool[Math.floor(Math.random() * followPool.length)];
   }
 
+  // ===================== SPATIAL ANTI-OVERLAP HELPERS (ZERO OBJECT COLLISIONS!) =====================
+  function isPointBlockedByObstacle(x, y, padX = 24, padY = 18) {
+    if (!run || !run.obstacles) return false;
+    for (let i = 0; i < run.obstacles.length; i++) {
+      const ob = run.obstacles[i];
+      if (x >= ob.x - padX && x <= ob.x + ob.w + padX && y >= ob.y - padY && y <= ob.y + ob.h + padY) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function isRectBlockedByObstacle(x, w, padX = 42) {
+    if (!run || !run.obstacles) return false;
+    for (let i = 0; i < run.obstacles.length; i++) {
+      const ob = run.obstacles[i];
+      if (x < ob.x + ob.w + padX && x + w + padX > ob.x) return true;
+    }
+    return false;
+  }
+
+  function isRectBlockedByFeature(x, w, padX = 32) {
+    if (!run || !run.features) return false;
+    for (let i = 0; i < run.features.length; i++) {
+      const f = run.features[i];
+      if (x < f.x + f.w + padX && x + w + padX > f.x) return true;
+    }
+    return false;
+  }
+
+  function isPointNearItem(x, y, minDist = 26) {
+    if (!run || !run.items) return false;
+    for (let i = 0; i < run.items.length; i++) {
+      const it = run.items[i];
+      if (Math.hypot(it.x - x, it.y - y) < minDist) return true;
+    }
+    return false;
+  }
+
+  function pushSafeItem(item, padObsX = 22, padObsY = 16, minItemDist = 24) {
+    if (isPointBlockedByObstacle(item.x, item.y, padObsX, padObsY)) return false;
+    if (isPointNearItem(item.x, item.y, minItemDist)) return false;
+    run.items.push(item);
+    return true;
+  }
+
   function spawnObstacleWave() {
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
-    const pool = run.weatherEvent === 'covid'
+    const isCovid = run.weatherEvent === 'covid';
+
+    // 코로나 바이러스 돌진 중엔 장애물 생성을 잠시 멈춰 마스크 타이밍에 집중할 수 있게 완화!
+    if (isCovid && run.covidAttack && run.covidAttack.phase === 'charge') {
+      return 0.45;
+    }
+
+    const pool = isCovid
       ? [COVID_WALKER_PRESET]
       : DATA.OBSTACLES_BY_SEASON[run.seasonId];
     const preset = pool[Math.floor(Math.random() * pool.length)];
@@ -3458,11 +3676,20 @@
     }
 
     let startX = Renderer.W + (preset.warn ? 48 : 22);
+    // 스프링 패드 · 침수 차량 지붕 등 지형 오브젝트와 절대 겹치지 않게 회피!
+    if (isRectBlockedByFeature(startX, preset.w, 38)) {
+      return 0.35;
+    }
+    // 기존 장애물과도 최소 안전 간격 유지!
+    if (isRectBlockedByObstacle(startX, preset.w, 86)) {
+      return 0.3;
+    }
+
     let y = Renderer.GROUND_Y - preset.h;
     const extra = {};
 
     if (preset.lane === 'air') {
-      y = Renderer.GROUND_Y - 20 - preset.h;
+      y = Renderer.GROUND_Y - 24 - preset.h;
     } else if (preset.lane === 'icicle') {
       startX = Renderer.W + 24;
       y = 8;
@@ -3481,112 +3708,145 @@
       extraSpeed: (preset.speedBonus || 0) * diff.extraObsSpeedMult
     });
 
-    // Continuous Escalating Difficulty: Fair Double (15s+) & Triple (45s+) Jump/Slide Rhythm Combos!
+    // Continuous Escalating Difficulty: Fair Double (15s+) & Triple (45s+) Combos (Corona keeps it gentle!)
     let comboExtraWidth = 0;
-    if (run.weatherEvent !== 'flood' && preset.lane !== 'icicle' && Math.random() < diff.doubleWaveChance) {
+    const dblChance = isCovid ? Math.min(0.24, diff.doubleWaveChance * 0.45) : diff.doubleWaveChance;
+    if (run.weatherEvent !== 'flood' && preset.lane !== 'icicle' && Math.random() < dblChance) {
       const second = pickFollowObstacle(pool, preset.lane);
-      const gapX = Math.max(150, Math.min(248, (run.speed || 220) * 0.64));
+      const gapX = Math.max(isCovid ? 195 : 158, Math.min(264, (run.speed || 220) * (isCovid ? 0.78 : 0.66)));
       const sx2 = startX + gapX;
-      const sy2 = second.lane === 'air' ? Renderer.GROUND_Y - 20 - second.h : Renderer.GROUND_Y - second.h;
-      run.obstacles.push({
-        ...second,
-        x: sx2,
-        y: sy2,
-        passed: false,
-        nearMissed: false,
-        stepSeed: Math.random() * Math.PI * 2,
-        extraSpeed: (second.speedBonus || 0) * diff.extraObsSpeedMult
-      });
-      comboExtraWidth += gapX;
-
-      if (Math.random() < diff.tripleWaveChance) {
-        const third = pickFollowObstacle(pool, second.lane);
-        const gapX3 = Math.round(gapX * 1.04);
-        const sx3 = sx2 + gapX3;
-        const sy3 = third.lane === 'air' ? Renderer.GROUND_Y - 20 - third.h : Renderer.GROUND_Y - third.h;
+      if (!isRectBlockedByFeature(sx2, second.w, 34)) {
+        const sy2 = second.lane === 'air' ? Renderer.GROUND_Y - 24 - second.h : Renderer.GROUND_Y - second.h;
         run.obstacles.push({
-          ...third,
-          x: sx3,
-          y: sy3,
+          ...second,
+          x: sx2,
+          y: sy2,
           passed: false,
           nearMissed: false,
           stepSeed: Math.random() * Math.PI * 2,
-          extraSpeed: (third.speedBonus || 0) * diff.extraObsSpeedMult
+          extraSpeed: (second.speedBonus || 0) * diff.extraObsSpeedMult
         });
-        comboExtraWidth += gapX3;
+        comboExtraWidth += gapX;
+
+        if (!isCovid && Math.random() < diff.tripleWaveChance) {
+          const third = pickFollowObstacle(pool, second.lane);
+          const gapX3 = Math.round(gapX * 1.05);
+          const sx3 = sx2 + gapX3;
+          if (!isRectBlockedByFeature(sx3, third.w, 34)) {
+            const sy3 = third.lane === 'air' ? Renderer.GROUND_Y - 24 - third.h : Renderer.GROUND_Y - third.h;
+            run.obstacles.push({
+              ...third,
+              x: sx3,
+              y: sy3,
+              passed: false,
+              nearMissed: false,
+              stepSeed: Math.random() * Math.PI * 2,
+              extraSpeed: (third.speedBonus || 0) * diff.extraObsSpeedMult
+            });
+            comboExtraWidth += gapX3;
+          }
+        }
       }
     }
 
-    // Tighter & Riskier Coin Economy: coins appear on ~55% of waves in smaller, higher-skill clusters!
-    if (Math.random() < 0.55) {
-      const coinX0 = startX - 8;
+    // Natural Non-Overlapping Coin Guide Arcs (centered cleanly OVER low/tall obstacles or cleanly BELOW air obstacles!)
+    if (Math.random() < 0.58) {
+      const obsCx = startX + preset.w / 2;
       if (preset.lane === 'low') {
-        for (let i = 0; i < 3; i++) {
-          const arc = Math.sin((i / 2) * Math.PI) * 58;
-          run.items.push({ kind: 'coin', x: coinX0 + i * 24, y: Renderer.GROUND_Y - 22 - arc });
-        }
+        const peakY = Math.min(Renderer.GROUND_Y - preset.h - 28, Renderer.GROUND_Y - 80);
+        const sideY = Math.min(Renderer.GROUND_Y - 46, peakY + 32);
+        const pts = [
+          { x: obsCx - 44, y: sideY },
+          { x: obsCx,      y: peakY },
+          { x: obsCx + 44, y: sideY }
+        ];
+        pts.forEach((pt) => pushSafeItem({ kind: 'coin', x: pt.x, y: pt.y }, 18, 16, 24));
       } else if (preset.lane === 'tall') {
-        const hasBig = Math.random() < 0.25;
-        for (let i = 0; i < 3; i++) {
-          const arc = Math.sin((i / 2) * Math.PI) * 96;
-          run.items.push({ kind: (i === 1 && hasBig) ? 'big_coin' : 'coin', x: coinX0 + i * 24, y: Renderer.GROUND_Y - 22 - arc });
-        }
+        const hasBig = Math.random() < 0.28;
+        const peakY = Math.min(Renderer.GROUND_Y - preset.h - 40, Renderer.GROUND_Y - 102);
+        const sideY = peakY + 32;
+        const pts = [
+          { x: obsCx - 50, y: sideY, kind: 'coin' },
+          { x: obsCx,      y: peakY, kind: hasBig ? 'big_coin' : 'coin' },
+          { x: obsCx + 50, y: sideY, kind: 'coin' }
+        ];
+        pts.forEach((pt) => pushSafeItem({ kind: pt.kind, x: pt.x, y: pt.y }, 18, 16, 24));
       } else if (preset.lane === 'air') {
-        for (let i = 0; i < 3; i++) {
-          run.items.push({ kind: 'coin', x: startX - 4 + i * 22, y: Renderer.GROUND_Y - 10 });
+        for (let i = -1; i <= 1; i++) {
+          pushSafeItem({ kind: 'coin', x: obsCx + i * 26, y: Renderer.GROUND_Y - 11 }, 16, 8, 22);
         }
       } else {
         for (let i = 0; i < 2; i++) {
-          run.items.push({ kind: 'coin', x: startX + 38 + i * 24, y: Renderer.GROUND_Y - 24 });
+          pushSafeItem({ kind: 'coin', x: startX + preset.w + 34 + i * 28, y: Renderer.GROUND_Y - 26 }, 20, 16, 24);
         }
       }
     }
 
-    return comboExtraWidth / Math.max(190, run.speed || 196);
+    return (comboExtraWidth / Math.max(190, run.speed || 196)) + (isCovid ? 0.35 : 0);
   }
 
   function spawnUtilityPickup() {
     const r = Math.random();
-    const y = Renderer.GROUND_Y - (Math.random() < 0.5 ? 28 : 78);
-    if (r < 0.24) {
-      run.items.push({ kind: 'coffee', x: Renderer.W + 24, y });
-    } else if (r < 0.44) {
-      run.items.push({ kind: 'star', x: Renderer.W + 24, y });
-    } else if (r < 0.61) {
-      run.items.push({ kind: 'magnet', x: Renderer.W + 24, y });
-    } else if (r < 0.77) {
-      run.items.push({ kind: 'speed_boost', x: Renderer.W + 24, y });
-    } else if (r < 0.89) {
-      run.items.push({ kind: 'shield_item', x: Renderer.W + 24, y });
-    } else if (r < 0.95) {
-      run.items.push({ kind: 'umbrella_fever', x: Renderer.W + 24, y });
-    } else {
-      run.items.push({ kind: 'chest', x: Renderer.W + 24, y: Renderer.GROUND_Y - 16 });
+    let kind = 'chest';
+    if (r < 0.24) kind = 'coffee';
+    else if (r < 0.44) kind = 'star';
+    else if (r < 0.61) kind = 'magnet';
+    else if (r < 0.77) kind = 'speed_boost';
+    else if (r < 0.89) kind = 'shield_item';
+    else if (r < 0.95) kind = 'umbrella_fever';
+
+    const prefHigh = Math.random() < 0.5;
+    const laneYs = kind === 'chest'
+      ? [Renderer.GROUND_Y - 24, Renderer.GROUND_Y - 84]
+      : (prefHigh ? [Renderer.GROUND_Y - 88, Renderer.GROUND_Y - 30] : [Renderer.GROUND_Y - 30, Renderer.GROUND_Y - 88]);
+    const xOffsets = [28, 76, 124];
+
+    for (let xi = 0; xi < xOffsets.length; xi++) {
+      const cx = Renderer.W + xOffsets[xi];
+      for (let yi = 0; yi < laneYs.length; yi++) {
+        const cy = laneYs[yi];
+        if (!isPointBlockedByObstacle(cx, cy, 38, 28) && !isPointNearItem(cx, cy, 38)) {
+          if (cy > Renderer.GROUND_Y - 48 && isRectBlockedByFeature(cx - 18, 36, 18)) continue;
+          run.items.push({ kind, x: cx, y: cy });
+          return true;
+        }
+      }
     }
+    return false;
   }
 
   function spawnStreetFeature() {
     if (run.weatherEvent === 'flood') {
-      // Spawn dry submerged red car or crate/metal platform strictly from uploaded sheet!
       const r = Math.random();
       const kind = r < 0.48 ? 'car_roof' : (r < 0.76 ? 'crate_plat' : 'metal_plat');
       const w = kind === 'car_roof' ? 76 : 68;
+      const fx = Renderer.W + 30;
+      if (isRectBlockedByFeature(fx, w, 26) || isRectBlockedByObstacle(fx, w, 28)) return;
       const platformY = kind === 'car_roof' ? Renderer.GROUND_Y - 30 : Renderer.GROUND_Y - 26;
-      run.features.push({ kind, x: Renderer.W + 30, w, platformY, isPlatform: true });
+      run.features.push({ kind, x: fx, w, platformY, isPlatform: true });
       for (let i = 0; i < 2; i++) {
-        run.items.push({ kind: 'coin', x: Renderer.W + 46 + i * 24, y: platformY - 16 });
+        pushSafeItem({ kind: 'coin', x: fx + 20 + i * 28, y: platformY - 18 }, 18, 14, 24);
       }
     }
   }
 
   function spawnConvenienceStore() {
-    // Spawn bouncy Red Spring Jump Pad (sp_spring_pad) — shade spots removed to avoid obstacle confusion!
-    run.features.push({ kind: 'spring_pad', x: Renderer.W + 40, w: 44, triggered: false });
+    const fx = Renderer.W + 40;
+    const fw = 44;
+    // 장애물이나 다른 지형과 겹치면 잠시 뒤로 미뤄 자연스럽게 배치!
+    if (isRectBlockedByObstacle(fx, fw, 64) || isRectBlockedByFeature(fx, fw, 52)) {
+      return false;
+    }
+    run.features.push({ kind: 'spring_pad', x: fx, w: fw, triggered: false });
     const hasBig = Math.random() < 0.35;
     for (let i = 0; i < 3; i++) {
-      const arc = Math.sin((i / 2) * Math.PI) * 98;
-      run.items.push({ kind: (i === 1 && hasBig) ? 'big_coin' : 'coin', x: Renderer.W + 76 + i * 26, y: Renderer.GROUND_Y - 40 - arc });
+      const arc = Math.sin((i / 2) * Math.PI) * 96;
+      pushSafeItem(
+        { kind: (i === 1 && hasBig) ? 'big_coin' : 'coin', x: fx + 46 + i * 28, y: Renderer.GROUND_Y - 46 - arc },
+        20, 16, 24
+      );
     }
+    return true;
   }
 
   // ===================== MAIN RUN UPDATE =====================
@@ -3971,7 +4231,7 @@
       }
     }
 
-    // ---- CORONA VIRUS TIMED RUSH EVENT (YEAR 2+ RANDOM COVID EVENT) ----
+    // ---- CORONA VIRUS TIMED RUSH EVENT (YEAR 2+ RANDOM COVID EVENT · FAIR & FUN DIFFICULTY) ----
     if (run.covidAttack) {
       const atk = run.covidAttack;
       if (atk.phase === 'warn') {
@@ -3980,7 +4240,7 @@
         atk.y += (targetY - atk.y) * Math.min(1, dt * 6);
         if (atk.timer <= 0) {
           atk.phase = 'charge';
-          atk.vx = 540 + run.speed * 0.45;
+          atk.vx = 330 + run.speed * 0.22;
           atk.checked = false;
         }
       } else if (atk.phase === 'charge') {
@@ -3999,9 +4259,9 @@
             Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#ffe866', true);
             Renderer.spawnFloater('🔥 피버! 코로나 격파 +250', '#ffe866', run.playerX + 14, run.playerY - 50);
           } else if (run.maskOn && run.maskParryTimer > 0) {
-            const isPerfect = run.maskParryTimer >= 0.85;
+            const isPerfect = run.maskParryTimer >= 1.65;
             const bonusPts = isPerfect ? 350 : 250;
-            const feverGain = isPerfect ? 14 : 10;
+            const feverGain = isPerfect ? 14 : 12;
             atk.phase = 'deflected';
             atk.deflectTimer = 0.55;
             atk.vx = 300;
@@ -4023,6 +4283,19 @@
               run.playerX + 14,
               run.playerY - 50
             );
+          } else if (run.maskOn) {
+            // 미리 써둔 오래된 마스크는 체력 피해 대신 마스크가 벗겨지며 방어 (난이도 완화!)
+            run.maskOn = false;
+            run.maskActiveTimer = 0;
+            run.maskParryTimer = 0;
+            atk.phase = 'deflected';
+            atk.deflectTimer = 0.5;
+            atk.vx = 240;
+            atk.vy = -220;
+            SFX.guard();
+            haptic(12);
+            Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#a6ffcf', false);
+            Renderer.spawnFloater('😷 마스크 방어! (돌진 시 새로 누르면 보너스!)', '#a6ffcf', run.playerX + 14, run.playerY - 48);
           } else if (run.shield) {
             run.shield = false;
             run.invulnTimer = 1.25;
@@ -4034,7 +4307,6 @@
             Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#82e2ff', true);
             Renderer.spawnFloater('🛡️ 기상 보호막으로 코로나 방어!', '#82e2ff', run.playerX + 14, run.playerY - 48);
           } else {
-            const staleMask = run.maskOn;
             run.hp = Math.max(0, run.hp - 1);
             run.hitPoseTimer = 0.45;
             run.hitFlashTimer = 0.3;
@@ -4045,15 +4317,8 @@
             triggerCameraShake(7, 0.28);
             haptic(35);
             SFX.hit();
-            run.lastHitCause = staleMask
-              ? `${run.year}년 차 코로나 이벤트, 바이러스 돌진 타이밍에 맞춰 마스크를 누르지 못해 감염되었습니다!`
-              : `${run.year}년 차 코로나 이벤트, 마스크를 쓰지 않아 코로나 바이러스에 감염되었습니다!`;
-            Renderer.spawnFloater(
-              staleMask ? '🦠 타이밍 실패! -1 ❤️ (돌진 직전 마스크!)' : '🦠 코로나 감염! -1 ❤️ (마스크 착용!)',
-              '#ff5c7c',
-              run.playerX + 14,
-              run.playerY - 48
-            );
+            run.lastHitCause = `${run.year}년 차 코로나 이벤트, 마스크를 쓰지 않아 코로나 바이러스에 감염되었습니다!`;
+            Renderer.spawnFloater('🦠 코로나 감염! -1 ❤️ (마스크 착용!)', '#ff5c7c', run.playerX + 14, run.playerY - 48);
           }
         }
         if (atk.x < -70) run.covidAttack = null;
@@ -4069,8 +4334,8 @@
     } else if (run.weatherEvent === 'covid') {
       run.covidAttackCd -= dt;
       if (run.covidAttackCd <= 0) {
-        const warnDur = Math.max(1.20, 1.45 / Math.min(1.25, diff.weatherPaceMult));
-        run.covidAttackCd = Math.max(3.4, 4.5 / Math.min(1.3, diff.weatherPaceMult));
+        const warnDur = 2.0;
+        run.covidAttackCd = 6.2;
         run.covidAttack = {
           phase: 'warn',
           timer: warnDur,
@@ -4090,14 +4355,14 @@
     run.obstacleCd -= dt;
     if (run.obstacleCd <= 0) {
       const comboExtraCd = spawnObstacleWave() || 0;
-      const baseInterval = 1.48 / diff.spawnRateMult;
-      run.obstacleCd = Math.max(0.46, baseInterval + (Math.random() - 0.35) * 0.24) + comboExtraCd * 0.72;
+      const baseInterval = (run.weatherEvent === 'covid' ? 1.85 : 1.48) / diff.spawnRateMult;
+      run.obstacleCd = Math.max(0.52, baseInterval + (Math.random() - 0.35) * 0.24) + comboExtraCd * 0.72;
     }
 
     run.itemCd -= dt;
     if (run.itemCd <= 0) {
-      spawnUtilityPickup();
-      run.itemCd = 3.8 + Math.random() * 1.9;
+      const placed = spawnUtilityPickup();
+      run.itemCd = placed ? (3.8 + Math.random() * 1.9) : 0.55;
     }
 
     if (run.weatherEvent === 'flood') {
@@ -4110,8 +4375,8 @@
 
     run.convStoreCd -= dt;
     if (run.convStoreCd <= 0) {
-      spawnConvenienceStore();
-      run.convStoreCd = 16.0 + Math.random() * 5.0;
+      const placedPad = spawnConvenienceStore();
+      run.convStoreCd = placedPad ? (16.0 + Math.random() * 5.0) : 0.6;
     }
 
     // ---- COLLECTIBLES & OBSTACLE COLLISIONS (FORGIVING TIGHT CORE HITBOXES) ----
@@ -4991,6 +5256,44 @@
       el.btnSettingsOk.addEventListener('click', () => {
         SFX.click();
         el.settingsOverlay.classList.add('hidden');
+      });
+    }
+    if (el.btnReplayTutorial) {
+      el.btnReplayTutorial.addEventListener('click', () => {
+        SFX.click();
+        el.settingsOverlay.classList.add('hidden');
+        openTutorialModal();
+      });
+    }
+    if (el.btnTutSkip) {
+      el.btnTutSkip.addEventListener('click', () => {
+        SFX.click();
+        closeTutorialModal(false);
+      });
+    }
+    if (el.btnTutPrev) {
+      el.btnTutPrev.addEventListener('click', () => {
+        SFX.click();
+        tutStepIdx = Math.max(0, tutStepIdx - 1);
+        renderTutorialStep();
+      });
+    }
+    if (el.btnTutNext) {
+      el.btnTutNext.addEventListener('click', () => {
+        SFX.click();
+        tutStepIdx = Math.min(TUTORIAL_STEPS.length - 1, tutStepIdx + 1);
+        renderTutorialStep();
+      });
+    }
+    if (el.btnTutPlay) {
+      el.btnTutPlay.addEventListener('click', () => {
+        SFX.click();
+        closeTutorialModal(true);
+      });
+    }
+    if (el.tutorialOverlay) {
+      el.tutorialOverlay.addEventListener('click', (e) => {
+        if (e.target === el.tutorialOverlay) closeTutorialModal(false);
       });
     }
     el.settingsOverlay.addEventListener('click', (e) => {

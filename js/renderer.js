@@ -15,10 +15,18 @@ window.RunRenderer = (function () {
     { id: 'hanbok', frames: 3, runFrames: 8 },
     { id: 'skier', frames: 2 },
     { id: 'santa', frames: 2 },
-    { id: 'catgirl', frames: 4, runFrames: 8 }
+    { id: 'catgirl', frames: 4, runFrames: 8 },
+    { id: 'hades', frames: 3, idleFrames: 8, runFrames: 8 }
   ];
   const CHAR_ANIM_STATES = ['idle', 'run', 'jump', 'fall', 'slide', 'hurt', 'die'];
-  const CHAR_VFX_SPRITES = ['fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring', 'catgirl_fx_paw'];
+  const CHAR_VFX_SPRITES = [
+    'fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring', 'catgirl_fx_paw',
+    'hades_umbrella', 'hades_mask',
+    'hades_shield_0', 'hades_shield_1', 'hades_shield_2', 'hades_shield_3', 'hades_shield_4', 'hades_shield_5',
+    'hades_booster_0', 'hades_booster_1', 'hades_booster_2', 'hades_booster_3', 'hades_booster_4', 'hades_booster_5',
+    'hades_booster_6', 'hades_booster_7', 'hades_booster_8', 'hades_booster_9', 'hades_booster_10', 'hades_booster_11',
+    'hades_aura_0', 'hades_aura_1', 'hades_aura_2', 'hades_aura_3', 'hades_aura_4', 'hades_aura_5'
+  ];
 
   const DESIGN_SPRITES = [
     'item_coin', 'item_coin_1', 'item_coin_2', 'item_coin_side', 'item_star',
@@ -48,7 +56,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd46';
+  const CHAR_ASSET_VER = '20261121hd47';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -62,7 +70,9 @@ window.RunRenderer = (function () {
 
   CHAR_SHEET_SKINS.forEach((sk) => {
     CHAR_ANIM_STATES.forEach((st) => {
-      const fCount = (st === 'run' && sk.runFrames) ? sk.runFrames : sk.frames;
+      const fCount = (st === 'run' && sk.runFrames)
+        ? sk.runFrames
+        : ((st === 'idle' && sk.idleFrames) ? sk.idleFrames : sk.frames);
       for (let f = 0; f < fCount; f++) {
         const key = `${sk.id}_${st}_${f}`;
         const img = new Image();
@@ -918,7 +928,8 @@ window.RunRenderer = (function () {
       const frame = Math.floor(t * fps) % rn;
       return getSprite(`${skin}_run_${frame}`) || getSprite(`${skin}_run_0`);
     }
-    const idleFrame = Math.floor(t * 3.5) % n;
+    const idleCnt = customSkin && customSkin.customIdleFrames ? customSkin.customIdleFrames : n;
+    const idleFrame = Math.floor(t * (idleCnt >= 6 ? 6.5 : 3.5)) % idleCnt;
     return getSprite(`${skin}_idle_${idleFrame}`) || getSprite(`${skin}_idle_0`);
   }
 
@@ -949,35 +960,64 @@ window.RunRenderer = (function () {
       ctx.restore();
     }
 
-    // Uploaded Golden / Blue Dash VFX streaks behind character during FEVER or Speed Boost!
+    // Uploaded Golden / Blue Dash VFX streaks OR Custom Mythic Booster Jet (e.g. Hades 12-frame flipped purple flame!)
     if (!dead && (feverTimer > 0 || speedBoostTimer > 0)) {
-      const dashSpr = getSprite(feverTimer > 0 ? 'fx_dash_gold' : 'fx_dash_blue');
+      let dashSpr = null;
+      const isCustomBooster = Boolean(skinDef && skinDef.customBoosterPrefix);
+      if (isCustomBooster) {
+        const bf = Math.floor(t * 18) % (skinDef.customBoosterFrames || 12);
+        dashSpr = getSprite(`${skinDef.customBoosterPrefix}_${bf}`) || getSprite(`${skinDef.customBoosterPrefix}_0`);
+      } else {
+        dashSpr = getSprite(feverTimer > 0 ? 'fx_dash_gold' : 'fx_dash_blue');
+      }
       if (dashSpr) {
-        const pulse = 0.92 + Math.sin(t * 24) * 0.1;
-        const dh = Math.round((isProne ? 26 : 34) * pulse);
+        const pulse = 0.94 + Math.sin(t * 24) * 0.08;
+        const dh = Math.round((isCustomBooster ? (isProne ? 42 : 54) : (isProne ? 26 : 34)) * pulse);
         const dw = Math.round(dh * (dashSpr.naturalWidth / dashSpr.naturalHeight));
         ctx.save();
-        ctx.globalAlpha = 0.88;
+        ctx.globalAlpha = isCustomBooster ? 0.96 : 0.88;
         ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(dashSpr, Math.floor(cx - dw - 2), Math.floor(cy - (isProne ? 22 : scaleHeight * 0.56) - dh / 2), dw, dh);
+        const offsetBack = isCustomBooster ? -6 : 2;
+        ctx.drawImage(dashSpr, Math.floor(cx - dw - offsetBack), Math.floor(cy - (isProne ? 20 : scaleHeight * 0.50) - dh / 2), dw, dh);
         ctx.restore();
       }
     }
 
-    // Fever rainbow aura / Uploaded glowing Shield Ring VFX!
+    // Fever rainbow aura / Hades 6-frame swirling purple flame ring / Uploaded glowing Shield Ring VFX!
     if (!dead && feverTimer > 0) {
-      ctx.strokeStyle = Math.floor(t * 14) % 2 === 0 ? '#ffe85c' : '#63e8ff';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 24 : scaleHeight * 0.56, 0, Math.PI * 2);
-      ctx.stroke();
+      if (skinDef && skinDef.customAuraPrefix) {
+        const af = Math.floor(t * 14) % (skinDef.customAuraFrames || 6);
+        const auraSpr = getSprite(`${skinDef.customAuraPrefix}_${af}`) || getSprite(`${skinDef.customAuraPrefix}_0`);
+        if (auraSpr) {
+          const pulse = 1.0 + Math.sin(t * 10) * 0.06;
+          const aSz = Math.round((isProne ? 64 : scaleHeight * 1.48) * pulse);
+          ctx.save();
+          ctx.globalAlpha = 0.92;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(auraSpr, Math.floor(cx - aSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.50) - aSz / 2), aSz, aSz);
+          ctx.restore();
+        }
+      } else {
+        ctx.strokeStyle = Math.floor(t * 14) % 2 === 0 ? '#ffe85c' : '#63e8ff';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 24 : scaleHeight * 0.56, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     } else if (!dead && shield) {
-      const ringSpr = getSprite((skinDef && skinDef.customShieldVfx) || 'fx_shield_ring');
+      let ringSpr = null;
+      if (skinDef && skinDef.customShieldPrefix) {
+        const sf = Math.floor(t * 10) % (skinDef.customShieldFrames || 6);
+        ringSpr = getSprite(`${skinDef.customShieldPrefix}_${sf}`) || getSprite(`${skinDef.customShieldPrefix}_0`);
+      } else {
+        ringSpr = getSprite((skinDef && skinDef.customShieldVfx) || 'fx_shield_ring');
+      }
       if (ringSpr) {
         const pulse = 1 + Math.sin(t * 8) * 0.05;
-        const rSz = Math.round((isProne ? 50 : scaleHeight * 1.24) * pulse);
+        const rSz = Math.round((isProne ? 54 : scaleHeight * 1.30) * pulse);
         ctx.save();
-        ctx.globalAlpha = 0.88;
+        ctx.globalAlpha = 0.90;
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(ringSpr, Math.floor(cx - rSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - rSz / 2), rSz, rSz);
@@ -991,12 +1031,13 @@ window.RunRenderer = (function () {
       }
     }
 
-    // Uploaded Sky-Blue & White Umbrella sprite (shakes violently during Typhoon gust until folded, flips away if broken!)
+    // Uploaded Sky-Blue & White Umbrella OR Mythic Skin Custom Umbrella (e.g. Hades Skull Flame Umbrella!)
     const showUmbrella = !dead && ((col.umbrella && gliding) || umbrellaOn);
-    const umbSpr = getSprite('spr_umbrella');
+    const customUmb = skinDef && skinDef.customUmbrella ? getSprite(skinDef.customUmbrella) : null;
+    const umbSpr = customUmb || getSprite('spr_umbrella');
     if (showUmbrella && umbSpr) {
-      const uy = cy - (isProne ? 26 : scaleHeight) - 8;
-      const uh = 44;
+      const uy = cy - (isProne ? 26 : scaleHeight) - (customUmb ? 10 : 8);
+      const uh = customUmb ? 56 : 44;
       const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
       ctx.save();
       ctx.imageSmoothingEnabled = true;
@@ -1009,7 +1050,7 @@ window.RunRenderer = (function () {
         ctx.rotate(tilt);
         ctx.drawImage(umbSpr, Math.floor(-uw / 2), Math.floor(-uh * 0.52), uw, uh);
       } else {
-        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - 24), uw, uh);
+        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - (customUmb ? 30 : 24)), uw, uh);
       }
       ctx.restore();
     } else if (!dead && umbrellaBrokenTimer > 4.25 && umbSpr) {
@@ -1017,7 +1058,7 @@ window.RunRenderer = (function () {
       const prog = Math.max(0, Math.min(1, (5.0 - umbrellaBrokenTimer) / 0.75));
       const uy = cy - scaleHeight - 10 - prog * 34;
       const ux = cx + 6 - prog * 46;
-      const uh = 40;
+      const uh = customUmb ? 48 : 40;
       const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
       ctx.save();
       ctx.globalAlpha = Math.max(0, 1 - prog);
@@ -1030,7 +1071,7 @@ window.RunRenderer = (function () {
 
     // Glowing emerald-cyan KF94 Timing Seal Ring while fresh mask parry window is active!
     if (!dead && maskOn && maskParryTimer > 0) {
-      const pRatio = Math.max(0, Math.min(1, maskParryTimer / 1.85));
+      const pRatio = Math.max(0, Math.min(1, maskParryTimer / 3.5));
       const pR = isProne ? 25 : Math.round(scaleHeight * 0.56);
       const pCy = cy - (isProne ? 14 : scaleHeight * 0.48);
       ctx.save();
@@ -1074,12 +1115,18 @@ window.RunRenderer = (function () {
         ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - scaleHeight * 0.48 + oy), sz, sz);
       }
       if (isHigh) {
-        const customAura = skinDef.customShieldVfx ? getSprite(skinDef.customShieldVfx) : null;
+        let customAura = null;
+        if (skinDef.customAuraPrefix) {
+          const af = Math.floor(t * 11) % (skinDef.customAuraFrames || 6);
+          customAura = getSprite(`${skinDef.customAuraPrefix}_${af}`) || getSprite(`${skinDef.customAuraPrefix}_0`);
+        } else if (skinDef.customShieldVfx) {
+          customAura = getSprite(skinDef.customShieldVfx);
+        }
         if (customAura) {
           const pulse = 0.96 + Math.sin(t * 7) * 0.06;
-          const aSz = Math.round((isProne ? 46 : scaleHeight * 1.12) * pulse);
+          const aSz = Math.round((isProne ? 50 : scaleHeight * 1.24) * pulse);
           ctx.save();
-          ctx.globalAlpha = 0.34 + Math.sin(t * 6) * 0.10;
+          ctx.globalAlpha = (skinDef.customAuraPrefix ? 0.56 : 0.34) + Math.sin(t * 6) * 0.12;
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(customAura, Math.floor(cx - aSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - aSz / 2), aSz, aSz);
@@ -1157,14 +1204,15 @@ window.RunRenderer = (function () {
       ctx.drawImage(spr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
       if ('filter' in ctx) ctx.filter = 'none';
 
-      // Uploaded KF94 Mask Sprite overlay when Mask Toggle is ON!
+      // Uploaded KF94 Mask Sprite OR Mythic Custom Mask (e.g. Hades Skull Flame Mask!)
       if (maskOn && !dead) {
-        const maskSpr = getSprite('spr_mask');
+        const customMsk = skinDef && skinDef.customMask ? getSprite(skinDef.customMask) : null;
+        const maskSpr = customMsk || getSprite('spr_mask');
         if (maskSpr) {
-          const mw = sliding ? 20 : 22;
+          const mw = customMsk ? (sliding ? 24 : 28) : (sliding ? 20 : 22);
           const mh = Math.round(mw * (maskSpr.naturalHeight / maskSpr.naturalWidth));
-          const mx = sliding ? Math.floor(drawW * 0.04) : Math.floor(-mw * 0.14);
-          const my = sliding ? Math.floor(-drawH * 0.42) : Math.floor(-drawH * 0.50);
+          const mx = sliding ? Math.floor(drawW * 0.02) : Math.floor(-mw * (customMsk ? 0.10 : 0.14));
+          const my = sliding ? Math.floor(-drawH * 0.44) : Math.floor(-drawH * 0.51);
           ctx.drawImage(maskSpr, mx, my, mw, mh);
         } else {
           const my = sliding ? Math.floor(-drawH * 0.34) : Math.floor(-drawH * 0.44);
