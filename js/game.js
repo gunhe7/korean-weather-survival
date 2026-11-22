@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd50';
+  const ASSET_VER = '20261121hd51';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -3498,6 +3498,8 @@
 
     SFX.startBgm();
     SFX.setBgmMode(startFever > 0 ? 'fever' : 'run');
+    SFX.setAmbientPaused(false);
+    SFX.setWeatherAmbient('clear');
     SFX.seasonUp();
     showRunBanner(`🌸 1년 차 봄 출발! (${ch.name} Lv.${stats.level})`, 2400);
     updateRunHud();
@@ -3545,7 +3547,7 @@
         haptic(14);
         Renderer.spawnFloater('💨 태풍 대비! 우산 접기 성공 +50', '#7ef6ff', run.playerX + 12, run.playerY - 44);
       } else {
-        SFX.click();
+        SFX.umbrellaToggle(false);
         haptic(10);
         Renderer.spawnFloater('☂️ 우산 접기', '#8ce0ff', run.playerX + 10, run.playerY - 42);
       }
@@ -3554,7 +3556,7 @@
       run.umbrellaActiveTimer = GEAR_DURATION;
       run.rainExposeTimer = 0;
       run.gustExposeTimer = 0;
-      SFX.click();
+      SFX.umbrellaToggle(true);
       haptic(14);
       if (run.weatherEvent === 'gust') {
         run.gustExposeTimer = 0.05;
@@ -3602,7 +3604,7 @@
       run.maskParryTimer = MASK_PARRY_WINDOW;
       run.maskCooldown = 0;
       run.dustExposeTimer = 0;
-      SFX.click();
+      SFX.maskToggle(true);
       haptic(14);
       Renderer.spawnFloater('😷 마스크 타이밍 장전! 차단 준비!', '#5effbe', run.playerX + 12, run.playerY - 46);
     } else if (run.maskOn) {
@@ -3610,7 +3612,7 @@
       run.maskActiveTimer = 0;
       run.maskParryTimer = 0;
       run.maskCooldown = 0;
-      SFX.click();
+      SFX.maskToggle(false);
       haptic(10);
       Renderer.spawnFloater('😷 마스크 해제', '#a6ffcf', run.playerX + 10, run.playerY - 42);
     } else {
@@ -3619,7 +3621,7 @@
       run.maskParryTimer = MASK_PARRY_WINDOW;
       run.maskCooldown = 0;
       run.dustExposeTimer = 0;
-      SFX.click();
+      SFX.maskToggle(true);
       haptic(14);
       Renderer.spawnFloater(`😷 KF94 마스크 ON! (${GEAR_DURATION}초 자동 해제)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
     }
@@ -3773,6 +3775,10 @@
     } else {
       showRunBanner('☀️ 맑음 · 잠시 숨 고르기!', 1800);
     }
+
+    // Play distinct onset SFX + continuous ambient weather soundscape (rain, flood, dust, gust, heat, ice, covid)!
+    SFX.playWeatherCue(nextW);
+    SFX.setWeatherAmbient(nextW);
   }
 
   // ===================== SPAWNERS (100% UPLOADED SHEET OBSTACLES & STRUCTURES) =====================
@@ -4144,7 +4150,7 @@
       if (run.umbrellaActiveTimer <= 0) {
         run.umbrellaOn = false;
         run.gustExposeTimer = 0;
-        SFX.click();
+        SFX.umbrellaToggle(false);
         Renderer.spawnFloater('☂️ 우산 자동 해제 (10초 경과)', '#9fd9ff', run.playerX + 10, run.playerY - 42);
       }
     }
@@ -4154,7 +4160,7 @@
       if (run.maskActiveTimer <= 0) {
         run.maskOn = false;
         run.maskParryTimer = 0;
-        SFX.click();
+        SFX.maskToggle(false);
         Renderer.spawnFloater('😷 마스크 자동 해제 (10초 경과)', '#a6ffcf', run.playerX + 10, run.playerY - 42);
       }
     }
@@ -4420,6 +4426,7 @@
           atk.phase = 'charge';
           atk.vx = 330 + run.speed * 0.22;
           atk.checked = false;
+          SFX.virusCharge();
         }
       } else if (atk.phase === 'charge') {
         atk.x -= atk.vx * dt;
@@ -4524,7 +4531,7 @@
           vy: 0,
           checked: false
         };
-        SFX.fakeAlert();
+        SFX.playWeatherCue('covid_rush');
         showWeatherCenterAlert('covid_rush');
       }
     }
@@ -4793,6 +4800,8 @@
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
+    SFX.setWeatherAmbient('clear');
+    SFX.setAmbientPaused(false);
     SFX.setBgmMode('menu');
     SFX.fail();
     triggerCameraShake(8, 0.3);
@@ -5030,6 +5039,8 @@
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
+    SFX.setWeatherAmbient('clear');
+    SFX.setAmbientPaused(false);
     SFX.setBgmMode('menu');
 
     ensureTodayMissions();
@@ -5087,6 +5098,8 @@
 
   function exitRunToHome() {
     SFX.click();
+    SFX.setWeatherAmbient('clear');
+    SFX.setAmbientPaused(false);
     SFX.setBgmMode('menu');
     if (run) commitRunMissionProgress();
     run = null;
@@ -5519,6 +5532,7 @@
       if (document.hidden) {
         if (run && run.active && !paused) {
           paused = true;
+          SFX.setAmbientPaused(true);
           el.pauseOverlay.classList.remove('hidden');
         }
         if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid && cloudHydratedUid === save.auth.uid) {
@@ -5587,12 +5601,14 @@
       if (!run || !run.active) return;
       SFX.click();
       paused = true;
+      SFX.setAmbientPaused(true);
       el.pauseOverlay.classList.remove('hidden');
     });
 
     el.btnResumeRun.addEventListener('click', () => {
       SFX.click();
       paused = false;
+      SFX.setAmbientPaused(false);
       el.pauseOverlay.classList.add('hidden');
     });
 
@@ -5655,6 +5671,7 @@
         toggleMask();
       } else if (e.code === 'Escape') {
         paused = !paused;
+        SFX.setAmbientPaused(paused);
         el.pauseOverlay.classList.toggle('hidden', !paused);
       }
     });
