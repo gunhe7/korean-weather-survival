@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd51';
+  const ASSET_VER = '20261121hd52';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -572,14 +572,17 @@
     vaultModalGrid: document.getElementById('vault-modal-grid'),
     btnCloseVault: document.getElementById('btn-close-vault'),
 
-    tutorialOverlay: document.getElementById('tutorial-overlay'),
-    tutStepPill: document.getElementById('tut-step-pill'),
-    btnTutSkip: document.getElementById('btn-tut-skip'),
-    tutContent: document.getElementById('tut-content'),
-    tutDots: document.getElementById('tut-dots'),
-    btnTutPrev: document.getElementById('btn-tut-prev'),
-    btnTutNext: document.getElementById('btn-tut-next'),
-    btnTutPlay: document.getElementById('btn-tut-play'),
+    tutRunHud: document.getElementById('tut-run-hud'),
+    tutRunStepPill: document.getElementById('tut-run-step-pill'),
+    tutRunTitle: document.getElementById('tut-run-title'),
+    tutRunSub: document.getElementById('tut-run-sub'),
+    btnTutRunSkip: document.getElementById('btn-tut-run-skip'),
+    tutRunActionCallout: document.getElementById('tut-run-action-callout'),
+    tutRunDots: document.getElementById('tut-run-dots'),
+    tutCompleteOverlay: document.getElementById('tut-complete-overlay'),
+    tutCompleteReward: document.getElementById('tut-complete-reward'),
+    btnTutDoneHome: document.getElementById('btn-tut-done-home'),
+    btnTutDonePlay: document.getElementById('btn-tut-done-play'),
 
     globalToast: document.getElementById('global-toast')
   };
@@ -1516,150 +1519,508 @@
     };
   }
 
-  // ===================== NEW PLAYER INTERACTIVE TUTORIAL =====================
-  let tutStepIdx = 0;
-  const TUTORIAL_STEPS = [
+  // ===================== COOKIE RUN STYLE LIVE PLAYABLE TUTORIAL ENGINE =====================
+  const PLAYABLE_TUTORIAL_STEPS = [
     {
-      icon: '🏃',
-      title: '1. 기본 조작 · 빨간 테두리 장애물 회피!',
-      desc: '지상 장애물은 점프로, 공중 장애물은 슬라이드로 피하세요. 모든 위험 장애물에는 빨간 테두리가 표시됩니다.',
-      cards: [
-        {
-          ico: '⬆️',
-          title: '점프 & 2단 점프 <span class="tut-key-badge">Space / ↑</span>',
-          desc: '낮은 장애물은 1단 점프, 높은 장애물은 공중에서 한 번 더 눌러 2단 점프!'
-        },
-        {
-          ico: '⬇️',
-          title: '슬라이드 & 급강하 <span class="tut-key-badge">↓</span>',
-          desc: '날아오는 구름·강풍은 슬라이드로 통과! 공중에서 누르면 빠르게 착지합니다.'
-        }
-      ]
+      id: 'jump',
+      icon: '⬆️',
+      title: '1. 장애물을 뛰어넘으세요!',
+      sub: '왼쪽 [점프] 버튼 (Space / ↑)을 눌러 피하세요',
+      actionPrompt: '👇 지금! [점프] 버튼을 누르세요!',
+      targetBtn: 'jump',
+      successMsg: '👍 나이스 점프!'
     },
     {
-      icon: '🌦️',
-      title: '2. 한국 날씨 대응 · 우산 & 마스크!',
-      desc: '우산과 마스크는 쿨타임이 없고 켜면 10초마다 자동 해제됩니다. 날씨에 맞게 바로 눌러 대응하세요!',
-      cards: [
-        {
-          ico: '☂️',
-          title: '우산(양산) <span class="tut-key-badge">Q</span>',
-          desc: '폭우·장마·폭염엔 우산 ON! 단, 태풍 돌풍 땐 제한 시간 안에 접어야 파손(5초 불가)을 막습니다.'
-        },
-        {
-          ico: '😷',
-          title: 'KF94 마스크 <span class="tut-key-badge">E</span>',
-          desc: '황사·미세먼지 경보가 뜨면 바로 마스크를 착용해 체력을 지키세요!'
-        }
-      ]
+      id: 'double_jump',
+      icon: '⬆️⬆️',
+      title: '2. 높은 장애물은 2단 점프!',
+      sub: '점프 후 공중에서 [점프]를 한 번 더 누르세요',
+      actionPrompt: '👇 지금! [점프] 1단 점프!',
+      secondPrompt: '👇 공중에서 한 번 더! [2단 점프]!',
+      targetBtn: 'jump',
+      successMsg: '✨ 완벽한 2단 점프!'
     },
     {
+      id: 'slide',
+      icon: '⬇️',
+      title: '3. 날아오는 구름은 슬라이드!',
+      sub: '오른쪽 [슬라이드] 버튼 (↓)을 눌러 아래로 통과하세요',
+      actionPrompt: '👇 지금! [슬라이드] 버튼을 누르세요!',
+      targetBtn: 'slide',
+      successMsg: '💨 멋진 슬라이드 통과!'
+    },
+    {
+      id: 'rain_umbrella',
+      icon: '🌧️',
+      title: '4. 비가 오면 우산을 펴세요!',
+      sub: '왼쪽 위 [우산] 버튼 (Q)을 누르세요 (10초 자동 해제)',
+      actionPrompt: '👇 지금! [우산] 버튼을 눌러 펴세요!',
+      targetBtn: 'umbrella',
+      successMsg: '☂️ 빗물 완벽 방어!'
+    },
+    {
+      id: 'gust_fold',
+      icon: '💨',
+      title: '5. 태풍 돌풍엔 우산을 접으세요!',
+      sub: '제한 시간 안에 안 접으면 파손됩니다! [우산] 버튼 (Q)',
+      actionPrompt: '👇 지금! [우산] 버튼을 눌러 접으세요!',
+      targetBtn: 'umbrella',
+      successMsg: '💨 태풍 대비! 우산 접기 성공!'
+    },
+    {
+      id: 'dust_mask',
+      icon: '😷',
+      title: '6. 황사·미세먼지엔 마스크!',
+      sub: '오른쪽 위 [마스크] 버튼 (E)을 눌러 황사를 막으세요',
+      actionPrompt: '👇 지금! [마스크] 버튼을 누르세요!',
+      targetBtn: 'mask',
+      successMsg: '😷 황사 완벽 차단!'
+    },
+    {
+      id: 'covid_parry',
       icon: '🦠',
-      title: '3. 2년 차 코로나 이벤트 & FEVER 무적!',
-      desc: '1년(60초)을 버티면 2년 차부터 코로나 이벤트가 랜덤으로 등장합니다!',
-      cards: [
-        {
-          ico: '😷',
-          accent: 'accent-red',
-          title: '바이러스 돌진 차단!',
-          desc: '"코로나 바이러스 발생! 마스크를 쓰세요!" 경고가 뜨면 마스크를 눌러 바이러스를 튕겨내고 보너스 점수를 받으세요!'
-        },
-        {
-          ico: '★',
-          accent: 'accent-gold',
-          title: 'FEVER 무적 질주',
-          desc: '코인·별·아이템을 모아 피버 100% 달성 시 무적 질주 + 자석 발동!'
-        }
-      ]
-    },
-    {
-      icon: '🎁',
-      title: '4. 최고점수 보상 로드 & 상자 보관함!',
-      desc: '달릴수록 보상이 쌓입니다! 이제 첫 생존 달리기를 시작해 보세요!',
-      cards: [
-        {
-          icoImg: 'assets/design/item_coin.png',
-          accent: 'accent-gold',
-          title: '최고점수 로드 (1,000점 간격)',
-          desc: '홈 왼쪽 위 최고점수를 누르면 1,000점마다 골드 · 보석 · 상자 보상을 받을 수 있습니다.'
-        },
-        {
-          icoImg: 'assets/design/ui_chest.png',
-          title: '상자 보관함 & 신화 스킨',
-          desc: '얻은 상자는 홈 왼쪽 아래 보관함에서 열어 22종 스킨과 캐릭터를 수집해 보세요!'
-        }
-      ]
+      title: '7. 코로나 바이러스 돌진 차단!',
+      sub: '바이러스가 돌진할 때 [마스크] (E)를 눌러 튕겨내세요!',
+      actionPrompt: '👇 지금! [마스크]로 바이러스를 튕겨내세요!',
+      targetBtn: 'mask',
+      successMsg: '🎉 완벽 차단! 모든 조작 마스터!'
     }
   ];
 
-  function renderTutorialStep() {
-    if (!el.tutorialOverlay || !el.tutContent) return;
-    const total = TUTORIAL_STEPS.length;
-    tutStepIdx = Math.max(0, Math.min(total - 1, tutStepIdx));
-    const step = TUTORIAL_STEPS[tutStepIdx];
-    const isLast = tutStepIdx === total - 1;
+  function clearTutorialHighlights() {
+    if (el.btnJump) el.btnJump.classList.remove('tut-highlight');
+    if (el.btnSlide) el.btnSlide.classList.remove('tut-highlight');
+    if (el.btnToggleUmbrella) el.btnToggleUmbrella.classList.remove('tut-highlight');
+    if (el.btnToggleMask) el.btnToggleMask.classList.remove('tut-highlight');
+  }
 
-    if (el.tutStepPill) el.tutStepPill.textContent = `${tutStepIdx + 1} / ${total}`;
-
-    const cardsHtml = step.cards.map((c) => {
-      const icoHtml = c.icoImg
-        ? `<img src="${c.icoImg}?v=${ASSET_VER}" alt="" />`
-        : c.ico;
-      return `
-        <div class="tut-card ${c.accent || ''}">
-          <div class="tut-card-ico">${icoHtml}</div>
-          <div class="tut-card-txt">
-            <strong>${c.title}</strong>
-            <span>${c.desc}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    el.tutContent.innerHTML = `
-      <div class="tut-headline">
-        <div class="tut-big-ico">${step.icon}</div>
-        <div class="tut-title-box">
-          <h4>${step.title}</h4>
-          <p>${step.desc}</p>
-        </div>
-      </div>
-      <div class="tut-cards">${cardsHtml}</div>
-    `;
-
-    if (el.tutDots) {
-      el.tutDots.innerHTML = TUTORIAL_STEPS.map((_, idx) =>
-        `<span class="tut-dot${idx === tutStepIdx ? ' active' : ''}"></span>`
-      ).join('');
+  function updateTutorialHudUI() {
+    const isTut = Boolean(run && run.isTutorial && run.tut);
+    if (el.tutRunHud) el.tutRunHud.classList.toggle('hidden', !isTut);
+    if (!isTut) {
+      clearTutorialHighlights();
+      return;
     }
-    if (el.btnTutPrev) el.btnTutPrev.classList.toggle('hidden', tutStepIdx === 0);
-    if (el.btnTutNext) el.btnTutNext.classList.toggle('hidden', isLast);
-    if (el.btnTutPlay) el.btnTutPlay.classList.toggle('hidden', !isLast);
+
+    const tut = run.tut;
+    const total = PLAYABLE_TUTORIAL_STEPS.length;
+    const step = PLAYABLE_TUTORIAL_STEPS[Math.min(total - 1, tut.stepIdx)] || PLAYABLE_TUTORIAL_STEPS[0];
+    const waiting = Boolean(tut.waitAction);
+
+    if (el.tutRunHud) el.tutRunHud.classList.toggle('waiting-action', waiting);
+    if (el.tutRunStepPill) el.tutRunStepPill.textContent = `튜토리얼 ${Math.min(total, tut.stepIdx + 1)}/${total}`;
+    if (el.tutRunTitle) el.tutRunTitle.textContent = `${step.icon} ${step.title}`;
+    if (el.tutRunSub) el.tutRunSub.textContent = step.sub;
+
+    if (el.tutRunActionCallout) {
+      if (waiting) {
+        const promptTxt = (tut.waitAction === 'double_jump' && step.secondPrompt)
+          ? step.secondPrompt
+          : step.actionPrompt;
+        el.tutRunActionCallout.textContent = promptTxt;
+        el.tutRunActionCallout.classList.remove('hidden');
+      } else {
+        el.tutRunActionCallout.classList.add('hidden');
+      }
+    }
+
+    if (el.tutRunDots) {
+      el.tutRunDots.innerHTML = PLAYABLE_TUTORIAL_STEPS.map((_, idx) => {
+        const cls = idx < tut.stepIdx ? ' done' : (idx === tut.stepIdx ? ' active' : '');
+        return `<span class="tut-run-dot${cls}"></span>`;
+      }).join('');
+    }
+
+    clearTutorialHighlights();
+    if (waiting) {
+      if (step.targetBtn === 'jump' && el.btnJump) el.btnJump.classList.add('tut-highlight');
+      else if (step.targetBtn === 'slide' && el.btnSlide) el.btnSlide.classList.add('tut-highlight');
+      else if (step.targetBtn === 'umbrella' && el.btnToggleUmbrella) el.btnToggleUmbrella.classList.add('tut-highlight');
+      else if (step.targetBtn === 'mask' && el.btnToggleMask) el.btnToggleMask.classList.add('tut-highlight');
+    }
   }
 
-  function openTutorialModal() {
-    if (!el.tutorialOverlay) return;
-    tutStepIdx = 0;
-    renderTutorialStep();
-    el.tutorialOverlay.classList.remove('hidden');
+  function spawnTutorialStepObstacle(stepId) {
+    if (!run) return;
+    const startX = Renderer.W + 24;
+    if (stepId === 'jump') {
+      const ob = {
+        id: 'tut_cone', name: '도로 라바콘', lane: 'low', w: 32, h: 34, tag: 'wind', sprite: 'sp_traffic_cone',
+        x: startX, y: Renderer.GROUND_Y - 34, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 0, isTutObs: true
+      };
+      run.obstacles.push(ob);
+      const cx = startX + ob.w / 2;
+      run.items.push(
+        { kind: 'coin', x: cx - 42, y: Renderer.GROUND_Y - 52 },
+        { kind: 'coin', x: cx,      y: Renderer.GROUND_Y - 82 },
+        { kind: 'coin', x: cx + 42, y: Renderer.GROUND_Y - 52 }
+      );
+    } else if (stepId === 'double_jump') {
+      const ob = {
+        id: 'tut_barricade', name: '높은 바리케이드', lane: 'tall', w: 46, h: 48, tag: 'wind', sprite: 'sp_barricade',
+        x: startX, y: Renderer.GROUND_Y - 48, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 0, isTutObs: true
+      };
+      run.obstacles.push(ob);
+      const cx = startX + ob.w / 2;
+      run.items.push(
+        { kind: 'coin',     x: cx - 54, y: Renderer.GROUND_Y - 76 },
+        { kind: 'big_coin', x: cx,      y: Renderer.GROUND_Y - 118 },
+        { kind: 'coin',     x: cx + 54, y: Renderer.GROUND_Y - 76 }
+      );
+    } else if (stepId === 'slide') {
+      const ob = {
+        id: 'tut_cloud', name: '황사 모래구름', lane: 'air', w: 52, h: 36, tag: 'dust', sprite: 'sp_dust_cloud', warn: true,
+        x: startX, y: Renderer.GROUND_Y - 24 - 36, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 18, isTutObs: true
+      };
+      run.obstacles.push(ob);
+      const cx = startX + ob.w / 2;
+      run.items.push(
+        { kind: 'coin', x: cx - 28, y: Renderer.GROUND_Y - 12 },
+        { kind: 'coin', x: cx,      y: Renderer.GROUND_Y - 12 },
+        { kind: 'coin', x: cx + 28, y: Renderer.GROUND_Y - 12 }
+      );
+    }
   }
 
-  function closeTutorialModal(startImmediately = false) {
-    if (el.tutorialOverlay) el.tutorialOverlay.classList.add('hidden');
-    if (!save.tutorialDone) {
-      save.tutorialDone = true;
+  function advanceTutorialStep() {
+    if (!run || !run.tut) return;
+    const tut = run.tut;
+    const curStep = PLAYABLE_TUTORIAL_STEPS[tut.stepIdx];
+    if (curStep) {
+      SFX.reward();
+      run.winPoseTimer = 0.5;
+      Renderer.spawnFloater(curStep.successMsg, '#7affb3', run.playerX + 18, run.playerY - 54);
+    }
+    tut.waitAction = null;
+    tut.phase = 'cleared_delay';
+    tut.timer = 0.85;
+    updateTutorialHudUI();
+  }
+
+  function finishTutorialRun(skipped = false) {
+    if (!run) return;
+    const firstClear = !save.tutorialDone;
+    save.tutorialDone = true;
+    clearTutorialHighlights();
+    if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
+    SFX.setWeatherAmbient('clear');
+    SFX.setAmbientPaused(false);
+    hideWeatherCenterAlert();
+
+    if (skipped) {
       persistSave();
+      exitRunToHome();
+      showToast('📖 튜토리얼을 건너뛰었습니다. 설정에서 언제든 다시 플레이할 수 있습니다!');
+      return;
     }
-    if (startImmediately) {
-      try {
-        const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
-        if (isCharUnlocked(ch.id)) {
-          save.selectedChar = ch.id;
-          persistSave();
+
+    if (firstClear) {
+      save.gold = (save.gold || 0) + 100;
+    }
+    persistSave(true);
+    refreshAllMenus();
+
+    run.active = false;
+    if (run.tut) {
+      run.tut.phase = 'done';
+      run.tut.waitAction = null;
+    }
+    SFX.setBgmMode('menu');
+    SFX.chestJackpot();
+
+    if (el.tutCompleteReward) {
+      el.tutCompleteReward.textContent = firstClear
+        ? '🪙 첫 튜토리얼 완료 보너스 +100G 지급!'
+        : '✨ 모든 조작 연습을 완벽하게 마쳤습니다!';
+    }
+    if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.remove('hidden');
+  }
+
+  function updateTutorialStep(dt) {
+    if (!run || !run.isTutorial || !run.tut) return;
+    const tut = run.tut;
+    const step = PLAYABLE_TUTORIAL_STEPS[tut.stepIdx];
+    if (!step || tut.phase === 'done') return;
+
+    if (tut.autoSlideTimer > 0) {
+      tut.autoSlideTimer = Math.max(0, tut.autoSlideTimer - dt);
+      run.sliding = true;
+      if (tut.autoSlideTimer <= 0 && !run.slideInputHeld) {
+        run.sliding = false;
+      }
+    }
+
+    if (tut.phase === 'cleared_delay') {
+      tut.timer -= dt;
+      if (tut.timer <= 0) {
+        tut.stepIdx += 1;
+        if (tut.stepIdx >= PLAYABLE_TUTORIAL_STEPS.length) {
+          finishTutorialRun(false);
+          return;
         }
-        startRun();
-      } catch {}
+        tut.phase = 'intro';
+        tut.timer = 0.55;
+        tut.spawned = false;
+        tut.waitAction = null;
+        tut.didFirstJump = false;
+        tut.didSecondJump = false;
+        tut.covidDeflected = false;
+        updateTutorialHudUI();
+      }
+      return;
     }
+
+    // ---- STEP 1: SINGLE JUMP ----
+    if (step.id === 'jump') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          spawnTutorialStepObstacle('jump');
+          tut.spawned = true;
+          tut.phase = 'active';
+        }
+      } else if (tut.phase === 'active') {
+        const ob = run.obstacles[0];
+        if (ob) {
+          if (!ob.passed && !tut.didFirstJump && ob.x <= run.playerX + 92 && ob.x > run.playerX + 12 && run.playerY >= Renderer.GROUND_Y - 6) {
+            tut.waitAction = 'jump';
+            updateTutorialHudUI();
+          } else if (ob.passed) {
+            advanceTutorialStep();
+          }
+        } else if (tut.spawned) {
+          advanceTutorialStep();
+        }
+      }
+      return;
+    }
+
+    // ---- STEP 2: DOUBLE JUMP ----
+    if (step.id === 'double_jump') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          spawnTutorialStepObstacle('double_jump');
+          tut.spawned = true;
+          tut.phase = 'active';
+        }
+      } else if (tut.phase === 'active') {
+        const ob = run.obstacles[0];
+        if (ob) {
+          if (!ob.passed && !tut.didFirstJump && ob.x <= run.playerX + 108 && ob.x > run.playerX + 16 && run.playerY >= Renderer.GROUND_Y - 6) {
+            tut.waitAction = 'jump';
+            updateTutorialHudUI();
+          } else if (!ob.passed && tut.didFirstJump && !tut.didSecondJump && run.jumpsLeft === 1 && run.vy > -105 && run.playerY < Renderer.GROUND_Y - 30) {
+            tut.waitAction = 'double_jump';
+            updateTutorialHudUI();
+          } else if (ob.passed) {
+            advanceTutorialStep();
+          }
+        } else if (tut.spawned) {
+          advanceTutorialStep();
+        }
+      }
+      return;
+    }
+
+    // ---- STEP 3: SLIDE ----
+    if (step.id === 'slide') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          spawnTutorialStepObstacle('slide');
+          tut.spawned = true;
+          tut.phase = 'active';
+        }
+      } else if (tut.phase === 'active') {
+        const ob = run.obstacles[0];
+        if (ob) {
+          if (!ob.passed && !run.sliding && ob.x <= run.playerX + 118 && ob.x > run.playerX + 10) {
+            tut.waitAction = 'slide';
+            updateTutorialHudUI();
+          } else if (ob.passed) {
+            tut.autoSlideTimer = 0;
+            if (!run.slideInputHeld) run.sliding = false;
+            advanceTutorialStep();
+          }
+        } else if (tut.spawned) {
+          advanceTutorialStep();
+        }
+      }
+      return;
+    }
+
+    // ---- STEP 4: RAIN -> OPEN UMBRELLA ----
+    if (step.id === 'rain_umbrella') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          run.weatherEvent = 'rain';
+          run.umbrellaOn = false;
+          run.umbrellaActiveTimer = 0;
+          SFX.playWeatherCue('rain');
+          SFX.setWeatherAmbient('rain');
+          showWeatherCenterAlert('rain');
+          tut.phase = 'active';
+          tut.timer = 0.65;
+          for (let i = 0; i < 4; i++) {
+            run.items.push({ kind: 'coin', x: Renderer.W + 30 + i * 34, y: Renderer.GROUND_Y - 26 });
+          }
+        }
+      } else if (tut.phase === 'active') {
+        if (run.umbrellaOn) {
+          tut.phase = 'hold_success';
+          tut.timer = 1.45;
+          updateTutorialHudUI();
+        } else {
+          tut.timer -= dt;
+          if (tut.timer <= 0) {
+            tut.waitAction = 'umbrella_on';
+            updateTutorialHudUI();
+          }
+        }
+      } else if (tut.phase === 'hold_success') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          advanceTutorialStep();
+        }
+      }
+      return;
+    }
+
+    // ---- STEP 5: TYPHOON GUST -> FOLD UMBRELLA ----
+    if (step.id === 'gust_fold') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          run.umbrellaOn = true;
+          run.umbrellaActiveTimer = GEAR_DURATION;
+          run.weatherEvent = 'gust';
+          run.gustExposeTimer = 0;
+          SFX.playWeatherCue('gust');
+          SFX.setWeatherAmbient('gust');
+          showWeatherCenterAlert('gust', '⚠️ 제한 시간 안에 우산을 접으세요!');
+          tut.phase = 'active';
+          tut.timer = 0.72;
+        }
+      } else if (tut.phase === 'active') {
+        if (!run.umbrellaOn) {
+          tut.phase = 'hold_success';
+          tut.timer = 1.05;
+          updateTutorialHudUI();
+        } else {
+          tut.timer -= dt;
+          if (tut.timer <= 0) {
+            tut.waitAction = 'umbrella_off';
+            updateTutorialHudUI();
+          }
+        }
+      } else if (tut.phase === 'hold_success') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          advanceTutorialStep();
+        }
+      }
+      return;
+    }
+
+    // ---- STEP 6: YELLOW DUST -> PUT ON MASK ----
+    if (step.id === 'dust_mask') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          run.weatherEvent = 'dust';
+          run.maskOn = false;
+          run.maskActiveTimer = 0;
+          run.maskParryTimer = 0;
+          SFX.playWeatherCue('dust');
+          SFX.setWeatherAmbient('dust');
+          showWeatherCenterAlert('dust');
+          tut.phase = 'active';
+          tut.timer = 0.65;
+          for (let i = 0; i < 4; i++) {
+            run.items.push({ kind: 'coin', x: Renderer.W + 30 + i * 34, y: Renderer.GROUND_Y - 26 });
+          }
+        }
+      } else if (tut.phase === 'active') {
+        if (run.maskOn) {
+          tut.phase = 'hold_success';
+          tut.timer = 1.45;
+          updateTutorialHudUI();
+        } else {
+          tut.timer -= dt;
+          if (tut.timer <= 0) {
+            tut.waitAction = 'mask_on';
+            updateTutorialHudUI();
+          }
+        }
+      } else if (tut.phase === 'hold_success') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          advanceTutorialStep();
+        }
+      }
+      return;
+    }
+
+    // ---- STEP 7: CORONA VIRUS RUSH -> TIMED MASK PARRY ----
+    if (step.id === 'covid_parry') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          run.weatherEvent = 'covid';
+          run.maskOn = false;
+          run.maskActiveTimer = 0;
+          run.maskParryTimer = 0;
+          SFX.playWeatherCue('covid_rush');
+          SFX.setWeatherAmbient('covid');
+          showWeatherCenterAlert('covid_rush');
+          run.covidAttack = {
+            phase: 'warn',
+            timer: 1.05,
+            maxTimer: 1.05,
+            x: Renderer.W - 56,
+            y: Math.max(84, run.playerY - 34),
+            vx: 0,
+            vy: 0,
+            checked: false
+          };
+          tut.spawned = true;
+          tut.phase = 'active';
+        }
+      } else if (tut.phase === 'active') {
+        const atk = run.covidAttack;
+        if (atk && atk.phase === 'charge' && !atk.checked && atk.x <= run.playerX + 128) {
+          if (!(run.maskOn && run.maskParryTimer > 0)) {
+            tut.waitAction = 'covid_mask';
+            updateTutorialHudUI();
+          }
+        } else if (atk && atk.phase === 'deflected') {
+          tut.covidDeflected = true;
+          tut.phase = 'hold_success';
+          tut.timer = 0.95;
+          updateTutorialHudUI();
+        } else if (!atk && tut.spawned) {
+          if (tut.covidDeflected) {
+            advanceTutorialStep();
+          } else {
+            tut.phase = 'intro';
+            tut.timer = 0.6;
+            tut.spawned = false;
+          }
+        }
+      } else if (tut.phase === 'hold_success') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          advanceTutorialStep();
+        }
+      }
+    }
+  }
+
+  function startTutorialRun() {
+    if (el.settingsOverlay) el.settingsOverlay.classList.add('hidden');
+    startRun({ isTutorial: true });
   }
 
   function dismissIntroToHome() {
@@ -1677,7 +2038,7 @@
       try { syncMyWeeklyScore(); } catch {}
       try { checkAndAwardWeeklyChampion(); } catch {}
       if (!save.tutorialDone) {
-        openTutorialModal();
+        startTutorialRun();
       }
     }, 340);
   }
@@ -3358,7 +3719,8 @@
     persistSave();
   }
 
-  function startRun() {
+  function startRun(opts = {}) {
+    const isTutorial = Boolean(opts && opts.isTutorial);
     const ch = getCharDef(save.selectedChar);
     const stats = getCharStats(ch);
     const skinDef = getEquippedSkin(ch.id);
@@ -3366,14 +3728,28 @@
 
     let hasShield = false;
     let startFever = 0;
-    if (save.boosters.shield > 0) { save.boosters.shield -= 1; hasShield = true; }
-    if (save.boosters.boost > 0) { save.boosters.boost -= 1; startFever = 4.5; }
-    persistSave();
+    if (!isTutorial) {
+      if (save.boosters.shield > 0) { save.boosters.shield -= 1; hasShield = true; }
+      if (save.boosters.boost > 0) { save.boosters.boost -= 1; startFever = 4.5; }
+      persistSave();
+    }
 
     paused = false;
     Renderer.clearFloaters();
 
     run = {
+      isTutorial,
+      tut: isTutorial ? {
+        stepIdx: 0,
+        phase: 'intro',
+        timer: 0.65,
+        spawned: false,
+        waitAction: null,
+        autoSlideTimer: 0,
+        didFirstJump: false,
+        didSecondJump: false,
+        covidDeflected: false
+      } : null,
       active: true,
       dying: false,
       deathAnimTimer: 0,
@@ -3404,8 +3780,8 @@
       stageMilestonesEarned: [],
       lastHeartCount: -1,
       scroll: 0,
-      baseSpeed: 196,
-      speed: 196,
+      baseSpeed: isTutorial ? 186 : 196,
+      speed: isTutorial ? 186 : 196,
 
       // Player physics (16:9 Cookie Run widescreen framing)
       basePlayerX: 132,
@@ -3493,15 +3869,19 @@
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
     el.gameoverOverlay.classList.add('hidden');
+    if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
     el.pauseOverlay.classList.add('hidden');
     el.viewRun.classList.remove('hidden');
+    updateTutorialHudUI();
 
     SFX.startBgm();
     SFX.setBgmMode(startFever > 0 ? 'fever' : 'run');
     SFX.setAmbientPaused(false);
     SFX.setWeatherAmbient('clear');
     SFX.seasonUp();
-    showRunBanner(`🌸 1년 차 봄 출발! (${ch.name} Lv.${stats.level})`, 2400);
+    if (!isTutorial) {
+      showRunBanner(`🌸 1년 차 봄 출발! (${ch.name} Lv.${stats.level})`, 2400);
+    }
     updateRunHud();
   }
 
@@ -3529,6 +3909,18 @@
 
   function toggleUmbrella() {
     if (!run || !run.active || paused) return;
+    if (run.isTutorial && run.tut && run.tut.waitAction) {
+      const wa = run.tut.waitAction;
+      if (wa === 'umbrella_on' && !run.umbrellaOn) {
+        run.tut.waitAction = null;
+        updateTutorialHudUI();
+      } else if (wa === 'umbrella_off' && run.umbrellaOn) {
+        run.tut.waitAction = null;
+        updateTutorialHudUI();
+      } else {
+        return;
+      }
+    }
     if (run.umbrellaBrokenTimer > 0) {
       SFX.hit();
       Renderer.spawnFloater(`우산 파손! ${Math.ceil(run.umbrellaBrokenTimer)}초간 사용 불가`, '#ff9e9e', run.playerX + 10, run.playerY - 42);
@@ -3590,6 +3982,18 @@
 
   function toggleMask() {
     if (!run || !run.active || paused) return;
+    if (run.isTutorial && run.tut && run.tut.waitAction) {
+      const wa = run.tut.waitAction;
+      if (wa === 'mask_on' && !run.maskOn) {
+        run.tut.waitAction = null;
+        updateTutorialHudUI();
+      } else if (wa === 'covid_mask') {
+        run.tut.waitAction = null;
+        updateTutorialHudUI();
+      } else {
+        return;
+      }
+    }
 
     const covidIncoming = Boolean(
       run.covidAttack &&
@@ -3664,12 +4068,25 @@
 
   function doJumpPress() {
     if (!run || !run.active || paused) return;
+    if (run.isTutorial && run.tut && run.tut.waitAction) {
+      const wa = run.tut.waitAction;
+      if (wa === 'jump' || wa === 'double_jump') {
+        run.tut.waitAction = null;
+        if (wa === 'jump') run.tut.didFirstJump = true;
+        if (wa === 'double_jump') run.tut.didSecondJump = true;
+        updateTutorialHudUI();
+      } else {
+        return;
+      }
+    }
     run.jumpHeld = true;
 
     const isGrounded = run.playerY >= run.currentFloorY - 2;
     if (isGrounded || run.coyoteTimer > 0) {
+      if (run.isTutorial && run.tut) run.tut.didFirstJump = true;
       executeJump(true);
     } else if (run.jumpsLeft > 0) {
+      if (run.isTutorial && run.tut) run.tut.didSecondJump = true;
       executeJump(false);
     } else {
       // 130ms Jump Input Buffer: executes instant frame-1 jump right upon landing!
@@ -3689,6 +4106,15 @@
 
   function doSlideStart() {
     if (!run || !run.active || paused) return;
+    if (run.isTutorial && run.tut && run.tut.waitAction) {
+      if (run.tut.waitAction === 'slide') {
+        run.tut.waitAction = null;
+        run.tut.autoSlideTimer = 0.92;
+        updateTutorialHudUI();
+      } else {
+        return;
+      }
+    }
     run.slideInputHeld = true;
     const inAirNow = run.playerY < run.currentFloorY - 2;
     if (inAirNow) {
@@ -3711,6 +4137,9 @@
     if (!run) return;
     const ch = getCharDef(run.charId);
     run.slideInputHeld = false;
+    if (run.isTutorial && run.tut && run.tut.autoSlideTimer > 0) {
+      return; // Smoothly finish gliding underneath the tutorial cloud even after a quick mobile tap!
+    }
     if (run.weatherEvent === 'ice_road' && !ch.iceMastery) {
       // Ice inertia keeps sliding slightly longer (Skier controls it cleanly!)
       run.iceSlideInertia = 0.24;
@@ -4061,66 +4490,70 @@
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const upgradeScoreMult = 1 + save.upgrades.score * 0.12;
 
-    run.elapsed += dt;
-    if (run.seasonTime && run.seasonId in run.seasonTime) {
-      run.seasonTime[run.seasonId] += dt;
-    }
+    if (!run.isTutorial) {
+      run.elapsed += dt;
+      if (run.seasonTime && run.seasonId in run.seasonTime) {
+        run.seasonTime[run.seasonId] += dt;
+      }
 
-    // Equal 4-season infinite cycle (15s * 4 = 60s per year)
-    const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
-    const yearTime = run.elapsed % DATA.YEAR_DURATION;
-    const newSeasonIdx = Math.floor(yearTime / DATA.SEASON_DURATION);
+      // Equal 4-season infinite cycle (15s * 4 = 60s per year)
+      const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
+      const yearTime = run.elapsed % DATA.YEAR_DURATION;
+      const newSeasonIdx = Math.floor(yearTime / DATA.SEASON_DURATION);
 
-    if (newYear > run.year) {
-      run.prevSeasonId = run.seasonId;
-      run.seasonTransition = 0;
-      run.year = newYear;
-      run.seasonIdx = 0;
-      run.seasonId = DATA.SEASONS[0].id;
-      const yearGoldBonus = 20 + run.year * 5;
-      run.score += Math.round(600 * run.year * run.scoreMult);
-      run.gold += yearGoldBonus;
-      run.winPoseTimer = 0.9;
-      SFX.yearUp();
-      const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
-      showRunBanner(`🔥 ${run.year}년 차 돌파! 속도 ×${nextDiff.speedMult.toFixed(2)} · 3연속 콤보 경보! (+${yearGoldBonus}G)`, 3000);
-      Renderer.spawnFloater(`${run.year}년 차 난이도 UP!`, '#ff944d', run.playerX + 40, run.playerY - 52);
-      checkStageMilestone(run.year, 0);
-    } else if (newSeasonIdx !== run.seasonIdx) {
-      run.prevSeasonId = run.seasonId;
-      run.seasonTransition = 0;
-      run.seasonIdx = newSeasonIdx;
-      const sObj = DATA.SEASONS[run.seasonIdx];
-      run.seasonId = sObj.id;
-      run.score += Math.round(200 * run.year * run.scoreMult);
-      run.gold += 5;
-      run.heatGauge = 0;
-      SFX.seasonUp();
-      const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
-      showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] · 속도 ×${nextDiff.speedMult.toFixed(2)} UP! (${sObj.weatherLabel})`, 2400);
-      Renderer.spawnFloater(`⚡ 속도 ×${nextDiff.speedMult.toFixed(2)} ↑`, '#ffe259', run.playerX + 36, run.playerY - 50);
-      checkStageMilestone(run.year, run.seasonIdx);
-      // Immediately queue the new season's weather!
-      if (!run.pendingWeather) scheduleNextWeatherEvent();
-    }
+      if (newYear > run.year) {
+        run.prevSeasonId = run.seasonId;
+        run.seasonTransition = 0;
+        run.year = newYear;
+        run.seasonIdx = 0;
+        run.seasonId = DATA.SEASONS[0].id;
+        const yearGoldBonus = 20 + run.year * 5;
+        run.score += Math.round(600 * run.year * run.scoreMult);
+        run.gold += yearGoldBonus;
+        run.winPoseTimer = 0.9;
+        SFX.yearUp();
+        const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
+        showRunBanner(`🔥 ${run.year}년 차 돌파! 속도 ×${nextDiff.speedMult.toFixed(2)} · 3연속 콤보 경보! (+${yearGoldBonus}G)`, 3000);
+        Renderer.spawnFloater(`${run.year}년 차 난이도 UP!`, '#ff944d', run.playerX + 40, run.playerY - 52);
+        checkStageMilestone(run.year, 0);
+      } else if (newSeasonIdx !== run.seasonIdx) {
+        run.prevSeasonId = run.seasonId;
+        run.seasonTransition = 0;
+        run.seasonIdx = newSeasonIdx;
+        const sObj = DATA.SEASONS[run.seasonIdx];
+        run.seasonId = sObj.id;
+        run.score += Math.round(200 * run.year * run.scoreMult);
+        run.gold += 5;
+        run.heatGauge = 0;
+        SFX.seasonUp();
+        const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
+        showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] · 속도 ×${nextDiff.speedMult.toFixed(2)} UP! (${sObj.weatherLabel})`, 2400);
+        Renderer.spawnFloater(`⚡ 속도 ×${nextDiff.speedMult.toFixed(2)} ↑`, '#ffe259', run.playerX + 36, run.playerY - 50);
+        checkStageMilestone(run.year, run.seasonIdx);
+        // Immediately queue the new season's weather!
+        if (!run.pendingWeather) scheduleNextWeatherEvent();
+      }
 
-    // Smooth 3.2-second visual seasonal background & particle crossfade!
-    if (run.seasonTransition < 1) {
-      run.seasonTransition = Math.min(1, run.seasonTransition + dt / 3.2);
-      if (run.seasonTransition >= 1) run.prevSeasonId = null;
-    }
+      // Smooth 3.2-second visual seasonal background & particle crossfade!
+      if (run.seasonTransition < 1) {
+        run.seasonTransition = Math.min(1, run.seasonTransition + dt / 3.2);
+        if (run.seasonTransition >= 1) run.prevSeasonId = null;
+      }
 
-    // Direct Weather Event State Machine
-    if (run.pendingWeather) {
-      run.weatherPrepTimer -= dt;
-      if (run.weatherPrepTimer <= 0) {
-        activatePendingWeather();
+      // Direct Weather Event State Machine
+      if (run.pendingWeather) {
+        run.weatherPrepTimer -= dt;
+        if (run.weatherPrepTimer <= 0) {
+          activatePendingWeather();
+        }
+      } else {
+        run.weatherEventTimer -= dt;
+        if (run.weatherEventTimer <= 0) {
+          scheduleNextWeatherEvent();
+        }
       }
     } else {
-      run.weatherEventTimer -= dt;
-      if (run.weatherEventTimer <= 0) {
-        scheduleNextWeatherEvent();
-      }
+      updateTutorialStep(dt);
     }
 
     // Timers
@@ -4301,7 +4734,7 @@
     const isRainingNow = run.weatherEvent === 'rain' || run.weatherEvent === 'flood';
     const isDustNow = run.weatherEvent === 'dust';
 
-    if (run.feverTimer <= 0) {
+    if (run.feverTimer <= 0 && !run.isTutorial) {
       // 1. Rain without Umbrella for set duration -> -1 Heart!
       if (isRainingNow && !run.umbrellaOn) {
         run.rainExposeTimer += dt;
@@ -4406,7 +4839,7 @@
         }
         if (car.x < -100) run.passingCar = null;
       }
-    } else if (run.weatherEvent === 'rain' || run.weatherEvent === 'flood') {
+    } else if (!run.isTutorial && (run.weatherEvent === 'rain' || run.weatherEvent === 'flood')) {
       run.passingCarCd -= dt;
       if (run.passingCarCd <= 0) {
         run.passingCarCd = Math.max(3.6, (6.5 + Math.random() * 2.5) / diff.weatherPaceMult);
@@ -4491,6 +4924,19 @@
             SFX.guard();
             Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#82e2ff', true);
             Renderer.spawnFloater('🛡️ 기상 보호막으로 코로나 방어!', '#82e2ff', run.playerX + 14, run.playerY - 48);
+          } else if (run.isTutorial) {
+            run.hitPoseTimer = 0.3;
+            run.hitFlashTimer = 0.2;
+            SFX.hit();
+            Renderer.spawnFloater('💪 괜찮아요! 마스크 타이밍 다시 한번!', '#ffe866', run.playerX + 14, run.playerY - 48);
+            run.covidAttack = null;
+            if (run.tut) {
+              run.tut.phase = 'intro';
+              run.tut.timer = 0.7;
+              run.tut.spawned = false;
+              run.tut.waitAction = null;
+              updateTutorialHudUI();
+            }
           } else {
             run.hp = Math.max(0, run.hp - 1);
             run.hitPoseTimer = 0.45;
@@ -4516,7 +4962,7 @@
           run.covidAttack = null;
         }
       }
-    } else if (run.weatherEvent === 'covid') {
+    } else if (!run.isTutorial && run.weatherEvent === 'covid') {
       run.covidAttackCd -= dt;
       if (run.covidAttackCd <= 0) {
         const warnDur = 2.0;
@@ -4537,31 +4983,33 @@
     }
 
     // ---- SPAWN TIMERS ----
-    run.obstacleCd -= dt;
-    if (run.obstacleCd <= 0) {
-      const comboExtraCd = spawnObstacleWave() || 0;
-      const baseInterval = (run.weatherEvent === 'covid' ? 1.85 : 1.48) / diff.spawnRateMult;
-      run.obstacleCd = Math.max(0.52, baseInterval + (Math.random() - 0.35) * 0.24) + comboExtraCd * 0.72;
-    }
-
-    run.itemCd -= dt;
-    if (run.itemCd <= 0) {
-      const placed = spawnUtilityPickup();
-      run.itemCd = placed ? (3.8 + Math.random() * 1.9) : 0.55;
-    }
-
-    if (run.weatherEvent === 'flood') {
-      run.featureCd -= dt;
-      if (run.featureCd <= 0) {
-        spawnStreetFeature();
-        run.featureCd = 1.55;
+    if (!run.isTutorial) {
+      run.obstacleCd -= dt;
+      if (run.obstacleCd <= 0) {
+        const comboExtraCd = spawnObstacleWave() || 0;
+        const baseInterval = (run.weatherEvent === 'covid' ? 1.85 : 1.48) / diff.spawnRateMult;
+        run.obstacleCd = Math.max(0.52, baseInterval + (Math.random() - 0.35) * 0.24) + comboExtraCd * 0.72;
       }
-    }
 
-    run.convStoreCd -= dt;
-    if (run.convStoreCd <= 0) {
-      const placedPad = spawnConvenienceStore();
-      run.convStoreCd = placedPad ? (16.0 + Math.random() * 5.0) : 0.6;
+      run.itemCd -= dt;
+      if (run.itemCd <= 0) {
+        const placed = spawnUtilityPickup();
+        run.itemCd = placed ? (3.8 + Math.random() * 1.9) : 0.55;
+      }
+
+      if (run.weatherEvent === 'flood') {
+        run.featureCd -= dt;
+        if (run.featureCd <= 0) {
+          spawnStreetFeature();
+          run.featureCd = 1.55;
+        }
+      }
+
+      run.convStoreCd -= dt;
+      if (run.convStoreCd <= 0) {
+        const placedPad = spawnConvenienceStore();
+        run.convStoreCd = placedPad ? (16.0 + Math.random() * 5.0) : 0.6;
+      }
     }
 
     // ---- COLLECTIBLES & OBSTACLE COLLISIONS (FORGIVING TIGHT CORE HITBOXES) ----
@@ -4747,6 +5195,7 @@
           continue;
         } else if (run.invulnTimer <= 0) {
           handleObstacleHit(ob, ch);
+          if (run.isTutorial) break;
         }
       } else {
         // Clean Dodge Feedback & Sound when passing an obstacle unscathed!
@@ -4808,6 +5257,28 @@
   }
 
   function handleObstacleHit(ob, ch) {
+    if (run.isTutorial) {
+      run.invulnTimer = 0.7;
+      run.hitPoseTimer = 0.28;
+      run.hitFlashTimer = 0.2;
+      run.sliding = false;
+      SFX.hit();
+      Renderer.spawnFloater('💪 괜찮아요! 다시 한번 해봐요!', '#ffe866', run.playerX + 14, run.playerY - 48);
+      run.obstacles = [];
+      run.items = [];
+      if (run.tut) {
+        run.tut.phase = 'intro';
+        run.tut.timer = 0.72;
+        run.tut.spawned = false;
+        run.tut.waitAction = null;
+        run.tut.autoSlideTimer = 0;
+        run.tut.didFirstJump = false;
+        run.tut.didSecondJump = false;
+        updateTutorialHudUI();
+      }
+      return;
+    }
+
     if (run.shield) {
       run.shield = false;
       run.invulnTimer = 1.25;
@@ -4857,7 +5328,9 @@
     el.runYearNum.textContent = `${run.year}Y`;
     const yrTier = run.year >= 4 ? 'yr-4' : (run.year === 3 ? 'yr-3' : (run.year === 2 ? 'yr-2' : 'yr-1'));
     el.runYearNum.className = `portrait-yr-badge ${yrTier}`;
-    el.runSeasonLabel.textContent = `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
+    el.runSeasonLabel.textContent = run.isTutorial
+      ? '📖 실전 튜토리얼 (체력 감소 없음)'
+      : `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
     el.runScoreText.textContent = `${run.distanceM.toLocaleString('ko-KR')}m · ${Math.floor(run.score).toLocaleString('ko-KR')}점`;
     el.runGoldText.textContent = run.gold.toLocaleString('ko-KR');
 
@@ -5101,9 +5574,19 @@
     SFX.setWeatherAmbient('clear');
     SFX.setAmbientPaused(false);
     SFX.setBgmMode('menu');
-    if (run) commitRunMissionProgress();
+    if (run && run.isTutorial) {
+      if (!save.tutorialDone) {
+        save.tutorialDone = true;
+        persistSave();
+      }
+    } else if (run) {
+      commitRunMissionProgress();
+    }
     run = null;
     paused = false;
+    clearTutorialHighlights();
+    if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
+    if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
@@ -5121,7 +5604,8 @@
     const t = ts / 1000;
 
     if (run && !el.viewRun.classList.contains('hidden')) {
-      if (run.active && !paused) {
+      const tutFrozen = Boolean(run.isTutorial && run.tut && run.tut.waitAction);
+      if (run.active && !paused && !tutFrozen) {
         updateRun(dt);
       } else if (run.dying && !paused) {
         // Brief dramatic collapse animation on the ground before Result Modal appears!
@@ -5138,7 +5622,7 @@
         }
       }
       if (run) {
-        const animDt = paused || (!run.active && !run.dying) ? 0 : dt;
+        const animDt = paused || tutFrozen || (!run.active && !run.dying) ? 0 : dt;
         try {
           Renderer.renderRunFrame(runCtx, run, getCharDef(run.charId), animDt, t);
         } catch (err) {
@@ -5459,38 +5943,30 @@
       el.btnReplayTutorial.addEventListener('click', () => {
         SFX.click();
         el.settingsOverlay.classList.add('hidden');
-        openTutorialModal();
+        startTutorialRun();
       });
     }
-    if (el.btnTutSkip) {
-      el.btnTutSkip.addEventListener('click', () => {
+    if (el.btnTutRunSkip) {
+      el.btnTutRunSkip.addEventListener('click', () => {
         SFX.click();
-        closeTutorialModal(false);
+        finishTutorialRun(true);
       });
     }
-    if (el.btnTutPrev) {
-      el.btnTutPrev.addEventListener('click', () => {
+    if (el.btnTutDoneHome) {
+      el.btnTutDoneHome.addEventListener('click', () => {
+        exitRunToHome();
+      });
+    }
+    if (el.btnTutDonePlay) {
+      el.btnTutDonePlay.addEventListener('click', () => {
         SFX.click();
-        tutStepIdx = Math.max(0, tutStepIdx - 1);
-        renderTutorialStep();
-      });
-    }
-    if (el.btnTutNext) {
-      el.btnTutNext.addEventListener('click', () => {
-        SFX.click();
-        tutStepIdx = Math.min(TUTORIAL_STEPS.length - 1, tutStepIdx + 1);
-        renderTutorialStep();
-      });
-    }
-    if (el.btnTutPlay) {
-      el.btnTutPlay.addEventListener('click', () => {
-        SFX.click();
-        closeTutorialModal(true);
-      });
-    }
-    if (el.tutorialOverlay) {
-      el.tutorialOverlay.addEventListener('click', (e) => {
-        if (e.target === el.tutorialOverlay) closeTutorialModal(false);
+        if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
+        const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
+        if (isCharUnlocked(ch.id)) {
+          save.selectedChar = ch.id;
+          persistSave();
+        }
+        startRun();
       });
     }
     el.settingsOverlay.addEventListener('click', (e) => {
