@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd21" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd43" />
+  <link rel="stylesheet" href="style.css?v=20261121hd44" />
 </head>
 <body>
   <div id="mobile-app">
@@ -579,11 +579,11 @@
           <span id="run-score-text" class="score-num">0m · 0점</span>
         </div>
 
-        <!-- Weather Forecast & Active Physics Strip -->
-        <div id="run-forecast-bar" class="forecast-strip">
-          <span id="fc-source-badge" class="fc-badge kma">📡 K-기상청</span>
-          <span id="fc-message" class="fc-msg">맑음 (강수확률 0%)</span>
-          <span id="fc-heat-pill" class="fc-heat-pill hidden">🌡️ 열기 0%</span>
+        <!-- Live Active Weather & Gear Action Strip (Only Shown During Active Weather Hazards!) -->
+        <div id="run-weather-bar" class="weather-status-strip hidden">
+          <span id="weather-status-badge" class="weather-status-badge">🌧️ 폭우</span>
+          <span id="weather-status-tip" class="weather-status-tip">우산 펴기!</span>
+          <span id="fc-heat-pill" class="fc-heat-pill hidden">☂️ 우산 필요 2.5s</span>
         </div>
       </div>
 
@@ -593,19 +593,18 @@
 
         <!-- Muddy Water Splash Blindness Overlay -->
         <div id="mud-splatter-overlay" class="mud-overlay hidden">
+          <div class="mud-vignette"></div>
           <div class="mud-blob b1"></div>
           <div class="mud-blob b2"></div>
           <div class="mud-blob b3"></div>
-          <div class="mud-blob b4"></div>
           <div class="mud-text">💦 차량 물벼락! 시야 가림!</div>
         </div>
 
         <!-- Crisp HTML Banner -->
         <div id="run-banner" class="run-banner hidden">1년 차 봄 시작!</div>
 
-        <!-- Center-Screen Big Flashing Weather Event Alert (황사 · 폭염 · 비 등) -->
+        <!-- Center-Screen Big Flashing Weather Event Alert (황사 · 폭염 · 비 · 태풍) -->
         <div id="weather-center-alert" class="weather-center-alert hidden" aria-live="polite">
-          <div id="weather-alert-kicker" class="weather-alert-kicker hidden">⚠️ 기상청 오보!!</div>
           <div id="weather-alert-title" class="weather-alert-title">🌧️ 국지성 폭우!</div>
           <div id="weather-alert-sub" class="weather-alert-sub">☂️ 우산을 펴세요!</div>
         </div>
@@ -615,7 +614,7 @@
       <div id="mobile-controls" class="cookie-controls">
         <!-- Left Thumb Stack: Small Umbrella ON TOP + Big Jump BELOW -->
         <div class="ctrl-stack left">
-          <button id="btn-toggle-umbrella" class="img-ctrl-btn gear-img-btn" type="button" aria-label="우산 토글" title="우산 펴기 (Q · 비/폭염 종료까지 유지)">
+          <button id="btn-toggle-umbrella" class="img-ctrl-btn gear-img-btn" type="button" aria-label="우산 토글" title="우산 펴기/접기 (Q)">
             <span class="ctrl-img-wrap">
               <img src="assets/ctrl/btn_umbrella_up.png" alt="우산" class="ctrl-img up" />
               <img src="assets/ctrl/btn_umbrella_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
@@ -634,14 +633,13 @@
           </button>
         </div>
 
-        <!-- Bottom Center Buff Orbs -->
+        <!-- Bottom Center Buff Orbs (4 Cohesive Glossy HD Icons) -->
         <div class="ctrl-center-orbs">
-          <div class="status-orbs-row five-orbs">
-            <div id="orb-ui-fever" class="status-orb" title="FEVER 무적"><img src="assets/design/orb_star.png?v=20261121hd38" alt="피버" /></div>
-            <div id="orb-ui-speed" class="status-orb" title="스피드 부스트"><img src="assets/design/orb_bolt.png?v=20261121hd38" alt="스피드" /></div>
-            <div id="orb-ui-magnet" class="status-orb" title="자석"><img src="assets/design/orb_magnet.png?v=20261121hd38" alt="자석" /></div>
-            <div id="orb-ui-norway" class="status-orb" title="노르웨이 기상청"><span class="orb-emoji">🇳🇴</span></div>
-            <div id="orb-ui-shield" class="status-orb" title="보호막"><img src="assets/atlas/spr_shield.png?v=20261121hd38" alt="보호막" /></div>
+          <div class="status-orbs-row four-orbs">
+            <div id="orb-ui-fever" class="status-orb" title="FEVER 무적"><img src="assets/design/orb_star.png?v=20261121hd44" alt="피버" /></div>
+            <div id="orb-ui-speed" class="status-orb" title="스피드 부스트"><img src="assets/design/orb_bolt.png?v=20261121hd44" alt="스피드" /></div>
+            <div id="orb-ui-magnet" class="status-orb" title="자석"><img src="assets/design/orb_magnet.png?v=20261121hd44" alt="자석" /></div>
+            <div id="orb-ui-shield" class="status-orb" title="보호막"><img src="assets/atlas/spr_shield.png?v=20261121hd44" alt="보호막" /></div>
           </div>
         </div>
 
@@ -828,11 +826,11 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd43"></script>
+  <script src="js/data.js?v=20261121hd44"></script>
   <script src="js/audio.js?v=20261121hd9"></script>
-  <script src="js/online.js?v=20261121hd43"></script>
-  <script src="js/renderer.js?v=20261121hd43"></script>
-  <script src="js/game.js?v=20261121hd43"></script>
+  <script src="js/online.js?v=20261121hd44"></script>
+  <script src="js/renderer.js?v=20261121hd44"></script>
+  <script src="js/game.js?v=20261121hd44"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

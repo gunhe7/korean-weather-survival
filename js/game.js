@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd43';
+  const ASSET_VER = '20261121hd44';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -470,14 +470,13 @@
     runFeverText: document.getElementById('run-fever-text'),
     runGoldText: document.getElementById('run-gold-text'),
     runYearFill: document.getElementById('run-year-fill'),
-    runForecastBar: document.getElementById('run-forecast-bar'),
-    fcSourceBadge: document.getElementById('fc-source-badge'),
-    fcMessage: document.getElementById('fc-message'),
+    runWeatherBar: document.getElementById('run-weather-bar'),
+    weatherStatusBadge: document.getElementById('weather-status-badge'),
+    weatherStatusTip: document.getElementById('weather-status-tip'),
     fcHeatPill: document.getElementById('fc-heat-pill'),
     mudOverlay: document.getElementById('mud-splatter-overlay'),
     runBanner: document.getElementById('run-banner'),
     weatherCenterAlert: document.getElementById('weather-center-alert'),
-    weatherAlertKicker: document.getElementById('weather-alert-kicker'),
     weatherAlertTitle: document.getElementById('weather-alert-title'),
     weatherAlertSub: document.getElementById('weather-alert-sub'),
 
@@ -492,7 +491,6 @@
     orbUiFever: document.getElementById('orb-ui-fever'),
     orbUiSpeed: document.getElementById('orb-ui-speed'),
     orbUiMagnet: document.getElementById('orb-ui-magnet'),
-    orbUiNorway: document.getElementById('orb-ui-norway'),
     orbUiShield: document.getElementById('orb-ui-shield'),
     btnLandscapeRun: document.getElementById('btn-landscape-run'),
     btnPauseRun: document.getElementById('btn-pause-run'),
@@ -961,25 +959,24 @@
     flood:    { title: '🌊 장마 침수 경보!', sub: '☂️ 우산 ON · 차 지붕을 밟으세요!' },
     dust:     { title: '😷 황사 · 미세먼지!', sub: '😷 마스크를 착용하세요!' },
     heat:     { title: '☀️ 폭염 땡볕 경보!', sub: '☂️ 우산(양산)을 펴세요!' },
-    gust:     { title: '💨 태풍 · 강풍 돌풍!', sub: '⚠️ 우산을 접고 슬라이드!' },
+    gust:     { title: '💨 태풍 · 강풍 돌풍!', sub: '☂️ 우산을 접고 슬라이드!' },
     ice_road: { title: '🧊 겨울 빙판길!', sub: '❄️ 미끄럼 주의!' }
   };
 
-  function showWeatherCenterAlert(weatherId, wasFake = false) {
+  function showWeatherCenterAlert(weatherId, customSub = null) {
     if (!el.weatherCenterAlert) return;
     const meta = WEATHER_ALERT_META[weatherId];
     if (!meta) return;
     el.weatherCenterAlert.className = `weather-center-alert ev-${weatherId}`;
-    el.weatherAlertKicker.classList.toggle('hidden', !wasFake);
     el.weatherAlertTitle.textContent = meta.title;
-    el.weatherAlertSub.textContent = meta.sub;
+    el.weatherAlertSub.textContent = customSub || meta.sub;
     // Force clean animation restart on consecutive events
     void el.weatherCenterAlert.offsetWidth;
     el.weatherCenterAlert.classList.add('show');
     if (weatherAlertTimer) clearTimeout(weatherAlertTimer);
     weatherAlertTimer = setTimeout(() => {
       if (el.weatherCenterAlert) el.weatherCenterAlert.classList.add('hidden');
-    }, 2400);
+    }, 2200);
   }
 
   function hideWeatherCenterAlert() {
@@ -3014,10 +3011,8 @@
 
     let hasShield = false;
     let startFever = 0;
-    let norwayPerm = false;
     if (save.boosters.shield > 0) { save.boosters.shield -= 1; hasShield = true; }
     if (save.boosters.boost > 0) { save.boosters.boost -= 1; startFever = 4.5; }
-    if (save.boosters.norway > 0) { save.boosters.norway -= 1; norwayPerm = true; }
     persistSave();
 
     paused = false;
@@ -3091,6 +3086,7 @@
       maskCooldown: 0,
       rainExposeTimer: 0,
       dustExposeTimer: 0,
+      gustExposeTimer: 0,
       lastHeartKey: '',
 
       // Camera Juice & Feedback Timers
@@ -3105,8 +3101,6 @@
       feverTimer: startFever,
       speedBoostTimer: 0,
       magnetTimer: 0,
-      norwayPermanent: norwayPerm,
-      norwayTimer: 0,
       mudBlindTimer: 0,
       heatGauge: 0, // Summer sun heat (0..100)
       shadeScoreCd: 0,
@@ -3114,13 +3108,11 @@
       itemPoseTimer: 0,
       winPoseTimer: 0,
 
-      // Weather Event & KMA Fake Forecast State Machine
+      // Live Korean Weather Cycle State Machine (Clean Direct Weather System)
       weatherEvent: 'clear',
-      weatherEventTimer: 3.5, // seconds until next forecast starts
+      weatherEventTimer: 3.5,
       pendingWeather: null,
-      forecastCountdown: 0,
-      forecastIsFake: false,
-      fakeShockTimer: 0,
+      weatherPrepTimer: 0,
 
       // Street Features & Passing Car
       features: [],
@@ -3167,10 +3159,6 @@
     });
   }
 
-  function hasNorwayForecast() {
-    return Boolean(run && (run.norwayPermanent || run.norwayTimer > 0));
-  }
-
   function isUmbrellaWeather(w) {
     return w === 'rain' || w === 'flood' || w === 'heat';
   }
@@ -3198,24 +3186,34 @@
 
     const cd = getEffectiveGearCooldown();
     if (run.umbrellaOn) {
+      const foldedForGust = run.weatherEvent === 'gust';
       run.umbrellaOn = false;
       run.umbrellaActiveTimer = 0;
-      run.umbrellaCooldown = cd;
-      SFX.click();
-      haptic(10);
-      Renderer.spawnFloater(`우산 접기 (쿨타임 ${cd}초)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
+      run.gustExposeTimer = 0;
+      run.umbrellaCooldown = foldedForGust ? 1.0 : cd;
+      if (foldedForGust) {
+        run.score += Math.round(50 * run.scoreMult);
+        SFX.guard();
+        haptic(14);
+        Renderer.spawnFloater('💨 태풍 대비! 우산 접기 성공 +50', '#7ef6ff', run.playerX + 12, run.playerY - 44);
+      } else {
+        SFX.click();
+        haptic(10);
+        Renderer.spawnFloater(`우산 접기 (쿨타임 ${cd}초)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
+      }
     } else {
       run.umbrellaOn = true;
       run.umbrellaActiveTimer = GEAR_DURATION;
       run.rainExposeTimer = 0;
+      run.gustExposeTimer = 0;
       SFX.click();
       haptic(14);
-      const persistTxt = isUmbrellaWeather(run.weatherEvent) ? '날씨 종료까지 유지!' : `${GEAR_DURATION}초 지속`;
-      Renderer.spawnFloater(`우산 ON! (${persistTxt})`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
-
-      // Immediate danger if opened during a roaring wind gust!
       if (run.weatherEvent === 'gust') {
-        breakUmbrellaByGust();
+        run.gustExposeTimer = 0.05;
+        Renderer.spawnFloater('💨 태풍 중! 빨리 우산을 접으세요!', '#ff9b54', run.playerX + 12, run.playerY - 44);
+      } else {
+        const persistTxt = isUmbrellaWeather(run.weatherEvent) ? '날씨 종료까지 유지!' : `${GEAR_DURATION}초 지속`;
+        Renderer.spawnFloater(`우산 ON! (${persistTxt})`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
       }
     }
     updateRunHud();
@@ -3360,34 +3358,30 @@
     }
   }
 
-  // ===================== FORECAST & WEATHER PHASE SCHEDULER =====================
-  function scheduleNextWeatherForecast() {
+  // ===================== DIRECT KOREAN WEATHER PHASE SCHEDULER =====================
+  function scheduleNextWeatherEvent() {
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const pool = DATA.SEASON_WEATHER_POOL[run.seasonId] || ['rain', 'gust', 'dust'];
     const candidates = pool.filter((w) => w !== run.weatherEvent);
     const nextW = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
 
     run.pendingWeather = nextW;
-    run.forecastCountdown = Math.max(1.45, 2.9 / Math.min(1.85, diff.weatherPaceMult));
-    // KMA gives a fake forecast 65% of the time (escalating with survival time!) unless Norway Yr.no is active!
-    const fakeProb = Math.min(0.85, 0.65 + diff.effYears * 0.08);
-    run.forecastIsFake = !hasNorwayForecast() && nextW !== 'clear' && Math.random() < fakeProb;
+    run.weatherPrepTimer = Math.max(1.2, 2.0 / Math.min(1.65, diff.weatherPaceMult));
   }
 
   function activatePendingWeather() {
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const prevW = run.weatherEvent;
     const nextW = run.pendingWeather || 'clear';
-    const wasFake = run.forecastIsFake && !hasNorwayForecast();
 
     run.weatherEvent = nextW;
     run.pendingWeather = null;
     run.weatherEventTimer = Math.max(5.2, (8.5 + Math.random() * 2.5) / diff.weatherPaceMult);
-    run.forecastIsFake = false;
     run.rainExposeTimer = 0;
     run.dustExposeTimer = 0;
+    run.gustExposeTimer = 0;
 
-    // Auto-fold Umbrella when Rain/Flood/Heatwave ends (unless gust snaps it!)
+    // Auto-fold Umbrella when Rain/Flood/Heatwave ends smoothly (during Gust, player folds it within grace window!)
     if (run.umbrellaOn && isUmbrellaWeather(prevW) && !isUmbrellaWeather(nextW) && nextW !== 'gust') {
       run.umbrellaOn = false;
       run.umbrellaActiveTimer = 0;
@@ -3403,24 +3397,13 @@
       Renderer.spawnFloater('황사 종료! 마스크 자동 해제', '#a6ffcf', run.playerX + 10, run.playerY - 44);
     }
 
-    const evDef = DATA.WEATHER_EVENTS[nextW];
-    if (nextW !== 'clear') {
-      showWeatherCenterAlert(nextW, wasFake);
-      if (wasFake) {
-        run.fakeShockTimer = 2.6;
-        SFX.fakeAlert();
-      }
-    } else if (wasFake) {
-      run.fakeShockTimer = 2.6;
-      SFX.fakeAlert();
-      showRunBanner(`⚠️ 구라청 오보!! 실제 날씨는 [${evDef.label}]`, 2500);
+    if (nextW === 'gust') {
+      const subTxt = run.umbrellaOn ? '⚠️ 제한 시간 안에 우산을 접으세요!' : '💨 맞바람 주의! 슬라이드로 돌파!';
+      showWeatherCenterAlert('gust', subTxt);
+    } else if (nextW !== 'clear') {
+      showWeatherCenterAlert(nextW);
     } else {
-      showRunBanner(`☀️ 맑음 · 잠시 숨 고르기!`, 1800);
-    }
-
-    // If a sudden gust hits while umbrella is open -> snap!
-    if (nextW === 'gust' && run.umbrellaOn) {
-      breakUmbrellaByGust();
+      showRunBanner('☀️ 맑음 · 잠시 숨 고르기!', 1800);
     }
   }
 
@@ -3535,19 +3518,17 @@
   function spawnUtilityPickup() {
     const r = Math.random();
     const y = Renderer.GROUND_Y - (Math.random() < 0.5 ? 28 : 78);
-    if (r < 0.19) {
-      run.items.push({ kind: 'norway', x: Renderer.W + 24, y });
-    } else if (r < 0.39) {
+    if (r < 0.24) {
       run.items.push({ kind: 'coffee', x: Renderer.W + 24, y });
-    } else if (r < 0.55) {
+    } else if (r < 0.44) {
       run.items.push({ kind: 'star', x: Renderer.W + 24, y });
-    } else if (r < 0.68) {
+    } else if (r < 0.61) {
       run.items.push({ kind: 'magnet', x: Renderer.W + 24, y });
-    } else if (r < 0.81) {
+    } else if (r < 0.77) {
       run.items.push({ kind: 'speed_boost', x: Renderer.W + 24, y });
-    } else if (r < 0.90) {
+    } else if (r < 0.89) {
       run.items.push({ kind: 'shield_item', x: Renderer.W + 24, y });
-    } else if (r < 0.96) {
+    } else if (r < 0.95) {
       run.items.push({ kind: 'umbrella_fever', x: Renderer.W + 24, y });
     } else {
       run.items.push({ kind: 'chest', x: Renderer.W + 24, y: Renderer.GROUND_Y - 16 });
@@ -3645,8 +3626,8 @@
       showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] · 속도 ×${nextDiff.speedMult.toFixed(2)} UP! (${sObj.weatherLabel})`, 2400);
       Renderer.spawnFloater(`⚡ 속도 ×${nextDiff.speedMult.toFixed(2)} ↑`, '#ffe259', run.playerX + 36, run.playerY - 50);
       checkStageMilestone(run.year, run.seasonIdx);
-      // Immediately queue a forecast for the new season's weather!
-      if (!run.pendingWeather) scheduleNextWeatherForecast();
+      // Immediately queue the new season's weather!
+      if (!run.pendingWeather) scheduleNextWeatherEvent();
     }
 
     // Smooth 3.2-second visual seasonal background & particle crossfade!
@@ -3655,16 +3636,16 @@
       if (run.seasonTransition >= 1) run.prevSeasonId = null;
     }
 
-    // Weather Forecast Countdown State Machine
+    // Direct Weather Event State Machine
     if (run.pendingWeather) {
-      run.forecastCountdown -= dt;
-      if (run.forecastCountdown <= 0) {
+      run.weatherPrepTimer -= dt;
+      if (run.weatherPrepTimer <= 0) {
         activatePendingWeather();
       }
     } else {
       run.weatherEventTimer -= dt;
       if (run.weatherEventTimer <= 0) {
-        scheduleNextWeatherForecast();
+        scheduleNextWeatherEvent();
       }
     }
 
@@ -3672,10 +3653,8 @@
     if (run.invulnTimer > 0) run.invulnTimer = Math.max(0, run.invulnTimer - dt);
     if (run.magnetTimer > 0) run.magnetTimer = Math.max(0, run.magnetTimer - dt);
     if (run.speedBoostTimer > 0) run.speedBoostTimer = Math.max(0, run.speedBoostTimer - dt);
-    if (run.norwayTimer > 0) run.norwayTimer = Math.max(0, run.norwayTimer - dt);
     if (run.mudBlindTimer > 0) run.mudBlindTimer = Math.max(0, run.mudBlindTimer - dt);
     if (run.umbrellaBrokenTimer > 0) run.umbrellaBrokenTimer = Math.max(0, run.umbrellaBrokenTimer - dt);
-    if (run.fakeShockTimer > 0) run.fakeShockTimer = Math.max(0, run.fakeShockTimer - dt);
     if (run.shadeScoreCd > 0) run.shadeScoreCd = Math.max(0, run.shadeScoreCd - dt);
     if (run.hitPoseTimer > 0) run.hitPoseTimer = Math.max(0, run.hitPoseTimer - dt);
     if (run.itemPoseTimer > 0) run.itemPoseTimer = Math.max(0, run.itemPoseTimer - dt);
@@ -3916,10 +3895,22 @@
       } else {
         run.heatGauge = Math.max(0, run.heatGauge - 28 * dt);
       }
+      // 4. Typhoon / Strong Gust with Umbrella still open -> Grace period to fold, else snap & -1 Heart!
+      const gustFoldLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty) + graceBonus;
+      if (run.weatherEvent === 'gust' && run.umbrellaOn) {
+        run.gustExposeTimer += dt;
+        if (run.gustExposeTimer >= gustFoldLimit) {
+          run.gustExposeTimer = 0;
+          breakUmbrellaByGust();
+        }
+      } else {
+        run.gustExposeTimer = 0;
+      }
     } else {
       run.heatGauge = Math.max(0, run.heatGauge - 40 * dt);
       run.rainExposeTimer = 0;
       run.dustExposeTimer = 0;
+      run.gustExposeTimer = 0;
     }
 
     // ---- PASSING CAR SPLASH EVENT (RAIN / FLOOD) ----
@@ -4046,14 +4037,6 @@
             run.coinStreak = Math.min(6, (run.coinStreak || 0) + 1);
             run.coinStreakTimer = 0.65;
           }
-        } else if (it.kind === 'norway') {
-          run.norwayTimer = 25.0;
-          run.forecastIsFake = false;
-          run.itemPoseTimer = 0.5;
-          SFX.norway();
-          Renderer.spawnPickupEffect(it.x, it.y, '#70e2ff', true);
-          Renderer.spawnFloater('노르웨이 기상청 ON! (25초)', '#70e2ff', run.playerX + 16, run.playerY - 46);
-          showRunBanner('🇳🇴 노르웨이 기상청 획득! 3초 전 100% 정확 예보!', 2300);
         } else if (it.kind === 'star') {
           run.score += Math.round(160 * run.scoreMult * upgradeScoreMult);
           addFeverCharge(9);
@@ -4316,55 +4299,62 @@
     const yearPct = ((run.elapsed % DATA.YEAR_DURATION) / DATA.YEAR_DURATION) * 100;
     el.runYearFill.style.width = `${yearPct.toFixed(1)}%`;
 
-    // Weather Forecast Strip (KMA Fake vs Norway Yr.no Accurate!)
-    const isNorway = hasNorwayForecast();
-    el.fcSourceBadge.className = `fc-badge ${isNorway ? 'norway' : 'kma'}`;
-    el.fcSourceBadge.textContent = isNorway
-      ? (run.norwayPermanent ? '🇳🇴 노르웨이' : `🇳🇴 노르웨이 ${Math.ceil(run.norwayTimer)}s`)
-      : '📡 K-기상청';
-
-    el.runForecastBar.classList.toggle('norway-on', isNorway);
-    el.runForecastBar.classList.toggle('fake-shock', run.fakeShockTimer > 0 && !isNorway);
-
-    if (run.pendingWeather) {
-      const targetDef = DATA.WEATHER_EVENTS[run.pendingWeather];
-      const sec = Math.max(0.1, run.forecastCountdown).toFixed(1);
-      if (isNorway) {
-        el.fcMessage.textContent = `[${sec}초 후] ${targetDef.norwayWarn}`;
-      } else if (run.forecastIsFake) {
-        el.fcMessage.textContent = `예보: ${targetDef.kmaFake}`;
-      } else {
-        el.fcMessage.textContent = `예보(${sec}s): ${targetDef.label}`;
-      }
-    } else {
-      const curDef = DATA.WEATHER_EVENTS[run.weatherEvent] || DATA.WEATHER_EVENTS.clear;
-      el.fcMessage.textContent = run.fakeShockTimer > 0
-        ? `오보 발생!! 현재 [${curDef.label}]`
-        : `현재: ${curDef.label}`;
-    }
-
-    // Live Exposure Countdown / Heat Warning Pill!
+    // Live Active Weather Status Pill (Cleanly hidden during calm clear sky — NO Weather Agency clutter!)
     const graceBonusHud = (save.upgrades.hp || 0) * 0.3;
     const rainLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0) + graceBonusHud;
     const dustLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty) + graceBonusHud;
-    if (run.rainExposeTimer > 0.05 && !run.umbrellaOn && run.feverTimer <= 0) {
+    const gustLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty) + graceBonusHud;
+
+    const activeEv = run.weatherEvent || 'clear';
+    const incomingEv = (run.pendingWeather && run.pendingWeather !== 'clear') ? run.pendingWeather : null;
+    const needFoldUmb = activeEv === 'gust' && run.umbrellaOn && run.feverTimer <= 0;
+    const needOpenUmb = (activeEv === 'rain' || activeEv === 'flood' || (activeEv === 'heat' && !ch.summerImmune)) && !run.umbrellaOn && run.feverTimer <= 0;
+    const needOpenMask = activeEv === 'dust' && !run.maskOn && run.feverTimer <= 0;
+
+    if (el.runWeatherBar) {
+      const showBar = activeEv !== 'clear' || Boolean(incomingEv) || run.heatGauge > 5;
+      el.runWeatherBar.classList.toggle('hidden', !showBar);
+      el.runWeatherBar.classList.toggle('urgent-danger', needFoldUmb);
+      if (showBar) {
+        if (activeEv !== 'clear') {
+          const curDef = DATA.WEATHER_EVENTS[activeEv] || DATA.WEATHER_EVENTS.clear;
+          if (el.weatherStatusBadge) el.weatherStatusBadge.textContent = `${curDef.icon || ''} ${curDef.label}`;
+          if (el.weatherStatusTip) {
+            el.weatherStatusTip.textContent = needFoldUmb ? '우산을 접으세요!' : (curDef.actionTip || '');
+          }
+        } else if (incomingEv) {
+          const nextDef = DATA.WEATHER_EVENTS[incomingEv] || DATA.WEATHER_EVENTS.clear;
+          const sec = Math.max(0.1, run.weatherPrepTimer || 0).toFixed(1);
+          if (el.weatherStatusBadge) el.weatherStatusBadge.textContent = `${nextDef.icon || '⚡'} 곧 ${nextDef.label}`;
+          if (el.weatherStatusTip) el.weatherStatusTip.textContent = `${sec}초 후 접근`;
+        }
+      }
+    }
+
+    // Live Exposure / Fold Countdown Pill!
+    if (needFoldUmb) {
+      const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
+      el.fcHeatPill.classList.remove('hidden');
+      el.fcHeatPill.classList.add('urgent');
+      el.fcHeatPill.textContent = `💨 우산 접기! ${rem.toFixed(1)}s`;
+    } else if (run.rainExposeTimer > 0.05 && !run.umbrellaOn && run.feverTimer <= 0) {
       const rem = Math.max(0, rainLimit - run.rainExposeTimer);
       el.fcHeatPill.classList.remove('hidden');
-      el.fcHeatPill.classList.toggle('urgent', rem <= 1.3);
-      el.fcHeatPill.textContent = `☂️ 우산 필요 ${rem.toFixed(1)}s`;
+      el.fcHeatPill.classList.toggle('urgent', rem <= 1.4);
+      el.fcHeatPill.textContent = `☂️ 우산 펴기 ${rem.toFixed(1)}s`;
     } else if (run.dustExposeTimer > 0.05 && !run.maskOn && run.feverTimer <= 0) {
       const rem = Math.max(0, dustLimit - run.dustExposeTimer);
       el.fcHeatPill.classList.remove('hidden');
-      el.fcHeatPill.classList.toggle('urgent', rem <= 1.3);
-      el.fcHeatPill.textContent = `😷 마스크 필요 ${rem.toFixed(1)}s`;
-    } else if (run.weatherEvent === 'heat' && !ch.summerImmune) {
+      el.fcHeatPill.classList.toggle('urgent', rem <= 1.4);
+      el.fcHeatPill.textContent = `😷 마스크 착용 ${rem.toFixed(1)}s`;
+    } else if (activeEv === 'heat' && !ch.summerImmune) {
       el.fcHeatPill.classList.remove('hidden');
       if (run.umbrellaOn) {
         el.fcHeatPill.classList.remove('urgent');
         el.fcHeatPill.textContent = '☂️ 양산 보호 중';
       } else {
-        el.fcHeatPill.classList.toggle('urgent', run.heatGauge >= 65);
-        el.fcHeatPill.textContent = `☂️ 폭염! 우산 필요 ${Math.round(run.heatGauge)}%`;
+        el.fcHeatPill.classList.toggle('urgent', run.heatGauge >= 60);
+        el.fcHeatPill.textContent = `☂️ 폭염 ${Math.round(run.heatGauge)}%`;
       }
     } else if (run.heatGauge > 5) {
       el.fcHeatPill.classList.remove('hidden');
@@ -4383,7 +4373,7 @@
       el.mudOverlay.classList.add('hidden');
     }
 
-    // Umbrella & Mask Toggle Buttons with Weather-Maintained Indicator & Cooldown Fill Bars
+    // Umbrella & Mask Toggle Buttons with Urgent Visual Pulse + Cooldown Fill Bars
     const effGearCd = getEffectiveGearCooldown();
     const umbBroken = run.umbrellaBrokenTimer > 0;
     const umbCd = !umbBroken && !run.umbrellaOn && run.umbrellaCooldown > 0;
@@ -4391,9 +4381,15 @@
     el.btnToggleUmbrella.classList.toggle('on', run.umbrellaOn);
     el.btnToggleUmbrella.classList.toggle('broken', umbBroken);
     el.btnToggleUmbrella.classList.toggle('cooldown', umbCd);
+    el.btnToggleUmbrella.classList.toggle('urgent-fold', needFoldUmb);
+    el.btnToggleUmbrella.classList.toggle('urgent-open', needOpenUmb && !umbBroken && !umbCd);
     if (umbBroken) {
       el.gearUmbrellaState.textContent = `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`;
       el.gearUmbrellaBar.style.width = `${((run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD) * 100).toFixed(1)}%`;
+    } else if (needFoldUmb) {
+      const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
+      el.gearUmbrellaState.textContent = `접기! ${rem.toFixed(1)}s`;
+      el.gearUmbrellaBar.style.width = `${Math.min(100, ((run.gustExposeTimer || 0) / gustLimit) * 100).toFixed(1)}%`;
     } else if (umbHeldByWeather) {
       el.gearUmbrellaState.textContent = '유지 중';
       el.gearUmbrellaBar.style.width = '100%';
@@ -4412,6 +4408,7 @@
     const maskHeldByWeather = run.maskOn && isMaskWeather(run.weatherEvent);
     el.btnToggleMask.classList.toggle('on', run.maskOn);
     el.btnToggleMask.classList.toggle('cooldown', maskCd);
+    el.btnToggleMask.classList.toggle('urgent-open', needOpenMask && !maskCd);
     if (maskHeldByWeather) {
       el.gearMaskState.textContent = '유지 중';
       el.gearMaskBar.style.width = '100%';
@@ -4426,11 +4423,10 @@
       el.gearMaskBar.style.width = '0%';
     }
 
-    // 5 Status Orbs + Full-Canvas FEVER Frame Pulse + Dynamic BGM Mode
+    // 4 Glossy HD Buff Orbs + Full-Canvas FEVER Frame Pulse + Dynamic BGM Mode
     el.orbUiFever.classList.toggle('active', run.feverTimer > 0);
     el.orbUiSpeed.classList.toggle('active', run.speedBoostTimer > 0);
     el.orbUiMagnet.classList.toggle('active', run.magnetTimer > 0 || run.feverTimer > 0);
-    el.orbUiNorway.classList.toggle('active', isNorway);
     el.orbUiShield.classList.toggle('active', Boolean(run.shield));
     el.runCanvasWrap.classList.toggle('fever-active', run.feverTimer > 0);
     SFX.setBgmMode(run.feverTimer > 0 ? 'fever' : 'run');

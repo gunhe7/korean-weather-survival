@@ -47,7 +47,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd43';
+  const CHAR_ASSET_VER = '20261121hd44';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -139,6 +139,35 @@ window.RunRenderer = (function () {
     });
   }
 
+  function drawRoundRect(ctx, x, y, w, h, r) {
+    const rad = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y);
+    ctx.lineTo(x + w - rad, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+    ctx.lineTo(x + w, y + h - rad);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+    ctx.lineTo(x + rad, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+    ctx.lineTo(x, y + rad);
+    ctx.quadraticCurveTo(x, y, x + rad, y);
+    ctx.closePath();
+  }
+
+  function drawFourPointStar(ctx, x, y, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const ang = (i * Math.PI) / 4;
+      const rr = i % 2 === 0 ? r : r * 0.36;
+      const px = x + Math.cos(ang) * rr;
+      const py = y + Math.sin(ang) * rr;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
   function drawPickupEffects(ctx, dt) {
     for (let i = pickupBursts.length - 1; i >= 0; i--) {
       const b = pickupBursts[i];
@@ -155,7 +184,7 @@ window.RunRenderer = (function () {
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = b.color;
-      ctx.lineWidth = b.big ? 3 : 2;
+      ctx.lineWidth = b.big ? 2.8 : 2;
       ctx.beginPath();
       ctx.arc(Math.floor(b.x), Math.floor(b.y), r, 0, Math.PI * 2);
       ctx.stroke();
@@ -163,11 +192,10 @@ window.RunRenderer = (function () {
       const sparks = b.big ? 8 : 5;
       ctx.fillStyle = b.color;
       for (let k = 0; k < sparks; k++) {
-        const ang = (Math.PI * 2 * k) / sparks + prog * 1.4;
-        const sx = Math.floor(b.x + Math.cos(ang) * (r * 1.12));
-        const sy = Math.floor(b.y + Math.sin(ang) * (r * 1.12));
-        const sz = b.big ? 4 : 3;
-        ctx.fillRect(sx - 1, sy - 1, sz, sz);
+        const ang = (Math.PI * 2 * k) / sparks + prog * 1.6;
+        const sx = b.x + Math.cos(ang) * (r * 1.08);
+        const sy = b.y + Math.sin(ang) * (r * 1.08);
+        drawFourPointStar(ctx, sx, sy, (b.big ? 4.5 : 3.2) * (1 - prog * 0.35));
       }
       ctx.restore();
     }
@@ -248,45 +276,103 @@ window.RunRenderer = (function () {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, groundY);
 
-    // Fluffy pixel clouds (softly darken when rain/storm rolls in!)
-    const cloudShadow = isStormy ? 'rgba(110, 128, 160, 0.85)' : 'rgba(210, 226, 255, 0.8)';
-    const cloudMain = isStormy ? 'rgba(175, 192, 218, 0.92)' : 'rgba(255, 255, 255, 0.94)';
+    // Soft glossy cartoon clouds (plump rounded puffs matching HD art style!)
+    const cloudShadow = isStormy ? 'rgba(92, 112, 146, 0.72)' : 'rgba(184, 214, 255, 0.65)';
+    const cloudMain = isStormy ? 'rgba(176, 194, 222, 0.90)' : 'rgba(255, 255, 255, 0.93)';
     for (let i = 0; i < 4; i++) {
-      const cx = ((i * 145 - scroll * 0.06 + t * 6) % (w + 120) + (w + 120)) % (w + 120) - 70;
-      const cy = 22 + (i % 2) * 20;
+      const cx = ((i * 155 - scroll * 0.055 + t * 5.5) % (w + 130) + (w + 130)) % (w + 130) - 75;
+      const cy = 28 + (i % 2) * 19;
+      const sc = i % 2 === 0 ? 1.0 : 0.84;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(sc, sc);
+      // Soft underside shadow
       ctx.fillStyle = cloudShadow;
-      ctx.fillRect(Math.floor(cx) + 4, cy + 12, 54, 10);
+      ctx.beginPath();
+      ctx.arc(16, 10, 14, 0, Math.PI * 2);
+      ctx.arc(34, 8, 18, 0, Math.PI * 2);
+      ctx.arc(52, 11, 13, 0, Math.PI * 2);
+      ctx.fill();
+      // Plump bright top puffs
       ctx.fillStyle = cloudMain;
-      ctx.fillRect(Math.floor(cx), cy + 6, 62, 12);
-      ctx.fillRect(Math.floor(cx) + 10, cy - 4, 38, 12);
-      ctx.fillRect(Math.floor(cx) + 20, cy - 10, 20, 8);
+      ctx.beginPath();
+      ctx.arc(15, 7, 13, 0, Math.PI * 2);
+      ctx.arc(32, 3, 17, 0, Math.PI * 2);
+      ctx.arc(50, 8, 12, 0, Math.PI * 2);
+      ctx.arc(24, 10, 12, 0, Math.PI * 2);
+      ctx.arc(41, 10, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
-    // Distant Namsan Mountain + N Seoul Tower (smooth season color crossfade!)
-    ctx.fillStyle = lerpHex(prevSeason.mountain || '#7ea2d6', season.mountain || '#7ea2d6', f);
+    // Layered Smooth Curved Namsan Mountain Ridges (atmospheric parallax depth!)
+    const mtnBase = lerpHex(prevSeason.mountain || '#7ea2d6', season.mountain || '#7ea2d6', f);
+    ctx.save();
+    ctx.globalAlpha = 0.52;
+    ctx.fillStyle = mtnBase;
     ctx.beginPath();
     ctx.moveTo(0, groundY);
-    ctx.lineTo(0, groundY - 40);
-    ctx.lineTo(w * 0.22, groundY - 68);
-    ctx.lineTo(w * 0.52, groundY - 96);
-    ctx.lineTo(w * 0.80, groundY - 64);
-    ctx.lineTo(w, groundY - 78);
+    ctx.lineTo(0, groundY - 46);
+    ctx.quadraticCurveTo(w * 0.18, groundY - 82, w * 0.38, groundY - 58);
+    ctx.quadraticCurveTo(w * 0.68, groundY - 96, w, groundY - 56);
+    ctx.lineTo(w, groundY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    const hillGrad = ctx.createLinearGradient(0, groundY - 102, 0, groundY);
+    hillGrad.addColorStop(0, mtnBase);
+    hillGrad.addColorStop(1, isStormy ? 'rgba(54, 74, 108, 0.92)' : 'rgba(92, 132, 188, 0.88)');
+    ctx.fillStyle = hillGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(0, groundY - 36);
+    ctx.quadraticCurveTo(w * 0.16, groundY - 68, w * 0.34, groundY - 60);
+    ctx.quadraticCurveTo(w * 0.52, groundY - 104, w * 0.72, groundY - 62);
+    ctx.quadraticCurveTo(w * 0.88, groundY - 82, w, groundY - 58);
     ctx.lineTo(w, groundY);
     ctx.closePath();
     ctx.fill();
 
-    // N Seoul Tower crisp pixel silhouette on peak
+    // Crisp Stylized N Seoul Tower on Namsan Peak with Glowing Observatory & Beacon
     const tx = Math.floor(w * 0.52);
-    const ty = groundY - 96;
+    const ty = groundY - 84;
+    ctx.save();
+    // Base pavilion
+    ctx.fillStyle = '#4c6da6';
+    drawRoundRect(ctx, tx - 8, ty - 6, 16, 8, 2);
+    ctx.fill();
+    // Tapered shaft
+    ctx.fillStyle = '#6c8ec4';
+    ctx.beginPath();
+    ctx.moveTo(tx - 3.2, ty - 5);
+    ctx.lineTo(tx - 2.0, ty - 38);
+    ctx.lineTo(tx + 2.0, ty - 38);
+    ctx.lineTo(tx + 3.2, ty - 5);
+    ctx.closePath();
+    ctx.fill();
+    // Observation pod (double-deck)
+    ctx.fillStyle = '#4f71ab';
+    drawRoundRect(ctx, tx - 9, ty - 34, 18, 9, 3);
+    ctx.fill();
+    // Glowing glass observatory windows
+    ctx.fillStyle = isStormy ? '#ffe580' : '#e6f5ff';
+    drawRoundRect(ctx, tx - 7, ty - 31.5, 14, 3.6, 1.5);
+    ctx.fill();
+    // Antenna spire
     ctx.fillStyle = '#5c7db5';
-    ctx.fillRect(tx - 2, ty - 34, 4, 36);
-    ctx.fillRect(tx - 7, ty - 26, 14, 7);
-    ctx.fillStyle = '#d4e8ff';
-    ctx.fillRect(tx - 5, ty - 24, 10, 3);
-    ctx.fillStyle = '#5c7db5';
-    ctx.fillRect(tx - 1, ty - 48, 2, 14);
-    ctx.fillStyle = '#ff6b6b';
-    ctx.fillRect(tx - 1, ty - 50, 2, 3);
+    ctx.fillRect(tx - 1, ty - 52, 2, 18);
+    // Softly pulsing red aviation beacon
+    const beaconPulse = 0.55 + Math.sin(t * 5) * 0.45;
+    ctx.fillStyle = `rgba(255, 92, 108, ${beaconPulse.toFixed(2)})`;
+    ctx.beginPath();
+    ctx.arc(tx, ty - 53, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ff6b78';
+    ctx.beginPath();
+    ctx.arc(tx, ty - 53, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     // Blazing Summer Sun sprite from uploaded sheet!
     if (seasonId === 'summer' && !isStormy) {
@@ -403,19 +489,28 @@ window.RunRenderer = (function () {
         ctx.fill();
       }
     } else if (weatherEvent === 'gust') {
-      ctx.fillStyle = 'rgba(210, 238, 255, 0.52)';
+      ctx.save();
+      ctx.strokeStyle = 'rgba(220, 245, 255, 0.55)';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
       for (let i = 0; i < 7; i++) {
-        const gx = ((i * 85 - t * 340) % (w + 90) + (w + 90)) % (w + 90) - 70;
-        const gy = 34 + (i * 29) % (GROUND_Y - 40);
-        ctx.fillRect(Math.floor(gx), gy, 44 + (i % 3) * 14, 2);
+        const gx = ((i * 92 - t * 380) % (w + 110) + (w + 110)) % (w + 110) - 80;
+        const gy = 30 + (i * 31) % (GROUND_Y - 42);
+        const len = 46 + (i % 3) * 18;
+        ctx.beginPath();
+        ctx.moveTo(gx, gy);
+        ctx.quadraticCurveTo(gx + len * 0.5, gy - 5 + Math.sin(t * 9 + i) * 4, gx + len, gy + 1);
+        ctx.stroke();
       }
+      ctx.restore();
     } else if (weatherEvent === 'ice_road') {
       ctx.fillStyle = 'rgba(135, 228, 255, 0.42)';
       ctx.fillRect(0, GROUND_Y - 3, w, 12);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.68)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
       for (let i = 0; i < 8; i++) {
         const ix = ((i * 68 - t * 110) % (w + 40) + (w + 40)) % (w + 40) - 20;
-        ctx.fillRect(Math.floor(ix), GROUND_Y - 1, 14, 2);
+        drawRoundRect(ctx, ix, GROUND_Y - 1, 16, 2.5, 1.2);
+        ctx.fill();
       }
     }
 
@@ -429,37 +524,59 @@ window.RunRenderer = (function () {
       const effSeason = usePrev ? prevSeasonId : seasonId;
 
       if (heavyRain) {
-        p.x -= 150 * dt * p.v;
-        p.y += 290 * dt * p.v;
-        ctx.fillStyle = 'rgba(185, 228, 255, 0.94)';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 2, 13);
+        p.x -= 165 * dt * p.v;
+        p.y += 315 * dt * p.v;
+        ctx.strokeStyle = 'rgba(195, 234, 255, 0.86)';
+        ctx.lineWidth = 1.6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - 5.5, p.y + 12);
+        ctx.stroke();
       } else if (heavyDust) {
         p.x -= 120 * dt * p.v;
         p.y += Math.sin(t * 4 + p.p) * 18 * dt;
-        ctx.fillStyle = p.s === 1 ? 'rgba(235, 198, 75, 0.92)' : 'rgba(196, 152, 46, 0.85)';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 4, 3);
+        ctx.fillStyle = p.s === 1 ? 'rgba(235, 198, 75, 0.82)' : 'rgba(196, 152, 46, 0.74)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.s === 1 ? 2.4 : 1.7, 0, Math.PI * 2);
+        ctx.fill();
       } else if (effSeason === 'summer') {
-        // Warm shimmering summer sunlight motes (no fake rain unless weatherEvent is rain/flood!)
         p.x -= 48 * dt * p.v;
         p.y += Math.sin(t * 3 + p.p) * 14 * dt;
-        ctx.fillStyle = 'rgba(255, 245, 175, 0.72)';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 2, 2);
+        ctx.fillStyle = 'rgba(255, 245, 175, 0.76)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+        ctx.fill();
       } else if (effSeason === 'winter' || weatherEvent === 'ice_road') {
         p.x -= ((isBlizzard ? 185 : 52) + Math.sin(t * 2 + p.p) * 18) * dt;
         p.y += (isBlizzard ? 88 : 52) * dt * p.v;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.s + 1, p.s + 1);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.s * 0.9 + 1.1, 0, Math.PI * 2);
+        ctx.fill();
       } else if (effSeason === 'autumn' || weatherEvent === 'gust') {
-        p.x -= (weatherEvent === 'gust' ? 230 : 115) * dt * p.v;
+        p.x -= (weatherEvent === 'gust' ? 235 : 115) * dt * p.v;
         p.y += (34 + Math.sin(t * 4 + p.p) * 18) * dt;
-        ctx.fillStyle = p.s === 1 ? '#ff7d30' : '#ffd24d';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 4, 2);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(t * 4 + p.p);
+        ctx.fillStyle = p.s === 1 ? '#ff7930' : '#ffcf48';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 3.2, 1.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       } else {
-        // Spring cherry blossom petals!
+        // Soft spinning cherry blossom petals!
         p.x -= 64 * dt * p.v;
         p.y += (26 + Math.sin(t * 3 + p.p) * 14) * dt;
-        ctx.fillStyle = p.s === 1 ? '#ffb3d1' : '#ffe4ef';
-        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 3, 2);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(t * 3 + p.p);
+        ctx.fillStyle = p.s === 1 ? '#ffa8cd' : '#ffe2ef';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 2.8, 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       }
       if (p.y > h) { p.y = -6; p.x = Math.random() * (w + 60); }
       if (p.x < -10) { p.x = w + 10; p.y = Math.random() * h; }
@@ -547,14 +664,32 @@ window.RunRenderer = (function () {
     if (!car) return;
     if (car.phase === 'warn') {
       const blink = Math.floor(t * 14) % 2 === 0;
-      ctx.fillStyle = blink ? '#d93232' : '#ff9814';
-      ctx.fillRect(W - 122, GROUND_Y - 64, 114, 24);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(W - 122, GROUND_Y - 64, 114, 24);
+      const bx = W - 128;
+      const by = GROUND_Y - 68;
+      const bw = 118;
+      const bh = 26;
+      ctx.save();
+      const grad = ctx.createLinearGradient(bx, by, bx, by + bh);
+      grad.addColorStop(0, blink ? '#ff4d5a' : '#ffad2b');
+      grad.addColorStop(1, blink ? '#c91228' : '#d96900');
+      drawRoundRect(ctx, bx, by, bw, bh, 13);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = '#09152e';
+      ctx.stroke();
+      drawRoundRect(ctx, bx + 2, by + 2, bw - 4, bh - 4, 11);
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
+      ctx.stroke();
+      ctx.font = '900 11px "Paperlogy", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = '#09152e';
+      ctx.strokeText('💦 물벼락 주의! 점프!', bx + bw / 2, by + 17);
       ctx.fillStyle = '#ffffff';
-      ctx.font = '800 11px "Paperlogy", sans-serif';
-      ctx.fillText('물벼락 주의! 점프!', W - 114, GROUND_Y - 48);
+      ctx.fillText('💦 물벼락 주의! 점프!', bx + bw / 2, by + 17);
+      ctx.restore();
     } else if (car.phase === 'pass') {
       const x = Math.floor(car.x);
       const carSpr = getSprite('sp_red_car');
@@ -638,6 +773,7 @@ window.RunRenderer = (function () {
       sliding, inAir, gliding, invulnTimer, shield, feverTimer, running,
       dead = false, speedBoostTimer = 0, skinDef = null,
       umbrellaOn = false, maskOn = false, umbrellaBrokenTimer = 0,
+      gustWarning = false,
       scaleHeight = 52
     } = opts;
 
@@ -651,8 +787,12 @@ window.RunRenderer = (function () {
     const isProne = sliding || dead;
 
     if (!inAir) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-      ctx.fillRect(cx - (isProne ? 20 : 14), cy - 1, isProne ? 40 : 28, 4);
+      ctx.save();
+      ctx.fillStyle = 'rgba(8, 16, 36, 0.30)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 1, isProne ? 22 : 15, 3.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
     // Uploaded Golden / Blue Dash VFX streaks behind character during FEVER or Speed Boost!
@@ -697,37 +837,53 @@ window.RunRenderer = (function () {
       }
     }
 
-    // Uploaded Sky-Blue & White Umbrella sprite when 우비 소년 glides OR Umbrella Toggle is ON!
+    // Uploaded Sky-Blue & White Umbrella sprite (shakes violently during Typhoon gust until folded, flips away if broken!)
     const showUmbrella = !dead && ((col.umbrella && gliding) || umbrellaOn);
-    if (showUmbrella) {
-      const umbSpr = getSprite('spr_umbrella');
+    const umbSpr = getSprite('spr_umbrella');
+    if (showUmbrella && umbSpr) {
       const uy = cy - (isProne ? 26 : scaleHeight) - 8;
-      if (umbSpr) {
-        const uh = 44;
-        const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - 24), uw, uh);
+      const uh = 44;
+      const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      if (gustWarning) {
+        // Diegetic visual cue: typhoon wind violently rattles & pulls the umbrella backward!
+        const jitterX = Math.sin(t * 54) * 2.5 - 3;
+        const tilt = -0.24 + Math.sin(t * 44) * 0.14;
+        ctx.translate(cx + 8 + jitterX, uy - 2);
+        ctx.rotate(tilt);
+        ctx.drawImage(umbSpr, Math.floor(-uw / 2), Math.floor(-uh * 0.52), uw, uh);
       } else {
-        ctx.fillStyle = '#2672d9';
-        ctx.fillRect(cx - 18, uy - 10, 40, 7);
+        ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - 24), uw, uh);
       }
-    } else if (!dead && umbrellaBrokenTimer > 5.6) {
-      // Flipped broken umbrella brief comedy animation!
-      const uy = cy - scaleHeight - 8;
-      ctx.fillStyle = '#3c4759';
-      ctx.fillRect(cx + 8, uy - 6, 2, 22);
-      ctx.fillStyle = '#e05252';
-      ctx.fillRect(cx - 12, uy - 14, 6, 10);
-      ctx.fillRect(cx + 12, uy - 14, 6, 10);
-      ctx.fillRect(cx - 6, uy - 7, 18, 5);
+      ctx.restore();
+    } else if (!dead && umbrellaBrokenTimer > 5.3 && umbSpr) {
+      // Crisp flipped real umbrella sprite flying backward when snapped by typhoon!
+      const prog = Math.max(0, Math.min(1, (6.0 - umbrellaBrokenTimer) / 0.7));
+      const uy = cy - scaleHeight - 10 - prog * 34;
+      const ux = cx + 6 - prog * 46;
+      const uh = 40;
+      const uw = Math.round(uh * (umbSpr.naturalWidth / umbSpr.naturalHeight));
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - prog);
+      ctx.translate(ux, uy);
+      ctx.rotate(-0.5 - prog * 2.4);
+      ctx.scale(1, -0.82);
+      ctx.drawImage(umbSpr, Math.floor(-uw / 2), Math.floor(-uh / 2), uw, uh);
+      ctx.restore();
     }
 
     if (sliding && !dead) {
-      ctx.fillStyle = 'rgba(255, 245, 230, 0.85)';
-      const dustShift = Math.floor((t * 48) % 8);
-      ctx.fillRect(cx - 26 - dustShift, cy - 5, 11, 4);
-      ctx.fillRect(cx - 20 - dustShift, cy - 10, 7, 3);
+      ctx.save();
+      const dustShift = (t * 42) % 10;
+      ctx.fillStyle = 'rgba(255, 248, 236, 0.72)';
+      ctx.beginPath();
+      ctx.arc(cx - 22 - dustShift * 0.8, cy - 4, 5.2, 0, Math.PI * 2);
+      ctx.arc(cx - 29 - dustShift, cy - 3, 3.8, 0, Math.PI * 2);
+      ctx.arc(cx - 18 - dustShift * 0.5, cy - 8, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
     // Character-Specific Unique Animated Aura + Equipped Skin Radiant Trail!
@@ -921,20 +1077,29 @@ window.RunRenderer = (function () {
 
   // ===================== UPLOADED SEASONAL SHEET OBSTACLES ONLY =====================
   function drawObstacle(ctx, ob, t) {
-    // Right-edge warning badge before fast flying aerial obstacle enters
+    // Right-edge glossy cartoon warning badge before fast flying aerial obstacle enters
     if (ob.warn && ob.x > W - 18 && ob.lane !== 'icicle') {
       const wy = Math.floor(ob.y + ob.h / 2);
       const blink = Math.floor(t * 14) % 2 === 0;
-      ctx.fillStyle = blink ? '#e83a3a' : '#ff9914';
-      ctx.fillRect(W - 26, wy - 12, 20, 24);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(W - 26, wy - 12, 20, 24);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 16px sans-serif';
+      ctx.save();
+      drawRoundRect(ctx, W - 28, wy - 13, 22, 26, 8);
+      ctx.fillStyle = blink ? '#ff2b44' : '#ff9814';
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = '#09152e';
+      ctx.stroke();
+      drawRoundRect(ctx, W - 26, wy - 11, 18, 22, 6);
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.stroke();
+      ctx.font = '900 16px "Paperlogy", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('!', W - 16, wy + 6);
-      ctx.textAlign = 'left';
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#09152e';
+      ctx.strokeText('!', W - 17, wy + 6);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('!', W - 17, wy + 6);
+      ctx.restore();
       return;
     }
 
@@ -945,16 +1110,22 @@ window.RunRenderer = (function () {
       y += Math.round(Math.sin(t * 9 + ob.x * 0.04) * 3);
     }
 
-    // Top warning indicator while winter icicles hang before dropping
+    // Top glossy rounded warning badge while winter icicles hang before dropping
     if (ob.lane === 'icicle' && y < 38) {
       const blink = Math.floor(t * 16) % 2 === 0;
-      ctx.fillStyle = blink ? '#ff4757' : '#38c8ff';
-      ctx.fillRect(x + Math.floor(ob.w / 2) - 9, 4, 18, 16);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 11px sans-serif';
+      const ix = x + Math.floor(ob.w / 2);
+      ctx.save();
+      drawRoundRect(ctx, ix - 10, 4, 20, 18, 7);
+      ctx.fillStyle = blink ? '#ff2b44' : '#2dbdff';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#09152e';
+      ctx.stroke();
+      ctx.font = '900 12px "Paperlogy", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('!', x + Math.floor(ob.w / 2), 16);
-      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('!', ix, 17);
+      ctx.restore();
     }
 
     const spr = getSprite(ob.sprite);
@@ -1123,18 +1294,6 @@ window.RunRenderer = (function () {
     } else if (it.kind === 'chest') {
       const spr = getSprite('ui_chest');
       if (spr) ctx.drawImage(spr, x - 13, y - 11, 26, 22);
-    } else if (it.kind === 'norway') {
-      ctx.fillStyle = '#ba0c2f';
-      ctx.fillRect(x - 11, y - 8, 22, 16);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x - 5, y - 8, 4, 16);
-      ctx.fillRect(x - 11, y - 2, 22, 4);
-      ctx.fillStyle = '#00205b';
-      ctx.fillRect(x - 4, y - 8, 2, 16);
-      ctx.fillRect(x - 11, y - 1, 22, 2);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.2;
-      ctx.strokeRect(x - 11, y - 8, 22, 16);
     }
 
     drawItemBubbleFront(ctx, x, y, bubbleR, rim, t);
@@ -1266,6 +1425,7 @@ window.RunRenderer = (function () {
       umbrellaOn: run.umbrellaOn,
       maskOn: run.maskOn,
       umbrellaBrokenTimer: run.umbrellaBrokenTimer || 0,
+      gustWarning: Boolean(run.weatherEvent === 'gust' && run.umbrellaOn && run.feverTimer <= 0),
       hitPoseTimer: run.hitPoseTimer || 0,
       itemPoseTimer: run.itemPoseTimer || 0,
       winPoseTimer: run.winPoseTimer || 0,
