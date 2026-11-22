@@ -20,6 +20,14 @@
   --cr-gold-bot: #d98200;
   --cr-gold-lip: #9e5400;
   --cr-text-dark: #182740;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+html.ios-standalone {
+  --safe-top: max(24px, env(safe-area-inset-top, 0px));
 }
 
 * {
@@ -37,7 +45,8 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% 25%, #163a66 0%, #091324 85%);
+  background-color: #0d2147;
+  background-image: radial-gradient(circle at 50% 25%, #163a66 0%, #091324 85%);
   font-family: var(--font-ui);
   color: #ffffff;
   overflow: hidden;
@@ -131,13 +140,12 @@ body {
   font-size: 16px !important;
 }
 
-/* ================= LANDSCAPE-ONLY 16:9 ROYAL-BLUE DIAMOND APP SHELL ================= */
+/* ================= FULL-BLEED RESPONSIVE ROYAL-BLUE DIAMOND APP SHELL ================= */
 #mobile-app {
   position: relative;
-  width: 100vw;
+  width: 100%;
   max-width: none;
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
   max-height: none;
   display: flex;
   flex-direction: column;
@@ -156,30 +164,37 @@ body {
 
 @media (hover: hover) and (pointer: fine) and (min-width: 1024px) and (min-height: 640px) {
   #mobile-app {
-    width: min(96vw, 980px);
+    width: min(96vw, 1080px);
     height: auto;
     aspect-ratio: 16 / 9;
-    max-height: 92dvh;
+    max-height: 92vh;
     border: 3px solid #2b4e7d;
     border-radius: 22px;
   }
 }
 
-/* Full Edge-to-Edge Phone Screen Fill (Zero Sidebars / Zero Borders on Any Mobile Device!) */
+/* True Edge-to-Edge Mobile & iPad Fill (ZERO Bottom White Bar, ZERO Forced 90deg Spin Glitch!) */
 @media (pointer: coarse), (max-width: 1023px), (max-height: 639px) {
   html, body {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100% !important;
     height: 100% !important;
+    min-height: 100% !important;
     overflow: hidden !important;
+    background-color: #0d2147 !important;
   }
   #mobile-app {
     position: fixed !important;
-    inset: 0;
-    width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
     max-width: none !important;
     max-height: none !important;
     aspect-ratio: auto !important;
@@ -188,30 +203,7 @@ body {
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
-  }
-}
-
-/* Instant Full-Bleed Landscape Launch on Portrait Phones (Zero Rotate Prompt, Zero Sidebars!) */
-@media (orientation: portrait) {
-  #mobile-app {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100vh !important;
-    width: 100dvh !important;
-    height: 100vw !important;
-    height: 100dvw !important;
-    max-width: none !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: translate(-50%, -50%) rotate(90deg);
-    transform-origin: center center;
+    transform: none !important;
   }
 }
 
@@ -2546,10 +2538,9 @@ input:focus-visible {
    ========================================================================= */
 @media (orientation: landscape) and (max-height: 600px) {
   #mobile-app {
-    width: 100vw !important;
+    width: 100% !important;
     max-width: none !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    height: 100% !important;
     border: none !important;
     border-radius: 0 !important;
     padding: 0 !important;
@@ -9349,4 +9340,328 @@ input:focus-visible {
 .intro-switch-btn.sync:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* =========================================================================
+   UNIVERSAL MULTI-DEVICE RESPONSIVE ENGINE
+   - Zero White Bar (100% full-bleed on iOS/iPadOS PWA & Safari)
+   - Zero Rotation Spin Glitch (Native Upright Portrait + Native Landscape)
+   - Full Safe-Area Clearance (iPadOS Status Bar, iPhone Dynamic Island/Notch)
+   - Lush iPad / Tablet Scaling (Eliminates Empty Space!)
+   ========================================================================= */
+
+#app-header {
+  padding: calc(var(--safe-top) + 6px) max(14px, var(--safe-right)) 6px max(14px, var(--safe-left)) !important;
+}
+
+#run-hud {
+  padding: calc(var(--safe-top) + 6px) max(14px, var(--safe-right)) 6px max(14px, var(--safe-left)) !important;
+}
+
+.tut-run-hud {
+  top: calc(var(--safe-top) + 76px) !important;
+}
+
+.ctrl-stack {
+  bottom: calc(max(12px, var(--safe-bottom)) + 6px) !important;
+}
+
+.ctrl-stack.left {
+  left: max(16px, var(--safe-left)) !important;
+}
+
+.ctrl-stack.right {
+  right: max(16px, var(--safe-right)) !important;
+}
+
+.ctrl-center-orbs {
+  bottom: calc(max(10px, var(--safe-bottom)) + 4px) !important;
+}
+
+#bottom-nav.pixel-nav-bar {
+  bottom: calc(max(10px, var(--safe-bottom)) + 4px) !important;
+}
+
+.bs-home-actions {
+  left: max(12px, var(--safe-left));
+  right: max(12px, var(--safe-right));
+  bottom: calc(max(10px, var(--safe-bottom)) + 4px);
+}
+
+/* iPad & Large Tablet Lush Scaling (4:3 / 3:2 / Pro — Eliminates Empty Space!) */
+@media (min-width: 740px) and (min-height: 620px) {
+  #app-header .res-pill {
+    height: 40px;
+    font-size: 16px;
+    padding: 0 13px 0 8px;
+  }
+  .hdr-gear-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .bs-spotlight {
+    width: clamp(360px, 50vh, 500px);
+    height: clamp(360px, 50vh, 500px);
+  }
+  .bs-podium-row {
+    max-width: min(640px, 80vw);
+  }
+  .bs-hero-img {
+    width: clamp(195px, 28vh, 265px);
+    height: clamp(195px, 28vh, 265px);
+  }
+  .bs-hero-aura {
+    width: clamp(260px, 37vh, 350px);
+    height: clamp(260px, 37vh, 350px);
+    margin-top: calc(clamp(260px, 37vh, 350px) * -0.57);
+    margin-left: calc(clamp(260px, 37vh, 350px) * -0.5);
+  }
+  .bs-podium-ring {
+    width: clamp(220px, 32vh, 295px);
+    height: clamp(50px, 7vh, 64px);
+    margin-top: -22px;
+  }
+  .bs-podium-inner {
+    width: clamp(148px, 21vh, 200px);
+    height: clamp(26px, 3.6vh, 34px);
+  }
+  .bs-hero-name {
+    font-size: clamp(30px, 4.2vh, 42px);
+  }
+  .bs-power-tag,
+  .bs-tier-tag {
+    font-size: 14px;
+    padding: 4px 14px;
+  }
+  .bs-side-arrow {
+    width: 52px;
+    height: 68px;
+    font-size: 24px;
+  }
+  .bs-brawler-btn {
+    min-width: 196px;
+    min-height: 76px;
+    padding: 8px 14px;
+  }
+  .bs-brawler-lbl {
+    font-size: 18px;
+  }
+  .bs-play-btn {
+    min-width: 265px;
+    min-height: 84px;
+    padding: 10px 20px;
+  }
+  .bs-play-main {
+    font-size: 32px;
+  }
+  .bs-play-sub {
+    font-size: 13px;
+  }
+  #bottom-nav.pixel-nav-bar {
+    grid-template-columns: 74px 74px 96px 74px 74px;
+    gap: 8px;
+    padding: 7px 16px 8px;
+    border-radius: 30px;
+  }
+  #bottom-nav.pixel-nav-bar .nav-spr-stack {
+    max-width: 74px;
+    height: 60px;
+  }
+  #bottom-nav.pixel-nav-bar .nav-spr-stack.home-stack {
+    max-width: 96px;
+    height: 74px;
+    margin-top: -16px;
+  }
+  #view-shop,
+  #view-chars,
+  #view-missions,
+  #view-rank {
+    padding-bottom: 104px;
+  }
+
+  /* Larger Ergonomic iPad Runner HUD & Thumb Controls */
+  #run-hud .run-portrait-box {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+  }
+  #run-hud .run-portrait-img {
+    width: 48px;
+    height: 50px;
+  }
+  #run-hud .run-hp-wrap {
+    max-width: 400px;
+  }
+  #run-hud .hearts-icons {
+    font-size: 18px;
+    gap: 3px;
+  }
+  #run-hud .fever-bar-track {
+    height: 17px;
+  }
+  #run-hud .fever-bar-text {
+    font-size: 11px;
+  }
+  #run-hud .season-exp-wrap {
+    max-width: 310px;
+    height: 17px;
+  }
+  #run-hud .season-pill {
+    font-size: 13px;
+    padding: 3px 11px;
+  }
+  #run-hud .score-num {
+    font-size: 16px;
+  }
+  #run-hud .run-gold-mini {
+    font-size: 15px;
+    padding: 5px 12px 5px 8px;
+  }
+  #run-hud .pause-square-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 15px;
+  }
+  .img-ctrl-btn.main-img-btn {
+    width: clamp(98px, 14.5vh, 134px);
+    height: clamp(98px, 14.5vh, 134px);
+  }
+  .img-ctrl-btn.gear-img-btn {
+    width: clamp(60px, 9.2vh, 80px);
+    height: clamp(60px, 9.2vh, 80px);
+    margin-bottom: 14px;
+  }
+  .status-orbs-row.four-orbs .status-orb {
+    width: 34px;
+    height: 34px;
+  }
+  .tut-run-hud {
+    top: calc(var(--safe-top) + 96px) !important;
+  }
+}
+
+@media (min-width: 960px) and (min-height: 620px) {
+  .card-list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .brawl-char-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+}
+
+/* Clean Upright Mobile Portrait Layout (NO Forced 90deg Rotation, Zero Cutoff, Zero Overlap!) */
+@media (orientation: portrait) and (max-width: 739px) {
+  #app-header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .bs-home-stage {
+    padding: 0 0 156px;
+  }
+  .bs-podium-row {
+    max-width: 94vw;
+  }
+  .bs-hero-img {
+    width: 156px;
+    height: 156px;
+  }
+  .bs-hero-aura {
+    width: 210px;
+    height: 210px;
+    margin-top: -120px;
+    margin-left: -105px;
+  }
+  .bs-podium-ring {
+    width: 178px;
+    height: 42px;
+    margin-top: -16px;
+  }
+  .bs-hero-name {
+    font-size: 25px;
+  }
+  .bs-home-actions {
+    bottom: calc(82px + var(--safe-bottom));
+    gap: 10px;
+  }
+  .bs-brawler-btn {
+    min-width: 0;
+    flex: 0.92;
+    min-height: 58px;
+    padding: 6px 10px;
+  }
+  .bs-play-btn {
+    min-width: 0;
+    flex: 1.25;
+    min-height: 62px;
+    padding: 8px 12px;
+  }
+  #bottom-nav.pixel-nav-bar {
+    grid-template-columns: 54px 54px 70px 54px 54px;
+    gap: 4px;
+    padding: 4px 10px 5px;
+    border-radius: 24px;
+  }
+  #bottom-nav.pixel-nav-bar .nav-spr-stack {
+    max-width: 54px;
+    height: 44px;
+  }
+  #bottom-nav.pixel-nav-bar .nav-spr-stack.home-stack {
+    max-width: 70px;
+    height: 56px;
+    margin-top: -13px;
+  }
+  .card-list {
+    grid-template-columns: 1fr;
+  }
+  .brawl-char-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .brawl-detail-body {
+    grid-template-columns: 1fr;
+  }
+  .brawl-hero-stage {
+    min-height: 170px;
+    border-right: none;
+    border-bottom: 3px solid #0c1429;
+  }
+  #run-hud .run-hp-wrap {
+    max-width: none;
+    flex: 1;
+  }
+  #run-hud .season-exp-wrap {
+    max-width: 112px;
+  }
+  .img-ctrl-btn.main-img-btn {
+    width: 86px;
+    height: 86px;
+  }
+  .img-ctrl-btn.gear-img-btn {
+    width: 54px;
+    height: 54px;
+    margin-bottom: 10px;
+  }
+  .ctrl-center-orbs {
+    bottom: calc(max(12px, var(--safe-bottom)) + 98px) !important;
+  }
+  .tut-run-hud {
+    top: calc(var(--safe-top) + 92px) !important;
+    width: 94%;
+  }
+}
+
+/* iPad Portrait (740px+ width in Portrait): Keep Actions Cleanly Above Dock! */
+@media (orientation: portrait) and (min-width: 740px) {
+  .bs-home-stage {
+    padding: 0 0 185px;
+  }
+  .bs-home-actions {
+    bottom: calc(108px + var(--safe-bottom));
+    max-width: 640px;
+    left: 50%;
+    right: auto;
+    width: 86%;
+    transform: translateX(-50%);
+  }
 }

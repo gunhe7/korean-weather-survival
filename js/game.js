@@ -83,7 +83,17 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd52';
+  const ASSET_VER = '20261121hd53';
+
+  function getSpawnRight() {
+    return (Renderer && Renderer.getSpawnX) ? Renderer.getSpawnX() : Renderer.W;
+  }
+
+  // Detect iOS / iPadOS Home-Screen PWA (black-translucent status bar safe clearance)
+  try {
+    const isIosPwa = Boolean(window.navigator && window.navigator.standalone === true);
+    if (isIosPwa) document.documentElement.classList.add('ios-standalone');
+  } catch {}
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -1037,6 +1047,12 @@
   let landscapeLockInFlight = false;
   let fullscreenAttemptedOnce = false;
 
+  function isAppleTouchDevice() {
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    const isIPadOs = typeof navigator !== 'undefined' && navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return /iPhone|iPad|iPod/i.test(ua) || isIPadOs;
+  }
+
   async function tryAutoLockLandscape(fromUserGesture = false) {
     // 1. Native Capacitor ScreenOrientation plugin if present
     try {
@@ -1046,6 +1062,8 @@
       }
     } catch {}
 
+    // Never fight iOS/iPadOS Safari native orientation (prevents rotation spin/white-bar glitches!)
+    if (isAppleTouchDevice()) return;
     if (!isTouchMobileDevice()) return;
     if (landscapeLockInFlight) return;
     landscapeLockInFlight = true;
@@ -1642,7 +1660,7 @@
 
   function spawnTutorialStepObstacle(stepId) {
     if (!run) return;
-    const startX = Renderer.W + 24;
+    const startX = getSpawnRight() + 24;
     if (stepId === 'jump') {
       const ob = {
         id: 'tut_cone', name: '도로 라바콘', lane: 'low', w: 32, h: 34, tag: 'wind', sprite: 'sp_traffic_cone',
@@ -1864,7 +1882,7 @@
           tut.phase = 'active';
           tut.timer = 0.65;
           for (let i = 0; i < 4; i++) {
-            run.items.push({ kind: 'coin', x: Renderer.W + 30 + i * 34, y: Renderer.GROUND_Y - 26 });
+            run.items.push({ kind: 'coin', x: getSpawnRight() + 30 + i * 34, y: Renderer.GROUND_Y - 26 });
           }
         }
       } else if (tut.phase === 'active') {
@@ -1939,7 +1957,7 @@
           tut.phase = 'active';
           tut.timer = 0.65;
           for (let i = 0; i < 4; i++) {
-            run.items.push({ kind: 'coin', x: Renderer.W + 30 + i * 34, y: Renderer.GROUND_Y - 26 });
+            run.items.push({ kind: 'coin', x: getSpawnRight() + 30 + i * 34, y: Renderer.GROUND_Y - 26 });
           }
         }
       } else if (tut.phase === 'active') {
@@ -1979,7 +1997,7 @@
             phase: 'warn',
             timer: 1.05,
             maxTimer: 1.05,
-            x: Renderer.W - 56,
+            x: getSpawnRight() - 56,
             y: Math.max(84, run.playerY - 34),
             vx: 0,
             vy: 0,
@@ -3735,6 +3753,7 @@
     }
 
     paused = false;
+    releaseAllControlButtons();
     Renderer.clearFloaters();
 
     run = {
@@ -4183,7 +4202,7 @@
       // 아직 화면 진입 전인 대기 장애물도 코로나 확진자 보행 장애물로 즉시 교체!
       for (let i = 0; i < run.obstacles.length; i++) {
         const ob = run.obstacles[i];
-        if (ob.x > Renderer.W - 8) {
+        if (ob.x > getSpawnRight() - 8) {
           run.obstacles[i] = {
             ...COVID_WALKER_PRESET,
             x: ob.x,
@@ -4288,7 +4307,7 @@
       return 0;
     }
 
-    let startX = Renderer.W + (preset.warn ? 48 : 22);
+    let startX = getSpawnRight() + (preset.warn ? 48 : 22);
     // 스프링 패드 · 침수 차량 지붕 등 지형 오브젝트와 절대 겹치지 않게 회피!
     if (isRectBlockedByFeature(startX, preset.w, 38)) {
       return 0.35;
@@ -4304,7 +4323,7 @@
     if (preset.lane === 'air') {
       y = Renderer.GROUND_Y - 24 - preset.h;
     } else if (preset.lane === 'icicle') {
-      startX = Renderer.W + 24;
+      startX = getSpawnRight() + 24;
       y = 8;
       extra.falling = false;
       extra.vy = 0;
@@ -4415,7 +4434,7 @@
     const xOffsets = [28, 76, 124];
 
     for (let xi = 0; xi < xOffsets.length; xi++) {
-      const cx = Renderer.W + xOffsets[xi];
+      const cx = getSpawnRight() + xOffsets[xi];
       for (let yi = 0; yi < laneYs.length; yi++) {
         const cy = laneYs[yi];
         if (!isPointBlockedByObstacle(cx, cy, 38, 28) && !isPointNearItem(cx, cy, 38)) {
@@ -4433,7 +4452,7 @@
       const r = Math.random();
       const kind = r < 0.48 ? 'car_roof' : (r < 0.76 ? 'crate_plat' : 'metal_plat');
       const w = kind === 'car_roof' ? 76 : 68;
-      const fx = Renderer.W + 30;
+      const fx = getSpawnRight() + 30;
       if (isRectBlockedByFeature(fx, w, 26) || isRectBlockedByObstacle(fx, w, 28)) return;
       const platformY = kind === 'car_roof' ? Renderer.GROUND_Y - 30 : Renderer.GROUND_Y - 26;
       run.features.push({ kind, x: fx, w, platformY, isPlatform: true });
@@ -4444,7 +4463,7 @@
   }
 
   function spawnConvenienceStore() {
-    const fx = Renderer.W + 40;
+    const fx = getSpawnRight() + 40;
     const fw = 44;
     // 장애물이나 다른 지형과 겹치면 잠시 뒤로 미뤄 자연스럽게 배치!
     if (isRectBlockedByObstacle(fx, fw, 64) || isRectBlockedByFeature(fx, fw, 52)) {
@@ -4815,7 +4834,7 @@
         car.timer -= dt;
         if (car.timer <= 0) {
           car.phase = 'pass';
-          car.x = Renderer.W + 20;
+          car.x = getSpawnRight() + 20;
           car.checked = false;
         }
       } else {
@@ -4843,7 +4862,7 @@
       run.passingCarCd -= dt;
       if (run.passingCarCd <= 0) {
         run.passingCarCd = Math.max(3.6, (6.5 + Math.random() * 2.5) / diff.weatherPaceMult);
-        run.passingCar = { phase: 'warn', timer: Math.max(0.85, 1.15 / Math.min(1.35, diff.weatherPaceMult)), x: Renderer.W + 30 };
+        run.passingCar = { phase: 'warn', timer: Math.max(0.85, 1.15 / Math.min(1.35, diff.weatherPaceMult)), x: getSpawnRight() + 30 };
         SFX.fakeAlert();
       }
     }
@@ -4958,7 +4977,7 @@
         atk.y += (atk.vy || -260) * dt;
         atk.vy = (atk.vy || -260) + 520 * dt;
         atk.deflectTimer -= dt;
-        if (atk.deflectTimer <= 0 || atk.x > Renderer.W + 70) {
+        if (atk.deflectTimer <= 0 || atk.x > getSpawnRight() + 70) {
           run.covidAttack = null;
         }
       }
@@ -4971,7 +4990,7 @@
           phase: 'warn',
           timer: warnDur,
           maxTimer: warnDur,
-          x: Renderer.W - 56,
+          x: getSpawnRight() - 56,
           y: Math.max(84, run.playerY - 34),
           vx: 0,
           vy: 0,
@@ -5154,7 +5173,7 @@
         }
       } else if (ob.lane === 'icicle') {
         ob.x -= run.speed * dt;
-        if (!ob.falling && ob.x < Renderer.W - 56) {
+        if (!ob.falling && ob.x < getSpawnRight() - 56) {
           ob.falling = true;
         }
         if (ob.falling) {
@@ -5246,6 +5265,7 @@
     run.maskOn = false;
     run.maskParryTimer = 0;
     run.covidAttack = null;
+    releaseAllControlButtons();
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
@@ -5509,6 +5529,7 @@
     run.active = false;
     run.dying = false;
     run.dead = true;
+    releaseAllControlButtons();
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
     el.runCanvasWrap.classList.remove('fever-active');
@@ -5584,6 +5605,7 @@
     }
     run = null;
     paused = false;
+    releaseAllControlButtons();
     clearTutorialHighlights();
     if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
@@ -5639,31 +5661,87 @@
     requestAnimationFrame(loop);
   }
 
-  // ===================== EVENT LISTENERS =====================
-  function bindControlButton(btn, onDown, onUp) {
-    let activePtr = null;
+  // ===================== EVENT LISTENERS (STUCK-PROOF MULTI-TOUCH CONTROLS) =====================
+  const controlResetters = [];
+
+  function releaseAllControlButtons() {
+    for (let i = 0; i < controlResetters.length; i++) {
+      try { controlResetters[i](); } catch {}
+    }
+  }
+
+  function bindControlButton(btn, onDown, onUp, opts = {}) {
+    if (!btn) return;
+    const isToggle = Boolean(opts && opts.isToggle);
+    const activePtrs = new Set();
+    let toggleVisualTimer = null;
+
+    const clearVisual = (invokeUp) => {
+      if (toggleVisualTimer) {
+        clearTimeout(toggleVisualTimer);
+        toggleVisualTimer = null;
+      }
+      const hadActive = activePtrs.size > 0 || btn.classList.contains('pressed');
+      activePtrs.clear();
+      btn.classList.remove('pressed');
+      if (invokeUp && hadActive && typeof onUp === 'function') {
+        onUp();
+      }
+    };
+
     const down = (e) => {
       e.preventDefault();
-      if (activePtr !== null) return;
-      activePtr = e.pointerId;
-      if (btn.setPointerCapture) {
-        try { btn.setPointerCapture(e.pointerId); } catch {}
-      }
+      // Guard ONLY against duplicate delivery of the exact same pointerId (never block a fresh tap!)
+      if (activePtrs.has(e.pointerId)) return;
+      activePtrs.add(e.pointerId);
       btn.classList.add('pressed');
+      if (isToggle) {
+        if (toggleVisualTimer) clearTimeout(toggleVisualTimer);
+        toggleVisualTimer = setTimeout(() => {
+          toggleVisualTimer = null;
+          activePtrs.clear();
+          btn.classList.remove('pressed');
+        }, 180);
+      }
       onDown();
     };
+
     const up = (e) => {
-      e.preventDefault();
-      if (activePtr !== null && e.pointerId !== activePtr) return;
-      activePtr = null;
-      btn.classList.remove('pressed');
-      onUp();
+      if (!activePtrs.has(e.pointerId)) return;
+      activePtrs.delete(e.pointerId);
+      if (activePtrs.size === 0) {
+        if (toggleVisualTimer) {
+          clearTimeout(toggleVisualTimer);
+          toggleVisualTimer = null;
+        }
+        btn.classList.remove('pressed');
+        if (typeof onUp === 'function') onUp();
+      }
     };
-    btn.addEventListener('pointerdown', down);
+
+    btn.addEventListener('pointerdown', down, { passive: false });
     btn.addEventListener('pointerup', up);
     btn.addEventListener('pointercancel', up);
     btn.addEventListener('lostpointercapture', up);
+    // Catch releases even when a thumb slides off the button or hits the iPad/iPhone screen edge!
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', up, true);
+
+    controlResetters.push(() => clearVisual(true));
   }
+
+  // Zero-finger failsafe on touchscreens (iOS/iPadOS Safari): if all fingers left the screen, NO button can stay stuck!
+  window.addEventListener('touchend', (e) => {
+    if (e && e.touches && e.touches.length === 0) {
+      releaseAllControlButtons();
+    }
+  }, { passive: true });
+  window.addEventListener('touchcancel', (e) => {
+    if (!e || !e.touches || e.touches.length === 0) {
+      releaseAllControlButtons();
+    }
+  }, { passive: true });
+  window.addEventListener('blur', releaseAllControlButtons);
 
   function setupEvents() {
     document.querySelectorAll('.nav-btn').forEach((btn) => {
@@ -6006,6 +6084,7 @@
     // Auto-pause active run + keepalive cloud save flush on leave + auto cloud pull on return!
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
+        releaseAllControlButtons();
         if (run && run.active && !paused) {
           paused = true;
           SFX.setAmbientPaused(true);
@@ -6067,16 +6146,17 @@
       }
     });
 
-    // Runner Controls + Gear Toggles (All 4 use crisp Up/Down sprite swap on press & release!)
+    // Runner Controls + Gear Toggles (All 4 use crisp Up/Down sprite swap + stuck-proof multi-touch!)
     bindControlButton(el.btnJump, doJumpPress, doJumpRelease);
     bindControlButton(el.btnSlide, doSlideStart, doSlideEnd);
-    bindControlButton(el.btnToggleUmbrella, toggleUmbrella, () => {});
-    bindControlButton(el.btnToggleMask, toggleMask, () => {});
+    bindControlButton(el.btnToggleUmbrella, toggleUmbrella, () => {}, { isToggle: true });
+    bindControlButton(el.btnToggleMask, toggleMask, () => {}, { isToggle: true });
 
     el.btnPauseRun.addEventListener('click', () => {
       if (!run || !run.active) return;
       SFX.click();
       paused = true;
+      releaseAllControlButtons();
       SFX.setAmbientPaused(true);
       el.pauseOverlay.classList.remove('hidden');
     });

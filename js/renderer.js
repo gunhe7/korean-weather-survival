@@ -2,6 +2,11 @@ window.RunRenderer = (function () {
   const W = 560;
   const H = 315;
   const GROUND_Y = 258;
+  let curView = { minX: 0, maxX: W, minY: 0, maxY: H };
+
+  function getSpawnX() {
+    return Math.max(440, Math.ceil(curView.maxX));
+  }
 
   let particles = [];
   let dustPuffs = [];
@@ -56,7 +61,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd52';
+  const CHAR_ASSET_VER = '20261121hd53';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -262,7 +267,13 @@ window.RunRenderer = (function () {
   }
 
   // ===================== MOCKUP-INSPIRED BACKGROUND & TILESET =====================
-  function drawBackground(ctx, w, h, groundY, seasonId, scroll, t, prevSeasonId = null, blend = 1, weatherEvent = 'clear') {
+  function drawBackground(ctx, w, h, groundY, seasonId, scroll, t, prevSeasonId = null, blend = 1, weatherEvent = 'clear', bounds = null) {
+    const minX = bounds ? bounds.minX : 0;
+    const maxX = bounds ? bounds.maxX : w;
+    const minY = bounds ? bounds.minY : 0;
+    const maxY = bounds ? bounds.maxY : h;
+    const spanW = Math.max(w, maxX - minX);
+
     const seasons = window.RUN_DATA.SEASONS;
     const season = seasons.find((s) => s.id === seasonId) || seasons[0];
     const prevSeason = prevSeasonId ? (seasons.find((s) => s.id === prevSeasonId) || season) : season;
@@ -285,19 +296,21 @@ window.RunRenderer = (function () {
       bot = lerpHex(season.sky[2], '#f29eb0', 0.42);
     }
 
-    const grad = ctx.createLinearGradient(0, 0, 0, groundY);
+    const grad = ctx.createLinearGradient(0, minY, 0, groundY);
     grad.addColorStop(0, top);
     grad.addColorStop(0.58, mid);
     grad.addColorStop(1, bot);
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, groundY);
+    ctx.fillRect(minX - 10, minY - 10, spanW + 20, groundY - minY + 12);
 
     // Soft glossy cartoon clouds (plump rounded puffs matching HD art style!)
     const cloudShadow = isCovid ? 'rgba(148, 56, 84, 0.65)' : (isStormy ? 'rgba(92, 112, 146, 0.72)' : 'rgba(184, 214, 255, 0.65)');
     const cloudMain = isCovid ? 'rgba(255, 224, 232, 0.88)' : (isStormy ? 'rgba(176, 194, 222, 0.90)' : 'rgba(255, 255, 255, 0.93)');
-    for (let i = 0; i < 4; i++) {
-      const cx = ((i * 155 - scroll * 0.055 + t * 5.5) % (w + 130) + (w + 130)) % (w + 130) - 75;
-      const cy = 28 + (i % 2) * 19;
+    const cloudWrap = spanW + 150;
+    const cloudCount = Math.max(4, Math.ceil(spanW / 145));
+    for (let i = 0; i < cloudCount; i++) {
+      const cx = minX + (((i * 155 - scroll * 0.055 + t * 5.5) % cloudWrap + cloudWrap) % cloudWrap) - 75;
+      const cy = Math.max(minY + 16, 26 + (i % 2) * 20);
       const sc = i % 2 === 0 ? 1.0 : 0.84;
       ctx.save();
       ctx.translate(cx, cy);
@@ -327,11 +340,11 @@ window.RunRenderer = (function () {
     ctx.globalAlpha = 0.52;
     ctx.fillStyle = mtnBase;
     ctx.beginPath();
-    ctx.moveTo(0, groundY);
-    ctx.lineTo(0, groundY - 46);
-    ctx.quadraticCurveTo(w * 0.18, groundY - 82, w * 0.38, groundY - 58);
-    ctx.quadraticCurveTo(w * 0.68, groundY - 96, w, groundY - 56);
-    ctx.lineTo(w, groundY);
+    ctx.moveTo(minX, groundY);
+    ctx.lineTo(minX, groundY - 46);
+    ctx.quadraticCurveTo(minX + spanW * 0.18, groundY - 82, minX + spanW * 0.38, groundY - 58);
+    ctx.quadraticCurveTo(minX + spanW * 0.68, groundY - 96, maxX, groundY - 56);
+    ctx.lineTo(maxX, groundY);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -341,17 +354,17 @@ window.RunRenderer = (function () {
     hillGrad.addColorStop(1, isStormy ? 'rgba(54, 74, 108, 0.92)' : 'rgba(92, 132, 188, 0.88)');
     ctx.fillStyle = hillGrad;
     ctx.beginPath();
-    ctx.moveTo(0, groundY);
-    ctx.lineTo(0, groundY - 36);
-    ctx.quadraticCurveTo(w * 0.16, groundY - 68, w * 0.34, groundY - 60);
-    ctx.quadraticCurveTo(w * 0.52, groundY - 104, w * 0.72, groundY - 62);
-    ctx.quadraticCurveTo(w * 0.88, groundY - 82, w, groundY - 58);
-    ctx.lineTo(w, groundY);
+    ctx.moveTo(minX, groundY);
+    ctx.lineTo(minX, groundY - 36);
+    ctx.quadraticCurveTo(minX + spanW * 0.16, groundY - 68, minX + spanW * 0.34, groundY - 60);
+    ctx.quadraticCurveTo(minX + spanW * 0.52, groundY - 104, minX + spanW * 0.72, groundY - 62);
+    ctx.quadraticCurveTo(minX + spanW * 0.88, groundY - 82, maxX, groundY - 58);
+    ctx.lineTo(maxX, groundY);
     ctx.closePath();
     ctx.fill();
 
     // Crisp Stylized N Seoul Tower on Namsan Peak with Glowing Observatory & Beacon
-    const tx = Math.floor(w * 0.52);
+    const tx = Math.floor(minX + spanW * 0.52);
     const ty = groundY - 84;
     ctx.save();
     // Base pavilion
@@ -395,7 +408,7 @@ window.RunRenderer = (function () {
       const sunSpr = getSprite('sp_sun');
       if (sunSpr) {
         const sSz = 42 + Math.round(Math.sin(t * 3) * 2);
-        ctx.drawImage(sunSpr, w - 66, 12, sSz, sSz);
+        ctx.drawImage(sunSpr, Math.floor(maxX - 66), Math.max(12, Math.floor(minY + 14)), sSz, sSz);
       }
     }
 
@@ -403,9 +416,11 @@ window.RunRenderer = (function () {
     const smogCitySpr = getSprite('sp_smog_city');
     if (smogCitySpr) {
       const cityOff = Math.floor(scroll * 0.16) % 160;
+      const startRep = Math.floor((minX - 160) / 160);
+      const endRep = Math.ceil((maxX + 160) / 160);
       ctx.save();
       ctx.globalAlpha = weatherEvent === 'dust' ? 0.72 : 0.42;
-      for (let rep = -1; rep < 5; rep++) {
+      for (let rep = startRep; rep <= endRep; rep++) {
         const bx = rep * 160 - cityOff;
         ctx.drawImage(smogCitySpr, Math.floor(bx), groundY - 82, 110, 84);
       }
@@ -418,7 +433,9 @@ window.RunRenderer = (function () {
     const bushSpr = getSprite(season.bush);
     const propSpr = getSprite(season.prop);
     const propOff = Math.floor(scroll * 0.55) % 280;
-    for (let rep = -1; rep <= 3; rep++) {
+    const pStartRep = Math.floor((minX - 280) / 280);
+    const pEndRep = Math.ceil((maxX + 280) / 280);
+    for (let rep = pStartRep; rep <= pEndRep; rep++) {
       const px = rep * 280 - propOff;
       if (treeSpr) {
         const th = 58;
@@ -447,16 +464,17 @@ window.RunRenderer = (function () {
     const tileW = 46;
     const tileH = 34;
     const tileOff = Math.floor(scroll) % tileW;
+    const tileStart = Math.floor((minX - tileW) / tileW) * tileW - tileOff;
 
     ctx.fillStyle = lerpHex(prevSeason.groundBase || '#57392c', season.groundBase || '#57392c', f);
-    ctx.fillRect(0, groundY, w, h - groundY);
+    ctx.fillRect(minX - 10, groundY, spanW + 20, Math.max(h, maxY) - groundY + 12);
 
     if (tileSpr) {
-      for (let gx = -tileOff; gx < w + tileW; gx += tileW) {
+      for (let gx = tileStart; gx < maxX + tileW; gx += tileW) {
         ctx.drawImage(tileSpr, Math.floor(gx), groundY - 3, tileW, tileH);
       }
       ctx.fillStyle = 'rgba(18, 16, 32, 0.35)';
-      ctx.fillRect(0, groundY + tileH - 4, w, h - (groundY + tileH - 4));
+      ctx.fillRect(minX - 10, groundY + tileH - 4, spanW + 20, Math.max(h, maxY) - (groundY + tileH - 4) + 12);
     }
   }
 
@@ -484,23 +502,30 @@ window.RunRenderer = (function () {
     }
   }
 
-  function drawParticles(ctx, w, h, seasonId, dt, t, weatherEvent = 'clear', prevSeasonId = null, blend = 1) {
+  function drawParticles(ctx, w, h, seasonId, dt, t, weatherEvent = 'clear', prevSeasonId = null, blend = 1, bounds = null) {
+    const minX = bounds ? bounds.minX : 0;
+    const maxX = bounds ? bounds.maxX : w;
+    const minY = bounds ? bounds.minY : 0;
+    const maxY = bounds ? bounds.maxY : h;
+    const spanW = Math.max(w, maxX - minX);
+    const spanH = Math.max(h, maxY - minY);
+
     // Active weather atmosphere tint & gust streaks
     if (weatherEvent === 'dust') {
       ctx.fillStyle = 'rgba(205, 174, 72, 0.24)';
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(minX - 10, minY - 10, spanW + 20, spanH + 20);
     } else if (weatherEvent === 'heat') {
       ctx.fillStyle = 'rgba(255, 130, 35, 0.14)';
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(minX - 10, minY - 10, spanW + 20, spanH + 20);
       // Blazing diagonal sun rays
       ctx.fillStyle = 'rgba(255, 240, 160, 0.16)';
-      for (let i = 0; i < 4; i++) {
-        const rx = ((i * 130 - t * 25) % (w + 100) + (w + 100)) % (w + 100) - 50;
+      for (let i = 0; i < 5; i++) {
+        const rx = minX + (((i * 130 - t * 25) % (spanW + 100) + (spanW + 100)) % (spanW + 100)) - 50;
         ctx.beginPath();
-        ctx.moveTo(rx, 0);
-        ctx.lineTo(rx + 26, 0);
-        ctx.lineTo(rx - 30, h);
-        ctx.lineTo(rx - 56, h);
+        ctx.moveTo(rx, minY);
+        ctx.lineTo(rx + 26, minY);
+        ctx.lineTo(rx - 30, maxY);
+        ctx.lineTo(rx - 56, maxY);
         ctx.closePath();
         ctx.fill();
       }
@@ -509,8 +534,8 @@ window.RunRenderer = (function () {
       ctx.strokeStyle = 'rgba(220, 245, 255, 0.55)';
       ctx.lineWidth = 2.2;
       ctx.lineCap = 'round';
-      for (let i = 0; i < 7; i++) {
-        const gx = ((i * 92 - t * 380) % (w + 110) + (w + 110)) % (w + 110) - 80;
+      for (let i = 0; i < 8; i++) {
+        const gx = minX + (((i * 92 - t * 380) % (spanW + 110) + (spanW + 110)) % (spanW + 110)) - 80;
         const gy = 30 + (i * 31) % (GROUND_Y - 42);
         const len = 46 + (i % 3) * 18;
         ctx.beginPath();
@@ -521,17 +546,17 @@ window.RunRenderer = (function () {
       ctx.restore();
     } else if (weatherEvent === 'ice_road') {
       ctx.fillStyle = 'rgba(135, 228, 255, 0.42)';
-      ctx.fillRect(0, GROUND_Y - 3, w, 12);
+      ctx.fillRect(minX - 10, GROUND_Y - 3, spanW + 20, 12);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
-      for (let i = 0; i < 8; i++) {
-        const ix = ((i * 68 - t * 110) % (w + 40) + (w + 40)) % (w + 40) - 20;
+      for (let i = 0; i < 10; i++) {
+        const ix = minX + (((i * 68 - t * 110) % (spanW + 40) + (spanW + 40)) % (spanW + 40)) - 20;
         drawRoundRect(ctx, ix, GROUND_Y - 1, 16, 2.5, 1.2);
         ctx.fill();
       }
     } else if (weatherEvent === 'covid') {
       const pulse = 0.10 + Math.sin(t * 5) * 0.04;
       ctx.fillStyle = `rgba(210, 26, 68, ${pulse.toFixed(3)})`;
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(minX - 10, minY - 10, spanW + 20, spanH + 20);
     }
 
     const heavyRain = weatherEvent === 'rain' || weatherEvent === 'flood';
@@ -607,8 +632,8 @@ window.RunRenderer = (function () {
         ctx.fill();
         ctx.restore();
       }
-      if (p.y > h) { p.y = -6; p.x = Math.random() * (w + 60); }
-      if (p.x < -10) { p.x = w + 10; p.y = Math.random() * h; }
+      if (p.y > maxY) { p.y = minY - 6; p.x = minX + Math.random() * (spanW + 60); }
+      if (p.x < minX - 10) { p.x = maxX + 10; p.y = minY + Math.random() * spanH; }
     });
   }
 
@@ -617,14 +642,17 @@ window.RunRenderer = (function () {
     // 1. Rising Floodwater Waves strictly using uploaded sp_flood_wave1 / sp_flood_wave2!
     if (run.weatherEvent === 'flood') {
       const waveY = Math.round(Math.sin(t * 7) * 2);
+      const minX = curView.minX;
+      const maxX = curView.maxX;
       ctx.fillStyle = 'rgba(34, 110, 198, 0.45)';
-      ctx.fillRect(0, GROUND_Y - 12 + waveY, W, 18);
+      ctx.fillRect(minX - 10, GROUND_Y - 12 + waveY, (maxX - minX) + 20, 18);
       const wSpr = getSprite('sp_flood_wave2') || getSprite('sp_flood_wave1');
       if (wSpr) {
         const wOff = Math.floor(run.scroll * 0.75) % 58;
+        const wStart = Math.floor((minX - 58) / 58) * 58 - wOff;
         ctx.save();
         ctx.globalAlpha = 0.85;
-        for (let wx = -wOff; wx < W + 60; wx += 58) {
+        for (let wx = wStart; wx < maxX + 60; wx += 58) {
           ctx.drawImage(wSpr, Math.floor(wx), GROUND_Y - 22 + waveY, 54, 26);
         }
         ctx.restore();
@@ -1557,11 +1585,18 @@ window.RunRenderer = (function () {
   }
 
   function drawFeverOverlay(ctx, t) {
+    const minX = curView.minX;
+    const maxX = curView.maxX;
+    const minY = curView.minY;
+    const maxY = curView.maxY;
+    const spanW = maxX - minX;
+    const spanH = maxY - minY;
+
     // Full-screen energetic speed lines!
     ctx.save();
     for (let i = 0; i < 8; i++) {
-      const lx = ((i * 80 - t * 520) % (W + 100) + (W + 100)) % (W + 100) - 60;
-      const ly = i < 4 ? 14 + i * 11 : H - 50 + (i - 4) * 10;
+      const lx = minX + (((i * 80 - t * 520) % (spanW + 100) + (spanW + 100)) % (spanW + 100)) - 60;
+      const ly = i < 4 ? minY + 14 + i * 11 : maxY - 50 + (i - 4) * 10;
       ctx.fillStyle = i % 2 === 0 ? 'rgba(255, 240, 120, 0.55)' : 'rgba(130, 232, 255, 0.5)';
       ctx.fillRect(Math.floor(lx), ly, 58, 3);
     }
@@ -1570,7 +1605,7 @@ window.RunRenderer = (function () {
     const hue = Math.floor(t * 280) % 360;
     ctx.strokeStyle = `hsla(${hue}, 95%, 62%, 0.85)`;
     ctx.lineWidth = 6;
-    ctx.strokeRect(3, 3, W - 6, H - 6);
+    ctx.strokeRect(minX + 3, minY + 3, spanW - 6, spanH - 6);
     ctx.restore();
 
     const spr = getSprite('ui_fever');
@@ -1580,7 +1615,7 @@ window.RunRenderer = (function () {
     const dh = Math.round(48 * scale);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(spr, Math.floor((W - dw) / 2), 36, dw, dh);
+    ctx.drawImage(spr, Math.floor(minX + (spanW - dw) / 2), Math.max(36, Math.floor(minY + 38)), dw, dh);
   }
 
   function drawFloaters(ctx, dt) {
@@ -1594,8 +1629,8 @@ window.RunRenderer = (function () {
       const prog = 1 - f.life / f.maxLife;
       const easeOut = 1 - Math.pow(1 - prog, 3);
       const pop = prog < 0.14 ? (1.28 - (prog / 0.14) * 0.28) : 1.0;
-      const fx = Math.max(54, Math.min(W - 54, Math.floor(f.x)));
-      const fy = Math.max(22, Math.floor(f.y - easeOut * 30));
+      const fx = Math.max(curView.minX + 54, Math.min(curView.maxX - 54, Math.floor(f.x)));
+      const fy = Math.max(curView.minY + 22, Math.floor(f.y - easeOut * 30));
       ctx.save();
       ctx.translate(fx, fy);
       ctx.scale(pop, pop);
@@ -1615,17 +1650,53 @@ window.RunRenderer = (function () {
   // ===================== PUBLIC RENDERERS =====================
   let dustTimer = 0;
   function renderRunFrame(ctx, run, charDef, dt, t) {
-    // True Hi-DPI Retina Backing Store (2x ~ 3x: 1120x630 ~ 1680x945 physical pixels!)
-    const dpr = Math.min(3, Math.max(2, Math.round(window.devicePixelRatio || 2)));
-    const targetW = W * dpr;
-    const targetH = H * dpr;
+    // True 1:1 Uniform Hi-DPI Responsive Camera (Zero Stretching on iPad 4:3, iPhone 19.5:9, Portrait, Desktop!)
+    const cssW = Math.max(240, ctx.canvas.clientWidth || window.innerWidth || W);
+    const cssH = Math.max(180, ctx.canvas.clientHeight || window.innerHeight || H);
+    const dpr = Math.min(2.5, Math.max(1.5, window.devicePixelRatio || 2));
+    const targetW = Math.round(cssW * dpr);
+    const targetH = Math.round(cssH * dpr);
     if (ctx.canvas.width !== targetW || ctx.canvas.height !== targetH) {
       ctx.canvas.width = targetW;
       ctx.canvas.height = targetH;
     }
 
+    const aspect = cssW / cssH;
+    let scale = targetH / H;
+    let camX = 0;
+    let offsetY = 0;
+    if (aspect >= 1.52) {
+      // Wide landscape (Desktop 16:9, iPhone/Galaxy wide landscape) -> full H=315, crisp panorama width!
+      scale = targetH / H;
+      camX = 0;
+      offsetY = 0;
+    } else if (aspect >= 1.0) {
+      // iPad / Tablet Landscape (4:3 ~ 3:2) -> 1:1 unstretched sprites, lush sky & earth, zero wasted top sky!
+      const targetViewW = 470;
+      scale = targetW / targetViewW;
+      const visH = targetH / scale;
+      camX = 28;
+      offsetY = Math.round((visH - H) * 0.16);
+    } else {
+      // Upright Portrait (Phone / iPad Portrait) -> 1:1 unstretched playable framing with space for HUD & controls!
+      const targetViewW = 405;
+      scale = targetW / targetViewW;
+      const visH = targetH / scale;
+      camX = 44;
+      offsetY = Math.round(Math.max(40, (visH - H) * 0.28));
+    }
+
+    const visW = targetW / scale;
+    const visH = targetH / scale;
+    curView = {
+      minX: camX,
+      maxX: camX + visW,
+      minY: -offsetY,
+      maxY: visH - offsetY
+    };
+
     ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(scale, 0, 0, scale, -camX * scale, offsetY * scale);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
@@ -1638,7 +1709,7 @@ window.RunRenderer = (function () {
     }
 
     const blend = run.seasonTransition !== undefined ? run.seasonTransition : 1;
-    drawBackground(ctx, W, H, GROUND_Y, run.seasonId, run.scroll, t, run.prevSeasonId, blend, run.weatherEvent);
+    drawBackground(ctx, W, H, GROUND_Y, run.seasonId, run.scroll, t, run.prevSeasonId, blend, run.weatherEvent, curView);
 
     // Interactive Korean Street Terrain (Convenience Store, Shade Zones, Flood Platforms!)
     drawStreetFeatures(ctx, run, t);
@@ -1709,7 +1780,8 @@ window.RunRenderer = (function () {
         : `rgba(255, 255, 255, ${(0.12 + intensity * 0.24).toFixed(2)})`;
       for (let i = 0; i < streakCnt; i++) {
         const spd = boostMode ? 640 : 340 + speedRatio * 145;
-        const sx = ((i * 105 - t * spd) % (W + 120) + (W + 120)) % (W + 120) - 60;
+        const spanW = curView.maxX - curView.minX;
+        const sx = curView.minX + (((i * 105 - t * spd) % (spanW + 120) + (spanW + 120)) % (spanW + 120)) - 60;
         const sy = 24 + ((i * 43) % (GROUND_Y - 54));
         const len = boostMode ? 54 : Math.round(24 + intensity * 32);
         ctx.fillRect(Math.floor(sx), sy, len, 2);
@@ -1721,7 +1793,7 @@ window.RunRenderer = (function () {
     drawPickupEffects(ctx, dt);
 
     // Active Weather Atmosphere & Smoothly Transitioning Particles
-    drawParticles(ctx, W, H, run.seasonId, dt, t, run.weatherEvent, run.prevSeasonId, blend);
+    drawParticles(ctx, W, H, run.seasonId, dt, t, run.weatherEvent, run.prevSeasonId, blend, curView);
 
     // FEVER! Full-screen Rainbow Edge + Speed Lines + Ribbon Banner!
     if (run.feverTimer > 0) {
@@ -1733,7 +1805,7 @@ window.RunRenderer = (function () {
       const a = Math.min(0.45, (run.hitFlashTimer / 0.3) * 0.42);
       ctx.strokeStyle = `rgba(255, 52, 52, ${a.toFixed(2)})`;
       ctx.lineWidth = 14;
-      ctx.strokeRect(0, 0, W, H);
+      ctx.strokeRect(curView.minX, curView.minY, curView.maxX - curView.minX, curView.maxY - curView.minY);
     }
 
     drawFloaters(ctx, dt);
@@ -1764,6 +1836,7 @@ window.RunRenderer = (function () {
     W,
     H,
     GROUND_Y,
+    getSpawnX,
     clearFloaters,
     spawnFloater,
     spawnDust,
