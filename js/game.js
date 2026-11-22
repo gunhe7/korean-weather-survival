@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd53';
+  const ASSET_VER = '20261121hd54';
 
   function getSpawnRight() {
     return (Renderer && Renderer.getSpawnX) ? Renderer.getSpawnX() : Renderer.W;
@@ -5307,14 +5307,8 @@
       return;
     }
 
-    // Every obstacle hit ALWAYS deducts 1 heart AND 20% of current score!
+    // Every obstacle hit deducts 1 heart (no score deduction!)
     run.hp = Math.max(0, run.hp - 1);
-    const lostScore = Math.floor(run.score * 0.2);
-    run.score = Math.max(0, run.score - lostScore);
-    if (el.runScoreText) {
-      el.runScoreText.classList.add('score-hit');
-      setTimeout(() => { if (el.runScoreText) el.runScoreText.classList.remove('score-hit'); }, 360);
-    }
     run.invulnTimer = 1.5 + (ch.extraInvuln || 0) + save.upgrades.defense * 0.2;
     run.hitPoseTimer = 0.45;
     run.hitFlashTimer = 0.3;
@@ -5333,10 +5327,7 @@
     }
 
     SFX.hit();
-    const hitMsg = lostScore > 0
-      ? `-1 ❤️ · 점수 -20% (-${lostScore.toLocaleString('ko-KR')})`
-      : '-1 ❤️ · 점수 -20%';
-    Renderer.spawnFloater(hitMsg, '#ff5c5c', run.playerX, run.playerY - 44);
+    Renderer.spawnFloater('-1 ❤️', '#ff5c5c', run.playerX, run.playerY - 44);
   }
 
   function updateRunHud() {
