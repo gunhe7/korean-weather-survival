@@ -16,7 +16,7 @@ window.RunRenderer = (function () {
     { id: 'skier', frames: 2 },
     { id: 'santa', frames: 2 },
     { id: 'catgirl', frames: 4, runFrames: 8 },
-    { id: 'hades', frames: 3, idleFrames: 8, runFrames: 8 }
+    { id: 'hades', frames: 3, runFrames: 4 }
   ];
   const CHAR_ANIM_STATES = ['idle', 'run', 'jump', 'fall', 'slide', 'hurt', 'die'];
   const CHAR_VFX_SPRITES = [
@@ -56,7 +56,7 @@ window.RunRenderer = (function () {
   ];
 
   const sprites = {};
-  const CHAR_ASSET_VER = '20261121hd48';
+  const CHAR_ASSET_VER = '20261121hd49';
   const CHEST_TIERS = ['wood', 'silver', 'gold', 'diamond'];
 
   CHEST_TIERS.forEach((tier) => {
@@ -983,29 +983,41 @@ window.RunRenderer = (function () {
       }
     }
 
-    // Fever rainbow aura / Hades 6-frame swirling purple flame ring / Uploaded glowing Shield Ring VFX!
-    if (!dead && feverTimer > 0) {
-      if (skinDef && skinDef.customAuraPrefix) {
-        const af = Math.floor(t * 14) % (skinDef.customAuraFrames || 6);
-        const auraSpr = getSprite(`${skinDef.customAuraPrefix}_${af}`) || getSprite(`${skinDef.customAuraPrefix}_0`);
-        if (auraSpr) {
-          const pulse = 1.0 + Math.sin(t * 10) * 0.05;
-          const aSz = Math.round((isProne ? 58 : scaleHeight * 1.38) * pulse);
-          ctx.save();
-          ctx.globalAlpha = 0.84;
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(auraSpr, Math.floor(cx - aSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.48) - aSz / 2), aSz, aSz);
-          ctx.restore();
-        }
-      } else {
-        ctx.strokeStyle = Math.floor(t * 14) % 2 === 0 ? '#ffe85c' : '#63e8ff';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 24 : scaleHeight * 0.56, 0, Math.PI * 2);
-        ctx.stroke();
+    // Always-on soft glowing underworld aura BEHIND Mythic Hades (intensifies smoothly during FEVER!)
+    if (!dead && skinDef && skinDef.customAuraPrefix) {
+      const isFever = feverTimer > 0;
+      const af = Math.floor(t * (isFever ? 14 : 9)) % (skinDef.customAuraFrames || 6);
+      const auraSpr = getSprite(`${skinDef.customAuraPrefix}_${af}`) || getSprite(`${skinDef.customAuraPrefix}_0`);
+      const auraCy = cy - (isProne ? 18 : scaleHeight * 0.48);
+      // Soft atmospheric ambient purple backlight behind Hades
+      const backR = isFever ? (isProne ? 38 : scaleHeight * 0.82) : (isProne ? 30 : scaleHeight * 0.68);
+      const backGrad = ctx.createRadialGradient(cx, auraCy, 4, cx, auraCy, backR);
+      backGrad.addColorStop(0, isFever ? 'rgba(180, 92, 255, 0.48)' : 'rgba(166, 78, 255, 0.28)');
+      backGrad.addColorStop(1, 'rgba(120, 42, 235, 0)');
+      ctx.save();
+      ctx.fillStyle = backGrad;
+      ctx.beginPath();
+      ctx.arc(cx, auraCy, backR, 0, Math.PI * 2);
+      ctx.fill();
+      if (auraSpr) {
+        const pulse = 1.0 + Math.sin(t * (isFever ? 10 : 4.5)) * 0.05;
+        const aSz = Math.round((isFever ? (isProne ? 60 : scaleHeight * 1.44) : (isProne ? 54 : scaleHeight * 1.30)) * pulse);
+        ctx.globalAlpha = isFever ? 0.84 : (0.36 + Math.sin(t * 4.5) * 0.08);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(auraSpr, Math.floor(cx - aSz / 2), Math.floor(auraCy - aSz / 2), aSz, aSz);
       }
-    } else if (!dead && shield) {
+      ctx.restore();
+    }
+
+    // Fever rainbow aura (for non-customAura skins) / Uploaded glowing Shield Ring VFX!
+    if (!dead && feverTimer > 0 && !(skinDef && skinDef.customAuraPrefix)) {
+      ctx.strokeStyle = Math.floor(t * 14) % 2 === 0 ? '#ffe85c' : '#63e8ff';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 24 : scaleHeight * 0.56, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (!dead && shield && feverTimer <= 0) {
       let ringSpr = null;
       if (skinDef && skinDef.customShieldPrefix) {
         const sf = Math.floor(t * 10) % (skinDef.customShieldFrames || 6);
@@ -1214,15 +1226,15 @@ window.RunRenderer = (function () {
       ctx.drawImage(spr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
       if ('filter' in ctx) ctx.filter = 'none';
 
-      // Uploaded KF94 Mask Sprite OR Mythic Custom Mask (e.g. Hades Skull Flame Mask!)
+      // Uploaded KF94 Mask Sprite OR Mythic Custom Mask (e.g. Hades Purple Mask!)
       if (maskOn && !dead) {
         const customMsk = skinDef && skinDef.customMask ? getSprite(skinDef.customMask) : null;
         const maskSpr = customMsk || getSprite('spr_mask');
         if (maskSpr) {
           const mw = customMsk ? (sliding ? 19 : 21) : (sliding ? 20 : 22);
           const mh = Math.round(mw * (maskSpr.naturalHeight / maskSpr.naturalWidth));
-          const mx = sliding ? Math.floor(drawW * 0.06) : Math.floor(-mw * (customMsk ? 0.06 : 0.14));
-          const my = sliding ? Math.floor(-drawH * 0.40) : Math.floor(-drawH * 0.47);
+          const mx = sliding ? Math.floor(drawW * 0.08) : Math.floor(customMsk ? drawW * 0.02 : -mw * 0.14);
+          const my = sliding ? Math.floor(-drawH * 0.40) : Math.floor(-drawH * (customMsk ? 0.45 : 0.50));
           ctx.drawImage(maskSpr, mx, my, mw, mh);
         } else {
           const my = sliding ? Math.floor(-drawH * 0.34) : Math.floor(-drawH * 0.44);

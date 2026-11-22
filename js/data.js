@@ -325,9 +325,8 @@ window.RUN_DATA = (function () {
       filter: 'none',
       customAnimSkin: 'hades',
       customAnimFrames: 3,
-      customIdleFrames: 8,
-      customRunFrames: 8,
-      customAvatar: 'assets/chars/port_hades.png?v=20261121hd48',
+      customRunFrames: 4,
+      customAvatar: 'assets/chars/port_hades.png?v=20261121hd49',
       customUmbrella: 'hades_umbrella',
       customMask: 'hades_mask',
       customShieldPrefix: 'hades_shield',
@@ -338,8 +337,8 @@ window.RUN_DATA = (function () {
       customAuraFrames: 6,
       gemPrice: 1000,
       glow: '#a84cff',
-      trail: ['#a84cff', '#ff5ee8', '#6028ff'],
-      desc: '명계의 불꽃 풀애니메이션 · 전용 해골 우산 & 마스크 · 6프레임 보호막 · 12프레임 불꽃 부스터 & 피버 오라!'
+      trail: ['#a84cff', '#d28eff', '#6f2dff'],
+      desc: '뒤에서 은은하게 빛나는 명계 오라 · 전용 보라 우산 & 마스크 · 6프레임 보호막 · 12프레임 불꽃 부스터!'
     }
   ];
 

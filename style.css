@@ -9227,3 +9227,38 @@ input:focus-visible {
     font-size: 12px;
   }
 }
+
+/* Always-on Soft Glowing Mythic Aura Behind Home Pedestal Hero (e.g. Hades!) */
+.bs-hero-aura {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 210px;
+  height: 210px;
+  margin-top: -120px;
+  margin-left: -105px;
+  z-index: 2;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 0.56;
+  filter: drop-shadow(0 0 16px rgba(168, 76, 255, 0.72));
+  animation: hadesHomeAuraPulse 2.4s ease-in-out infinite;
+}
+
+.bs-hero-aura.hidden {
+  display: none !important;
+}
+
+@keyframes hadesHomeAuraPulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.44; }
+  50% { transform: scale(1.06); opacity: 0.64; }
+}
+
+@media (max-height: 440px), (orientation: portrait) and (max-width: 520px) {
+  .bs-hero-aura {
+    width: 148px;
+    height: 148px;
+    margin-top: -86px;
+    margin-left: -74px;
+  }
+}

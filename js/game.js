@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd48';
+  const ASSET_VER = '20261121hd49';
 
   function haptic(ms = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -390,6 +390,7 @@
     btnSettingsOk: document.getElementById('btn-settings-ok'),
 
     homeHeroStage: document.getElementById('home-hero-stage'),
+    homeHeroAura: document.getElementById('home-hero-aura'),
     homeHeroImg: document.getElementById('home-hero-img'),
     btnHomeCharInfo: document.getElementById('btn-home-char-info'),
     homeCharName: document.getElementById('home-char-name'),
@@ -2415,6 +2416,13 @@
     el.homeHeroImg.alt = skin ? `${ch.name} (${skin.name})` : ch.name;
     el.homeHeroImg.style.filter = getSkinFilter(skin);
     el.homeHeroImg.style.setProperty('--skin-glow', skin ? skin.glow : '');
+    if (el.homeHeroAura) {
+      const hasAura = Boolean(unlocked && skin && skin.customAuraPrefix);
+      el.homeHeroAura.classList.toggle('hidden', !hasAura);
+      if (hasAura) {
+        el.homeHeroAura.src = `assets/chars/${skin.customAuraPrefix}_0.png?v=${ASSET_VER}`;
+      }
+    }
     el.homeCharLvBadge.textContent = unlocked ? `POWER ${stats.level}` : '잠금';
     el.homeCharTier.textContent = unlocked
       ? (skin ? `✨ ${skin.name}` : ch.tier)
@@ -2469,6 +2477,14 @@
     if (readySrc && readySrc !== lastHomeHeroSrc) {
       lastHomeHeroSrc = readySrc;
       el.homeHeroImg.src = readySrc;
+    }
+    if (el.homeHeroAura && skin && skin.customAuraPrefix && isCharUnlocked(ch.id)) {
+      const af = Math.floor(t * 9) % (skin.customAuraFrames || 6);
+      const auraSrc = `assets/chars/${skin.customAuraPrefix}_${af}.png?v=${ASSET_VER}`;
+      const readyAura = getPreloadedHomeHeroSrc(auraSrc);
+      if (readyAura && el.homeHeroAura.getAttribute('src') !== readyAura) {
+        el.homeHeroAura.src = readyAura;
+      }
     }
   }
 
