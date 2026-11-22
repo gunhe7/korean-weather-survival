@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
   <link rel="manifest" href="manifest.json?v=20261121hd53" />
   <title>한국 날씨에서 살아남기</title>
-  <link rel="stylesheet" href="style.css?v=20261121hd55" />
+  <link rel="stylesheet" href="style.css?v=20261121hd56" />
 </head>
 <body>
   <div id="mobile-app">
@@ -857,14 +857,14 @@
           <div class="score-road-title-wrap">
             <span class="settings-bar-title">📦 상자 보관함</span>
             <span id="vault-total-pill" class="score-road-best-pill">보유 0개</span>
-            <span id="vault-ticket-pill" class="vault-ticket-pill">🎟️ 뽑기권 0장</span>
+            <span id="vault-ticket-pill" class="vault-ticket-pill"><img src="assets/ui/gacha_ticket.png?v=20261121hd56" alt="뽑기권" class="ticket-ico sm" /> 뽑기권 0장</span>
           </div>
           <div class="score-road-bar-actions">
             <button id="btn-vault-go-gacha" class="cr-gold-btn vault-go-gacha-btn" type="button">🎰 스킨 뽑기</button>
             <button id="btn-close-vault" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
           </div>
         </div>
-        <div class="score-road-sub">상자를 직접 열거나 뽑기권으로 교환하세요! (나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 🎟️ 1장)</div>
+        <div class="score-road-sub">상자를 직접 열거나 뽑기권으로 교환하세요! (나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = <img src="assets/ui/gacha_ticket.png?v=20261121hd56" alt="뽑기권" class="ticket-ico xs" /> 1장)</div>
         <div id="vault-modal-grid" class="vault-modal-grid"></div>
       </div>
     </div>
@@ -904,11 +904,11 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd55"></script>
-  <script src="js/audio.js?v=20261121hd55"></script>
-  <script src="js/online.js?v=20261121hd55"></script>
-  <script src="js/renderer.js?v=20261121hd55"></script>
-  <script src="js/game.js?v=20261121hd55"></script>
+  <script src="js/data.js?v=20261121hd56"></script>
+  <script src="js/audio.js?v=20261121hd56"></script>
+  <script src="js/online.js?v=20261121hd56"></script>
+  <script src="js/renderer.js?v=20261121hd56"></script>
+  <script src="js/game.js?v=20261121hd56"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

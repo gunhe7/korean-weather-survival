@@ -10718,3 +10718,61 @@ input:focus-visible {
 .vault-modal {
   width: min(620px, 95vw);
 }
+
+/* Custom Purple Star Skin Gacha Ticket Icon */
+.ticket-ico {
+  display: inline-block;
+  vertical-align: middle;
+  width: 22px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.5));
+}
+
+.ticket-ico.xs {
+  width: 18px;
+  height: 13px;
+}
+
+.ticket-ico.sm {
+  width: 21px;
+  height: 15px;
+}
+
+.ticket-ico.btn {
+  width: 24px;
+  height: 17px;
+  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.55));
+}
+
+.ticket-ico.lg {
+  width: 26px;
+  height: 19px;
+  filter: drop-shadow(0 2px 4px rgba(174, 92, 255, 0.65));
+}
+
+.gacha-cur-chip.ticket {
+  border-color: rgba(204, 134, 255, 0.82);
+}
+
+.gc-cost-line,
+.gc-again-inline,
+.gacha-pull-note,
+.vault-ticket-pill,
+.vault-ticket-ex-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.vault-ticket-ex-btn {
+  display: flex;
+}
+
+.gacha-thumb-art.ticket-art {
+  width: 44px;
+  height: 36px;
+  filter: drop-shadow(0 3px 6px rgba(176, 98, 255, 0.65));
+}

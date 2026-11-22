@@ -83,7 +83,11 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd55';
+  const ASSET_VER = '20261121hd56';
+
+  function ticketIconHtml(cls = '') {
+    return `<img src="assets/ui/gacha_ticket.png?v=${ASSET_VER}" alt="뽑기권" class="ticket-ico${cls ? ` ${cls}` : ''}" />`;
+  }
 
   function getSpawnRight() {
     return (Renderer && Renderer.getSpawnX) ? Renderer.getSpawnX() : Renderer.W;
@@ -834,10 +838,10 @@
 
     if (el.btnGachaResAgain) {
       const nextCost = computeGachaCost(count);
-      const costStr = nextCost.useTickets > 0 && nextCost.needGems > 0
-        ? `🎟️${nextCost.useTickets} + 💎${nextCost.needGems.toLocaleString('ko-KR')}`
-        : (nextCost.useTickets > 0 ? `🎟️ ${nextCost.useTickets}` : `💎 ${nextCost.needGems.toLocaleString('ko-KR')}`);
-      el.btnGachaResAgain.textContent = `🎰 ${count}회 다시 뽑기 (${costStr})`;
+      const costHtml = nextCost.useTickets > 0 && nextCost.needGems > 0
+        ? `${ticketIconHtml('btn')} ${nextCost.useTickets} + 💎 ${nextCost.needGems.toLocaleString('ko-KR')}`
+        : (nextCost.useTickets > 0 ? `${ticketIconHtml('btn')} ${nextCost.useTickets}` : `💎 ${nextCost.needGems.toLocaleString('ko-KR')}`);
+      el.btnGachaResAgain.innerHTML = `<span class="gc-again-inline">🎰 ${count}회 다시 뽑기 (${costHtml})</span>`;
       el.btnGachaResAgain.onclick = () => performSkinGacha(count);
     }
 
@@ -1149,8 +1153,8 @@
           </tbody>
         </table>
         <ul class="prob-rules" style="margin-top:6px;">
-          <li><strong>뽑기 비용:</strong> 🎟️ 뽑기권 1장/회 (뽑기권 부족 시 💎 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립!</strong></li>
-          <li><strong>🎟️ 상자 → 뽑기권 교환 (상자 보관함):</strong> 나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 뽑기권 1장</li>
+          <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 💎 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립!</strong></li>
+          <li><strong>${ticketIconHtml('xs')} 상자 → 뽑기권 교환 (상자 보관함):</strong> 나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 뽑기권 1장</li>
           <li>미출시 중간 등급(영웅·전설)은 희귀 스킨 풀로 자동 전환되며, 신화 스킨 확률(${gRates.mythic}%)은 그대로 유지됩니다.</li>
         </ul>
       </div>
@@ -1531,7 +1535,7 @@
     if (!el.vaultModalGrid) return;
     const total = getTotalBagChests();
     if (el.vaultTotalPill) el.vaultTotalPill.textContent = `보유 ${total}개`;
-    if (el.vaultTicketPill) el.vaultTicketPill.textContent = `🎟️ 뽑기권 ${(save.gachaTickets || 0).toLocaleString('ko-KR')}장`;
+    if (el.vaultTicketPill) el.vaultTicketPill.innerHTML = `${ticketIconHtml('sm')} 뽑기권 ${(save.gachaTickets || 0).toLocaleString('ko-KR')}장`;
     el.vaultModalGrid.innerHTML = '';
 
     DATA.CHEST_ORDER.forEach((tierId) => {
@@ -1588,7 +1592,7 @@
       exBtn.type = 'button';
       const canEx = qty >= ticketCost;
       exBtn.className = `vault-ticket-ex-btn${canEx ? ' ready' : ''}`;
-      exBtn.textContent = `🎟️ 뽑기권 1장 (${ticketCost}개)`;
+      exBtn.innerHTML = `${ticketIconHtml('xs')} 뽑기권 1장 (${ticketCost}개)`;
       exBtn.disabled = !canEx;
       exBtn.onclick = () => {
         if ((save.chestBag[tierId] || 0) < ticketCost) return;
@@ -3505,10 +3509,10 @@
       const cost10 = computeGachaCost(10);
       const fmtCostHtml = (c) => {
         if (c.useTickets > 0 && c.needGems > 0) {
-          return `<span class="gc-cost-line">🎟️ ${c.useTickets} + 💎 ${c.needGems.toLocaleString('ko-KR')}</span>`;
+          return `<span class="gc-cost-line">${ticketIconHtml('btn')} ${c.useTickets} + 💎 ${c.needGems.toLocaleString('ko-KR')}</span>`;
         }
         if (c.useTickets > 0) {
-          return `<span class="gc-cost-line">🎟️ ${c.useTickets}</span>`;
+          return `<span class="gc-cost-line">${ticketIconHtml('btn')} ${c.useTickets}</span>`;
         }
         return `<span class="gc-cost-line">💎 ${c.needGems.toLocaleString('ko-KR')}</span>`;
       };
@@ -3534,9 +3538,9 @@
             </div>
           </button>
           <button type="button" class="gacha-banner-thumb vault" data-gaction="vault">
-            <img src="assets/chests/chest_diamond_0.png?v=${ASSET_VER}" alt="뽑기권 교환" class="gacha-thumb-art" />
+            <img src="assets/ui/gacha_ticket.png?v=${ASSET_VER}" alt="뽑기권 교환" class="gacha-thumb-art ticket-art" />
             <div class="gacha-thumb-txt">
-              <strong>🎟️ 뽑기권 교환</strong>
+              <strong>뽑기권 교환</strong>
               <span>보관함 상자 사용</span>
             </div>
           </button>
@@ -3553,7 +3557,7 @@
                 <span>✨</span><strong>${(save.mileage || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
               </button>
               <button type="button" class="gacha-cur-chip ticket" data-gaction="vault" title="상자 보관함에서 뽑기권 교환">
-                <span>🎟️</span><strong>${(save.gachaTickets || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
+                ${ticketIconHtml('lg')}<strong>${(save.gachaTickets || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
               </button>
               <button type="button" class="gacha-cur-chip gem" data-gaction="gems" title="보석 상점">
                 <span>💎</span><strong>${(save.gems || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
@@ -3588,7 +3592,7 @@
           <div class="gacha-bottom-row">
             <button type="button" class="gacha-pill-btn prob" data-gaction="prob">📊 상세 확률</button>
             <div class="gacha-pull-group">
-              <div class="gacha-pull-note">🎟️ 뽑기권 우선 사용 · 부족 시 💎 200 보석 / 1회</div>
+              <div class="gacha-pull-note">${ticketIconHtml('xs')} 뽑기권 우선 사용 · 부족 시 💎 200 보석 / 1회</div>
               <div class="gacha-pull-btns">
                 <button type="button" class="gacha-green-btn pull-1" data-gaction="pull1">
                   ${fmtCostHtml(cost1)}
