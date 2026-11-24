@@ -16,7 +16,7 @@
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd63" />
+  <link rel="stylesheet" href="style.css?v=20261121hd64" />
 </head>
 <body>
   <div id="mobile-app">
@@ -150,7 +150,7 @@
         </button>
 
         <button id="btn-gem-shop" class="res-pill gem-res-pill" type="button" title="보석 상점으로 이동">
-          <span class="gem-ico" aria-hidden="true">💎</span>
+          <span class="gem-ico ui-ico-slot ui-ico-md" data-ui-icon="gem" data-ui-size="md" aria-hidden="true">💎</span>
           <span id="ui-gems">0</span>
           <span class="res-plus gem">+</span>
         </button>
@@ -229,8 +229,8 @@
             <button class="subtab-btn bs-shop-tab gacha-tab active" data-shoptab="gacha" type="button">🎰 뽑기</button>
             <button class="subtab-btn bs-shop-tab" data-shoptab="chests" type="button">🎁 상자</button>
             <button class="subtab-btn bs-shop-tab" data-shoptab="skins" type="button">✨ 스킨 교환</button>
-            <button class="subtab-btn bs-shop-tab" data-shoptab="gold" type="button">🪙 골드</button>
-            <button class="subtab-btn bs-shop-tab gems-tab" data-shoptab="gems" type="button">💎 보석</button>
+            <button class="subtab-btn bs-shop-tab" data-shoptab="gold" type="button"><img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="ui-ico ui-ico-sm" data-ui-icon="coin" data-ui-size="sm" /> 골드</button>
+            <button class="subtab-btn bs-shop-tab gems-tab" data-shoptab="gems" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 보석</button>
             <button class="subtab-btn bs-shop-tab" data-shoptab="boosters" type="button">⚡ 부스터</button>
           </div>
           <button id="btn-shop-prob" class="bs-prob-btn" type="button">📊 확률</button>
@@ -264,7 +264,7 @@
         <div class="bs-quest-header">
           <div class="bs-quest-tabs" role="tablist" aria-label="퀘스트 분류">
             <button class="bs-qtab active daily" data-qtab="daily" type="button">☀️ 일일 <span class="qtab-sub">황금상자</span></button>
-            <button class="bs-qtab weekly" data-qtab="weekly" type="button">💎 주간 <span class="qtab-sub">다이아상자</span></button>
+            <button class="bs-qtab weekly" data-qtab="weekly" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 주간 <span class="qtab-sub">다이아상자</span></button>
             <button class="bs-qtab ach" data-qtab="ach" type="button">🏅 업적</button>
           </div>
           <div class="bs-quest-head-actions">
@@ -276,8 +276,8 @@
         <!-- Live Pity & Reset Timer Banner -->
         <div class="bs-pity-bar">
           <span id="quest-reset-label" class="pity-chip timer">⏱️ 매일 초기화</span>
-          <span id="pity-gold-chip" class="pity-chip gold">👑 황금 천장 0/10</span>
-          <span id="pity-diamond-chip" class="pity-chip diamond">💎 다이아 천장 0/15</span>
+          <span id="pity-gold-chip" class="pity-chip gold"><span class="ui-ico-slot ui-ico-xs" data-ui-icon="crown" data-ui-size="xs" aria-hidden="true">👑</span> 황금 천장 0/10</span>
+          <span id="pity-diamond-chip" class="pity-chip diamond"><span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span> 다이아 천장 0/15</span>
         </div>
 
         <!-- Brawl Stars Quest Cards Grid -->
@@ -299,8 +299,8 @@
         <!-- Unified 1-Line Weekly #1 Prize + Countdown + Guest Link Strip -->
         <div class="rank-prize-banner compact-strip">
           <div class="rank-prize-left">
-            <span class="rank-prize-crown">👑</span>
-            <span class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 보상 <strong>💎500</strong></span>
+            <span class="rank-prize-crown ui-ico-slot ui-ico-md" data-ui-icon="crown" data-ui-size="md" aria-hidden="true">👑</span>
+            <span class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 보상 <strong><span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span>500</strong></span>
             <span class="rank-timer-chip">⏱️ <strong id="rank-week-countdown">0일 00:00:00</strong></span>
           </div>
           <div id="rank-guest-banner" class="rank-guest-inline hidden">
@@ -493,12 +493,12 @@
             <!-- Brawl Stars Style Stat Bars -->
             <div class="brawl-stats-panel">
               <div class="brawl-stat-row">
-                <span class="brawl-stat-lbl">❤️ 체력</span>
+                <span class="brawl-stat-lbl"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="heart" data-ui-size="sm" aria-hidden="true">❤️</span> 체력</span>
                 <div class="brawl-stat-track"><div id="detail-fill-hp" class="brawl-stat-fill hp" style="width: 50%"></div></div>
                 <strong id="detail-stat-hp" class="brawl-stat-val">5칸</strong>
               </div>
               <div class="brawl-stat-row">
-                <span class="brawl-stat-lbl">🪙 골드</span>
+                <span class="brawl-stat-lbl"><img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="ui-ico ui-ico-sm" data-ui-icon="coin" data-ui-size="sm" /> 골드</span>
                 <div class="brawl-stat-track"><div id="detail-fill-gold" class="brawl-stat-fill gold" style="width: 55%"></div></div>
                 <strong id="detail-stat-gold" class="brawl-stat-val">110%</strong>
               </div>
@@ -579,7 +579,7 @@
 
         <!-- Compact Active Weather Timer Chip (Shown ONLY when needed, never duplicates center alert!) -->
         <div id="run-weather-bar" class="weather-status-strip hidden">
-          <span id="weather-status-badge" class="weather-status-badge">☂️ 우산!</span>
+          <span id="weather-status-badge" class="weather-status-badge"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="umbrella" data-ui-size="sm" aria-hidden="true">☂️</span> 우산!</span>
           <span id="fc-heat-pill" class="fc-heat-pill hidden">2.5s</span>
         </div>
       </div>
@@ -605,7 +605,7 @@
 
         <!-- Center-Screen Big Icon + Short Action Keyword Weather Alert -->
         <div id="weather-center-alert" class="weather-center-alert hidden" aria-live="polite">
-          <div id="weather-alert-icon" class="weather-alert-icon" aria-hidden="true">☂️</div>
+          <div id="weather-alert-icon" class="weather-alert-icon" aria-hidden="true"><span class="ui-ico-slot ui-ico-hero" data-ui-icon="umbrella" data-ui-size="hero" aria-hidden="true">☂️</span></div>
           <div id="weather-alert-title" class="weather-alert-title">우산!</div>
         </div>
 
@@ -738,7 +738,7 @@
           <div class="tut-complete-body">
             <div class="tut-complete-trophy">🎉</div>
             <h3 class="tut-complete-title">모든 한국 날씨 생존 조작 마스터!</h3>
-            <div id="tut-complete-reward" class="tut-complete-reward">🪙 첫 완료 보너스 +100G 지급!</div>
+            <div id="tut-complete-reward" class="tut-complete-reward"><img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="ui-ico ui-ico-sm" data-ui-icon="coin" data-ui-size="sm" /> 첫 완료 보너스 +100G 지급!</div>
             <div class="tut-complete-chips">
               <span>✓ 1단·2단 점프</span>
               <span>✓ 슬라이드</span>
@@ -768,7 +768,7 @@
           <img id="chest-anim-img" src="assets/chests/chest_gold_0.png?v=20261121hd9" alt="상자" class="chest-anim-img" />
           <span id="chest-tap-hint" class="chest-tap-hint">터치해서 열기!</span>
         </button>
-        <button id="btn-chest-store" class="chest-store-btn" type="button">📦 보관함에 저장하기</button>
+        <button id="btn-chest-store" class="chest-store-btn" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="chest" data-ui-size="sm" aria-hidden="true">📦</span> 보관함에 저장하기</button>
 
         <!-- Revealed Reward Card -->
         <div id="chest-reward-card" class="chest-reward-card hidden">
@@ -800,17 +800,17 @@
     <div id="iap-overlay" class="modal-overlay hidden">
       <div class="cr-modal settings-arcade-modal iap-modal">
         <div class="cr-modal-bar settings-arcade-bar">
-          <span class="settings-bar-title">💎 보석 스토어 결제</span>
+          <span class="settings-bar-title"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 보석 스토어 결제</span>
           <button id="btn-close-iap" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
         </div>
         <div class="modal-body iap-body">
           <div class="iap-showcase">
-            <div class="iap-gem-glow">💎</div>
+            <div class="iap-gem-glow"><span class="ui-ico-slot ui-ico-xl" data-ui-icon="gem" data-ui-size="xl" aria-hidden="true">💎</span></div>
             <div id="iap-pack-name" class="iap-pack-name">보석 100개</div>
-            <div id="iap-pack-gems" class="iap-pack-gems">+100 💎 즉시 지급</div>
+            <div id="iap-pack-gems" class="iap-pack-gems">+100 <span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 즉시 지급</div>
             <div id="iap-pack-price" class="iap-pack-price">₩1,000</div>
           </div>
-          <p id="iap-pay-note" class="iap-pay-note">Google Play / App Store 인앱 결제 (100💎 = ₩1,000)</p>
+          <p id="iap-pay-note" class="iap-pay-note">Google Play / App Store 인앱 결제 (100<span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span> = ₩1,000)</p>
           <div class="iap-actions">
             <button id="btn-iap-cancel" class="item-action-btn locked-chest" type="button">취소</button>
             <button id="btn-iap-confirm" class="cr-gold-btn iap-buy-btn" type="button">₩1,000 결제하기</button>
@@ -827,13 +827,13 @@
         </div>
         <div class="modal-body iap-body">
           <div class="iap-showcase champ-showcase">
-            <div class="iap-gem-glow">👑</div>
+            <div class="iap-gem-glow"><span class="ui-ico-slot ui-ico-xl" data-ui-icon="crown" data-ui-size="xl" aria-hidden="true">👑</span></div>
             <div id="weekly-champ-week" class="iap-pack-name">지난 주 랭킹 최종 1위</div>
             <div id="weekly-champ-score" class="champ-score-txt">최고 점수 0점</div>
-            <div id="weekly-champ-gems" class="iap-pack-gems">+500 💎 보석 지급!</div>
+            <div id="weekly-champ-gems" class="iap-pack-gems">+500 <span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 보석 지급!</div>
           </div>
           <p class="iap-pay-note">매주 월요일 00:00(KST) 기준 최고 점수 1위 보상이 지급되었습니다!</p>
-          <button id="btn-claim-weekly-champ" class="cr-gold-btn settings-ok-btn" type="button">💎 500 보석 받기!</button>
+          <button id="btn-claim-weekly-champ" class="cr-gold-btn settings-ok-btn" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 500 보석 받기!</button>
         </div>
       </div>
     </div>
@@ -861,7 +861,7 @@
       <div class="cr-modal settings-arcade-modal vault-modal">
         <div class="cr-modal-bar settings-arcade-bar">
           <div class="score-road-title-wrap">
-            <span class="settings-bar-title">📦 상자 보관함</span>
+            <span class="settings-bar-title"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="chest" data-ui-size="sm" aria-hidden="true">📦</span> 상자 보관함</span>
             <span id="vault-total-pill" class="score-road-best-pill">보유 0개</span>
             <span id="vault-ticket-pill" class="vault-ticket-pill"><img src="assets/ui/gacha_ticket.png?v=20261121hd56" alt="뽑기권" class="ticket-ico sm" /> 뽑기권 0장</span>
           </div>
@@ -918,12 +918,13 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd63"></script>
-  <script src="js/audio.js?v=20261121hd63"></script>
-  <script src="js/studio-intro.js?v=20261121hd63"></script>
-  <script src="js/online.js?v=20261121hd63"></script>
-  <script src="js/renderer.js?v=20261121hd63"></script>
-  <script src="js/game.js?v=20261121hd63"></script>
+  <script src="js/data.js?v=20261121hd64"></script>
+  <script src="js/ui-icons.js?v=20261121hd64"></script>
+  <script src="js/audio.js?v=20261121hd64"></script>
+  <script src="js/studio-intro.js?v=20261121hd64"></script>
+  <script src="js/online.js?v=20261121hd64"></script>
+  <script src="js/renderer.js?v=20261121hd64"></script>
+  <script src="js/game.js?v=20261121hd64"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

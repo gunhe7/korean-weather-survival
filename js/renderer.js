@@ -336,13 +336,56 @@ window.RunRenderer = (function () {
     return `rgb(${r},${g},${bl})`;
   }
 
-  // ===================== CACHED SKY / HILL / CLOUD LAYERS (ZERO PER-FRAME ALLOCATION!) =====================
+  // ===================== CACHED SKY / CLOUD / EXTERNAL PNG PARALLAX BG LAYERS =====================
   let cachedSkyKey = '';
   let cachedSkyGrad = null;
-  let cachedHillKey = '';
-  let cachedHillGrad = null;
   const cloudSpriteCache = {};
   const softBgSpriteCache = {};
+
+  // External PNG Parallax Background Layers (drop PNGs into assets/bg/ — zero Canvas shape drawing!)
+  // Missing files fail safely once and skip rendering cleanly without errors.
+  const BG_PARALLAX_LAYERS = [
+    { key: 'bg_seoul_far', src: 'assets/bg/bg_seoul_far.png', parallax: 0.08, targetH: 152, baselineOffset: 4, alpha: 0.92, dustAlpha: 0.78 },
+    { key: 'bg_city_mid',  src: 'assets/bg/bg_city_mid.png',  parallax: 0.18, targetH: 104, baselineOffset: 3, alpha: 0.90, dustAlpha: 0.84 }
+  ];
+  const bgLayerCache = {};
+
+  function getBgLayerImage(layer) {
+    if (!layer || !layer.key) return null;
+    let entry = bgLayerCache[layer.key];
+    if (!entry) {
+      const img = new Image();
+      img.decoding = 'async';
+      entry = { img, loaded: false, failed: false };
+      img.onload = () => {
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) entry.loaded = true;
+        else entry.failed = true;
+      };
+      img.onerror = () => { entry.failed = true; };
+      img.src = layer.src;
+      bgLayerCache[layer.key] = entry;
+    }
+    if (entry.failed || !entry.loaded) return null;
+    return entry.img;
+  }
+
+  // Aspect-ratio-preserving seamless horizontal parallax tiling across any viewport width
+  function drawTiledParallaxLayer(ctx, img, scroll, parallax, targetH, baselineY, minX, maxX, alpha) {
+    if (!img || !img.complete || img.naturalWidth <= 0 || img.naturalHeight <= 0) return false;
+    const aspect = img.naturalWidth / img.naturalHeight;
+    const drawH = targetH;
+    const drawW = Math.max(1, Math.round(drawH * aspect));
+    const drawY = Math.floor(baselineY - drawH);
+    const offset = ((Math.floor(scroll * parallax) % drawW) + drawW) % drawW;
+    const firstX = Math.floor((minX - drawW) / drawW) * drawW - offset;
+    ctx.save();
+    if (alpha !== undefined && alpha < 1) ctx.globalAlpha = alpha;
+    for (let x = firstX; x < maxX + drawW; x += drawW) {
+      ctx.drawImage(img, Math.floor(x), drawY, drawW, drawH);
+    }
+    ctx.restore();
+    return true;
+  }
 
   const BG_ATMOSPHERE_TINT = {
     spring: 'rgba(182, 218, 250, 0.17)',
@@ -458,80 +501,6 @@ window.RunRenderer = (function () {
       ctx.drawImage(cloudSpr, Math.floor(cx - 6 * sc), Math.floor(cy - 15 * sc), Math.round(76 * sc), Math.round(42 * sc));
     }
 
-    // Layered Smooth Curved Namsan Mountain Ridges (atmospheric parallax depth!)
-    const mtnBase = lerpHex(prevSeason.mountain || '#7ea2d6', season.mountain || '#7ea2d6', f);
-    ctx.save();
-    ctx.globalAlpha = 0.52;
-    ctx.fillStyle = mtnBase;
-    ctx.beginPath();
-    ctx.moveTo(minX, groundY);
-    ctx.lineTo(minX, groundY - 46);
-    ctx.quadraticCurveTo(minX + spanW * 0.18, groundY - 82, minX + spanW * 0.38, groundY - 58);
-    ctx.quadraticCurveTo(minX + spanW * 0.68, groundY - 96, maxX, groundY - 56);
-    ctx.lineTo(maxX, groundY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    const hillKey = `${mtnBase}|${isStormy ? 1 : 0}|${groundY}`;
-    if (cachedHillKey !== hillKey || !cachedHillGrad) {
-      cachedHillKey = hillKey;
-      const hg = ctx.createLinearGradient(0, groundY - 102, 0, groundY);
-      hg.addColorStop(0, mtnBase);
-      hg.addColorStop(1, isStormy ? 'rgba(54, 74, 108, 0.92)' : 'rgba(92, 132, 188, 0.88)');
-      cachedHillGrad = hg;
-    }
-    ctx.fillStyle = cachedHillGrad;
-    ctx.beginPath();
-    ctx.moveTo(minX, groundY);
-    ctx.lineTo(minX, groundY - 36);
-    ctx.quadraticCurveTo(minX + spanW * 0.16, groundY - 68, minX + spanW * 0.34, groundY - 60);
-    ctx.quadraticCurveTo(minX + spanW * 0.52, groundY - 104, minX + spanW * 0.72, groundY - 62);
-    ctx.quadraticCurveTo(minX + spanW * 0.88, groundY - 82, maxX, groundY - 58);
-    ctx.lineTo(maxX, groundY);
-    ctx.closePath();
-    ctx.fill();
-
-    // Crisp Stylized N Seoul Tower on Namsan Peak with Glowing Observatory & Beacon
-    const tx = Math.floor(minX + spanW * 0.52);
-    const ty = groundY - 84;
-    ctx.save();
-    // Base pavilion
-    ctx.fillStyle = '#4c6da6';
-    drawRoundRect(ctx, tx - 8, ty - 6, 16, 8, 2);
-    ctx.fill();
-    // Tapered shaft
-    ctx.fillStyle = '#6c8ec4';
-    ctx.beginPath();
-    ctx.moveTo(tx - 3.2, ty - 5);
-    ctx.lineTo(tx - 2.0, ty - 38);
-    ctx.lineTo(tx + 2.0, ty - 38);
-    ctx.lineTo(tx + 3.2, ty - 5);
-    ctx.closePath();
-    ctx.fill();
-    // Observation pod (double-deck)
-    ctx.fillStyle = '#4f71ab';
-    drawRoundRect(ctx, tx - 9, ty - 34, 18, 9, 3);
-    ctx.fill();
-    // Glowing glass observatory windows
-    ctx.fillStyle = isStormy ? '#ffe580' : '#e6f5ff';
-    drawRoundRect(ctx, tx - 7, ty - 31.5, 14, 3.6, 1.5);
-    ctx.fill();
-    // Antenna spire
-    ctx.fillStyle = '#5c7db5';
-    ctx.fillRect(tx - 1, ty - 52, 2, 18);
-    // Softly pulsing red aviation beacon
-    const beaconPulse = 0.55 + Math.sin(t * 5) * 0.45;
-    ctx.fillStyle = `rgba(255, 92, 108, ${beaconPulse.toFixed(2)})`;
-    ctx.beginPath();
-    ctx.arc(tx, ty - 53, 3.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ff6b78';
-    ctx.beginPath();
-    ctx.arc(tx, ty - 53, 1.6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
     // Blazing Summer Sun sprite from uploaded sheet!
     if (seasonId === 'summer' && !isStormy) {
       const sunSpr = getSprite('sp_sun');
@@ -541,19 +510,24 @@ window.RunRenderer = (function () {
       }
     }
 
-    // Far Korean Skyline using uploaded sp_smog_city silhouette!
-    const smogCitySpr = getSprite('sp_smog_city');
-    if (smogCitySpr) {
-      const cityOff = Math.floor(scroll * 0.16) % 160;
-      const startRep = Math.floor((minX - 160) / 160);
-      const endRep = Math.ceil((maxX + 160) / 160);
-      ctx.save();
-      ctx.globalAlpha = weatherEvent === 'dust' ? 0.72 : 0.42;
-      for (let rep = startRep; rep <= endRep; rep++) {
-        const bx = rep * 160 - cityOff;
-        ctx.drawImage(smogCitySpr, Math.floor(bx), groundY - 82, 110, 84);
-      }
-      ctx.restore();
+    // External PNG Far & Midground Seoul Skyline Parallax Layers (assets/bg/bg_seoul_far.png, bg_city_mid.png)
+    // Safe fallback: missing PNG layers are cleanly skipped without Canvas geometry or runtime errors.
+    for (let li = 0; li < BG_PARALLAX_LAYERS.length; li++) {
+      const layer = BG_PARALLAX_LAYERS[li];
+      const layerImg = getBgLayerImage(layer);
+      if (!layerImg) continue;
+      const layerAlpha = weatherEvent === 'dust' ? layer.dustAlpha : layer.alpha;
+      drawTiledParallaxLayer(
+        ctx,
+        layerImg,
+        scroll,
+        layer.parallax,
+        layer.targetH,
+        groundY + (layer.baselineOffset || 0),
+        minX,
+        maxX,
+        layerAlpha
+      );
     }
 
     // Midground Seasonal Trees, Bushes & Street Props (softened saturation + atmospheric depth for crisp character contrast!)

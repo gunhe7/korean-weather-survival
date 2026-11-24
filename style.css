@@ -11006,3 +11006,77 @@ input:focus-visible {
   height: 100%;
   display: block;
 }
+
+/* =========================================================================
+   UNIFIED PNG UI ICON SYSTEM (ui-ico & ui-ico-slot)
+   ========================================================================= */
+.ui-ico {
+  display: inline-block;
+  width: 1.18em;
+  height: 1.18em;
+  object-fit: contain;
+  vertical-align: -0.2em;
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ui-ico-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.ui-ico.ui-ico-xs { width: 13px; height: 13px; vertical-align: -0.18em; }
+.ui-ico.ui-ico-sm { width: 16px; height: 16px; vertical-align: -0.22em; }
+.ui-ico.ui-ico-btn { width: 17px; height: 17px; vertical-align: -0.24em; }
+.ui-ico.ui-ico-md { width: 20px; height: 20px; vertical-align: -0.24em; }
+.ui-ico.ui-ico-lg { width: 26px; height: 26px; vertical-align: middle; }
+.ui-ico.ui-ico-xl { width: 42px; height: 42px; vertical-align: middle; }
+.ui-ico.ui-ico-heart { width: 17px; height: 17px; vertical-align: middle; }
+.ui-ico.ui-ico-hero { width: clamp(46px, 9.2vw, 66px); height: clamp(46px, 9.2vw, 66px); vertical-align: middle; }
+
+.res-pill .ui-ico.ui-ico-md {
+  width: 19px;
+  height: 19px;
+  vertical-align: middle;
+}
+
+.bs-gem-pile .ui-ico.ui-ico-xl {
+  width: 34px;
+  height: 34px;
+}
+
+.bs-gem-pile.xl .ui-ico.ui-ico-xl {
+  width: 30px;
+  height: 30px;
+}
+
+.bs-buy-btn,
+.bs-shop-tab,
+.bs-shop-sec-title,
+.pity-chip,
+.brawl-stat-lbl,
+.bs-qstore-btn,
+.weather-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.bs-shop-sec-title,
+.brawl-stat-lbl {
+  justify-content: flex-start;
+}
+
+@media (min-width: 740px) and (min-height: 620px) {
+  #run-hud .ui-ico.ui-ico-heart {
+    width: 21px;
+    height: 21px;
+  }
+}

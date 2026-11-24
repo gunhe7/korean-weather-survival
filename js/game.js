@@ -84,9 +84,18 @@
   }
 
   const ASSET_VER = '20261121hd56';
+  const ICONS = window.UIIcons;
+
+  function uiIcon(key, size = 'sm', extraClass = '') {
+    return ICONS ? ICONS.html(key, size, extraClass) : '';
+  }
+
+  function uiText(text, size = 'sm', extraClass = '') {
+    return ICONS ? ICONS.formatText(text, size, extraClass) : String(text == null ? '' : text);
+  }
 
   function ticketIconHtml(cls = '') {
-    return `<img src="assets/ui/gacha_ticket.png?v=${ASSET_VER}" alt="뽑기권" class="ticket-ico${cls ? ` ${cls}` : ''}" />`;
+    return uiIcon('ticket', cls || 'sm', `ticket-ico${cls ? ` ${cls}` : ''}`);
   }
 
   function getSpawnRight() {
@@ -1305,8 +1314,8 @@
     if (el.btnGachaResAgain) {
       const nextCost = computeGachaCost(count);
       const costHtml = nextCost.useTickets > 0 && nextCost.needGems > 0
-        ? `${ticketIconHtml('btn')} ${nextCost.useTickets} + 💎 ${nextCost.needGems.toLocaleString('ko-KR')}`
-        : (nextCost.useTickets > 0 ? `${ticketIconHtml('btn')} ${nextCost.useTickets}` : `💎 ${nextCost.needGems.toLocaleString('ko-KR')}`);
+        ? `${ticketIconHtml('btn')} ${nextCost.useTickets} + ${uiIcon('gem', 'btn')} ${nextCost.needGems.toLocaleString('ko-KR')}`
+        : (nextCost.useTickets > 0 ? `${ticketIconHtml('btn')} ${nextCost.useTickets}` : `${uiIcon('gem', 'btn')} ${nextCost.needGems.toLocaleString('ko-KR')}`);
       el.btnGachaResAgain.innerHTML = `<span class="gc-again-inline">🎰 ${count}회 다시 뽑기 (${costHtml})</span>`;
       el.btnGachaResAgain.onclick = () => performSkinGacha(count);
     }
@@ -1532,19 +1541,19 @@
     el.btnChestEquip.onclick = null;
 
     if (rw.kind === 'gold') {
-      el.chestRewardRarity.textContent = '🪙 골드 획득';
+      el.chestRewardRarity.innerHTML = `${uiIcon('coin', 'sm')} 골드 획득`;
       el.chestRewardRarity.style.background = '#8f5900';
       el.chestRewardRarity.style.color = '#ffe866';
       el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="골드" class="rw-big-ico" />`;
       el.chestRewardName.textContent = `+${rw.amount.toLocaleString('ko-KR')} G`;
       el.chestRewardSub.textContent = `${rw.chest.name}에서 골드를 획득했습니다!`;
     } else if (rw.kind === 'diamond') {
-      el.chestRewardRarity.textContent = '💎 다이아 획득!';
+      el.chestRewardRarity.innerHTML = `${uiIcon('gem', 'sm')} 다이아 획득!`;
       el.chestRewardRarity.style.background = '#10548c';
       el.chestRewardRarity.style.color = '#7ef6ff';
-      el.chestRewardVisual.innerHTML = `<span class="rw-big-emoji">💎</span>`;
+      el.chestRewardVisual.innerHTML = uiIcon('gem', 'xl', 'rw-big-emoji');
       el.chestRewardName.textContent = `+${rw.amount} 다이아`;
-      el.chestRewardSub.textContent = `희귀 보석 재화 획득! 스킨 뽑기(200💎) · 황금/다이아 상자에 사용하세요!`;
+      el.chestRewardSub.innerHTML = uiText('희귀 보석 재화 획득! 스킨 뽑기(200💎) · 황금/다이아 상자에 사용하세요!', 'xs');
     } else if (rw.kind === 'skin') {
       const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.rare;
       const ownerChar = getCharDef(rw.skin.charId);
@@ -1623,7 +1632,7 @@
           </tbody>
         </table>
         <ul class="prob-rules" style="margin-top:6px;">
-          <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 💎 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립 + 중복 스킨 출현 시 ✨ +2 마일리지 추가 지급!</strong></li>
+          <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 ${uiIcon('gem', 'xs')} 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립 + 중복 스킨 출현 시 ✨ +2 마일리지 추가 지급!</strong></li>
           <li><strong>${ticketIconHtml('xs')} 상자 → 뽑기권 교환 (상자 보관함):</strong> 나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 뽑기권 1장</li>
           <li>미출시 중간 등급(영웅·전설)은 희귀 스킨 풀로 자동 전환되며, 신화 스킨 확률(${gRates.mythic}%)은 그대로 유지됩니다.</li>
         </ul>
@@ -1632,15 +1641,15 @@
         <h4>📊 상자별 보상 확률 (합계 100%)</h4>
         <table class="prob-table">
           <thead>
-            <tr><th>보상</th><th>🪵 나무(300G)</th><th>🥈 은(700G)</th><th>👑 황금(40💎)</th><th>💎 다이아(100💎)</th></tr>
+            <tr><th>보상</th><th>🪵 나무(300G)</th><th>🥈 은(700G)</th><th>${uiIcon('crown', 'xs')} 황금(40${uiIcon('gem', 'xs')})</th><th>${uiIcon('gem', 'xs')} 다이아(100${uiIcon('gem', 'xs')})</th></tr>
           </thead>
           <tbody>
-            <tr><td>🪙 골드</td><td>75%</td><td>65%</td><td>50%</td><td>25%</td></tr>
+            <tr><td>${uiIcon('coin', 'xs')} 골드</td><td>75%</td><td>65%</td><td>50%</td><td>25%</td></tr>
             <tr><td style="color:#47c8ff">희귀 스킨</td><td>23%</td><td>30%</td><td>25%</td><td>10%</td></tr>
             <tr><td style="color:#d084ff">영웅 스킨</td><td>1.5%</td><td>3%</td><td>17%</td><td>30%</td></tr>
             <tr><td style="color:#ffca42">전설 스킨</td><td>-</td><td>-</td><td>3%</td><td>25%</td></tr>
             <tr><td style="color:#ff5ea8">신화 스킨</td><td colspan="4">상자 미출현 (🎰 스킨 뽑기 · ✨ 마일리지 200 교환)</td></tr>
-            <tr><td style="color:#7ef6ff">💎 다이아</td><td>0.5%</td><td>2%</td><td>5%</td><td>10%</td></tr>
+            <tr><td style="color:#7ef6ff">${uiIcon('gem', 'xs')} 다이아</td><td>0.5%</td><td>2%</td><td>5%</td><td>10%</td></tr>
           </tbody>
         </table>
       </div>
@@ -1648,8 +1657,8 @@
         <h4>🛡️ 인게임 상자 드랍 &amp; 천장 시스템</h4>
         <ul class="prob-rules">
           <li><strong>달리기 중 상자 등장:</strong> 나무(56%) &gt; 은(27%) &gt; 황금(13%) &gt; 다이아(4%) 비율로 등장하며 획득 시 상자 보관함에 자동 저장!</li>
-          <li><strong>👑 황금 상자 천장 (10회):</strong> 영웅 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong>)</li>
-          <li><strong>💎 다이아 상자 천장 (15회):</strong> 전설 스킨 미획득 시 15회차 확정! (현재 <strong>${dPity} / 15회</strong>)</li>
+          <li><strong>${uiIcon('crown', 'xs')} 황금 상자 천장 (10회):</strong> 영웅 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong>)</li>
+          <li><strong>${uiIcon('gem', 'xs')} 다이아 상자 천장 (15회):</strong> 전설 스킨 미획득 시 15회차 확정! (현재 <strong>${dPity} / 15회</strong>)</li>
         </ul>
       </div>
     `;
@@ -1670,7 +1679,7 @@
 
   let toastTimer = null;
   function showToast(msg) {
-    el.globalToast.textContent = msg;
+    el.globalToast.innerHTML = uiText(msg, 'sm');
     el.globalToast.classList.remove('hidden');
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.globalToast.classList.add('hidden'), 2200);
@@ -1678,7 +1687,7 @@
 
   let bannerTimer = null;
   function showRunBanner(msg, ms = 2200) {
-    el.runBanner.textContent = msg;
+    el.runBanner.innerHTML = uiText(msg, 'sm');
     el.runBanner.classList.remove('hidden');
     if (bannerTimer) clearTimeout(bannerTimer);
     bannerTimer = setTimeout(() => el.runBanner.classList.add('hidden'), ms);
@@ -1687,9 +1696,9 @@
   let weatherAlertTimer = null;
   let weatherAlertActive = false;
   const WEATHER_ALERT_META = {
-    rain:       { icon: '☂️', title: '우산!' },
-    flood:      { icon: '☂️', title: '우산!' },
-    dust:       { icon: '😷', title: '마스크!' },
+    rain:       { iconKey: 'umbrella', icon: '☂️', title: '우산!' },
+    flood:      { iconKey: 'umbrella', icon: '☂️', title: '우산!' },
+    dust:       { iconKey: 'mask',     icon: '😷', title: '마스크!' },
     heat:       { icon: '☀️', title: '우산!' },
     gust:       { icon: '💨', title: '우산 접기!' },
     ice_road:   { icon: '🧊', title: '빙판!' },
@@ -1703,7 +1712,9 @@
     if (!meta) return;
     weatherAlertActive = true;
     el.weatherCenterAlert.className = `weather-center-alert ev-${weatherId}`;
-    if (el.weatherAlertIcon) el.weatherAlertIcon.textContent = meta.icon;
+    if (el.weatherAlertIcon) {
+      el.weatherAlertIcon.innerHTML = meta.iconKey ? uiIcon(meta.iconKey, 'hero') : meta.icon;
+    }
     el.weatherAlertTitle.textContent = customKeyword || meta.title;
     // Force clean animation restart on consecutive events
     void el.weatherCenterAlert.offsetWidth;
@@ -1947,7 +1958,7 @@
       if (rw.kind === 'gold') {
         iconHtml = `<img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="골드" class="sr-rw-img" />`;
       } else if (rw.kind === 'gems') {
-        iconHtml = `<span class="sr-rw-gem" aria-hidden="true">💎</span>`;
+        iconHtml = uiIcon('gem', 'xl', 'sr-rw-gem');
       } else {
         const chDef = DATA.CHESTS[rw.chest] || DATA.CHESTS.wood;
         iconHtml = `<img src="${chDef.icon}?v=${ASSET_VER}" alt="${chDef.name}" class="sr-rw-img chest" />`;
@@ -2033,7 +2044,7 @@
         <div class="vault-card-stage">
           <img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="vault-card-img" />
         </div>
-        <div class="vault-card-sub">${pityLine}</div>
+        <div class="vault-card-sub">${uiText(pityLine, 'xs')}</div>
       `;
       const btnRow = document.createElement('div');
       btnRow.className = 'vault-card-actions';
@@ -2459,8 +2470,8 @@
     SFX.chestJackpot();
 
     if (el.tutCompleteReward) {
-      el.tutCompleteReward.textContent = firstClear
-        ? '🪙 첫 튜토리얼 완료 보너스 +100G 지급!'
+      el.tutCompleteReward.innerHTML = firstClear
+        ? `${uiIcon('coin', 'sm')} 첫 튜토리얼 완료 보너스 +100G 지급!`
         : '✨ 모든 조작 연습을 완벽하게 마쳤습니다!';
     }
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.remove('hidden');
@@ -3031,13 +3042,13 @@
     SFX.click();
     pendingGemPack = pack;
     if (el.iapPackName) el.iapPackName.textContent = pack.name;
-    if (el.iapPackGems) el.iapPackGems.textContent = `+${pack.gems.toLocaleString('ko-KR')} 💎 즉시 지급`;
+    if (el.iapPackGems) el.iapPackGems.innerHTML = `+${pack.gems.toLocaleString('ko-KR')} ${uiIcon('gem', 'sm')} 즉시 지급`;
     if (el.iapPackPrice) el.iapPackPrice.textContent = `₩${pack.krwPrice.toLocaleString('ko-KR')}`;
     const isNativeApp = Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     if (el.iapPayNote) {
-      el.iapPayNote.textContent = isNativeApp
+      el.iapPayNote.innerHTML = isNativeApp
         ? `Google Play / App Store 공식 인앱 결제 · 상품ID: ${pack.productId}`
-        : `스토어 결제 연동 규격 (100💎 = ₩1,000) · 웹 미리보기에서는 테스트 결제로 보석이 지급됩니다.`;
+        : uiText('스토어 결제 연동 규격 (100💎 = ₩1,000) · 웹 미리보기에서는 테스트 결제로 보석이 지급됩니다.', 'xs');
     }
     if (el.btnIapConfirm) {
       el.btnIapConfirm.textContent = `₩${pack.krwPrice.toLocaleString('ko-KR')} 결제하기`;
@@ -3077,7 +3088,7 @@
     pendingChampionReward = reward;
     if (el.weeklyChampWeek) el.weeklyChampWeek.textContent = `${reward.weekLabel} 주간 최종 1위!`;
     if (el.weeklyChampScore) el.weeklyChampScore.textContent = `우승 점수 ${reward.score.toLocaleString('ko-KR')}점`;
-    if (el.weeklyChampGems) el.weeklyChampGems.textContent = `+${reward.gems.toLocaleString('ko-KR')} 💎 보석 지급!`;
+    if (el.weeklyChampGems) el.weeklyChampGems.innerHTML = `+${reward.gems.toLocaleString('ko-KR')} ${uiIcon('gem', 'sm')} 보석 지급!`;
     if (el.weeklyChampOverlay) el.weeklyChampOverlay.classList.remove('hidden');
     SFX.chestJackpot();
   }
@@ -3251,7 +3262,7 @@
       const lastChamp = prevRes && prevRes.board && prevRes.board[0];
       el.rankLastWinner.classList.toggle('hidden', !lastChamp);
       if (lastChamp) {
-        el.rankLastWinner.textContent = `지난주 1위 👑 ${lastChamp.nickname}`;
+        el.rankLastWinner.innerHTML = uiText(`지난주 1위 👑 ${lastChamp.nickname}`, 'xs');
       }
     }
 
@@ -3262,7 +3273,7 @@
       empty.innerHTML = `
         <div class="rank-empty-ico">🏆</div>
         <div class="rank-empty-title">이번 주 첫 1위에 도전해 보세요!</div>
-        <div class="rank-empty-sub">주간 최고 점수 1위에게 <strong>💎 500 보석</strong>이 지급됩니다.</div>
+        <div class="rank-empty-sub">주간 최고 점수 1위에게 <strong>${uiIcon('gem', 'xs')} 500 보석</strong>이 지급됩니다.</div>
       `;
       el.rankBoardList.appendChild(empty);
       return;
@@ -3291,7 +3302,7 @@
             <span class="prov-chip mini ${entry.provider || 'guest'}">${provHtml}</span>
             <span>${entry.nickname}</span>
             ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
-            ${rank === 1 ? '<span class="rank-top1-prize">👑 500💎</span>' : ''}
+            ${rank === 1 ? `<span class="rank-top1-prize">${uiIcon('crown', 'xs')} 500${uiIcon('gem', 'xs')}</span>` : ''}
           </div>
           <div class="rank-row-sub">${entry.year || 1}년 차 · ${(entry.dist || 0).toLocaleString('ko-KR')}m</div>
         </div>
@@ -3329,7 +3340,7 @@
       const card = document.createElement('div');
       card.className = `ach-card${isClaimed ? ' claimed' : (isDone ? ' ready' : '')}`;
       card.innerHTML = `
-        <div class="ach-ico">${ach.icon}</div>
+        <div class="ach-ico">${uiText(ach.icon, 'lg')}</div>
         <div class="ach-meta">
           <div class="ach-title">${ach.title}</div>
           <div class="ach-desc">${ach.desc} (${Math.min(val, ach.target).toLocaleString('ko-KR')} / ${ach.target.toLocaleString('ko-KR')})</div>
@@ -3427,18 +3438,18 @@
         ? '<span class="att-day-ico">✅</span>'
         : (chest
           ? `<img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="att-chest-thumb" />`
-          : '<span class="att-day-ico">🪙</span>');
+          : uiIcon('coin', 'md', 'att-day-ico'));
       cell.innerHTML = `
         <span class="att-day-num">${rw.day}일차</span>
         ${icoHtml}
-        <span class="att-day-val">${rw.label}</span>
+        <span class="att-day-val">${uiText(rw.label, 'xs')}</span>
       `;
       el.attDaysGrid.appendChild(cell);
     });
 
     if (claimable) {
       const rw = DATA.ATTENDANCE_REWARDS[dayIdx];
-      el.attModalDesc.textContent = `오늘(${rw.day}일차) 출석 보상: ${rw.label}`;
+      el.attModalDesc.innerHTML = uiText(`오늘(${rw.day}일차) 출석 보상: ${rw.label}`, 'sm');
       el.btnClaimAttendance.disabled = false;
       el.btnClaimAttendance.textContent = `🎁 ${rw.day}일차 출석 상자 열기!`;
     } else {
@@ -3483,8 +3494,8 @@
 
     const gPity = save.pity.gold || 0;
     const dPity = save.pity.diamond || 0;
-    if (el.pityGoldChip) el.pityGoldChip.textContent = `👑 황금 천장 ${gPity}/10`;
-    if (el.pityDiamondChip) el.pityDiamondChip.textContent = `💎 다이아 천장 ${dPity}/15`;
+    if (el.pityGoldChip) el.pityGoldChip.innerHTML = `${uiIcon('crown', 'xs')} 황금 천장 ${gPity}/10`;
+    if (el.pityDiamondChip) el.pityDiamondChip.innerHTML = `${uiIcon('gem', 'xs')} 다이아 천장 ${dPity}/15`;
 
     const grid = el.bsQuestGrid;
     if (!grid) return;
@@ -3611,7 +3622,7 @@
           <span class="bs-qtag">${tag}</span>
           <span class="bs-qprog-num">${progText}</span>
         </div>
-        <div class="bs-qcard-title"><span class="bs-qico">${icon}</span><span>${title}</span></div>
+        <div class="bs-qcard-title"><span class="bs-qico">${uiText(icon, 'md')}</span><span>${title}</span></div>
         <div class="bs-qbar-track">
           <div class="bs-qbar-fill" style="width: ${pct.toFixed(1)}%"></div>
         </div>
@@ -3639,7 +3650,7 @@
       const storeBtn = document.createElement('button');
       storeBtn.type = 'button';
       storeBtn.className = 'bs-qstore-btn';
-      storeBtn.textContent = '📦 보관';
+      storeBtn.innerHTML = `${uiIcon('chest', 'xs')} 보관`;
       storeBtn.title = '상자 보관함에 저장';
       storeBtn.onclick = onStore;
       actionCol.appendChild(storeBtn);
@@ -3799,7 +3810,7 @@
     el.detailStatScore.textContent = `${Math.round(stats.scoreMult * 100)}%`;
     el.detailFillScore.style.width = `${Math.min(100, Math.round(((stats.scoreMult - 0.7) / 1.0) * 100))}%`;
 
-    el.detailPassiveIco.textContent = ch.icon || '★';
+    el.detailPassiveIco.innerHTML = uiText(ch.icon || '★', 'md');
     el.detailPassiveName.textContent = ch.passiveName;
     el.detailPassiveDesc.textContent = ch.passiveDesc;
 
@@ -3970,12 +3981,12 @@
       const cost10 = computeGachaCost(10);
       const fmtCostHtml = (c) => {
         if (c.useTickets > 0 && c.needGems > 0) {
-          return `<span class="gc-cost-line">${ticketIconHtml('btn')} ${c.useTickets} + 💎 ${c.needGems.toLocaleString('ko-KR')}</span>`;
+          return `<span class="gc-cost-line">${ticketIconHtml('btn')} ${c.useTickets} + ${uiIcon('gem', 'btn')} ${c.needGems.toLocaleString('ko-KR')}</span>`;
         }
         if (c.useTickets > 0) {
           return `<span class="gc-cost-line">${ticketIconHtml('btn')} ${c.useTickets}</span>`;
         }
-        return `<span class="gc-cost-line">💎 ${c.needGems.toLocaleString('ko-KR')}</span>`;
+        return `<span class="gc-cost-line">${uiIcon('gem', 'btn')} ${c.needGems.toLocaleString('ko-KR')}</span>`;
       };
 
       const stage = document.createElement('div');
@@ -4021,7 +4032,7 @@
                 ${ticketIconHtml('lg')}<strong>${(save.gachaTickets || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
               </button>
               <button type="button" class="gacha-cur-chip gem" data-gaction="gems" title="보석 상점">
-                <span>💎</span><strong>${(save.gems || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
+                ${uiIcon('gem', 'sm')}<strong>${(save.gems || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
               </button>
             </div>
           </div>
@@ -4053,7 +4064,7 @@
           <div class="gacha-bottom-row">
             <button type="button" class="gacha-pill-btn prob" data-gaction="prob">📊 상세 확률</button>
             <div class="gacha-pull-group">
-              <div class="gacha-pull-note">${ticketIconHtml('xs')} 뽑기권 우선 사용 · 부족 시 💎 200 보석 / 1회</div>
+              <div class="gacha-pull-note">${ticketIconHtml('xs')} 뽑기권 우선 사용 · 부족 시 ${uiIcon('gem', 'xs')} 200 보석 / 1회</div>
               <div class="gacha-pull-btns">
                 <button type="button" class="gacha-green-btn pull-1" data-gaction="pull1">
                   ${fmtCostHtml(cost1)}
@@ -4097,7 +4108,7 @@
       sec.innerHTML = `
         <div class="bs-shop-sec-head chests">
           <span class="bs-shop-sec-title">🎁 상자 상점</span>
-          <span class="bs-shop-sec-sub">나무·은 상자는 골드, 황금(40💎)·다이아(100💎)는 보석 구매! 보관함에서 뽑기권 교환 가능</span>
+          <span class="bs-shop-sec-sub">${uiText('나무·은 상자는 골드, 황금(40💎)·다이아(100💎)는 보석 구매! 보관함에서 뽑기권 교환 가능', 'xs')}</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -4106,17 +4117,17 @@
       DATA.CHEST_ORDER.forEach((tierId) => {
         const chest = DATA.CHESTS[tierId];
         const pityInfo = tierId === 'gold'
-          ? `👑 영웅+ 천장 ${save.pity.gold || 0}/10`
+          ? `${uiIcon('crown', 'xs')} 영웅+ 천장 ${save.pity.gold || 0}/10`
           : (tierId === 'diamond'
-            ? `💎 전설 천장 ${save.pity.diamond || 0}/15`
-            : `🪙 ${chest.goldRange[0]}~${chest.goldRange[1]}G`);
+            ? `${uiIcon('gem', 'xs')} 전설 천장 ${save.pity.diamond || 0}/15`
+            : `${uiIcon('coin', 'xs')} ${chest.goldRange[0]}~${chest.goldRange[1]}G`);
         const rateSummary = tierId === 'wood'
-          ? '희귀 23% · 영웅 1.5% · 💎 0.5%'
+          ? `희귀 23% · 영웅 1.5% · ${uiIcon('gem', 'xs')} 0.5%`
           : (tierId === 'silver'
-            ? '희귀 30% · 영웅 3% · 💎 2%'
+            ? `희귀 30% · 영웅 3% · ${uiIcon('gem', 'xs')} 2%`
             : (tierId === 'gold'
               ? '희귀 25% · 영웅 17% · 전설 3%'
-              : '영웅 30% · 전설 25% · 💎 10%'));
+              : `영웅 30% · 전설 25% · ${uiIcon('gem', 'xs')} 10%`));
 
         const card = document.createElement('div');
         card.className = `bs-offer-card tier-${tierId}`;
@@ -4137,7 +4148,7 @@
           const gBtn = document.createElement('button');
           gBtn.type = 'button';
           gBtn.className = 'bs-buy-btn gold';
-          gBtn.textContent = `🪙 ${chest.shopGold.toLocaleString('ko-KR')}`;
+          gBtn.innerHTML = `${uiIcon('coin', 'btn')} ${chest.shopGold.toLocaleString('ko-KR')}`;
           gBtn.disabled = save.gold < chest.shopGold;
           gBtn.onclick = () => {
             if (save.gold < chest.shopGold) return;
@@ -4153,7 +4164,7 @@
           const dBtn = document.createElement('button');
           dBtn.type = 'button';
           dBtn.className = 'bs-buy-btn gem';
-          dBtn.textContent = `💎 ${chest.shopGems}`;
+          dBtn.innerHTML = `${uiIcon('gem', 'btn')} ${chest.shopGems}`;
           dBtn.disabled = (save.gems || 0) < chest.shopGems;
           dBtn.onclick = () => {
             if ((save.gems || 0) < chest.shopGems) return;
@@ -4346,8 +4357,8 @@
       sec.className = 'bs-shop-section';
       sec.innerHTML = `
         <div class="bs-shop-sec-head gold">
-          <span class="bs-shop-sec-title">🪙 골드 상점</span>
-          <span class="bs-shop-sec-sub">💎 보석으로 골드를 즉시 교환하세요!</span>
+          <span class="bs-shop-sec-title">${uiIcon('coin', 'sm')} 골드 상점</span>
+          <span class="bs-shop-sec-sub">${uiIcon('gem', 'xs')} 보석으로 골드를 즉시 교환하세요!</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -4370,7 +4381,7 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'bs-buy-btn gem';
-        btn.textContent = `💎 ${pk.gemCost.toLocaleString('ko-KR')}`;
+        btn.innerHTML = `${uiIcon('gem', 'btn')} ${pk.gemCost.toLocaleString('ko-KR')}`;
         btn.onclick = () => {
           if ((save.gems || 0) < pk.gemCost) {
             SFX.click();
@@ -4399,8 +4410,8 @@
       sec.className = 'bs-shop-section';
       sec.innerHTML = `
         <div class="bs-shop-sec-head gems">
-          <span class="bs-shop-sec-title">💎 보석 상점</span>
-          <span class="bs-shop-sec-sub">100💎 = ₩1,000 정가 · 스킨 뽑기(200💎) · 골드 · 황금/다이아 상자 구매에 사용!</span>
+          <span class="bs-shop-sec-title">${uiIcon('gem', 'sm')} 보석 상점</span>
+          <span class="bs-shop-sec-sub">${uiText('100💎 = ₩1,000 정가 · 스킨 뽑기(200💎) · 골드 · 황금/다이아 상자 구매에 사용!', 'xs')}</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -4409,13 +4420,16 @@
       (DATA.GEM_PACKS || []).forEach((pk) => {
         const card = document.createElement('div');
         card.className = `bs-offer-card gem-pack tier-${pk.tier}`;
+        const gemCount = pk.tier === 'xl' ? 3 : (pk.tier === 'lg' ? 2 : 1);
+        let gemPileHtml = '';
+        for (let gi = 0; gi < gemCount; gi++) gemPileHtml += uiIcon('gem', 'xl');
         card.innerHTML = `
           <div class="bs-offer-ribbon gem-rib" style="background:${pk.accent};color:#08162c">${pk.badge}</div>
           <div class="bs-offer-stage gem-stage">
             <div class="bs-offer-rays"></div>
-            <div class="bs-gem-pile ${pk.tier}" aria-hidden="true">${pk.tier === 'xl' ? '💎💎💎' : (pk.tier === 'lg' ? '💎💎' : '💎')}</div>
+            <div class="bs-gem-pile ${pk.tier}" aria-hidden="true">${gemPileHtml}</div>
           </div>
-          <div class="bs-offer-bigval gem">${pk.gems.toLocaleString('ko-KR')} 💎</div>
+          <div class="bs-offer-bigval gem">${pk.gems.toLocaleString('ko-KR')} ${uiIcon('gem', 'md')}</div>
           <div class="bs-offer-sub">${pk.name}</div>
         `;
         const foot = document.createElement('div');
@@ -4462,7 +4476,7 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'bs-buy-btn gold';
-        btn.textContent = `🪙 ${b.price.toLocaleString('ko-KR')}`;
+        btn.innerHTML = `${uiIcon('coin', 'btn')} ${b.price.toLocaleString('ko-KR')}`;
         btn.disabled = save.gold < b.price;
         btn.onclick = () => {
           if (save.gold < b.price) return;
@@ -6186,6 +6200,12 @@
     node.textContent = val;
   }
 
+  function hudHtml(key, node, rawKey, htmlStr) {
+    if (!node || hudCache[key] === rawKey) return;
+    hudCache[key] = rawKey;
+    node.innerHTML = htmlStr;
+  }
+
   function hudWidth(key, node, val) {
     if (!node || hudCache[key] === val) return;
     hudCache[key] = val;
@@ -6244,7 +6264,7 @@
       el.runHearts.classList.toggle('compact', maxHp >= 7);
       let heartHtml = '';
       for (let i = 0; i < maxHp; i++) {
-        heartHtml += `<span class="heart-unit${i < curHp ? '' : ' empty'}">❤️</span>`;
+        heartHtml += uiIcon('heart', 'heart', i < curHp ? 'heart-unit' : 'heart-unit empty');
       }
       el.runHearts.innerHTML = heartHtml;
     }
@@ -6337,7 +6357,7 @@
       hudToggle('wBarHide', el.runWeatherBar, 'hidden', !showChip);
       hudToggle('wBarUrg', el.runWeatherBar, 'urgent-danger', chipUrgent);
       if (showChip && (barJustShown || doSlow || covidUrgent || needFoldUmb || hudCache.wBadge !== chipBadge)) {
-        hudText('wBadge', el.weatherStatusBadge, chipBadge);
+        hudHtml('wBadge', el.weatherStatusBadge, chipBadge, uiText(chipBadge, 'sm'));
         hudToggle('fcHide', el.fcHeatPill, 'hidden', !chipTimer);
         hudToggle('fcUrg', el.fcHeatPill, 'urgent', chipUrgent);
         if (chipTimer) hudText('fcTxt', el.fcHeatPill, chipTimer);
