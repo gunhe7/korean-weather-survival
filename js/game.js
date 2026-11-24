@@ -450,14 +450,19 @@
     btnReplayTutorial: document.getElementById('btn-replay-tutorial'),
     btnSettingsOk: document.getElementById('btn-settings-ok'),
 
-    btnHomeTabLobby: document.getElementById('btn-home-tab-lobby'),
-    btnHomeTabWeather: document.getElementById('btn-home-tab-weather'),
-    homeWeatherTabChip: document.getElementById('home-weather-tab-chip'),
-    homeLobbyPane: document.getElementById('home-lobby-pane'),
-    homeWeatherPane: document.getElementById('home-weather-pane'),
-    btnModeNormal: document.getElementById('btn-mode-normal'),
-    btnModeToday: document.getElementById('btn-mode-today'),
-    homeModeTodaySub: document.getElementById('home-mode-today-sub'),
+    btnHomeWeather: document.getElementById('btn-home-weather'),
+    homeWeatherBtnIco: document.getElementById('home-weather-btn-ico'),
+    homeWeatherBtnTemp: document.getElementById('home-weather-btn-temp'),
+    modeSelectOverlay: document.getElementById('mode-select-overlay'),
+    btnCloseModeSelect: document.getElementById('btn-close-mode-select'),
+    btnSelectModeNormal: document.getElementById('btn-select-mode-normal'),
+    btnSelectModeToday: document.getElementById('btn-select-mode-today'),
+    modeTodayIco: document.getElementById('mode-today-ico'),
+    modeCardWeatherLine: document.getElementById('mode-card-weather-line'),
+    modeCardModPills: document.getElementById('mode-card-mod-pills'),
+    btnModeOpenWeather: document.getElementById('btn-mode-open-weather'),
+    weatherOverlay: document.getElementById('weather-overlay'),
+    btnCloseWeather: document.getElementById('btn-close-weather'),
     weatherCityPills: document.getElementById('weather-city-pills'),
     btnWeatherRefresh: document.getElementById('btn-weather-refresh'),
     weatherHeroIcon: document.getElementById('weather-hero-icon'),
@@ -3418,9 +3423,8 @@
     });
   }
 
-  // ===================== LIVE KMA WEATHER STATE & HOME MODE / WEATHER TAB =====================
+  // ===================== LIVE KMA WEATHER STATE, MODE SELECT MODAL & WEATHER MODAL =====================
   let selectedGameMode = 'normal'; // 'normal' | 'today_weather'
-  let homeSubtab = 'lobby'; // 'lobby' | 'weather'
   let rankModeTab = 'normal'; // 'normal' | 'today_weather'
   let liveWeatherSnapshot = LIVE_WEATHER ? (LIVE_WEATHER.getCachedWeather() || LIVE_WEATHER.buildFallbackSnapshot(LIVE_WEATHER.getSelectedCityId())) : null;
   let liveWeatherMods = LIVE_WEATHER ? LIVE_WEATHER.computeWeatherModifiers(liveWeatherSnapshot) : null;
@@ -3439,48 +3443,53 @@
     const mods = getActiveLiveWeatherMods();
     if (!mods) return;
     const snap = mods.snapshot;
-    const tempStr = `${Math.round(snap.tempC)}°C`;
-    if (el.homeWeatherTabChip) {
-      el.homeWeatherTabChip.textContent = `${snap.cityName} ${mods.desc.icon} ${tempStr}`;
-    }
-    if (el.homeModeTodaySub) {
-      el.homeModeTodaySub.textContent = `${snap.cityName} ${mods.desc.icon}${tempStr} · 점수×${mods.scoreMult.toFixed(2)}`;
+    if (el.homeWeatherBtnIco) el.homeWeatherBtnIco.textContent = mods.desc.icon;
+    if (el.homeWeatherBtnTemp) el.homeWeatherBtnTemp.textContent = `${Math.round(snap.tempC)}°C`;
+    if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) {
+      renderModeSelectModal();
     }
   }
 
-  function setHomeSubtab(nextTab) {
-    homeSubtab = nextTab === 'weather' ? 'weather' : 'lobby';
-    const isWeather = homeSubtab === 'weather';
-    if (el.btnHomeTabLobby) {
-      el.btnHomeTabLobby.classList.toggle('active', !isWeather);
-      el.btnHomeTabLobby.setAttribute('aria-selected', String(!isWeather));
+  function renderModeSelectModal() {
+    const mods = getActiveLiveWeatherMods();
+    if (!mods) return;
+    const snap = mods.snapshot;
+    if (el.modeTodayIco) el.modeTodayIco.textContent = mods.desc.icon;
+    if (el.modeCardWeatherLine) {
+      el.modeCardWeatherLine.textContent = `${snap.cityName} ${mods.desc.icon} ${snap.tempC.toFixed(1)}°C · ${mods.desc.label} · ${mods.season.icon} ${mods.season.name}`;
     }
-    if (el.btnHomeTabWeather) {
-      el.btnHomeTabWeather.classList.toggle('active', isWeather);
-      el.btnHomeTabWeather.setAttribute('aria-selected', String(isWeather));
-    }
-    if (el.homeLobbyPane) el.homeLobbyPane.classList.toggle('hidden', isWeather);
-    if (el.homeWeatherPane) el.homeWeatherPane.classList.toggle('hidden', !isWeather);
-    if (isWeather) {
-      renderHomeWeatherTab();
-      refreshLiveWeatherUI(false);
-    } else {
-      renderHomeCharStage();
+    if (el.modeCardModPills) {
+      const pills = [
+        `<span class="bs-ev-pill sky">⭐ 점수 ×${mods.scoreMult.toFixed(2)}</span>`,
+        `<span class="bs-ev-pill gold">🪙 골드 ×${mods.goldMult.toFixed(2)}</span>`
+      ];
+      if (mods.extraHp > 0) pills.push(`<span class="bs-ev-pill buff">❤️ 체력 +${mods.extraHp}</span>`);
+      if (mods.debuffCount > 0) pills.push(`<span class="bs-ev-pill debuff">⚠️ 기상 기믹 ${mods.debuffCount}종</span>`);
+      else pills.push(`<span class="bs-ev-pill buff">✨ 버프 ${mods.buffCount}종</span>`);
+      el.modeCardModPills.innerHTML = uiText(pills.join(''), 'xs');
     }
   }
 
-  function setSelectedGameMode(mode) {
-    selectedGameMode = mode === 'today_weather' ? 'today_weather' : 'normal';
-    const isToday = selectedGameMode === 'today_weather';
-    if (el.btnModeNormal) {
-      el.btnModeNormal.classList.toggle('active', !isToday);
-      el.btnModeNormal.setAttribute('aria-pressed', String(!isToday));
-    }
-    if (el.btnModeToday) {
-      el.btnModeToday.classList.toggle('active', isToday);
-      el.btnModeToday.setAttribute('aria-pressed', String(isToday));
-    }
-    renderHomeCharStage();
+  function openModeSelectModal() {
+    SFX.click();
+    renderModeSelectModal();
+    if (el.modeSelectOverlay) el.modeSelectOverlay.classList.remove('hidden');
+    refreshLiveWeatherUI(false);
+  }
+
+  function closeModeSelectModal() {
+    if (el.modeSelectOverlay) el.modeSelectOverlay.classList.add('hidden');
+  }
+
+  function openWeatherModal() {
+    SFX.click();
+    renderHomeWeatherTab();
+    if (el.weatherOverlay) el.weatherOverlay.classList.remove('hidden');
+    refreshLiveWeatherUI(false);
+  }
+
+  function closeWeatherModal() {
+    if (el.weatherOverlay) el.weatherOverlay.classList.add('hidden');
   }
 
   function renderHomeWeatherTab() {
@@ -3565,8 +3574,8 @@
       const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
       const unlocked = isCharUnlocked(ch.id);
       el.btnWeatherPlayToday.textContent = unlocked
-        ? `🌦️ ${snap.cityName} 오늘의 날씨모드 플레이! (${ch.name})`
-        : `🌦️ ${snap.cityName} 오늘의 날씨모드 플레이!`;
+        ? `🌦️ ${snap.cityName} 오늘의 날씨모드 바로 플레이! (${ch.name})`
+        : `🌦️ ${snap.cityName} 오늘의 날씨모드 바로 플레이!`;
     }
   }
 
@@ -3574,7 +3583,7 @@
     if (!LIVE_WEATHER) return null;
     const cityId = LIVE_WEATHER.getSelectedCityId();
     liveWeatherLoading = true;
-    if (homeSubtab === 'weather' && currentTab === 'home') renderHomeWeatherTab();
+    if (el.weatherOverlay && !el.weatherOverlay.classList.contains('hidden')) renderHomeWeatherTab();
     try {
       const snap = await LIVE_WEATHER.fetchLiveWeather(cityId, forceRefresh);
       if (snap && LIVE_WEATHER.getSelectedCityId() === cityId) {
@@ -3584,10 +3593,8 @@
     } catch {}
     liveWeatherLoading = false;
     updateHomeWeatherMiniSummary();
-    if (currentTab === 'home') {
-      if (homeSubtab === 'weather') renderHomeWeatherTab();
-      else renderHomeCharStage();
-    }
+    if (el.weatherOverlay && !el.weatherOverlay.classList.contains('hidden')) renderHomeWeatherTab();
+    if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) renderModeSelectModal();
     return liveWeatherMods;
   }
 
@@ -3605,8 +3612,7 @@
     // Render ONLY the currently visible tab (eliminates hidden-tab DOM churn, image downloads & extra Firebase fetches!)
     if (currentTab === 'home') {
       updateHomeWeatherMiniSummary();
-      if (homeSubtab === 'weather') renderHomeWeatherTab();
-      else renderHomeCharStage();
+      renderHomeCharStage();
     }
     else if (currentTab === 'shop') renderShopList();
     else if (currentTab === 'chars') renderCharList();
@@ -3620,6 +3626,8 @@
     if (detailCharIdx !== null) renderCharDetailModal();
     if (el.scoreRoadOverlay && !el.scoreRoadOverlay.classList.contains('hidden')) renderScoreRoadModal();
     if (el.vaultOverlay && !el.vaultOverlay.classList.contains('hidden')) renderVaultModal();
+    if (el.weatherOverlay && !el.weatherOverlay.classList.contains('hidden')) renderHomeWeatherTab();
+    if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) renderModeSelectModal();
   }
 
   function updateNavMissionDot() {
@@ -4243,30 +4251,10 @@
       el.homeVaultDot.textContent = vaultTotal > 99 ? '99+' : String(vaultTotal);
     }
 
-    const isTodayMode = selectedGameMode === 'today_weather';
-    if (el.btnModeNormal) {
-      el.btnModeNormal.classList.toggle('active', !isTodayMode);
-      el.btnModeNormal.setAttribute('aria-pressed', String(!isTodayMode));
-    }
-    if (el.btnModeToday) {
-      el.btnModeToday.classList.toggle('active', isTodayMode);
-      el.btnModeToday.setAttribute('aria-pressed', String(isTodayMode));
-    }
-    if (el.btnPlayStart) {
-      el.btnPlayStart.classList.toggle('today-mode', isTodayMode);
-    }
-
     if (unlocked) {
       el.btnPlayStart.disabled = false;
-      if (isTodayMode) {
-        const mods = getActiveLiveWeatherMods();
-        const wTag = mods ? `${mods.snapshot.cityName} ${Math.round(mods.snapshot.tempC)}°C` : '실시간 기상청';
-        el.btnPlayLabel.textContent = '🌦️ 날씨 플레이';
-        el.btnPlaySub.textContent = `${ch.name} · ${wTag}`;
-      } else {
-        el.btnPlayLabel.textContent = '플레이';
-        el.btnPlaySub.textContent = `${ch.name} Lv.${stats.level}`;
-      }
+      el.btnPlayLabel.textContent = '플레이';
+      el.btnPlaySub.textContent = `${ch.name} Lv.${stats.level}`;
     } else {
       el.btnPlayStart.disabled = save.gold < ch.price;
       el.btnPlayLabel.textContent = `${ch.price.toLocaleString('ko-KR')}G 해금`;
@@ -4288,7 +4276,9 @@
 
   let lastHomeAnimUpdate = 0;
   function updateHomeRunningHero(t) {
-    if (currentTab !== 'home' || homeSubtab !== 'lobby') return;
+    if (currentTab !== 'home') return;
+    if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) return;
+    if (el.weatherOverlay && !el.weatherOverlay.classList.contains('hidden')) return;
     if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
     if (el.loginOverlay && !el.loginOverlay.classList.contains('hidden')) return;
     if (t - lastHomeAnimUpdate < 0.055) return;
@@ -7547,30 +7537,19 @@
       }
     }, 5000);
 
-    // Home Sub-Tabs (로비 vs 오늘의 날씨) + Mode Selector (일반모드 vs 오늘의 날씨모드) + KMA Weather Tab Actions
-    if (el.btnHomeTabLobby) {
-      el.btnHomeTabLobby.addEventListener('click', () => {
+    // Brawl Stars Right-Dock Weather Button (below Settings) + Weather Modal + Mode Select Modal
+    if (el.btnHomeWeather) {
+      el.btnHomeWeather.addEventListener('click', openWeatherModal);
+    }
+    if (el.btnCloseWeather) {
+      el.btnCloseWeather.addEventListener('click', () => {
         SFX.click();
-        setHomeSubtab('lobby');
+        closeWeatherModal();
       });
     }
-    if (el.btnHomeTabWeather) {
-      el.btnHomeTabWeather.addEventListener('click', () => {
-        SFX.click();
-        setHomeSubtab('weather');
-      });
-    }
-    if (el.btnModeNormal) {
-      el.btnModeNormal.addEventListener('click', () => {
-        SFX.click();
-        setSelectedGameMode('normal');
-      });
-    }
-    if (el.btnModeToday) {
-      el.btnModeToday.addEventListener('click', () => {
-        SFX.click();
-        setSelectedGameMode('today_weather');
-        refreshLiveWeatherUI(false);
+    if (el.weatherOverlay) {
+      el.weatherOverlay.addEventListener('click', (e) => {
+        if (e.target === el.weatherOverlay) closeWeatherModal();
       });
     }
     if (el.btnWeatherRefresh) {
@@ -7583,6 +7562,7 @@
     if (el.btnWeatherPlayToday) {
       el.btnWeatherPlayToday.addEventListener('click', () => {
         SFX.click();
+        closeWeatherModal();
         selectedGameMode = 'today_weather';
         const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
         if (isCharUnlocked(ch.id)) {
@@ -7590,6 +7570,40 @@
           persistSave();
         }
         startRun({ mode: 'today_weather' });
+      });
+    }
+
+    if (el.btnCloseModeSelect) {
+      el.btnCloseModeSelect.addEventListener('click', () => {
+        SFX.click();
+        closeModeSelectModal();
+      });
+    }
+    if (el.modeSelectOverlay) {
+      el.modeSelectOverlay.addEventListener('click', (e) => {
+        if (e.target === el.modeSelectOverlay) closeModeSelectModal();
+      });
+    }
+    if (el.btnSelectModeNormal) {
+      el.btnSelectModeNormal.addEventListener('click', () => {
+        SFX.click();
+        closeModeSelectModal();
+        selectedGameMode = 'normal';
+        startRun({ mode: 'normal' });
+      });
+    }
+    if (el.btnSelectModeToday) {
+      el.btnSelectModeToday.addEventListener('click', () => {
+        SFX.click();
+        closeModeSelectModal();
+        selectedGameMode = 'today_weather';
+        startRun({ mode: 'today_weather' });
+      });
+    }
+    if (el.btnModeOpenWeather) {
+      el.btnModeOpenWeather.addEventListener('click', () => {
+        closeModeSelectModal();
+        openWeatherModal();
       });
     }
 
@@ -7887,7 +7901,7 @@
         }
         save.selectedChar = ch.id;
         persistSave();
-        startRun();
+        openModeSelectModal();
       } catch (err) {
         showToast(`⚠️ 시작 오류: ${(err && err.message) || '다시 시도해주세요'}`);
       }

@@ -16,7 +16,7 @@
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd67" />
+  <link rel="stylesheet" href="style.css?v=20261121hd68" />
 </head>
 <body>
   <div id="mobile-app">
@@ -165,19 +165,18 @@
 
     <!-- ================= MAIN CONTENT AREA (TABS) ================= -->
     <main id="tab-container">
-      <!-- 1. BRAWL STARS STYLE HOME SCREEN (LOBBY + LIVE KMA WEATHER TAB + MODE SWITCHER) -->
+      <!-- 1. BRAWL STARS STYLE HOME SCREEN (OPEN PEDESTAL + RIGHT WEATHER BUTTON BELOW SETTINGS + PLAY) -->
       <section id="view-home" class="tab-view active">
-        <!-- Home Sub-Tab Bar: 로비 vs 오늘의 날씨 (기상청 실시간) -->
-        <div class="home-subtabs" role="tablist" aria-label="홈 화면 전환">
-          <button id="btn-home-tab-lobby" class="home-subtab active" type="button" role="tab" aria-selected="true">🏠 로비</button>
-          <button id="btn-home-tab-weather" class="home-subtab weather-tab" type="button" role="tab" aria-selected="false">
-            <span class="home-wt-lbl">🌤️ 날씨</span>
-            <span id="home-weather-tab-chip" class="home-weather-tab-chip">기상청 불러오는 중...</span>
-          </button>
-        </div>
-
-        <!-- Home Pane A: Character Lobby + Mode Switcher + Vault/Play -->
         <div id="home-lobby-pane" class="bs-home-lobby">
+          <!-- Brawl Stars Right-Side Floating Weather Button (Directly below top-right Settings button!) -->
+          <div class="bs-home-right-dock">
+            <button id="btn-home-weather" class="bs-right-dock-btn weather-dock-btn" type="button" aria-label="실시간 날씨 정보 열기" title="실시간 기상청 날씨">
+              <span id="home-weather-btn-ico" class="bs-rd-ico" aria-hidden="true">🌤️</span>
+              <span class="bs-rd-lbl">날씨</span>
+              <span id="home-weather-btn-temp" class="bs-rd-temp">--°C</span>
+            </button>
+          </div>
+
           <!-- Center Open-Lobby Brawl Stars Character Showcase -->
           <div id="home-hero-stage" class="bs-home-stage tier-raincoat">
             <div class="bs-spotlight"></div>
@@ -209,24 +208,6 @@
             </div>
           </div>
 
-          <!-- Game Mode Selector (일반모드 vs 오늘의 날씨모드) -->
-          <div class="home-mode-bar" role="radiogroup" aria-label="게임 모드 선택">
-            <button id="btn-mode-normal" class="home-mode-btn active" type="button" aria-pressed="true">
-              <span class="hmb-ico">🏃</span>
-              <span class="hmb-txt">
-                <strong>일반모드</strong>
-                <small>사계절 순환 · 주간 랭킹</small>
-              </span>
-            </button>
-            <button id="btn-mode-today" class="home-mode-btn weather" type="button" aria-pressed="false">
-              <span class="hmb-ico">🌦️</span>
-              <span class="hmb-txt">
-                <strong>오늘의 날씨모드</strong>
-                <small id="home-mode-today-sub">실시간 기상청 · 일간 랭킹</small>
-              </span>
-            </button>
-          </div>
-
           <!-- Brawl Stars Slanted Bottom Action Controls (Chest Vault + Play) -->
           <div class="bs-home-actions">
             <button id="btn-home-vault" class="bs-brawler-btn bs-vault-home-btn" type="button" aria-label="상자 보관함 열기">
@@ -247,44 +228,6 @@
               </span>
             </button>
           </div>
-        </div>
-
-        <!-- Home Pane B: Real-Time Korea Meteorological Administration (KMA) Weather Tab -->
-        <div id="home-weather-pane" class="home-weather-pane hidden">
-          <div class="weather-pane-topbar">
-            <div id="weather-city-pills" class="weather-city-pills" role="tablist" aria-label="지역 선택"></div>
-            <button id="btn-weather-refresh" class="weather-refresh-btn" type="button">🔄 갱신</button>
-          </div>
-
-          <div id="weather-live-hero" class="weather-live-hero">
-            <div class="wlh-left">
-              <div id="weather-hero-icon" class="wlh-icon" aria-hidden="true">🌤️</div>
-              <div class="wlh-temp-col">
-                <div class="wlh-city-row">
-                  <strong id="weather-hero-city">서울</strong>
-                  <span id="weather-hero-season" class="wlh-season-pill">🌸 봄</span>
-                  <span id="weather-hero-live-tag" class="wlh-live-tag">기상청 LIVE</span>
-                </div>
-                <div class="wlh-temp-row">
-                  <span id="weather-hero-temp" class="wlh-temp">--°C</span>
-                  <span id="weather-hero-desc" class="wlh-desc">실시간 날씨 불러오는 중...</span>
-                </div>
-              </div>
-            </div>
-            <div class="wlh-right">
-              <div id="weather-hero-meta" class="wlh-meta">체감 --°C · 습도 --%</div>
-              <div id="weather-hero-updated" class="wlh-updated">기상청(KMA) 기준</div>
-            </div>
-          </div>
-
-          <div class="weather-section-title">⚡ 오늘의 날씨모드 실시간 버프 · 디버프</div>
-          <div id="weather-buff-grid" class="weather-buff-grid"></div>
-
-          <div id="weather-mod-summary" class="weather-mod-summary">계절 및 실시간 기상 효과가 자동 적용됩니다.</div>
-
-          <button id="btn-weather-play-today" class="cr-gold-btn weather-play-cta" type="button">
-            🌦️ 오늘의 날씨모드 바로 플레이!
-          </button>
         </div>
       </section>
 
@@ -1002,6 +945,103 @@
       </div>
     </div>
 
+    <!-- ================= BRAWL STARS STYLE GAME MODE SELECT MODAL (OPENED ON PLAY TAP!) ================= -->
+    <div id="mode-select-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="게임 모드 선택">
+      <div class="cr-modal settings-arcade-modal bs-mode-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <span class="settings-bar-title">🎮 모드 선택</span>
+          <button id="btn-close-mode-select" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div class="modal-body bs-mode-body">
+          <div class="bs-mode-grid">
+            <!-- Event Card 1: 일반모드 (4계절 주간 랭킹) -->
+            <div class="bs-event-card normal">
+              <button id="btn-select-mode-normal" class="bs-event-hit" type="button">
+                <div class="bs-ev-banner normal">
+                  <span class="bs-ev-ico" aria-hidden="true">🏃</span>
+                  <div class="bs-ev-head">
+                    <span class="bs-ev-kicker">주간 랭킹 · 1위 500💎</span>
+                    <strong class="bs-ev-title">일반모드</strong>
+                  </div>
+                </div>
+                <div class="bs-ev-desc">🌸☀️🍁❄️ 사계절 순환 생존 · 기존 기본 모드</div>
+                <div class="bs-ev-pills">
+                  <span class="bs-ev-pill">사계절 순환</span>
+                  <span class="bs-ev-pill gold">주간 랭킹</span>
+                </div>
+                <div class="bs-ev-cta normal">▶ 일반모드 출발!</div>
+              </button>
+            </div>
+
+            <!-- Event Card 2: 오늘의 날씨모드 (실시간 기상청 일간 랭킹) -->
+            <div class="bs-event-card today">
+              <button id="btn-select-mode-today" class="bs-event-hit" type="button">
+                <div class="bs-ev-banner today">
+                  <span id="mode-today-ico" class="bs-ev-ico" aria-hidden="true">🌦️</span>
+                  <div class="bs-ev-head">
+                    <span class="bs-ev-kicker">기상청 LIVE · 매일 초기화</span>
+                    <strong class="bs-ev-title">오늘의 날씨모드</strong>
+                  </div>
+                </div>
+                <div id="mode-card-weather-line" class="bs-ev-desc">실시간 한국 기상청 날씨 반영 중...</div>
+                <div id="mode-card-mod-pills" class="bs-ev-pills">
+                  <span class="bs-ev-pill sky">실시간 버프/디버프</span>
+                </div>
+                <div class="bs-ev-cta today">🌦️ 오늘의 날씨 출발!</div>
+              </button>
+              <button id="btn-mode-open-weather" class="bs-ev-detail-link" type="button">🌤️ 상세 날씨 · 지역 변경</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= LIVE KMA WEATHER MODAL (OPENED FROM RIGHT-DOCK WEATHER BUTTON BELOW SETTINGS) ================= -->
+    <div id="weather-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="실시간 기상청 날씨">
+      <div class="cr-modal settings-arcade-modal bs-weather-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <span class="settings-bar-title">🌤️ 실시간 기상청 날씨</span>
+          <div class="score-road-bar-actions">
+            <button id="btn-weather-refresh" class="weather-refresh-btn" type="button">🔄 갱신</button>
+            <button id="btn-close-weather" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+          </div>
+        </div>
+        <div class="modal-body bs-weather-modal-body">
+          <div id="weather-city-pills" class="weather-city-pills" role="tablist" aria-label="지역 선택"></div>
+
+          <div id="weather-live-hero" class="weather-live-hero">
+            <div class="wlh-left">
+              <div id="weather-hero-icon" class="wlh-icon" aria-hidden="true">🌤️</div>
+              <div class="wlh-temp-col">
+                <div class="wlh-city-row">
+                  <strong id="weather-hero-city">서울</strong>
+                  <span id="weather-hero-season" class="wlh-season-pill">🌸 봄</span>
+                  <span id="weather-hero-live-tag" class="wlh-live-tag">기상청 LIVE</span>
+                </div>
+                <div class="wlh-temp-row">
+                  <span id="weather-hero-temp" class="wlh-temp">--°C</span>
+                  <span id="weather-hero-desc" class="wlh-desc">실시간 날씨 불러오는 중...</span>
+                </div>
+              </div>
+            </div>
+            <div class="wlh-right">
+              <div id="weather-hero-meta" class="wlh-meta">체감 --°C · 습도 --%</div>
+              <div id="weather-hero-updated" class="wlh-updated">기상청(KMA) 기준</div>
+            </div>
+          </div>
+
+          <div class="weather-section-title">⚡ 오늘의 날씨모드 실시간 버프 · 디버프</div>
+          <div id="weather-buff-grid" class="weather-buff-grid"></div>
+
+          <div id="weather-mod-summary" class="weather-mod-summary">계절 및 실시간 기상 효과가 자동 적용됩니다.</div>
+
+          <button id="btn-weather-play-today" class="cr-gold-btn weather-play-cta" type="button">
+            🌦️ 오늘의 날씨모드 바로 플레이!
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="global-toast" class="global-toast hidden"></div>
   </div>
@@ -1009,14 +1049,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd67"></script>
-  <script src="js/ui-icons.js?v=20261121hd67"></script>
-  <script src="js/weather-live.js?v=20261121hd67"></script>
-  <script src="js/audio.js?v=20261121hd67"></script>
-  <script src="js/studio-intro.js?v=20261121hd67"></script>
-  <script src="js/online.js?v=20261121hd67"></script>
-  <script src="js/renderer.js?v=20261121hd67"></script>
-  <script src="js/game.js?v=20261121hd67"></script>
+  <script src="js/data.js?v=20261121hd68"></script>
+  <script src="js/ui-icons.js?v=20261121hd68"></script>
+  <script src="js/weather-live.js?v=20261121hd68"></script>
+  <script src="js/audio.js?v=20261121hd68"></script>
+  <script src="js/studio-intro.js?v=20261121hd68"></script>
+  <script src="js/online.js?v=20261121hd68"></script>
+  <script src="js/renderer.js?v=20261121hd68"></script>
+  <script src="js/game.js?v=20261121hd68"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {
