@@ -836,6 +836,174 @@ window.SFX = (function () {
           tone(f, 0.24, 'sine', 0.065, i * 0.052);
         });
       }
+    },
+    playStudioIntro(offsetSec = 0) {
+      // YAGUN STUDIO 6-second cinematic intro audio (riser -> 1.45s sub impact + Cmaj9 chime + stereo pad -> sweep glint & text whoosh)
+      if (!sfxEnabled || sfxVolume <= 0) return { started: false, stop() {} };
+      const c = ensure();
+      if (!c) return { started: false, stop() {} };
+      if (c.state === 'suspended') {
+        try { c.resume(); } catch {}
+        if (c.state === 'suspended') return { started: false, stop() {} };
+      }
+
+      const now = c.currentTime;
+      const off = Math.max(0, offsetSec || 0);
+      const bufs = ensureNoiseBuffers(c);
+      const nodes = [];
+
+      const master = c.createGain();
+      const baseVol = Math.min(1, sfxVolume * 0.85);
+      master.gain.setValueAtTime(baseVol, now);
+      // Smooth cinematic fadeout from 5.10s to 5.95s
+      const fadeStart = Math.max(0.05, 5.10 - off);
+      const fadeEnd = Math.max(fadeStart + 0.08, 5.95 - off);
+      master.gain.setValueAtTime(baseVol, now + fadeStart);
+      master.gain.linearRampToValueAtTime(0.0001, now + fadeEnd);
+      master.connect(c.destination);
+      nodes.push(master);
+
+      const schedOsc = (type, fStart, fEnd, tAt, dur, amp, panVal = 0) => {
+        const startRel = tAt - off;
+        if (startRel + dur <= 0.01) return;
+        const s0 = Math.max(0, startRel);
+        const effDur = dur - (s0 - startRel);
+        if (effDur <= 0.02) return;
+        const osc = c.createOscillator();
+        const g = c.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(Math.max(20, fStart), now + s0);
+        if (fEnd && fEnd !== fStart) {
+          osc.frequency.exponentialRampToValueAtTime(Math.max(20, fEnd), now + s0 + effDur);
+        }
+        g.gain.setValueAtTime(0.0001, now + s0);
+        g.gain.linearRampToValueAtTime(amp, now + s0 + Math.min(0.025, effDur * 0.15));
+        g.gain.exponentialRampToValueAtTime(0.0001, now + s0 + effDur);
+        osc.connect(g);
+        if (typeof c.createStereoPanner === 'function' && panVal !== 0) {
+          const pan = c.createStereoPanner();
+          pan.pan.setValueAtTime(panVal, now + s0);
+          g.connect(pan);
+          pan.connect(master);
+          nodes.push(pan);
+        } else {
+          g.connect(master);
+        }
+        osc.start(now + s0);
+        osc.stop(now + s0 + effDur + 0.04);
+        nodes.push(osc, g);
+      };
+
+      const schedNoise = (bufType, filterType, fStart, fEnd, Q, tAt, dur, amp, att = 0.02) => {
+        const startRel = tAt - off;
+        if (startRel + dur <= 0.01) return;
+        const s0 = Math.max(0, startRel);
+        const effDur = dur - (s0 - startRel);
+        if (effDur <= 0.02) return;
+        const src = c.createBufferSource();
+        src.buffer = bufs[bufType] || bufs.pink;
+        src.loop = true;
+        const flt = c.createBiquadFilter();
+        flt.type = filterType;
+        flt.Q.setValueAtTime(Q, now + s0);
+        flt.frequency.setValueAtTime(Math.max(40, fStart), now + s0);
+        if (fEnd && fEnd !== fStart) {
+          flt.frequency.exponentialRampToValueAtTime(Math.max(40, fEnd), now + s0 + effDur);
+        }
+        const g = c.createGain();
+        g.gain.setValueAtTime(0.0001, now + s0);
+        g.gain.linearRampToValueAtTime(amp, now + s0 + Math.min(att, effDur * 0.65));
+        g.gain.exponentialRampToValueAtTime(0.0001, now + s0 + effDur);
+        src.connect(flt);
+        flt.connect(g);
+        g.connect(master);
+        src.start(now + s0);
+        src.stop(now + s0 + effDur + 0.05);
+        nodes.push(src, flt, g);
+      };
+
+      // 1. Airy Spectral Riser (0.35s -> 1.45s)
+      schedNoise('pink', 'bandpass', 360, 4800, 1.4, 0.35, 1.12, 0.24, 0.92);
+      schedOsc('sine', 200, 1500, 0.35, 1.10, 0.075, 0);
+
+      // 2. Impact Boom at 1.45s (sub drop 114->44Hz, 98Hz thump, lowpass body, crisp crack)
+      schedOsc('sine', 114, 44, 1.45, 1.45, 0.38, 0);
+      schedOsc('sine', 98, 72, 1.45, 0.42, 0.16, 0);
+      schedNoise('pink', 'lowpass', 1600, 220, 0.8, 1.45, 0.42, 0.30, 0.005);
+      schedNoise('white', 'highpass', 3600, 2400, 0.9, 1.45, 0.08, 0.14, 0.002);
+
+      // 3. Cmaj9 Crystalline Chime Arpeggio (1.47s+)
+      const chimes = [
+        [1046.5, 1.7, 0.068],
+        [1318.5, 1.5, 0.058],
+        [1568.0, 1.6, 0.062],
+        [1975.5, 1.3, 0.046],
+        [2093.0, 1.2, 0.048],
+        [2637.0, 1.0, 0.036]
+      ];
+      chimes.forEach(([fq, tau, amp], idx) => {
+        const t0 = 1.47 + 0.05 * idx;
+        const pan = Math.sin(idx * 2.1) * 0.55;
+        schedOsc('sine', fq, fq, t0, tau * 1.4, amp, pan);
+        schedOsc('sine', fq * 2.76, fq * 2.76, t0, 0.38, amp * 0.22, -pan * 0.6);
+      });
+
+      // 4. Warm Stereo Cmaj9 Pad (1.42s -> 5.90s)
+      const padStart = Math.max(0, 1.42 - off);
+      const padDur = Math.max(0, 4.45 - Math.max(0, off - 1.42));
+      if (padDur > 0.2) {
+        [130.81, 196.0, 261.63, 329.63, 392.0].forEach((fq) => {
+          [-1, 1].forEach((side) => {
+            const osc = c.createOscillator();
+            const g = c.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(fq + side * (fq / 220), now + padStart);
+            g.gain.setValueAtTime(0.0001, now + padStart);
+            g.gain.linearRampToValueAtTime(0.024, now + padStart + 0.85);
+            g.gain.setValueAtTime(0.024, now + padStart + Math.max(0.86, padDur - 0.9));
+            g.gain.exponentialRampToValueAtTime(0.0001, now + padStart + padDur);
+            osc.connect(g);
+            if (typeof c.createStereoPanner === 'function') {
+              const pan = c.createStereoPanner();
+              pan.pan.setValueAtTime(side * 0.45, now + padStart);
+              g.connect(pan);
+              pan.connect(master);
+              nodes.push(pan);
+            } else {
+              g.connect(master);
+            }
+            osc.start(now + padStart);
+            osc.stop(now + padStart + padDur + 0.05);
+            nodes.push(osc, g);
+          });
+        });
+      }
+
+      // 5. Metallic Sweep Glint (~2.25s) & Wordmark Airy Whoosh (~2.52s)
+      schedOsc('sine', 2200, 4200, 2.22, 0.65, 0.032, 0);
+      schedNoise('white', 'highpass', 5200, 4200, 1.0, 2.22, 0.52, 0.042, 0.22);
+      schedNoise('pink', 'bandpass', 900, 4600, 1.5, 2.48, 0.56, 0.11, 0.22);
+
+      let stopped = false;
+      return {
+        started: true,
+        stop() {
+          if (stopped) return;
+          stopped = true;
+          try {
+            const tNow = c.currentTime;
+            master.gain.cancelScheduledValues(tNow);
+            master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), tNow);
+            master.gain.linearRampToValueAtTime(0.0001, tNow + 0.12);
+          } catch {}
+          setTimeout(() => {
+            nodes.forEach((nd) => {
+              try { if (typeof nd.stop === 'function') nd.stop(); } catch {}
+              try { if (typeof nd.disconnect === 'function') nd.disconnect(); } catch {}
+            });
+          }, 160);
+        }
+      };
     }
   };
 })();

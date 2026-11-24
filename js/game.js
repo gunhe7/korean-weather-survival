@@ -7144,15 +7144,28 @@
       if (e.target && e.target.closest && e.target.closest('button')) return;
       enterFromIntro(e);
     });
-    window.addEventListener('pointerdown', () => {
+    let bgmUnlocked = false;
+    function unlockBgmOnGesture() {
+      if (bgmUnlocked) return;
+      if (window.StudioIntro && window.StudioIntro.isActive()) return;
+      bgmUnlocked = true;
+      window.removeEventListener('pointerdown', unlockBgmOnGesture);
       try {
         SFX.startBgm();
         if (!run || !run.active) SFX.setBgmMode('menu');
       } catch {}
-    }, { once: true });
+    }
+    window.addEventListener('pointerdown', unlockBgmOnGesture);
 
     // Desktop Keyboard Controls (Space/↑ Jump, ↓ Slide, Q Umbrella, E Mask, Esc Pause)
     window.addEventListener('keydown', (e) => {
+      if (window.StudioIntro && window.StudioIntro.isActive()) {
+        if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
+          e.preventDefault();
+          window.StudioIntro.skip();
+        }
+        return;
+      }
       if (!el.introOverlay.classList.contains('hidden')) {
         if (e.code === 'Space' || e.code === 'Enter') {
           e.preventDefault();
@@ -7210,7 +7223,13 @@
   setupEvents();
   refreshAllMenus();
   renderIntroAuthState();
-  try { SFX.introJingle(); } catch {}
+  if (window.StudioIntro && typeof window.StudioIntro.play === 'function') {
+    window.StudioIntro.play(() => {
+      try { SFX.introJingle(); } catch {}
+    });
+  } else {
+    try { SFX.introJingle(); } catch {}
+  }
 
   // Handle Real Firebase OAuth Redirect / Persistent Session Restoration & Cross-Device Cloud Pull!
   if (ONLINE && ONLINE.onCloudSyncStatusChange) {
@@ -7222,6 +7241,7 @@
     const startAuthListeners = () => {
       ONLINE.checkRedirectLoginResult().then(async (redirectProfile) => {
         if (redirectProfile) {
+          if (window.StudioIntro && window.StudioIntro.isActive()) window.StudioIntro.skip();
           await switchToAccount(redirectProfile, { carryGuestSave: save.auth && save.auth.provider === 'guest' });
           dismissIntroToHome();
         }
