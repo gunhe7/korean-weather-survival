@@ -31,7 +31,7 @@ window.RunRenderer = (function () {
     { id: 'yellow', frames: 3, runFrames: 8 },
     { id: 'blue', frames: 3, runFrames: 8 },
     { id: 'hanbok', frames: 3, runFrames: 8 },
-    { id: 'skier', frames: 2 },
+    { id: 'skier', frames: 4, runFrames: 8, ver: '20261121hd67' },
     { id: 'santa', frames: 2 },
     { id: 'catgirl', frames: 4, runFrames: 8 },
     { id: 'hades', frames: 3, runFrames: 4 }
@@ -84,16 +84,17 @@ window.RunRenderer = (function () {
     }
   });
   CHAR_SHEET_SKINS.forEach((sk) => {
+    const skVer = sk.ver || SPRITE_VER;
     CHAR_ANIM_STATES.forEach((st) => {
       const fCount = (st === 'run' && sk.runFrames)
         ? sk.runFrames
         : ((st === 'idle' && sk.idleFrames) ? sk.idleFrames : sk.frames);
       for (let f = 0; f < fCount; f++) {
         const key = `${sk.id}_${st}_${f}`;
-        SPRITE_URL_MAP[key] = `assets/chars/${key}.png?v=${SPRITE_VER}`;
+        SPRITE_URL_MAP[key] = `assets/chars/${key}.png?v=${skVer}`;
       }
     });
-    SPRITE_URL_MAP[`port_${sk.id}`] = `assets/chars/port_${sk.id}.png?v=${SPRITE_VER}`;
+    SPRITE_URL_MAP[`port_${sk.id}`] = `assets/chars/port_${sk.id}.png?v=${skVer}`;
   });
   CHAR_VFX_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/chars/${key}.png?v=${SPRITE_VER}`; });
   DESIGN_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/design/${key}.png?v=${SPRITE_VER}`; });

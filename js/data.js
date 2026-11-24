@@ -155,8 +155,9 @@ window.RUN_DATA = (function () {
       icon: '🧊',
       spriteKey: 'skier_idle_0',
       animSkin: 'skier',
-      animFrames: 2,
-      avatar: 'assets/chars/port_skier.png?v=20261121hd9',
+      animFrames: 4,
+      runFrames: 8,
+      avatar: 'assets/chars/port_skier.png?v=20261121hd67',
       auraType: 'skier',
       price: 950,
       baseHp: 5,
@@ -168,7 +169,7 @@ window.RUN_DATA = (function () {
       passiveDesc: '빙판 미끄러짐 완전 제어 + 빙판 구간 이동/점수 +20%, 음료 아이템 점수·피버 대폭 증가!',
       desc: '영하 15도에도 아아 한 잔! 겨울 빙판길에서 오히려 최고의 기동력을 발휘합니다.',
       tag: '빙판 제어 & 가속 · 피버 특화',
-      colors: { top: '#2b70d4', outer: '#1d54a8', pants: '#232c3d', shoes: '#d9e3f0', hat: null, coffeeCup: true }
+      colors: { top: '#2b70d4', outer: '#1d54a8', pants: '#232c3d', shoes: '#d9e3f0', hat: null }
     },
     {
       id: 'fashionista',

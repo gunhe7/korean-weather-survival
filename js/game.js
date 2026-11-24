@@ -4216,7 +4216,8 @@
     el.homeHeroStage.className = `bs-home-stage ${tierCls}${unlocked ? '' : ' locked'}`;
     lastHomeHeroSrc = '';
     const homePose = (skin && skin.customIdleFrames) ? 'idle' : 'run';
-    el.homeHeroImg.src = `assets/chars/${anim.skin}_${homePose}_0.png?v=${ASSET_VER}`;
+    const charSprVer = anim.skin === 'skier' ? '20261121hd67' : ASSET_VER;
+    el.homeHeroImg.src = `assets/chars/${anim.skin}_${homePose}_0.png?v=${charSprVer}`;
     el.homeHeroImg.alt = skin ? `${ch.name} (${skin.name})` : ch.name;
     el.homeHeroImg.style.filter = getSkinFilter(skin);
     el.homeHeroImg.style.setProperty('--skin-glow', skin ? skin.glow : '');
@@ -4299,7 +4300,8 @@
     const frameCnt = useIdle ? skin.customIdleFrames : anim.frames;
     const fps = useIdle ? 6.5 : (frameCnt >= 6 ? 13 : (frameCnt >= 3 ? 9.5 : 7.5));
     const frame = Math.floor(t * fps) % frameCnt;
-    const src = `assets/chars/${anim.skin}_${useIdle ? 'idle' : 'run'}_${frame}.png?v=${ASSET_VER}`;
+    const charSprVer = anim.skin === 'skier' ? '20261121hd67' : ASSET_VER;
+    const src = `assets/chars/${anim.skin}_${useIdle ? 'idle' : 'run'}_${frame}.png?v=${charSprVer}`;
     const readySrc = getPreloadedHomeHeroSrc(src);
     if (readySrc && readySrc !== lastHomeHeroSrc) {
       lastHomeHeroSrc = readySrc;
