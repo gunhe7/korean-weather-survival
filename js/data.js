@@ -10,7 +10,7 @@ window.RUN_DATA = (function () {
       icon: '🌸',
       weatherLabel: '황사 · 미세먼지 · 꽃샘추위',
       hazards: '황사 구름 · 미세먼지 스모그 · 꽃샘 강풍 · 그루터기 · 라바콘',
-      tip: '황사·미세먼지 경보 시 마스크(E)를 착용하세요!',
+      tip: '황사·미세먼지 경보 시 마스크 버튼을 눌러 착용하세요!',
       drainBonus: 0,
       sky: ['#639ef2', '#99c9ff', '#e4f2ff'],
       mountain: '#7ea2d6',
@@ -28,7 +28,7 @@ window.RUN_DATA = (function () {
       icon: '☀️',
       weatherLabel: '폭염 · 장마 폭우 · 침수',
       hazards: '폭염 열기 · 침수 파도 · 침수 바리케이드 · 날아오는 우산 · 번개구름',
-      tip: '폭우엔 우산(Q), 폭염엔 파라솔·나무 그늘, 침수엔 차 지붕을 밟으세요!',
+      tip: '폭우엔 우산, 폭염엔 파라솔·나무 그늘, 침수엔 차 지붕을 밟으세요!',
       drainBonus: 0.45,
       sky: ['#3e84e6', '#72b6ff', '#d4ecff'],
       mountain: '#6a96cc',
@@ -200,7 +200,7 @@ window.RUN_DATA = (function () {
       name: '기상 보호막',
       icon: 'assets/atlas/spr_shield.png?v=20261121hd44',
       price: 80,
-      desc: '다음 달리기에서 첫 장애물 충돌 1회를 피해 없이 완전 방어합니다!'
+      desc: '첫 장애물 충돌 1회 완벽 방어 + 방어 직후 잠시 무적 유지!'
     },
     {
       id: 'boost',

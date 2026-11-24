@@ -1,4 +1,4 @@
-const CACHE_NAME = 'k-weather-survival-v20261121hd65';
+const CACHE_NAME = 'k-weather-survival-v20261121hd66';
 const ASSET_CACHE_NAME = 'k-weather-survival-assets-v1';
 const CORE_ASSETS = [
   './',
@@ -7,6 +7,7 @@ const CORE_ASSETS = [
   './manifest.json',
   './js/data.js',
   './js/ui-icons.js',
+  './js/weather-live.js',
   './js/audio.js',
   './js/studio-intro.js',
   './js/online.js',

@@ -3,6 +3,7 @@
   const SFX = window.SFX;
   const Renderer = window.RunRenderer;
   const ONLINE = window.OnlineService;
+  const LIVE_WEATHER = window.LiveWeather;
 
   const SAVE_KEY = 'kr_weather_runner_save_v1';
   const SAVE_BACKUP_KEY = 'kr_weather_runner_save_v1_backup';
@@ -81,6 +82,11 @@
     const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
     const weekNo = Math.ceil((((utc - yearStart) / 86400000) + 1) / 7);
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  }
+
+  function getKstDateKey() {
+    if (ONLINE && ONLINE.getKstDayInfo) return ONLINE.getKstDayInfo().dateKey;
+    return getTodayKey();
   }
 
   const ASSET_VER = '20261121hd56';
@@ -174,7 +180,8 @@
       cloudUpdatedAt: 0,
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
       auth: cleanAuth,
-      weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] }
+      weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] },
+      dailyWeatherRank: { dateKey: getKstDateKey(), bestScore: 0, bestDist: 0, bestYear: 1, cityName: '서울', weatherTag: '' }
     };
 
     if (!raw || typeof raw !== 'object') return def;
@@ -258,6 +265,19 @@
           bestYear: sameWeek ? (Number(wr.bestYear) || 1) : 1,
           history: hist,
           claimedWeeks: toSafeArray(wr.claimedWeeks).filter((w) => typeof w === 'string')
+        };
+      })(),
+      dailyWeatherRank: (() => {
+        const curDate = getKstDateKey();
+        const dr = raw.dailyWeatherRank && typeof raw.dailyWeatherRank === 'object' ? raw.dailyWeatherRank : {};
+        const sameDay = dr.dateKey === curDate;
+        return {
+          dateKey: curDate,
+          bestScore: sameDay ? (Number(dr.bestScore) || 0) : 0,
+          bestDist: sameDay ? (Number(dr.bestDist) || 0) : 0,
+          bestYear: sameDay ? (Number(dr.bestYear) || 1) : 1,
+          cityName: sameDay && dr.cityName ? String(dr.cityName) : '서울',
+          weatherTag: sameDay && dr.weatherTag ? String(dr.weatherTag) : ''
         };
       })()
     };
@@ -430,6 +450,28 @@
     btnReplayTutorial: document.getElementById('btn-replay-tutorial'),
     btnSettingsOk: document.getElementById('btn-settings-ok'),
 
+    btnHomeTabLobby: document.getElementById('btn-home-tab-lobby'),
+    btnHomeTabWeather: document.getElementById('btn-home-tab-weather'),
+    homeWeatherTabChip: document.getElementById('home-weather-tab-chip'),
+    homeLobbyPane: document.getElementById('home-lobby-pane'),
+    homeWeatherPane: document.getElementById('home-weather-pane'),
+    btnModeNormal: document.getElementById('btn-mode-normal'),
+    btnModeToday: document.getElementById('btn-mode-today'),
+    homeModeTodaySub: document.getElementById('home-mode-today-sub'),
+    weatherCityPills: document.getElementById('weather-city-pills'),
+    btnWeatherRefresh: document.getElementById('btn-weather-refresh'),
+    weatherHeroIcon: document.getElementById('weather-hero-icon'),
+    weatherHeroCity: document.getElementById('weather-hero-city'),
+    weatherHeroSeason: document.getElementById('weather-hero-season'),
+    weatherHeroLiveTag: document.getElementById('weather-hero-live-tag'),
+    weatherHeroTemp: document.getElementById('weather-hero-temp'),
+    weatherHeroDesc: document.getElementById('weather-hero-desc'),
+    weatherHeroMeta: document.getElementById('weather-hero-meta'),
+    weatherHeroUpdated: document.getElementById('weather-hero-updated'),
+    weatherBuffGrid: document.getElementById('weather-buff-grid'),
+    weatherModSummary: document.getElementById('weather-mod-summary'),
+    btnWeatherPlayToday: document.getElementById('btn-weather-play-today'),
+
     homeHeroStage: document.getElementById('home-hero-stage'),
     homeHeroAura: document.getElementById('home-hero-aura'),
     homeHeroImg: document.getElementById('home-hero-img'),
@@ -454,6 +496,10 @@
     shopItemsList: document.getElementById('shop-items-list'),
 
     navMissionDot: document.getElementById('nav-mission-dot'),
+    qdotDaily: document.getElementById('qdot-daily'),
+    qdotWeekly: document.getElementById('qdot-weekly'),
+    qdotAch: document.getElementById('qdot-ach'),
+    qdotAtt: document.getElementById('qdot-att'),
     btnTabOpenAttendance: document.getElementById('btn-tab-open-attendance'),
     btnQuestProb: document.getElementById('btn-quest-prob'),
     questResetLabel: document.getElementById('quest-reset-label'),
@@ -461,6 +507,12 @@
     pityDiamondChip: document.getElementById('pity-diamond-chip'),
     bsQuestGrid: document.getElementById('bs-quest-grid'),
 
+    rankScreenTitle: document.getElementById('rank-screen-title'),
+    btnRankModeNormal: document.getElementById('btn-rank-mode-normal'),
+    btnRankModeToday: document.getElementById('btn-rank-mode-today'),
+    rankPrizeCrown: document.getElementById('rank-prize-crown'),
+    rankPrizeInlineText: document.getElementById('rank-prize-inline-text'),
+    rankMyTitleLabel: document.getElementById('rank-my-title-label'),
     rankLivePill: document.getElementById('rank-live-pill'),
     rankOnlineCount: document.getElementById('rank-online-count'),
     btnRankRefresh: document.getElementById('btn-rank-refresh'),
@@ -600,9 +652,18 @@
     vaultOverlay: document.getElementById('vault-overlay'),
     vaultTotalPill: document.getElementById('vault-total-pill'),
     vaultTicketPill: document.getElementById('vault-ticket-pill'),
+    btnVaultOpenAll: document.getElementById('btn-vault-open-all'),
     btnVaultGoGacha: document.getElementById('btn-vault-go-gacha'),
     vaultModalGrid: document.getElementById('vault-modal-grid'),
     btnCloseVault: document.getElementById('btn-close-vault'),
+
+    vaultBatchOverlay: document.getElementById('vault-batch-overlay'),
+    vaultBatchTitle: document.getElementById('vault-batch-title'),
+    vaultBatchSummary: document.getElementById('vault-batch-summary'),
+    vaultBatchGrid: document.getElementById('vault-batch-grid'),
+    btnVaultBatchEquip: document.getElementById('btn-vault-batch-equip'),
+    btnVaultBatchClose: document.getElementById('btn-vault-batch-close'),
+    btnVaultBatchX: document.getElementById('btn-vault-batch-x'),
 
     gachaWishOverlay: document.getElementById('gacha-wish-overlay'),
     gachaWishCanvas: document.getElementById('gacha-wish-canvas'),
@@ -1827,6 +1888,21 @@
     return info;
   }
 
+  function ensureDailyWeatherRankToday() {
+    const dayInfo = (ONLINE && ONLINE.getKstDayInfo) ? ONLINE.getKstDayInfo() : { dateKey: getKstDateKey(), dateLabel: '오늘', countdownText: '00:00:00' };
+    if (!save.dailyWeatherRank || typeof save.dailyWeatherRank !== 'object' || save.dailyWeatherRank.dateKey !== dayInfo.dateKey) {
+      save.dailyWeatherRank = {
+        dateKey: dayInfo.dateKey,
+        bestScore: 0,
+        bestDist: 0,
+        bestYear: 1,
+        cityName: (liveWeatherSnapshot && liveWeatherSnapshot.cityName) || '서울',
+        weatherTag: ''
+      };
+    }
+    return dayInfo;
+  }
+
   function setProviderChip(node, provider, mini = false) {
     if (!node) return;
     const prov = provider || 'guest';
@@ -2017,11 +2093,153 @@
     el.scoreRoadOverlay.classList.remove('hidden');
   }
 
+  function openVaultChestsBatch(tierOrAll = 'all') {
+    save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
+    const tiersToOpen = tierOrAll === 'all' ? DATA.CHEST_ORDER : [tierOrAll];
+    const plan = [];
+    tiersToOpen.forEach((tId) => {
+      const qty = Math.max(0, Math.floor(save.chestBag[tId] || 0));
+      for (let i = 0; i < qty; i++) plan.push(tId);
+    });
+    if (plan.length === 0) return;
+
+    // Deduct all planned chests before rolling
+    tiersToOpen.forEach((tId) => {
+      save.chestBag[tId] = 0;
+    });
+
+    const rewards = [];
+    let totalGold = 0;
+    let totalDupGold = 0;
+    let totalGems = 0;
+    const newSkins = [];
+    plan.forEach((tId) => {
+      const rw = rollChestReward(tId);
+      rewards.push(rw);
+      if (rw.kind === 'gold') totalGold += rw.amount;
+      else if (rw.kind === 'dup_gold') totalDupGold += rw.amount;
+      else if (rw.kind === 'diamond') totalGems += rw.amount;
+      else if (rw.kind === 'skin' && rw.skin) newSkins.push(rw);
+    });
+
+    persistSave(true);
+    refreshAllMenus();
+    if (newSkins.length > 0 || totalGems > 0) SFX.chestJackpot();
+    else SFX.chestOpen();
+
+    if (!el.vaultBatchOverlay || !el.vaultBatchGrid) {
+      showToast(`⚡ 상자 ${plan.length}개 개봉 완료!`);
+      return;
+    }
+
+    const tierDef = tierOrAll !== 'all' ? DATA.CHESTS[tierOrAll] : null;
+    if (el.vaultBatchTitle) {
+      el.vaultBatchTitle.textContent = tierDef
+        ? `⚡ ${tierDef.name} ${plan.length}개 일괄 개봉!`
+        : `⚡ 상자 ${plan.length}개 전체 개봉!`;
+    }
+    if (el.vaultBatchSummary) {
+      const pills = [`<span class="vb-pill cnt">총 ${plan.length}개 개봉</span>`];
+      if (totalGold + totalDupGold > 0) {
+        pills.push(`<span class="vb-pill gold">${uiIcon('coin', 'xs')} +${(totalGold + totalDupGold).toLocaleString('ko-KR')}G</span>`);
+      }
+      if (totalGems > 0) {
+        pills.push(`<span class="vb-pill gem">${uiIcon('gem', 'xs')} +${totalGems.toLocaleString('ko-KR')}</span>`);
+      }
+      if (newSkins.length > 0) {
+        pills.push(`<span class="vb-pill skin">✨ 신규 스킨 ${newSkins.length}종!</span>`);
+      }
+      el.vaultBatchSummary.innerHTML = pills.join('');
+    }
+
+    el.vaultBatchGrid.innerHTML = '';
+    const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
+    const sortedSkins = newSkins.slice().sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
+
+    // Render all newly unlocked skins first
+    sortedSkins.forEach((rw) => {
+      const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.rare;
+      const ownerChar = getCharDef(rw.skin.charId);
+      const skAv = getSkinAvatar(ownerChar, rw.skin);
+      const skFlt = getSkinFilter(rw.skin);
+      const item = document.createElement('div');
+      item.className = `vb-card skin rar-${rw.rarity}`;
+      item.innerHTML = `
+        <span class="vb-tag" style="background:${rar.bg};color:${rar.color}">${rar.name} NEW!</span>
+        <img src="${skAv}" alt="${rw.skin.name}" class="vb-art" style="${skFlt ? `filter:${skFlt};` : ''}" />
+        <div class="vb-name">${rw.skin.name}</div>
+      `;
+      el.vaultBatchGrid.appendChild(item);
+    });
+
+    if (totalGems > 0) {
+      const item = document.createElement('div');
+      item.className = 'vb-card gem';
+      item.innerHTML = `
+        <span class="vb-tag gem">보석 획득</span>
+        <div class="vb-art-ico">${uiIcon('gem', 'xl')}</div>
+        <div class="vb-name">+${totalGems.toLocaleString('ko-KR')} 보석</div>
+      `;
+      el.vaultBatchGrid.appendChild(item);
+    }
+
+    if (totalGold > 0) {
+      const item = document.createElement('div');
+      item.className = 'vb-card gold';
+      item.innerHTML = `
+        <span class="vb-tag gold">골드 획득</span>
+        <img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="골드" class="vb-art" />
+        <div class="vb-name">+${totalGold.toLocaleString('ko-KR')} G</div>
+      `;
+      el.vaultBatchGrid.appendChild(item);
+    }
+
+    if (totalDupGold > 0) {
+      const item = document.createElement('div');
+      item.className = 'vb-card gold';
+      item.innerHTML = `
+        <span class="vb-tag dup">중복 골드</span>
+        <img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="중복 골드" class="vb-art" />
+        <div class="vb-name">+${totalDupGold.toLocaleString('ko-KR')} G</div>
+      `;
+      el.vaultBatchGrid.appendChild(item);
+    }
+
+    if (el.btnVaultBatchEquip) {
+      const bestSkinRw = sortedSkins[0] || null;
+      if (bestSkinRw) {
+        el.btnVaultBatchEquip.classList.remove('hidden');
+        el.btnVaultBatchEquip.textContent = `✨ [${bestSkinRw.skin.name}] 장착`;
+        el.btnVaultBatchEquip.onclick = () => {
+          SFX.levelUp();
+          save.equippedSkins[bestSkinRw.skin.charId] = bestSkinRw.skin.id;
+          if (isCharUnlocked(bestSkinRw.skin.charId)) {
+            save.selectedChar = bestSkinRw.skin.charId;
+            previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === bestSkinRw.skin.charId));
+          }
+          persistSave();
+          el.vaultBatchOverlay.classList.add('hidden');
+          refreshAllMenus();
+          showToast(`✨ [${bestSkinRw.skin.name}] 스킨 장착 완료!`);
+        };
+      } else {
+        el.btnVaultBatchEquip.classList.add('hidden');
+        el.btnVaultBatchEquip.onclick = null;
+      }
+    }
+
+    el.vaultBatchOverlay.classList.remove('hidden');
+  }
+
   function renderVaultModal() {
     if (!el.vaultModalGrid) return;
     const total = getTotalBagChests();
     if (el.vaultTotalPill) el.vaultTotalPill.textContent = `보유 ${total}개`;
     if (el.vaultTicketPill) el.vaultTicketPill.innerHTML = `${ticketIconHtml('sm')} 뽑기권 ${(save.gachaTickets || 0).toLocaleString('ko-KR')}장`;
+    if (el.btnVaultOpenAll) {
+      el.btnVaultOpenAll.classList.toggle('hidden', total < 2);
+      el.btnVaultOpenAll.textContent = `⚡ 전체 열기 (${total})`;
+    }
     el.vaultModalGrid.innerHTML = '';
 
     DATA.CHEST_ORDER.forEach((tierId) => {
@@ -2049,11 +2267,14 @@
       const btnRow = document.createElement('div');
       btnRow.className = 'vault-card-actions';
 
+      const openRow = document.createElement('div');
+      openRow.className = 'vault-open-row';
+
       const btn = document.createElement('button');
       btn.type = 'button';
       if (qty > 0) {
         btn.className = 'vault-open-btn ready';
-        btn.textContent = '열기!';
+        btn.textContent = qty >= 2 ? '1개 열기' : '열기!';
         btn.onclick = () => {
           if ((save.chestBag[tierId] || 0) <= 0) return;
           save.chestBag[tierId] -= 1;
@@ -2071,7 +2292,17 @@
           switchTab('shop');
         };
       }
-      btnRow.appendChild(btn);
+      openRow.appendChild(btn);
+
+      if (qty >= 2) {
+        const allBtn = document.createElement('button');
+        allBtn.type = 'button';
+        allBtn.className = 'vault-open-multi-btn';
+        allBtn.textContent = `⚡ ${qty}개 열기`;
+        allBtn.onclick = () => openVaultChestsBatch(tierId);
+        openRow.appendChild(allBtn);
+      }
+      btnRow.appendChild(openRow);
 
       // Chest -> Skin Gacha Ticket Exchange Button (Wood 15, Silver 10, Gold 5, Diamond 2 = 1 Ticket!)
       const exBtn = document.createElement('button');
@@ -2236,6 +2467,28 @@
     const lWkScore = (l.weeklyRank && l.weeklyRank.weekKey === curWk) ? (l.weeklyRank.bestScore || 0) : 0;
     const bestWkObj = cWkScore >= lWkScore ? c.weeklyRank : l.weeklyRank;
 
+    const curDayKey = getKstDateKey();
+    const cDayScore = (c.dailyWeatherRank && c.dailyWeatherRank.dateKey === curDayKey) ? (c.dailyWeatherRank.bestScore || 0) : 0;
+    const lDayScore = (l.dailyWeatherRank && l.dailyWeatherRank.dateKey === curDayKey) ? (l.dailyWeatherRank.bestScore || 0) : 0;
+    const bestDayObj = cDayScore >= lDayScore ? c.dailyWeatherRank : l.dailyWeatherRank;
+
+    const todayKey = getTodayKey();
+    const cAtt = (c.attendance && typeof c.attendance === 'object') ? c.attendance : { lastClaimDate: '', streak: 0 };
+    const lAtt = (l.attendance && typeof l.attendance === 'object') ? l.attendance : { lastClaimDate: '', streak: 0 };
+    const latestClaimDate = [cAtt.lastClaimDate || '', lAtt.lastClaimDate || ''].sort().pop() || '';
+    const mergedAttendance = {
+      lastClaimDate: (cAtt.lastClaimDate === todayKey || lAtt.lastClaimDate === todayKey) ? todayKey : latestClaimDate,
+      streak: Math.max(Number(cAtt.streak) || 0, Number(lAtt.streak) || 0)
+    };
+    const mergedDailyClaimed = {
+      ...((c.dailyMissions && c.dailyMissions.date === todayKey && c.dailyMissions.claimed) || {}),
+      ...((l.dailyMissions && l.dailyMissions.date === todayKey && l.dailyMissions.claimed) || {})
+    };
+    const mergedWeeklyClaimed = {
+      ...((c.weeklyMissions && c.weeklyMissions.week === curWk && c.weeklyMissions.claimed) || {}),
+      ...((l.weeklyMissions && l.weeklyMissions.week === curWk && l.weeklyMissions.claimed) || {})
+    };
+
     return {
       ...primary,
       cloudUpdatedAt: Math.max(cTs, lTs),
@@ -2248,6 +2501,15 @@
       totalCoinsEver: Math.max(c.totalCoinsEver || 0, l.totalCoinsEver || 0),
       maxDodgeComboEver: Math.max(c.maxDodgeComboEver || 0, l.maxDodgeComboEver || 0),
       playCount: Math.max(c.playCount || 0, l.playCount || 0),
+      attendance: mergedAttendance,
+      dailyMissions: {
+        ...(primary.dailyMissions || { date: todayKey, progress: {}, claimed: {} }),
+        claimed: mergedDailyClaimed
+      },
+      weeklyMissions: {
+        ...(primary.weeklyMissions || { week: curWk, progress: {}, claimed: {} }),
+        claimed: mergedWeeklyClaimed
+      },
       achievementsClaimed: { ...(secondary.achievementsClaimed || {}), ...(primary.achievementsClaimed || {}) },
       stageMilestonesClaimed: { ...(secondary.stageMilestonesClaimed || {}), ...(primary.stageMilestonesClaimed || {}) },
       scoreRoadClaimed: { ...(secondary.scoreRoadClaimed || {}), ...(primary.scoreRoadClaimed || {}) },
@@ -2256,18 +2518,19 @@
         ...bestWkObj,
         history: { ...((secondary.weeklyRank && secondary.weeklyRank.history) || {}), ...((primary.weeklyRank && primary.weeklyRank.history) || {}) },
         claimedWeeks: Array.from(new Set([...((c.weeklyRank && c.weeklyRank.claimedWeeks) || []), ...((l.weeklyRank && l.weeklyRank.claimedWeeks) || [])]))
-      }
+      },
+      dailyWeatherRank: bestDayObj || { dateKey: curDayKey, bestScore: 0, bestDist: 0, bestYear: 1, cityName: '서울', weatherTag: '' }
     };
   }
 
-  // ===================== COOKIE RUN STYLE LIVE PLAYABLE TUTORIAL ENGINE =====================
+  // ===================== MOBILE-FIRST LIVE PLAYABLE TUTORIAL ENGINE =====================
   const PLAYABLE_TUTORIAL_STEPS = [
     {
       id: 'jump',
       icon: '⬆️',
       title: '1. 장애물을 뛰어넘으세요!',
-      sub: '왼쪽 [점프] 버튼 (Space / ↑)을 눌러 피하세요',
-      actionPrompt: '👇 지금! [점프] 버튼을 누르세요!',
+      sub: '왼쪽 [점프] 버튼을 터치해 장애물을 피하세요',
+      actionPrompt: '👇 지금! [점프] 버튼을 터치하세요!',
       targetBtn: 'jump',
       successMsg: '👍 나이스 점프!'
     },
@@ -2275,7 +2538,7 @@
       id: 'double_jump',
       icon: '⬆️⬆️',
       title: '2. 높은 장애물은 2단 점프!',
-      sub: '점프 후 공중에서 [점프]를 한 번 더 누르세요',
+      sub: '점프 후 공중에서 [점프] 버튼을 한 번 더 터치하세요',
       actionPrompt: '👇 지금! [점프] 1단 점프!',
       secondPrompt: '👇 공중에서 한 번 더! [2단 점프]!',
       targetBtn: 'jump',
@@ -2285,7 +2548,7 @@
       id: 'slide',
       icon: '⬇️',
       title: '3. 날아오는 구름은 슬라이드!',
-      sub: '오른쪽 [슬라이드] 버튼 (↓)을 눌러 아래로 통과하세요',
+      sub: '오른쪽 [슬라이드] 버튼을 눌러 아래로 통과하세요',
       actionPrompt: '👇 지금! [슬라이드] 버튼을 누르세요!',
       targetBtn: 'slide',
       successMsg: '💨 멋진 슬라이드 통과!'
@@ -2294,7 +2557,7 @@
       id: 'rain_umbrella',
       icon: '🌧️',
       title: '4. 비가 오면 우산을 펴세요!',
-      sub: '왼쪽 위 [우산] 버튼 (Q)을 누르세요 (10초 자동 해제)',
+      sub: '왼쪽 위 [우산] 버튼을 터치하세요 (10초 자동 해제)',
       actionPrompt: '👇 지금! [우산] 버튼을 눌러 펴세요!',
       targetBtn: 'umbrella',
       successMsg: '☂️ 빗물 완벽 방어!'
@@ -2303,7 +2566,7 @@
       id: 'gust_fold',
       icon: '💨',
       title: '5. 태풍 돌풍엔 우산을 접으세요!',
-      sub: '제한 시간 안에 안 접으면 파손됩니다! [우산] 버튼 (Q)',
+      sub: '제한 시간 안에 [우산] 버튼을 다시 눌러 접으세요!',
       actionPrompt: '👇 지금! [우산] 버튼을 눌러 접으세요!',
       targetBtn: 'umbrella',
       successMsg: '💨 태풍 대비! 우산 접기 성공!'
@@ -2312,7 +2575,7 @@
       id: 'dust_mask',
       icon: '😷',
       title: '6. 황사·미세먼지엔 마스크!',
-      sub: '오른쪽 위 [마스크] 버튼 (E)을 눌러 황사를 막으세요',
+      sub: '오른쪽 위 [마스크] 버튼을 터치해 황사를 막으세요',
       actionPrompt: '👇 지금! [마스크] 버튼을 누르세요!',
       targetBtn: 'mask',
       successMsg: '😷 황사 완벽 차단!'
@@ -2321,7 +2584,7 @@
       id: 'covid_parry',
       icon: '🦠',
       title: '7. 코로나 바이러스 돌진 차단!',
-      sub: '바이러스가 돌진할 때 [마스크] (E)를 눌러 튕겨내세요!',
+      sub: '바이러스가 돌진할 때 [마스크] 버튼을 눌러 튕겨내세요!',
       actionPrompt: '👇 지금! [마스크]로 바이러스를 튕겨내세요!',
       targetBtn: 'mask',
       successMsg: '🎉 완벽 차단! 모든 조작 마스터!'
@@ -2411,14 +2674,14 @@
     } else if (stepId === 'slide') {
       const ob = {
         id: 'tut_cloud', name: '황사 모래구름', lane: 'air', w: 52, h: 36, tag: 'dust', sprite: 'sp_dust_cloud', warn: true,
-        x: startX, y: Renderer.GROUND_Y - 24 - 36, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 18, isTutObs: true
+        x: startX, y: Renderer.GROUND_Y - 34 - 36, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 18, isTutObs: true
       };
       run.obstacles.push(ob);
       const cx = startX + ob.w / 2;
       run.items.push(
-        { kind: 'coin', x: cx - 28, y: Renderer.GROUND_Y - 12 },
-        { kind: 'coin', x: cx,      y: Renderer.GROUND_Y - 12 },
-        { kind: 'coin', x: cx + 28, y: Renderer.GROUND_Y - 12 }
+        { kind: 'coin', x: cx - 28, y: Renderer.GROUND_Y - 14 },
+        { kind: 'coin', x: cx,      y: Renderer.GROUND_Y - 14 },
+        { kind: 'coin', x: cx + 28, y: Renderer.GROUND_Y - 14 }
       );
     }
   }
@@ -3132,6 +3395,202 @@
     });
   }
 
+  async function syncMyDailyWeatherScore() {
+    if (!ONLINE || !ONLINE.submitDailyWeatherScore || !save.auth || !save.auth.uid) return;
+    const dayInfo = ensureDailyWeatherRankToday();
+    const myChar = getCharDef(save.selectedChar);
+    const mySkin = getEquippedSkin(myChar.id);
+    const dr = save.dailyWeatherRank || {};
+    const dailyBest = Math.max(dr.bestScore || 0, 0);
+    if (dailyBest <= 0) return;
+    await ONLINE.submitDailyWeatherScore({
+      dateKey: dayInfo.dateKey,
+      uid: save.auth.uid,
+      nickname: save.auth.nickname || '날씨러너',
+      provider: save.auth.provider || 'guest',
+      charId: myChar.id,
+      skinId: mySkin ? mySkin.id : null,
+      cityName: dr.cityName || (liveWeatherSnapshot && liveWeatherSnapshot.cityName) || '서울',
+      weatherTag: dr.weatherTag || '',
+      score: dailyBest,
+      dist: dr.bestDist || 0,
+      year: dr.bestYear || 1
+    });
+  }
+
+  // ===================== LIVE KMA WEATHER STATE & HOME MODE / WEATHER TAB =====================
+  let selectedGameMode = 'normal'; // 'normal' | 'today_weather'
+  let homeSubtab = 'lobby'; // 'lobby' | 'weather'
+  let rankModeTab = 'normal'; // 'normal' | 'today_weather'
+  let liveWeatherSnapshot = LIVE_WEATHER ? (LIVE_WEATHER.getCachedWeather() || LIVE_WEATHER.buildFallbackSnapshot(LIVE_WEATHER.getSelectedCityId())) : null;
+  let liveWeatherMods = LIVE_WEATHER ? LIVE_WEATHER.computeWeatherModifiers(liveWeatherSnapshot) : null;
+  let liveWeatherLoading = false;
+
+  function getActiveLiveWeatherMods() {
+    if (!LIVE_WEATHER) return null;
+    if (!liveWeatherMods) {
+      liveWeatherSnapshot = LIVE_WEATHER.getCachedWeather() || LIVE_WEATHER.buildFallbackSnapshot(LIVE_WEATHER.getSelectedCityId());
+      liveWeatherMods = LIVE_WEATHER.computeWeatherModifiers(liveWeatherSnapshot);
+    }
+    return liveWeatherMods;
+  }
+
+  function updateHomeWeatherMiniSummary() {
+    const mods = getActiveLiveWeatherMods();
+    if (!mods) return;
+    const snap = mods.snapshot;
+    const tempStr = `${Math.round(snap.tempC)}°C`;
+    if (el.homeWeatherTabChip) {
+      el.homeWeatherTabChip.textContent = `${snap.cityName} ${mods.desc.icon} ${tempStr}`;
+    }
+    if (el.homeModeTodaySub) {
+      el.homeModeTodaySub.textContent = `${snap.cityName} ${mods.desc.icon}${tempStr} · 점수×${mods.scoreMult.toFixed(2)}`;
+    }
+  }
+
+  function setHomeSubtab(nextTab) {
+    homeSubtab = nextTab === 'weather' ? 'weather' : 'lobby';
+    const isWeather = homeSubtab === 'weather';
+    if (el.btnHomeTabLobby) {
+      el.btnHomeTabLobby.classList.toggle('active', !isWeather);
+      el.btnHomeTabLobby.setAttribute('aria-selected', String(!isWeather));
+    }
+    if (el.btnHomeTabWeather) {
+      el.btnHomeTabWeather.classList.toggle('active', isWeather);
+      el.btnHomeTabWeather.setAttribute('aria-selected', String(isWeather));
+    }
+    if (el.homeLobbyPane) el.homeLobbyPane.classList.toggle('hidden', isWeather);
+    if (el.homeWeatherPane) el.homeWeatherPane.classList.toggle('hidden', !isWeather);
+    if (isWeather) {
+      renderHomeWeatherTab();
+      refreshLiveWeatherUI(false);
+    } else {
+      renderHomeCharStage();
+    }
+  }
+
+  function setSelectedGameMode(mode) {
+    selectedGameMode = mode === 'today_weather' ? 'today_weather' : 'normal';
+    const isToday = selectedGameMode === 'today_weather';
+    if (el.btnModeNormal) {
+      el.btnModeNormal.classList.toggle('active', !isToday);
+      el.btnModeNormal.setAttribute('aria-pressed', String(!isToday));
+    }
+    if (el.btnModeToday) {
+      el.btnModeToday.classList.toggle('active', isToday);
+      el.btnModeToday.setAttribute('aria-pressed', String(isToday));
+    }
+    renderHomeCharStage();
+  }
+
+  function renderHomeWeatherTab() {
+    if (!LIVE_WEATHER) return;
+    const mods = getActiveLiveWeatherMods();
+    if (!mods) return;
+    const snap = mods.snapshot;
+    const activeCityId = LIVE_WEATHER.getSelectedCityId();
+
+    updateHomeWeatherMiniSummary();
+
+    // City switcher pills
+    if (el.weatherCityPills) {
+      el.weatherCityPills.innerHTML = '';
+      LIVE_WEATHER.CITIES.forEach((city) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `weather-city-pill${city.id === activeCityId ? ' active' : ''}`;
+        btn.textContent = city.name;
+        btn.addEventListener('click', () => {
+          SFX.click();
+          LIVE_WEATHER.setSelectedCityId(city.id);
+          liveWeatherSnapshot = LIVE_WEATHER.getCachedWeather(city.id) || LIVE_WEATHER.buildFallbackSnapshot(city.id);
+          liveWeatherMods = LIVE_WEATHER.computeWeatherModifiers(liveWeatherSnapshot);
+          renderHomeWeatherTab();
+          refreshLiveWeatherUI(false);
+        });
+        el.weatherCityPills.appendChild(btn);
+      });
+    }
+
+    if (el.weatherHeroIcon) el.weatherHeroIcon.textContent = mods.desc.icon;
+    if (el.weatherHeroCity) el.weatherHeroCity.textContent = snap.cityName;
+    if (el.weatherHeroSeason) el.weatherHeroSeason.textContent = `${mods.season.icon} ${mods.season.name}`;
+    if (el.weatherHeroLiveTag) {
+      el.weatherHeroLiveTag.textContent = liveWeatherLoading
+        ? '기상청 동기화 중...'
+        : (snap.source === 'kma_live' ? '기상청 LIVE' : '오프라인 추정');
+      el.weatherHeroLiveTag.classList.toggle('offline', snap.source !== 'kma_live');
+    }
+    if (el.weatherHeroTemp) el.weatherHeroTemp.textContent = `${snap.tempC.toFixed(1)}°C`;
+    if (el.weatherHeroDesc) el.weatherHeroDesc.textContent = `${mods.desc.label} · 대기 ${mods.airGrade.grade}`;
+    if (el.weatherHeroMeta) {
+      el.weatherHeroMeta.textContent = `체감 ${Number(snap.feelsLikeC || snap.tempC).toFixed(0)}°C · 습도 ${snap.humidity}% · 바람 ${snap.windMs.toFixed(1)}m/s`;
+    }
+    if (el.weatherHeroUpdated) {
+      const obs = snap.observedAt ? String(snap.observedAt).replace('T', ' ') : '실시간';
+      el.weatherHeroUpdated.textContent = `${snap.sourceLabel} (${obs})`;
+    }
+
+    if (el.weatherBuffGrid) {
+      el.weatherBuffGrid.innerHTML = '';
+      mods.factors.forEach((f) => {
+        const card = document.createElement('div');
+        card.className = `weather-factor-card is-${f.kind}`;
+        card.innerHTML = `
+          <div class="wfc-top">
+            <span class="wfc-ico">${f.icon}</span>
+            <strong class="wfc-lbl">${f.label}</strong>
+            <span class="wfc-badge ${f.kind}">${f.badge}</span>
+          </div>
+          <div class="wfc-val">${f.valueText}</div>
+          <div class="wfc-eff">${f.effectText}</div>
+        `;
+        el.weatherBuffGrid.appendChild(card);
+      });
+    }
+
+    if (el.weatherModSummary) {
+      const parts = [
+        `${mods.season.icon} ${mods.season.bonusLabel}(${mods.season.bonusEffect})`,
+        `⭐ 점수 ×${mods.scoreMult.toFixed(2)}`,
+        `🪙 골드 ×${mods.goldMult.toFixed(2)}`
+      ];
+      if (mods.extraHp > 0) parts.push(`❤️ 체력 +${mods.extraHp}`);
+      if (mods.feverGainMult > 1.01) parts.push(`🔥 피버 ×${mods.feverGainMult.toFixed(2)}`);
+      if (mods.magnetBonus > 0) parts.push(`🧲 자석 +${mods.magnetBonus}`);
+      el.weatherModSummary.innerHTML = uiText(parts.join(' · '), 'xs');
+    }
+
+    if (el.btnWeatherPlayToday) {
+      const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
+      const unlocked = isCharUnlocked(ch.id);
+      el.btnWeatherPlayToday.textContent = unlocked
+        ? `🌦️ ${snap.cityName} 오늘의 날씨모드 플레이! (${ch.name})`
+        : `🌦️ ${snap.cityName} 오늘의 날씨모드 플레이!`;
+    }
+  }
+
+  async function refreshLiveWeatherUI(forceRefresh = false) {
+    if (!LIVE_WEATHER) return null;
+    const cityId = LIVE_WEATHER.getSelectedCityId();
+    liveWeatherLoading = true;
+    if (homeSubtab === 'weather' && currentTab === 'home') renderHomeWeatherTab();
+    try {
+      const snap = await LIVE_WEATHER.fetchLiveWeather(cityId, forceRefresh);
+      if (snap && LIVE_WEATHER.getSelectedCityId() === cityId) {
+        liveWeatherSnapshot = snap;
+        liveWeatherMods = LIVE_WEATHER.computeWeatherModifiers(snap);
+      }
+    } catch {}
+    liveWeatherLoading = false;
+    updateHomeWeatherMiniSummary();
+    if (currentTab === 'home') {
+      if (homeSubtab === 'weather') renderHomeWeatherTab();
+      else renderHomeCharStage();
+    }
+    return liveWeatherMods;
+  }
+
   // ===================== HOME / MISSIONS / ATTENDANCE / CHARS / SHOP UI RENDER =====================
   function refreshAllMenus() {
     ensureTodayMissions();
@@ -3144,7 +3603,11 @@
     updateNavMissionDot();
 
     // Render ONLY the currently visible tab (eliminates hidden-tab DOM churn, image downloads & extra Firebase fetches!)
-    if (currentTab === 'home') renderHomeCharStage();
+    if (currentTab === 'home') {
+      updateHomeWeatherMiniSummary();
+      if (homeSubtab === 'weather') renderHomeWeatherTab();
+      else renderHomeCharStage();
+    }
     else if (currentTab === 'shop') renderShopList();
     else if (currentTab === 'chars') renderCharList();
     else if (currentTab === 'missions') renderBrawlQuests();
@@ -3169,22 +3632,75 @@
     const hasWeekly = DATA.WEEKLY_MISSIONS.some((m) => (wProg[m.metric] || 0) >= m.target && !wClaimed[m.id]);
     const hasAch = DATA.ACHIEVEMENTS.some((a) => getAchievementMetricValue(a.metric) >= a.target && !(save.achievementsClaimed && save.achievementsClaimed[a.id]));
     const hasAtt = canClaimAttendanceToday();
-    el.navMissionDot.classList.toggle('hidden', !(hasDaily || hasWeekly || hasAch || hasAtt));
+    if (el.qdotDaily) el.qdotDaily.classList.toggle('hidden', !hasDaily);
+    if (el.qdotWeekly) el.qdotWeekly.classList.toggle('hidden', !hasWeekly);
+    if (el.qdotAch) el.qdotAch.classList.toggle('hidden', !hasAch);
+    if (el.qdotAtt) el.qdotAtt.classList.toggle('hidden', !hasAtt);
+    if (el.navMissionDot) {
+      el.navMissionDot.classList.toggle('hidden', !(hasDaily || hasWeekly || hasAch || hasAtt));
+    }
   }
 
   let rankRenderSeq = 0;
 
+  function setRankModeTab(mode) {
+    rankModeTab = mode === 'today_weather' ? 'today_weather' : 'normal';
+    const isToday = rankModeTab === 'today_weather';
+    if (el.btnRankModeNormal) {
+      el.btnRankModeNormal.classList.toggle('active', !isToday);
+      el.btnRankModeNormal.setAttribute('aria-selected', String(!isToday));
+    }
+    if (el.btnRankModeToday) {
+      el.btnRankModeToday.classList.toggle('active', isToday);
+      el.btnRankModeToday.setAttribute('aria-selected', String(isToday));
+    }
+    renderRankingTab();
+  }
+
   function updateWeeklyRankCountdownUI() {
     if (!ONLINE) return;
-    const info = ONLINE.getWeekInfo();
-    if (el.rankWeekLabel) el.rankWeekLabel.textContent = info.weekLabel;
-    if (el.rankWeekCountdown) el.rankWeekCountdown.textContent = info.countdownText;
+    if (rankModeTab === 'today_weather' && ONLINE.getKstDayInfo) {
+      const dayInfo = ONLINE.getKstDayInfo();
+      if (el.rankWeekCountdown) el.rankWeekCountdown.textContent = dayInfo.countdownText;
+    } else {
+      const info = ONLINE.getWeekInfo();
+      if (el.rankWeekCountdown) el.rankWeekCountdown.textContent = info.countdownText;
+    }
   }
 
   async function renderRankingTab() {
     const seq = ++rankRenderSeq;
-    const info = ensureWeeklyRankCurrentWeek();
+    const isTodayMode = rankModeTab === 'today_weather';
+    const weekInfo = ensureWeeklyRankCurrentWeek();
+    const dayInfo = ensureDailyWeatherRankToday();
     updateWeeklyRankCountdownUI();
+
+    if (el.btnRankModeNormal) {
+      el.btnRankModeNormal.classList.toggle('active', !isTodayMode);
+      el.btnRankModeNormal.setAttribute('aria-selected', String(!isTodayMode));
+    }
+    if (el.btnRankModeToday) {
+      el.btnRankModeToday.classList.toggle('active', isTodayMode);
+      el.btnRankModeToday.setAttribute('aria-selected', String(isTodayMode));
+    }
+    if (el.rankScreenTitle) {
+      el.rankScreenTitle.textContent = isTodayMode ? '🌦️ 오늘의 날씨 랭킹' : '🏆 일반모드 주간 랭킹';
+    }
+    if (el.rankPrizeCrown) {
+      el.rankPrizeCrown.classList.toggle('hidden', isTodayMode);
+    }
+    if (el.rankPrizeInlineText) {
+      if (isTodayMode) {
+        const mods = getActiveLiveWeatherMods();
+        const wTag = mods ? `${mods.snapshot.cityName} ${mods.desc.icon}${Math.round(mods.snapshot.tempC)}°C` : '기상청 실시간';
+        el.rankPrizeInlineText.innerHTML = `<strong>${dayInfo.dateLabel}</strong> (${wTag}) · 매일 00:00 초기화`;
+      } else {
+        el.rankPrizeInlineText.innerHTML = `${weekInfo.weekLabel} 1위 보상 <strong>${uiIcon('gem', 'xs')}500</strong>`;
+      }
+    }
+    if (el.rankMyTitleLabel) {
+      el.rankMyTitleLabel.textContent = isTodayMode ? '오늘 내 순위' : '이번 주 내 순위';
+    }
 
     const myChar = getCharDef(save.selectedChar);
     const mySkin = getEquippedSkin(myChar.id);
@@ -3193,6 +3709,8 @@
     const myUid = myAuth.uid || '';
     const myNick = myAuth.nickname || `나 (${myChar.name})`;
     const weeklyBest = save.weeklyRank ? (save.weeklyRank.bestScore || 0) : 0;
+    const dailyBest = save.dailyWeatherRank ? (save.dailyWeatherRank.bestScore || 0) : 0;
+    const myModeBest = isTodayMode ? dailyBest : weeklyBest;
 
     if (el.rankGuestBanner) {
       el.rankGuestBanner.classList.toggle('hidden', isLinkedUser);
@@ -3200,9 +3718,16 @@
 
     el.rankMyAvatar.src = getSkinAvatar(myChar, mySkin);
     el.rankMyAvatar.style.filter = getSkinFilter(mySkin);
-    el.rankMyScoreLine.textContent = isLinkedUser
-      ? `주간 ${weeklyBest.toLocaleString('ko-KR')}점 · 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`
-      : `최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
+    if (isTodayMode) {
+      const dr = save.dailyWeatherRank || {};
+      el.rankMyScoreLine.textContent = isLinkedUser
+        ? `오늘 최고 ${dailyBest.toLocaleString('ko-KR')}점 · 오늘 최장 ${(dr.bestDist || 0).toLocaleString('ko-KR')}m`
+        : `오늘 최고 ${dailyBest.toLocaleString('ko-KR')}점 (Google 연동 시 랭킹 등록)`;
+    } else {
+      el.rankMyScoreLine.textContent = isLinkedUser
+        ? `주간 ${weeklyBest.toLocaleString('ko-KR')}점 · 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`
+        : `최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
+    }
     el.rankStatYear.textContent = `${save.bestYear || 1}년 차`;
     el.rankStatCoins.textContent = `${(save.totalCoinsEver || 0).toLocaleString('ko-KR')}개`;
     el.rankStatCombo.textContent = `${save.maxDodgeComboEver || 0}연속`;
@@ -3212,10 +3737,14 @@
     let curRes = null;
     let prevRes = null;
     try {
-      [curRes, prevRes] = await Promise.all([
-        ONLINE.fetchWeeklyBoard(info.weekKey, isLinkedUser ? myUid : null),
-        ONLINE.fetchWeeklyBoard(info.prevWeekKey, isLinkedUser ? myUid : null)
-      ]);
+      if (isTodayMode && ONLINE.fetchDailyWeatherBoard) {
+        curRes = await ONLINE.fetchDailyWeatherBoard(dayInfo.dateKey, isLinkedUser ? myUid : null);
+      } else {
+        [curRes, prevRes] = await Promise.all([
+          ONLINE.fetchWeeklyBoard(weekInfo.weekKey, isLinkedUser ? myUid : null),
+          ONLINE.fetchWeeklyBoard(weekInfo.prevWeekKey, isLinkedUser ? myUid : null)
+        ]);
+      }
     } catch {
       return;
     }
@@ -3223,16 +3752,19 @@
 
     // STRICT: Only linked Google/Apple real users appear on the leaderboard (NEVER guests!)
     let board = curRes.board.slice();
-    if (isLinkedUser && weeklyBest > 0 && myUid && !board.some((r) => r.isMe)) {
+    if (isLinkedUser && myModeBest > 0 && myUid && !board.some((r) => r.isMe)) {
+      const dr = save.dailyWeatherRank || {};
       board.push({
         uid: myUid,
         nickname: myNick,
         provider: myAuth.provider,
         charId: myChar.id,
         skinId: mySkin ? mySkin.id : null,
-        score: weeklyBest,
-        dist: save.weeklyRank.bestDist || 0,
-        year: save.weeklyRank.bestYear || 1,
+        cityName: isTodayMode ? (dr.cityName || '서울') : '',
+        weatherTag: isTodayMode ? (dr.weatherTag || '') : '',
+        score: myModeBest,
+        dist: isTodayMode ? (dr.bestDist || 0) : (save.weeklyRank.bestDist || 0),
+        year: isTodayMode ? (dr.bestYear || 1) : (save.weeklyRank.bestYear || 1),
         isMe: true
       });
       board.sort((a, b) => b.score - a.score);
@@ -3259,7 +3791,7 @@
       }
     }
     if (el.rankLastWinner) {
-      const lastChamp = prevRes && prevRes.board && prevRes.board[0];
+      const lastChamp = !isTodayMode && prevRes && prevRes.board && prevRes.board[0];
       el.rankLastWinner.classList.toggle('hidden', !lastChamp);
       if (lastChamp) {
         el.rankLastWinner.innerHTML = uiText(`지난주 1위 👑 ${lastChamp.nickname}`, 'xs');
@@ -3270,11 +3802,17 @@
     if (board.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'rank-empty-card';
-      empty.innerHTML = `
-        <div class="rank-empty-ico">🏆</div>
-        <div class="rank-empty-title">이번 주 첫 1위에 도전해 보세요!</div>
-        <div class="rank-empty-sub">주간 최고 점수 1위에게 <strong>${uiIcon('gem', 'xs')} 500 보석</strong>이 지급됩니다.</div>
-      `;
+      empty.innerHTML = isTodayMode
+        ? `
+          <div class="rank-empty-ico">🌦️</div>
+          <div class="rank-empty-title">오늘의 날씨 첫 1위에 도전해 보세요!</div>
+          <div class="rank-empty-sub">실시간 기상청 날씨로 진행되며 매일 자정(00:00)에 랭킹이 초기화됩니다.</div>
+        `
+        : `
+          <div class="rank-empty-ico">🏆</div>
+          <div class="rank-empty-title">이번 주 첫 1위에 도전해 보세요!</div>
+          <div class="rank-empty-sub">주간 최고 점수 1위에게 <strong>${uiIcon('gem', 'xs')} 500 보석</strong>이 지급됩니다.</div>
+        `;
       el.rankBoardList.appendChild(empty);
       return;
     }
@@ -3293,6 +3831,13 @@
       const row = document.createElement('div');
       const topClass = rank === 1 ? ' top1' : (rank === 2 ? ' top2' : (rank === 3 ? ' top3' : ''));
       const medal = rank === 1 ? '🥇' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : `${rank}`));
+      const subMeta = isTodayMode && entry.weatherTag
+        ? `${entry.weatherTag} · ${(entry.dist || 0).toLocaleString('ko-KR')}m`
+        : `${entry.year || 1}년 차 · ${(entry.dist || 0).toLocaleString('ko-KR')}m`;
+      const top1Tag = (!isTodayMode && rank === 1)
+        ? `<span class="rank-top1-prize">${uiIcon('crown', 'xs')} 500${uiIcon('gem', 'xs')}</span>`
+        : (isTodayMode && rank === 1 ? `<span class="rank-top1-prize today">🌦️ 오늘 1위</span>` : '');
+
       row.className = `rank-row${topClass}${entry.isMe ? ' me' : ''}`;
       row.innerHTML = `
         <div class="rank-medal">${medal}</div>
@@ -3302,9 +3847,9 @@
             <span class="prov-chip mini ${entry.provider || 'guest'}">${provHtml}</span>
             <span>${entry.nickname}</span>
             ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
-            ${rank === 1 ? `<span class="rank-top1-prize">${uiIcon('crown', 'xs')} 500${uiIcon('gem', 'xs')}</span>` : ''}
+            ${top1Tag}
           </div>
-          <div class="rank-row-sub">${entry.year || 1}년 차 · ${(entry.dist || 0).toLocaleString('ko-KR')}m</div>
+          <div class="rank-row-sub">${subMeta}</div>
         </div>
         <div class="rank-row-score">${(entry.score || 0).toLocaleString('ko-KR')}점</div>
       `;
@@ -3697,10 +4242,30 @@
       el.homeVaultDot.textContent = vaultTotal > 99 ? '99+' : String(vaultTotal);
     }
 
+    const isTodayMode = selectedGameMode === 'today_weather';
+    if (el.btnModeNormal) {
+      el.btnModeNormal.classList.toggle('active', !isTodayMode);
+      el.btnModeNormal.setAttribute('aria-pressed', String(!isTodayMode));
+    }
+    if (el.btnModeToday) {
+      el.btnModeToday.classList.toggle('active', isTodayMode);
+      el.btnModeToday.setAttribute('aria-pressed', String(isTodayMode));
+    }
+    if (el.btnPlayStart) {
+      el.btnPlayStart.classList.toggle('today-mode', isTodayMode);
+    }
+
     if (unlocked) {
       el.btnPlayStart.disabled = false;
-      el.btnPlayLabel.textContent = '플레이';
-      el.btnPlaySub.textContent = `${ch.name} Lv.${stats.level}`;
+      if (isTodayMode) {
+        const mods = getActiveLiveWeatherMods();
+        const wTag = mods ? `${mods.snapshot.cityName} ${Math.round(mods.snapshot.tempC)}°C` : '실시간 기상청';
+        el.btnPlayLabel.textContent = '🌦️ 날씨 플레이';
+        el.btnPlaySub.textContent = `${ch.name} · ${wTag}`;
+      } else {
+        el.btnPlayLabel.textContent = '플레이';
+        el.btnPlaySub.textContent = `${ch.name} Lv.${stats.level}`;
+      }
     } else {
       el.btnPlayStart.disabled = save.gold < ch.price;
       el.btnPlayLabel.textContent = `${ch.price.toLocaleString('ko-KR')}G 해금`;
@@ -3722,7 +4287,7 @@
 
   let lastHomeAnimUpdate = 0;
   function updateHomeRunningHero(t) {
-    if (currentTab !== 'home') return;
+    if (currentTab !== 'home' || homeSubtab !== 'lobby') return;
     if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
     if (el.loginOverlay && !el.loginOverlay.classList.contains('hidden')) return;
     if (t - lastHomeAnimUpdate < 0.055) return;
@@ -3976,7 +4541,7 @@
     el.shopItemsList.innerHTML = '';
 
     if (currentShopSubtab === 'gacha') {
-      // COOKIE RUN STYLE COSMIC SKIN GACHA SCREEN (1-PULL / 10-PULL · SKINS ONLY · ALL RARITIES!)
+      // K-WEATHER FOUR-SEASONS SKY OBSERVATORY SKIN GACHA SCREEN (1-PULL / 10-PULL · SKINS ONLY · ALL RARITIES!)
       const cost1 = computeGachaCost(1);
       const cost10 = computeGachaCost(10);
       const fmtCostHtml = (c) => {
@@ -3990,16 +4555,16 @@
       };
 
       const stage = document.createElement('div');
-      stage.className = 'gacha-screen';
+      stage.className = 'gacha-screen weather-gacha';
       stage.innerHTML = `
         <aside class="gacha-sidebar">
-          <div class="gacha-side-title">🎰 스킨 뽑기</div>
+          <div class="gacha-side-title">🌦️ 기상 소환</div>
           <button type="button" class="gacha-banner-thumb active" data-gaction="stay">
-            <span class="gacha-pickup-tag">PickUp!</span>
-            <img src="assets/chars/port_hades.png?v=${ASSET_VER}" alt="상시 스킨 뽑기" class="gacha-thumb-art" />
+            <span class="gacha-pickup-tag">기상특보!</span>
+            <img src="assets/chars/port_hades.png?v=${ASSET_VER}" alt="사계절 기상 소환" class="gacha-thumb-art" />
             <div class="gacha-thumb-txt">
-              <strong>상시 스킨 뽑기</strong>
-              <span>전 등급 출현</span>
+              <strong>사계절 스킨 뽑기</strong>
+              <span>봄·여름·가을·겨울</span>
             </div>
           </button>
           <button type="button" class="gacha-banner-thumb exchange" data-gaction="exchange">
@@ -4019,11 +4584,19 @@
         </aside>
 
         <div class="gacha-main-stage">
-          <div class="gacha-stars" aria-hidden="true"></div>
-          <div class="gacha-nebula" aria-hidden="true"></div>
+          <div class="gacha-weather-clouds" aria-hidden="true"></div>
+          <div class="gacha-weather-sunbeam" aria-hidden="true"></div>
+          <div class="gacha-season-motes" aria-hidden="true">
+            <span class="gm m1">🌸</span>
+            <span class="gm m2">☀️</span>
+            <span class="gm m3">💧</span>
+            <span class="gm m4">🍁</span>
+            <span class="gm m5">❄️</span>
+            <span class="gm m6">⚡</span>
+          </div>
 
           <div class="gacha-top-row">
-            <button type="button" class="gacha-pill-btn" data-gaction="history">📜 뽑기 내역</button>
+            <button type="button" class="gacha-pill-btn" data-gaction="history">📜 소환 내역</button>
             <div class="gacha-cur-bar">
               <button type="button" class="gacha-cur-chip mileage" data-gaction="exchange" title="마일리지 스킨 교환">
                 <span>✨</span><strong>${(save.mileage || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
@@ -4039,9 +4612,10 @@
 
           <div class="gacha-hero-zone">
             <div class="gacha-title-col">
-              <div class="gacha-main-title">상시 스킨 뽑기</div>
+              <div class="gacha-season-kicker">🌸 봄 · ☀️ 여름 · 🍁 가을 · ❄️ 겨울</div>
+              <div class="gacha-main-title">사계절 기상 스킨 소환</div>
               <div class="gacha-sub-strip">
-                <span>1회 뽑기 <strong>✨ +2M</strong> · 중복 스킨 시 <strong>✨ +2M 추가!</strong> · 희귀·영웅·전설·<strong>신화</strong> 출현</span>
+                <span>1회 소환 <strong>✨ +2M</strong> · 중복 시 <strong>✨ +2M 추가!</strong> · 전 등급 스킨 출현</span>
               </div>
               <div class="gacha-rate-chips">
                 <span class="gr-chip mythic">신화 2%</span>
@@ -4068,11 +4642,11 @@
               <div class="gacha-pull-btns">
                 <button type="button" class="gacha-green-btn pull-1" data-gaction="pull1">
                   ${fmtCostHtml(cost1)}
-                  <span class="gc-pull-lbl">1회 뽑기</span>
+                  <span class="gc-pull-lbl">1회 소환</span>
                 </button>
                 <button type="button" class="gacha-green-btn pull-10" data-gaction="pull10">
                   ${fmtCostHtml(cost10)}
-                  <span class="gc-pull-lbl">10회 연속 뽑기</span>
+                  <span class="gc-pull-lbl">10회 연속 소환</span>
                 </button>
               </div>
             </div>
@@ -4553,10 +5127,15 @@
 
   function startRun(opts = {}) {
     const isTutorial = Boolean(opts && opts.isTutorial);
+    const gameMode = isTutorial ? 'normal' : ((opts && opts.mode) || selectedGameMode || 'normal');
+    const twMods = (gameMode === 'today_weather') ? getActiveLiveWeatherMods() : null;
     const ch = getCharDef(save.selectedChar);
     const stats = getCharStats(ch);
     const skinDef = getEquippedSkin(ch.id);
-    const maxHp = stats.maxHp;
+    const maxHp = stats.maxHp + (twMods ? (twMods.extraHp || 0) : 0);
+    const initSeasonIdx = twMods ? twMods.seasonIdx : 0;
+    const initSeasonId = twMods ? twMods.seasonId : 'spring';
+    const initWeatherEv = twMods ? twMods.primaryWeather : 'clear';
 
     let hasShield = false;
     let startFever = 0;
@@ -4572,6 +5151,8 @@
 
     run = {
       isTutorial,
+      gameMode,
+      todayWeather: twMods,
       tut: isTutorial ? {
         stepIdx: 0,
         phase: 'intro',
@@ -4591,8 +5172,8 @@
       charId: ch.id,
       skinDef,
       charLevel: stats.level,
-      goldMult: stats.goldMult,
-      scoreMult: stats.scoreMult,
+      goldMult: stats.goldMult * (twMods ? (twMods.goldMult || 1) : 1),
+      scoreMult: stats.scoreMult * (twMods ? (twMods.scoreMult || 1) : 1),
       hp: maxHp,
       maxHp,
       score: 0,
@@ -4605,8 +5186,8 @@
       maxDodgeCombo: 0,
       elapsed: 0,
       year: 1,
-      seasonIdx: 0,
-      seasonId: 'spring',
+      seasonIdx: initSeasonIdx,
+      seasonId: initSeasonId,
       prevSeasonId: null,
       seasonTransition: 1,
       seasonTime: { spring: 0, summer: 0, autumn: 0, winter: 0 },
@@ -4662,6 +5243,9 @@
       // Buffs & Timers
       invulnTimer: 0,
       shield: hasShield,
+      shieldFromBooster: hasShield,
+      shieldTimer: 0,
+      shieldMaxTimer: 10.0,
       feverCharge: startFever > 0 ? 100 : 0,
       feverTimer: startFever,
       speedBoostTimer: 0,
@@ -4674,7 +5258,7 @@
       winPoseTimer: 0,
 
       // Live Korean Weather Cycle State Machine (Clean Direct Weather System)
-      weatherEvent: 'clear',
+      weatherEvent: initWeatherEv,
       weatherEventTimer: 3.5,
       pendingWeather: null,
       weatherPrepTimer: 0,
@@ -4696,7 +5280,7 @@
       lastHitCause: '극한 한국 날씨에 체력이 다했습니다!'
     };
 
-    if (Renderer && Renderer.preloadForRun) Renderer.preloadForRun(ch, skinDef, 'spring');
+    if (Renderer && Renderer.preloadForRun) Renderer.preloadForRun(ch, skinDef, initSeasonId);
     el.runPortraitImg.src = getSkinAvatar(ch, skinDef);
     el.runPortraitImg.style.filter = getSkinFilter(skinDef);
     el.runCanvasWrap.classList.toggle('fever-active', startFever > 0);
@@ -4713,10 +5297,18 @@
     SFX.startBgm();
     SFX.setBgmMode(startFever > 0 ? 'fever' : 'run');
     SFX.setAmbientPaused(false);
-    SFX.setWeatherAmbient('clear');
+    SFX.setWeatherAmbient(initWeatherEv);
     SFX.seasonUp();
     if (!isTutorial) {
-      showRunBanner(`🌸 1년 차 봄 출발! (${ch.name} Lv.${stats.level})`, 2400);
+      if (twMods) {
+        const snap = twMods.snapshot;
+        showRunBanner(`🌦️ 오늘의 날씨 · ${snap.cityName} ${twMods.desc.icon} ${Math.round(snap.tempC)}°C 출발! (점수×${twMods.scoreMult.toFixed(2)})`, 2600);
+        if (initWeatherEv !== 'clear') {
+          showWeatherCenterAlert(initWeatherEv);
+        }
+      } else {
+        showRunBanner(`🌸 1년 차 봄 출발! (${ch.name} Lv.${stats.level})`, 2400);
+      }
     }
     updateRunHud(true);
   }
@@ -4872,6 +5464,7 @@
     const ch = getCharDef(run.charId);
     const inFloodWater = run.weatherEvent === 'flood' && !run.onPlatform && run.playerY >= Renderer.GROUND_Y - 2;
     const floodFactor = inFloodWater ? (ch.floodResist ? 0.94 : 0.78) : 1.0;
+    const twJumpFactor = (run.todayWeather && run.todayWeather.jumpMult) ? run.todayWeather.jumpMult : 1.0;
 
     run.sliding = false;
     run.iceSlideInertia = 0;
@@ -4882,7 +5475,7 @@
     run.jumpCount += 1;
 
     if (isGroundJump) {
-      run.vy = -384 * floodFactor;
+      run.vy = -384 * floodFactor * twJumpFactor;
       run.jumpsLeft = 1;
       run.squashX = 0.84;
       run.squashY = 1.18;
@@ -4891,7 +5484,7 @@
       haptic(10);
       if (inFloodWater && !ch.floodResist) Renderer.spawnFloater('침수 저항!', '#75c4ff', run.playerX, run.playerY - 36);
     } else {
-      run.vy = -342 * floodFactor;
+      run.vy = -342 * floodFactor * twJumpFactor;
       run.jumpsLeft = Math.max(0, run.jumpsLeft - 1);
       run.squashX = 0.86;
       run.squashY = 1.15;
@@ -5134,11 +5727,12 @@
       return 0.3;
     }
 
+    const AIR_SLIDE_CLEARANCE = 34;
     let y = Renderer.GROUND_Y - preset.h;
     const extra = {};
 
     if (preset.lane === 'air') {
-      y = Renderer.GROUND_Y - 24 - preset.h;
+      y = Renderer.GROUND_Y - AIR_SLIDE_CLEARANCE - preset.h;
     } else if (preset.lane === 'icicle') {
       startX = getSpawnRight() + 24;
       y = 8;
@@ -5165,7 +5759,7 @@
       const gapX = Math.max(isCovid ? 195 : 158, Math.min(264, (run.speed || 220) * (isCovid ? 0.78 : 0.66)));
       const sx2 = startX + gapX;
       if (!isRectBlockedByFeature(sx2, second.w, 34)) {
-        const sy2 = second.lane === 'air' ? Renderer.GROUND_Y - 24 - second.h : Renderer.GROUND_Y - second.h;
+        const sy2 = second.lane === 'air' ? Renderer.GROUND_Y - AIR_SLIDE_CLEARANCE - second.h : Renderer.GROUND_Y - second.h;
         run.obstacles.push({
           ...second,
           x: sx2,
@@ -5182,7 +5776,7 @@
           const gapX3 = Math.round(gapX * 1.05);
           const sx3 = sx2 + gapX3;
           if (!isRectBlockedByFeature(sx3, third.w, 34)) {
-            const sy3 = third.lane === 'air' ? Renderer.GROUND_Y - 24 - third.h : Renderer.GROUND_Y - third.h;
+            const sy3 = third.lane === 'air' ? Renderer.GROUND_Y - AIR_SLIDE_CLEARANCE - third.h : Renderer.GROUND_Y - third.h;
             run.obstacles.push({
               ...third,
               x: sx3,
@@ -5346,66 +5940,88 @@
         run.seasonTime[run.seasonId] += dt;
       }
 
-      // Equal 4-season infinite cycle (15s * 4 = 60s per year)
-      const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
-      const yearTime = run.elapsed % DATA.YEAR_DURATION;
-      const newSeasonIdx = Math.floor(yearTime / DATA.SEASON_DURATION);
-      const timeIntoSeason = yearTime - newSeasonIdx * DATA.SEASON_DURATION;
-      // Quietly preload upcoming season's sprites 4 seconds before transition so zero pop-in or frame hitch!
-      if (timeIntoSeason > DATA.SEASON_DURATION - 4.5 && Renderer && Renderer.preloadSeason) {
-        const upcomingSeason = DATA.SEASONS[(newSeasonIdx + 1) % DATA.SEASONS.length];
-        if (upcomingSeason) Renderer.preloadSeason(upcomingSeason.id);
-      }
-
-      if (newYear > run.year) {
-        run.prevSeasonId = run.seasonId;
-        run.seasonTransition = 0;
-        run.year = newYear;
-        run.seasonIdx = 0;
-        run.seasonId = DATA.SEASONS[0].id;
-        const yearGoldBonus = 20 + run.year * 5;
-        run.score += Math.round(600 * run.year * run.scoreMult);
-        run.gold += yearGoldBonus;
-        run.winPoseTimer = 0.9;
-        SFX.yearUp();
-        const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
-        showRunBanner(`🔥 ${run.year}년 차 돌파! 속도 ×${nextDiff.speedMult.toFixed(2)} · 3연속 콤보 경보! (+${yearGoldBonus}G)`, 3000);
-        Renderer.spawnFloater(`${run.year}년 차 난이도 UP!`, '#ff944d', run.playerX + 40, run.playerY - 52);
-        checkStageMilestone(run.year, 0);
-      } else if (newSeasonIdx !== run.seasonIdx) {
-        run.prevSeasonId = run.seasonId;
-        run.seasonTransition = 0;
-        run.seasonIdx = newSeasonIdx;
-        const sObj = DATA.SEASONS[run.seasonIdx];
-        run.seasonId = sObj.id;
-        run.score += Math.round(200 * run.year * run.scoreMult);
-        run.gold += 5;
-        run.heatGauge = 0;
-        SFX.seasonUp();
-        const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
-        showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] · 속도 ×${nextDiff.speedMult.toFixed(2)} UP! (${sObj.weatherLabel})`, 2400);
-        Renderer.spawnFloater(`⚡ 속도 ×${nextDiff.speedMult.toFixed(2)} ↑`, '#ffe259', run.playerX + 36, run.playerY - 50);
-        checkStageMilestone(run.year, run.seasonIdx);
-        // Immediately queue the new season's weather!
-        if (!run.pendingWeather) scheduleNextWeatherEvent();
-      }
-
-      // Smooth 3.2-second visual seasonal background & particle crossfade!
-      if (run.seasonTransition < 1) {
-        run.seasonTransition = Math.min(1, run.seasonTransition + dt / 3.2);
-        if (run.seasonTransition >= 1) run.prevSeasonId = null;
-      }
-
-      // Direct Weather Event State Machine
-      if (run.pendingWeather) {
-        run.weatherPrepTimer -= dt;
-        if (run.weatherPrepTimer <= 0) {
-          activatePendingWeather();
+      if (run.gameMode === 'today_weather' && run.todayWeather) {
+        // Today's Weather Mode: keep season & weather synced to live KMA data while scaling endless difficulty tier every 60s!
+        const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
+        if (newYear > run.year) {
+          run.year = newYear;
+          const yearGoldBonus = 20 + run.year * 5;
+          run.score += Math.round(600 * run.year * run.scoreMult);
+          run.gold += yearGoldBonus;
+          run.winPoseTimer = 0.9;
+          SFX.yearUp();
+          const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
+          const snap = run.todayWeather.snapshot;
+          showRunBanner(`🌦️ ${snap.cityName} ${run.year}단계 돌파! 속도 ×${nextDiff.speedMult.toFixed(2)} (+${yearGoldBonus}G)`, 2600);
+          Renderer.spawnFloater(`${run.year}단계 난이도 UP!`, '#63d8ff', run.playerX + 40, run.playerY - 52);
         }
+        run.seasonIdx = run.todayWeather.seasonIdx;
+        run.seasonId = run.todayWeather.seasonId;
+        run.weatherEvent = run.todayWeather.primaryWeather;
+        run.pendingWeather = null;
+        run.weatherPrepTimer = 0;
       } else {
-        run.weatherEventTimer -= dt;
-        if (run.weatherEventTimer <= 0) {
-          scheduleNextWeatherEvent();
+        // Equal 4-season infinite cycle (15s * 4 = 60s per year)
+        const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
+        const yearTime = run.elapsed % DATA.YEAR_DURATION;
+        const newSeasonIdx = Math.floor(yearTime / DATA.SEASON_DURATION);
+        const timeIntoSeason = yearTime - newSeasonIdx * DATA.SEASON_DURATION;
+        // Quietly preload upcoming season's sprites 4 seconds before transition so zero pop-in or frame hitch!
+        if (timeIntoSeason > DATA.SEASON_DURATION - 4.5 && Renderer && Renderer.preloadSeason) {
+          const upcomingSeason = DATA.SEASONS[(newSeasonIdx + 1) % DATA.SEASONS.length];
+          if (upcomingSeason) Renderer.preloadSeason(upcomingSeason.id);
+        }
+
+        if (newYear > run.year) {
+          run.prevSeasonId = run.seasonId;
+          run.seasonTransition = 0;
+          run.year = newYear;
+          run.seasonIdx = 0;
+          run.seasonId = DATA.SEASONS[0].id;
+          const yearGoldBonus = 20 + run.year * 5;
+          run.score += Math.round(600 * run.year * run.scoreMult);
+          run.gold += yearGoldBonus;
+          run.winPoseTimer = 0.9;
+          SFX.yearUp();
+          const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
+          showRunBanner(`🔥 ${run.year}년 차 돌파! 속도 ×${nextDiff.speedMult.toFixed(2)} · 3연속 콤보 경보! (+${yearGoldBonus}G)`, 3000);
+          Renderer.spawnFloater(`${run.year}년 차 난이도 UP!`, '#ff944d', run.playerX + 40, run.playerY - 52);
+          checkStageMilestone(run.year, 0);
+        } else if (newSeasonIdx !== run.seasonIdx) {
+          run.prevSeasonId = run.seasonId;
+          run.seasonTransition = 0;
+          run.seasonIdx = newSeasonIdx;
+          const sObj = DATA.SEASONS[run.seasonIdx];
+          run.seasonId = sObj.id;
+          run.score += Math.round(200 * run.year * run.scoreMult);
+          run.gold += 5;
+          run.heatGauge = 0;
+          SFX.seasonUp();
+          const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
+          showRunBanner(`${sObj.icon} ${run.year}년 차 [${sObj.name}] · 속도 ×${nextDiff.speedMult.toFixed(2)} UP! (${sObj.weatherLabel})`, 2400);
+          Renderer.spawnFloater(`⚡ 속도 ×${nextDiff.speedMult.toFixed(2)} ↑`, '#ffe259', run.playerX + 36, run.playerY - 50);
+          checkStageMilestone(run.year, run.seasonIdx);
+          // Immediately queue the new season's weather!
+          if (!run.pendingWeather) scheduleNextWeatherEvent();
+        }
+
+        // Smooth 3.2-second visual seasonal background & particle crossfade!
+        if (run.seasonTransition < 1) {
+          run.seasonTransition = Math.min(1, run.seasonTransition + dt / 3.2);
+          if (run.seasonTransition >= 1) run.prevSeasonId = null;
+        }
+
+        // Direct Weather Event State Machine
+        if (run.pendingWeather) {
+          run.weatherPrepTimer -= dt;
+          if (run.weatherPrepTimer <= 0) {
+            activatePendingWeather();
+          }
+        } else {
+          run.weatherEventTimer -= dt;
+          if (run.weatherEventTimer <= 0) {
+            scheduleNextWeatherEvent();
+          }
         }
       }
     } else {
@@ -5427,6 +6043,16 @@
     if (run.feverTimer > 0) {
       run.feverTimer = Math.max(0, run.feverTimer - dt);
       run.feverCharge = (run.feverTimer / 4.5) * 100;
+    }
+
+    // In-run shield item expires cleanly after 10 seconds (paid Shield Booster lasts until first hit!)
+    if (run.shield && !run.shieldFromBooster) {
+      run.shieldTimer = Math.max(0, (run.shieldTimer || 0) - dt);
+      if (run.shieldTimer <= 0) {
+        run.shield = false;
+        SFX.umbrellaToggle(false);
+        Renderer.spawnFloater('🛡️ 보호막 지속시간 종료', '#9fd9ff', run.playerX + 10, run.playerY - 42);
+      }
     }
 
     // Umbrella & Mask: Zero Cooldown · Auto-Turn-Off every 10 seconds!
@@ -5465,7 +6091,7 @@
     // ---- MECHANIC 1: WEATHER-DRIVEN MOVEMENT SPEED & CHARACTER PASSIVES ----
     const feverBoost = run.feverTimer > 0 ? 1.36 : (run.speedBoostTimer > 0 ? 1.32 : 1.0);
     const boostScoreMult = run.speedBoostTimer > 0 ? 1.5 : 1.0;
-    let weatherSpeedMult = 1.0;
+    let weatherSpeedMult = (run.todayWeather && run.todayWeather.speedMult) ? run.todayWeather.speedMult : 1.0;
     let iceScoreBonus = 1.0;
     if (run.umbrellaOn) weatherSpeedMult *= 0.84; // Umbrella air drag slows runner!
     if (run.weatherEvent === 'flood' && !run.onPlatform && run.playerY >= Renderer.GROUND_Y - 2) {
@@ -5584,10 +6210,12 @@
     }
 
     // ---- ACTIVE WEATHER EXPOSURE SYSTEM (RAIN/HEAT WITHOUT UMBRELLA · YELLOW DUST WITHOUT MASK -> -1 HEART!) ----
+    const twHaz = (run.todayWeather && run.todayWeather.hazards) ? run.todayWeather.hazards : null;
     const rainExposeLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
     const dustExposeLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
-    const isRainingNow = run.weatherEvent === 'rain' || run.weatherEvent === 'flood';
-    const isDustNow = run.weatherEvent === 'dust';
+    const isRainingNow = run.weatherEvent === 'rain' || run.weatherEvent === 'flood' || Boolean(twHaz && (twHaz.rainActive || twHaz.floodActive));
+    const isDustNow = run.weatherEvent === 'dust' || Boolean(twHaz && twHaz.dustActive);
+    const isHeatNow = run.weatherEvent === 'heat' || Boolean(twHaz && twHaz.heatActive);
 
     if (run.feverTimer <= 0 && !run.isTutorial) {
       // 1. Rain without Umbrella for set duration -> -1 Heart!
@@ -5625,7 +6253,7 @@
       }
 
       // 3. Summer Heatwave (폭염): Open Umbrella(양산) to stay cool! Without Umbrella, heat builds -> -1 Heart!
-      if (run.weatherEvent === 'heat' && !ch.summerImmune) {
+      if (isHeatNow && !ch.summerImmune) {
         if (run.umbrellaOn) {
           run.heatGauge = Math.max(0, run.heatGauge - 46 * dt);
         } else {
@@ -5677,10 +6305,14 @@
         car.x -= (run.speed + 250) * dt;
         if (!car.checked && car.x <= run.playerX + 18 && car.x + 70 >= run.playerX) {
           car.checked = true;
-          if (run.playerY < Renderer.GROUND_Y - 18 || run.feverTimer > 0) {
-            run.score += 130;
-            SFX.guard();
-            Renderer.spawnFloater('물벼락 점프 회피! +130', '#7affb3', run.playerX + 12, run.playerY - 46);
+          if (run.playerY < Renderer.GROUND_Y - 18 || run.feverTimer > 0 || run.invulnTimer > 0) {
+            if (run.invulnTimer <= 0) {
+              run.score += 130;
+              SFX.guard();
+              Renderer.spawnFloater('물벼락 점프 회피! +130', '#7affb3', run.playerX + 12, run.playerY - 46);
+            }
+          } else if (run.shield) {
+            consumeShieldHit('🛡️ 보호막 물벼락 방어! 잠시 무적!');
           } else {
             run.mudBlindTimer = 2.8;
             SFX.splash();
@@ -5770,15 +6402,11 @@
             Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#a6ffcf', false);
             Renderer.spawnFloater('😷 마스크 방어! (돌진 시 새로 누르면 보너스!)', '#a6ffcf', run.playerX + 14, run.playerY - 48);
           } else if (run.shield) {
-            run.shield = false;
-            run.invulnTimer = 1.25;
+            consumeShieldHit('🛡️ 보호막 코로나 방어! 잠시 무적!');
             atk.phase = 'deflected';
             atk.deflectTimer = 0.55;
             atk.vx = 260;
             atk.vy = -240;
-            SFX.guard();
-            Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#82e2ff', true);
-            Renderer.spawnFloater('🛡️ 기상 보호막으로 코로나 방어!', '#82e2ff', run.playerX + 14, run.playerY - 48);
           } else if (run.isTutorial) {
             run.hitPoseTimer = 0.3;
             run.hitFlashTimer = 0.2;
@@ -5877,7 +6505,8 @@
 
     function addFeverCharge(amount) {
       if (run.feverTimer > 0) return;
-      run.feverCharge = Math.min(100, run.feverCharge + amount);
+      const feverMult = (run.todayWeather && run.todayWeather.feverGainMult) ? run.todayWeather.feverGainMult : 1.0;
+      run.feverCharge = Math.min(100, run.feverCharge + amount * feverMult);
       if (run.feverCharge >= 100) {
         run.feverTimer = 4.5;
         run.winPoseTimer = 0.7;
@@ -5887,7 +6516,8 @@
     }
 
     const hasSuperMagnet = run.feverTimer > 0 || run.magnetTimer > 0;
-    const magnetRadius = hasSuperMagnet ? 145 : 24;
+    const twMagnetBonus = (run.todayWeather && run.todayWeather.magnetBonus) ? run.todayWeather.magnetBonus : 0;
+    const magnetRadius = (hasSuperMagnet ? 145 : 24) + twMagnetBonus;
 
     for (let i = run.items.length - 1; i >= 0; i--) {
       const it = run.items[i];
@@ -5945,10 +6575,13 @@
           Renderer.spawnFloater('⚡ 스피드 부스트! (4초 무적 질주)', '#66f2ff', run.playerX + 16, run.playerY - 46);
         } else if (it.kind === 'shield_item') {
           run.shield = true;
+          run.shieldFromBooster = false;
+          run.shieldTimer = 10.0;
+          run.shieldMaxTimer = 10.0;
           run.itemPoseTimer = 0.45;
           SFX.shieldUp();
           Renderer.spawnPickupEffect(it.x, it.y, '#7ad8ff', true);
-          Renderer.spawnFloater('🛡️ 기상 보호막 획득!', '#8ce2ff', run.playerX + 12, run.playerY - 44);
+          Renderer.spawnFloater('🛡️ 보호막 획득! (10초)', '#8ce2ff', run.playerX + 12, run.playerY - 44);
         } else if (it.kind === 'chest_wood' || it.kind === 'chest_silver' || it.kind === 'chest_gold' || it.kind === 'chest_diamond') {
           const tierId = it.kind.replace('chest_', '');
           const chestDef = DATA.CHESTS[tierId] || DATA.CHESTS.wood;
@@ -6049,12 +6682,16 @@
         h: Math.max(8, ob.h - padTop - padBot)
       };
 
+      // For higher slide-under aerial obstacles, standing upper-body hitbox still catches non-sliding players cleanly while sliding clears effortlessly!
+      const hitPBox = (!run.sliding && ob.lane === 'air')
+        ? { x: pBox.x, y: run.playerY - 44, w: pBox.w, h: 40 }
+        : pBox;
       const overlap =
         !isHarmlessTelegraph &&
-        pBox.x < oBox.x + oBox.w &&
-        pBox.x + pBox.w > oBox.x &&
-        pBox.y < oBox.y + oBox.h &&
-        pBox.y + pBox.h > oBox.y;
+        hitPBox.x < oBox.x + oBox.w &&
+        hitPBox.x + hitPBox.w > oBox.x &&
+        hitPBox.y < oBox.y + oBox.h &&
+        hitPBox.y + hitPBox.h > oBox.y;
 
       if (overlap) {
         if (run.feverTimer > 0 || run.speedBoostTimer > 0) {
@@ -6131,6 +6768,20 @@
     triggerCameraShake(8, 0.3);
   }
 
+  function consumeShieldHit(msg = '🛡️ 보호막 방어! 잠시 무적!') {
+    if (!run || !run.shield) return false;
+    run.shield = false;
+    run.shieldFromBooster = false;
+    run.shieldTimer = 0;
+    run.invulnTimer = Math.max(run.invulnTimer || 0, 1.8);
+    run.hitStopTimer = 0.04;
+    SFX.guard();
+    haptic(18);
+    Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#82e2ff', true);
+    Renderer.spawnFloater(msg, '#82e2ff', run.playerX + 12, run.playerY - 46);
+    return true;
+  }
+
   function handleObstacleHit(ob, ch) {
     if (run.isTutorial) {
       run.invulnTimer = 0.7;
@@ -6155,10 +6806,7 @@
     }
 
     if (run.shield) {
-      run.shield = false;
-      run.invulnTimer = 1.25;
-      SFX.guard();
-      Renderer.spawnFloater('기상 보호막 방어!', '#82e2ff', run.playerX + 10, run.playerY - 44);
+      consumeShieldHit('🛡️ 보호막 방어! 잠시 무적!');
       return;
     }
 
@@ -6239,9 +6887,15 @@
     const yrTier = run.year >= 4 ? 'yr-4' : (run.year === 3 ? 'yr-3' : (run.year === 2 ? 'yr-2' : 'yr-1'));
     hudClass('yrCls', el.runYearNum, `portrait-yr-badge ${yrTier}`);
     if (doSlow) {
-      const seasonLbl = run.isTutorial
-        ? '📖 실전 튜토리얼 (체력 감소 없음)'
-        : `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
+      let seasonLbl;
+      if (run.isTutorial) {
+        seasonLbl = '📖 실전 튜토리얼 (체력 감소 없음)';
+      } else if (run.gameMode === 'today_weather' && run.todayWeather) {
+        const snap = run.todayWeather.snapshot;
+        seasonLbl = `🌦️ ${snap.cityName} ${Math.round(snap.tempC)}°C · ⚡×${diff.speedMult.toFixed(2)}`;
+      } else {
+        seasonLbl = `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
+      }
       hudText('seasonLbl', el.runSeasonLabel, seasonLbl);
       const scoreInt = Math.floor(run.score);
       const scoreKey = `${run.distanceM}|${scoreInt}`;
@@ -6288,6 +6942,7 @@
     const gustLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty);
 
     const activeEv = run.weatherEvent || 'clear';
+    const twHazHud = (run.todayWeather && run.todayWeather.hazards) ? run.todayWeather.hazards : null;
     const incomingEv = (run.pendingWeather && run.pendingWeather !== 'clear') ? run.pendingWeather : null;
     const covidUrgent = Boolean(
       run.covidAttack &&
@@ -6297,8 +6952,11 @@
     );
     const needCovidMask = covidUrgent && !(run.maskOn && run.maskParryTimer > 0);
     const needFoldUmb = activeEv === 'gust' && run.umbrellaOn && run.feverTimer <= 0;
-    const needOpenUmb = (activeEv === 'rain' || activeEv === 'flood' || (activeEv === 'heat' && !ch.summerImmune)) && !run.umbrellaOn && run.feverTimer <= 0;
-    const needOpenMask = activeEv === 'dust' && !run.maskOn && run.feverTimer <= 0;
+    const hudRainNow = activeEv === 'rain' || activeEv === 'flood' || Boolean(twHazHud && (twHazHud.rainActive || twHazHud.floodActive));
+    const hudHeatNow = activeEv === 'heat' || Boolean(twHazHud && twHazHud.heatActive);
+    const hudDustNow = activeEv === 'dust' || Boolean(twHazHud && twHazHud.dustActive);
+    const needOpenUmb = (hudRainNow || (hudHeatNow && !ch.summerImmune)) && !run.umbrellaOn && run.feverTimer <= 0;
+    const needOpenMask = hudDustNow && !run.maskOn && run.feverTimer <= 0;
 
     // 1. Colored Screen-Edge Vignette (instant peripheral weather cue!)
     if (el.weatherEdgeVignette) {
@@ -6327,7 +6985,7 @@
         chipBadge = '💨 우산 접기!';
         chipTimer = `${rem.toFixed(1)}s`;
         chipUrgent = true;
-      } else if (needOpenUmb && (activeEv === 'rain' || activeEv === 'flood')) {
+      } else if (needOpenUmb && hudRainNow) {
         const rem = Math.max(0, rainLimit - (run.rainExposeTimer || 0));
         chipBadge = '☂️ 우산!';
         chipTimer = `${rem.toFixed(1)}s`;
@@ -6337,7 +6995,7 @@
         chipBadge = '😷 마스크!';
         chipTimer = `${rem.toFixed(1)}s`;
         chipUrgent = rem <= 1.4;
-      } else if (activeEv === 'heat' && !ch.summerImmune && !run.umbrellaOn) {
+      } else if (hudHeatNow && !ch.summerImmune && !run.umbrellaOn) {
         chipBadge = '☀️ 우산!';
         chipTimer = `${Math.round(run.heatGauge)}%`;
         chipUrgent = run.heatGauge >= 60;
@@ -6450,7 +7108,10 @@
         hudWidth('orbBarMag', el.orbBarMagnet, `${Math.max(0, Math.min(100, magPct)).toFixed(1)}%`);
       }
       if (shdActive) {
-        hudWidth('orbBarShd', el.orbBarShield, '100%');
+        const shdPct = (!run.shieldFromBooster && run.shieldTimer > 0)
+          ? Math.max(0, Math.min(100, (run.shieldTimer / (run.shieldMaxTimer || 10.0)) * 100))
+          : 100;
+        hudWidth('orbBarShd', el.orbBarShield, `${shdPct.toFixed(1)}%`);
       }
     }
     hudToggle('wrapFev', el.runCanvasWrap, 'fever-active', fevActive);
@@ -6483,9 +7144,10 @@
     const distGoldBonus = Math.floor(run.elapsed * 0.25);
     const totalGoldEarned = run.gold + distGoldBonus;
 
+    const isTodayWeatherRun = run.gameMode === 'today_weather';
     const prevBest = save.bestScore || 0;
-    const isNewBest = finalScore > prevBest;
-    if (isNewBest) save.bestScore = finalScore;
+    const isOverallNewBest = finalScore > prevBest;
+    if (isOverallNewBest) save.bestScore = finalScore;
     if (finalDist > (save.bestDistanceM || 0)) save.bestDistanceM = finalDist;
     if (run.year > save.bestYear) save.bestYear = run.year;
     save.totalCoinsEver = (save.totalCoinsEver || 0) + (run.coinsCollected || 0);
@@ -6495,12 +7157,30 @@
     save.gold += totalGoldEarned;
     save.playCount += 1;
 
-    // Update Weekly Online Ranking Record & Submit Live!
-    ensureWeeklyRankCurrentWeek();
-    if (finalScore > (save.weeklyRank.bestScore || 0)) {
-      save.weeklyRank.bestScore = finalScore;
-      save.weeklyRank.bestDist = finalDist;
-      save.weeklyRank.bestYear = run.year || 1;
+    // Split Online Ranking Submission: 일반모드 (주간) vs 오늘의 날씨모드 (일간)
+    let displayBest = save.bestScore || 0;
+    let displayNewBest = isOverallNewBest;
+    if (isTodayWeatherRun) {
+      ensureDailyWeatherRankToday();
+      const prevDailyBest = (save.dailyWeatherRank && save.dailyWeatherRank.bestScore) || 0;
+      displayNewBest = finalScore > prevDailyBest;
+      if (displayNewBest) {
+        const snap = run.todayWeather && run.todayWeather.snapshot;
+        const desc = run.todayWeather && run.todayWeather.desc;
+        save.dailyWeatherRank.bestScore = finalScore;
+        save.dailyWeatherRank.bestDist = finalDist;
+        save.dailyWeatherRank.bestYear = run.year || 1;
+        save.dailyWeatherRank.cityName = snap ? snap.cityName : '서울';
+        save.dailyWeatherRank.weatherTag = (snap && desc) ? `${snap.cityName} ${desc.icon}${Math.round(snap.tempC)}°C` : '서울';
+      }
+      displayBest = save.dailyWeatherRank.bestScore || finalScore;
+    } else {
+      ensureWeeklyRankCurrentWeek();
+      if (finalScore > (save.weeklyRank.bestScore || 0)) {
+        save.weeklyRank.bestScore = finalScore;
+        save.weeklyRank.bestDist = finalDist;
+        save.weeklyRank.bestYear = run.year || 1;
+      }
     }
 
     // Normal Play Wood Chest Acquisition Path: 400m+ grants 1 Wood Chest into Vault (up to 3/day)
@@ -6512,13 +7192,17 @@
     }
 
     persistSave(true);
-    syncMyWeeklyScore();
+    if (isTodayWeatherRun) {
+      syncMyDailyWeatherScore();
+    } else {
+      syncMyWeeklyScore();
+    }
 
     if (el.resBestScore) {
-      el.resBestScore.textContent = `${(save.bestScore || 0).toLocaleString('ko-KR')}점`;
+      el.resBestScore.textContent = `${displayBest.toLocaleString('ko-KR')}점`;
     }
     if (el.resNewBest) {
-      el.resNewBest.classList.toggle('hidden', !isNewBest);
+      el.resNewBest.classList.toggle('hidden', !displayNewBest);
     }
     el.resScore.textContent = `${finalScore.toLocaleString('ko-KR')}점`;
     el.gameoverOverlay.classList.remove('hidden');
@@ -6825,11 +7509,24 @@
     // Weekly #1 Champion 500 Gems Reward Modal
     if (el.btnClaimWeeklyChamp) el.btnClaimWeeklyChamp.addEventListener('click', claimWeeklyChampionReward);
 
-    // Online Live Ranking Refresh + Live Countdown + Auto Poll
+    // Online Live Ranking Refresh + Mode Switch + Live Countdown + Auto Poll
+    if (el.btnRankModeNormal) {
+      el.btnRankModeNormal.addEventListener('click', () => {
+        SFX.click();
+        setRankModeTab('normal');
+      });
+    }
+    if (el.btnRankModeToday) {
+      el.btnRankModeToday.addEventListener('click', () => {
+        SFX.click();
+        setRankModeTab('today_weather');
+      });
+    }
     if (el.btnRankRefresh) {
       el.btnRankRefresh.addEventListener('click', async () => {
         SFX.click();
-        await syncMyWeeklyScore();
+        if (rankModeTab === 'today_weather') await syncMyDailyWeatherScore();
+        else await syncMyWeeklyScore();
         await renderRankingTab();
         showToast('🔄 온라인 실시간 랭킹이 갱신되었습니다!');
       });
@@ -6848,6 +7545,52 @@
       }
     }, 5000);
 
+    // Home Sub-Tabs (로비 vs 오늘의 날씨) + Mode Selector (일반모드 vs 오늘의 날씨모드) + KMA Weather Tab Actions
+    if (el.btnHomeTabLobby) {
+      el.btnHomeTabLobby.addEventListener('click', () => {
+        SFX.click();
+        setHomeSubtab('lobby');
+      });
+    }
+    if (el.btnHomeTabWeather) {
+      el.btnHomeTabWeather.addEventListener('click', () => {
+        SFX.click();
+        setHomeSubtab('weather');
+      });
+    }
+    if (el.btnModeNormal) {
+      el.btnModeNormal.addEventListener('click', () => {
+        SFX.click();
+        setSelectedGameMode('normal');
+      });
+    }
+    if (el.btnModeToday) {
+      el.btnModeToday.addEventListener('click', () => {
+        SFX.click();
+        setSelectedGameMode('today_weather');
+        refreshLiveWeatherUI(false);
+      });
+    }
+    if (el.btnWeatherRefresh) {
+      el.btnWeatherRefresh.addEventListener('click', async () => {
+        SFX.click();
+        await refreshLiveWeatherUI(true);
+        showToast('🌤️ 기상청 실시간 날씨가 갱신되었습니다!');
+      });
+    }
+    if (el.btnWeatherPlayToday) {
+      el.btnWeatherPlayToday.addEventListener('click', () => {
+        SFX.click();
+        selectedGameMode = 'today_weather';
+        const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
+        if (isCharUnlocked(ch.id)) {
+          save.selectedChar = ch.id;
+          persistSave();
+        }
+        startRun({ mode: 'today_weather' });
+      });
+    }
+
     el.btnHomeCharInfo.addEventListener('click', () => openCharDetail(previewCharIdx));
     if (el.btnHomeVault) el.btnHomeVault.addEventListener('click', openVaultModal);
     if (el.btnCloseVault) {
@@ -6861,12 +7604,28 @@
         if (e.target === el.vaultOverlay) el.vaultOverlay.classList.add('hidden');
       });
     }
+    if (el.btnVaultOpenAll) {
+      el.btnVaultOpenAll.addEventListener('click', () => {
+        openVaultChestsBatch('all');
+      });
+    }
     if (el.btnVaultGoGacha) {
       el.btnVaultGoGacha.addEventListener('click', () => {
         SFX.click();
         if (el.vaultOverlay) el.vaultOverlay.classList.add('hidden');
         currentShopSubtab = 'gacha';
         switchTab('shop');
+      });
+    }
+    const closeVaultBatch = () => {
+      SFX.click();
+      if (el.vaultBatchOverlay) el.vaultBatchOverlay.classList.add('hidden');
+    };
+    if (el.btnVaultBatchClose) el.btnVaultBatchClose.addEventListener('click', closeVaultBatch);
+    if (el.btnVaultBatchX) el.btnVaultBatchX.addEventListener('click', closeVaultBatch);
+    if (el.vaultBatchOverlay) {
+      el.vaultBatchOverlay.addEventListener('click', (e) => {
+        if (e.target === el.vaultBatchOverlay) closeVaultBatch();
       });
     }
 
@@ -7256,6 +8015,7 @@
   setupEvents();
   refreshAllMenus();
   renderIntroAuthState();
+  refreshLiveWeatherUI(false);
   if (window.StudioIntro && typeof window.StudioIntro.play === 'function') {
     window.StudioIntro.play(() => {
       // If OAuth redirect already bypassed title screen into lobby, start menu BGM cleanly after studio splash ends

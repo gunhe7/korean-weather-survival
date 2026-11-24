@@ -16,7 +16,7 @@
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd65" />
+  <link rel="stylesheet" href="style.css?v=20261121hd66" />
 </head>
 <body>
   <div id="mobile-app">
@@ -165,9 +165,19 @@
 
     <!-- ================= MAIN CONTENT AREA (TABS) ================= -->
     <main id="tab-container">
-      <!-- 1. BRAWL STARS STYLE HOME SCREEN (OPEN PEDESTAL CHARACTER SELECT + PLAY BUTTON) -->
+      <!-- 1. BRAWL STARS STYLE HOME SCREEN (LOBBY + LIVE KMA WEATHER TAB + MODE SWITCHER) -->
       <section id="view-home" class="tab-view active">
-        <div class="bs-home-lobby">
+        <!-- Home Sub-Tab Bar: 로비 vs 오늘의 날씨 (기상청 실시간) -->
+        <div class="home-subtabs" role="tablist" aria-label="홈 화면 전환">
+          <button id="btn-home-tab-lobby" class="home-subtab active" type="button" role="tab" aria-selected="true">🏠 로비</button>
+          <button id="btn-home-tab-weather" class="home-subtab weather-tab" type="button" role="tab" aria-selected="false">
+            <span class="home-wt-lbl">🌤️ 날씨</span>
+            <span id="home-weather-tab-chip" class="home-weather-tab-chip">기상청 불러오는 중...</span>
+          </button>
+        </div>
+
+        <!-- Home Pane A: Character Lobby + Mode Switcher + Vault/Play -->
+        <div id="home-lobby-pane" class="bs-home-lobby">
           <!-- Center Open-Lobby Brawl Stars Character Showcase -->
           <div id="home-hero-stage" class="bs-home-stage tier-raincoat">
             <div class="bs-spotlight"></div>
@@ -199,6 +209,24 @@
             </div>
           </div>
 
+          <!-- Game Mode Selector (일반모드 vs 오늘의 날씨모드) -->
+          <div class="home-mode-bar" role="radiogroup" aria-label="게임 모드 선택">
+            <button id="btn-mode-normal" class="home-mode-btn active" type="button" aria-pressed="true">
+              <span class="hmb-ico">🏃</span>
+              <span class="hmb-txt">
+                <strong>일반모드</strong>
+                <small>사계절 순환 · 주간 랭킹</small>
+              </span>
+            </button>
+            <button id="btn-mode-today" class="home-mode-btn weather" type="button" aria-pressed="false">
+              <span class="hmb-ico">🌦️</span>
+              <span class="hmb-txt">
+                <strong>오늘의 날씨모드</strong>
+                <small id="home-mode-today-sub">실시간 기상청 · 일간 랭킹</small>
+              </span>
+            </button>
+          </div>
+
           <!-- Brawl Stars Slanted Bottom Action Controls (Chest Vault + Play) -->
           <div class="bs-home-actions">
             <button id="btn-home-vault" class="bs-brawler-btn bs-vault-home-btn" type="button" aria-label="상자 보관함 열기">
@@ -220,13 +248,51 @@
             </button>
           </div>
         </div>
+
+        <!-- Home Pane B: Real-Time Korea Meteorological Administration (KMA) Weather Tab -->
+        <div id="home-weather-pane" class="home-weather-pane hidden">
+          <div class="weather-pane-topbar">
+            <div id="weather-city-pills" class="weather-city-pills" role="tablist" aria-label="지역 선택"></div>
+            <button id="btn-weather-refresh" class="weather-refresh-btn" type="button">🔄 갱신</button>
+          </div>
+
+          <div id="weather-live-hero" class="weather-live-hero">
+            <div class="wlh-left">
+              <div id="weather-hero-icon" class="wlh-icon" aria-hidden="true">🌤️</div>
+              <div class="wlh-temp-col">
+                <div class="wlh-city-row">
+                  <strong id="weather-hero-city">서울</strong>
+                  <span id="weather-hero-season" class="wlh-season-pill">🌸 봄</span>
+                  <span id="weather-hero-live-tag" class="wlh-live-tag">기상청 LIVE</span>
+                </div>
+                <div class="wlh-temp-row">
+                  <span id="weather-hero-temp" class="wlh-temp">--°C</span>
+                  <span id="weather-hero-desc" class="wlh-desc">실시간 날씨 불러오는 중...</span>
+                </div>
+              </div>
+            </div>
+            <div class="wlh-right">
+              <div id="weather-hero-meta" class="wlh-meta">체감 --°C · 습도 --%</div>
+              <div id="weather-hero-updated" class="wlh-updated">기상청(KMA) 기준</div>
+            </div>
+          </div>
+
+          <div class="weather-section-title">⚡ 오늘의 날씨모드 실시간 버프 · 디버프</div>
+          <div id="weather-buff-grid" class="weather-buff-grid"></div>
+
+          <div id="weather-mod-summary" class="weather-mod-summary">계절 및 실시간 기상 효과가 자동 적용됩니다.</div>
+
+          <button id="btn-weather-play-today" class="cr-gold-btn weather-play-cta" type="button">
+            🌦️ 오늘의 날씨모드 바로 플레이!
+          </button>
+        </div>
       </section>
 
       <!-- 2. COOKIE RUN GACHA + BRAWL STARS SHOP SCREEN (GACHA + CHESTS + SKIN MILEAGE + GOLD + GEMS + BOOSTERS) -->
       <section id="view-shop" class="tab-view bs-shop-view">
         <div class="bs-shop-topbar">
           <div class="bs-shop-tabs" role="tablist" aria-label="상점 카테고리">
-            <button class="subtab-btn bs-shop-tab gacha-tab active" data-shoptab="gacha" type="button">🎰 뽑기</button>
+            <button class="subtab-btn bs-shop-tab gacha-tab active" data-shoptab="gacha" type="button">🌦️ 뽑기</button>
             <button class="subtab-btn bs-shop-tab" data-shoptab="chests" type="button">🎁 상자</button>
             <button class="subtab-btn bs-shop-tab" data-shoptab="skins" type="button">✨ 스킨 교환</button>
             <button class="subtab-btn bs-shop-tab" data-shoptab="gold" type="button"><img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="ui-ico ui-ico-sm" data-ui-icon="coin" data-ui-size="sm" /> 골드</button>
@@ -263,12 +329,12 @@
       <section id="view-missions" class="tab-view">
         <div class="bs-quest-header">
           <div class="bs-quest-tabs" role="tablist" aria-label="퀘스트 분류">
-            <button class="bs-qtab active daily" data-qtab="daily" type="button">☀️ 일일 <span class="qtab-sub">황금상자</span></button>
-            <button class="bs-qtab weekly" data-qtab="weekly" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 주간 <span class="qtab-sub">다이아상자</span></button>
-            <button class="bs-qtab ach" data-qtab="ach" type="button">🏅 업적</button>
+            <button class="bs-qtab active daily" data-qtab="daily" type="button">☀️ 일일 <span class="qtab-sub">황금상자</span><span id="qdot-daily" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
+            <button class="bs-qtab weekly" data-qtab="weekly" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 주간 <span class="qtab-sub">다이아상자</span><span id="qdot-weekly" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
+            <button class="bs-qtab ach" data-qtab="ach" type="button">🏅 업적<span id="qdot-ach" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
           </div>
           <div class="bs-quest-head-actions">
-            <button id="btn-tab-open-attendance" class="bs-hdr-pill att" type="button">🎁 출석</button>
+            <button id="btn-tab-open-attendance" class="bs-hdr-pill att" type="button">🎁 출석<span id="qdot-att" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
             <button id="btn-quest-prob" class="bs-hdr-pill prob" type="button">📊 확률·천장</button>
           </div>
         </div>
@@ -284,11 +350,11 @@
         <div id="bs-quest-grid" class="bs-quest-grid"></div>
       </section>
 
-      <!-- 5. ONLINE REAL-TIME WEEKLY RANKING TAB -->
+      <!-- 5. ONLINE REAL-TIME SPLIT RANKING TAB (일반모드 주간 / 오늘의 날씨모드 일간) -->
       <section id="view-rank" class="tab-view">
         <div class="rank-live-header">
           <div class="rank-live-title-row">
-            <h2>🏆 주간 랭킹</h2>
+            <h2 id="rank-screen-title">🏆 주간 랭킹</h2>
             <span id="rank-live-pill" class="rank-live-pill"><span class="live-dot"></span>LIVE</span>
             <span id="rank-online-count" class="rank-online-cnt hidden"></span>
             <span id="rank-last-winner" class="rank-last-winner hidden"></span>
@@ -296,11 +362,17 @@
           <button id="btn-rank-refresh" class="bs-hdr-pill prob" type="button">🔄 갱신</button>
         </div>
 
-        <!-- Unified 1-Line Weekly #1 Prize + Countdown + Guest Link Strip -->
+        <!-- 2-Mode Ranking Switcher: 일반모드(주간) vs 오늘의 날씨모드(일간) -->
+        <div class="rank-mode-tabs" role="tablist" aria-label="랭킹 모드 선택">
+          <button id="btn-rank-mode-normal" class="rank-mode-tab active" type="button" role="tab" aria-selected="true">🏆 일반모드 <span class="rmt-sub">주간 초기화</span></button>
+          <button id="btn-rank-mode-today" class="rank-mode-tab today" type="button" role="tab" aria-selected="false">🌦️ 오늘의 날씨 <span class="rmt-sub">매일 초기화</span></button>
+        </div>
+
+        <!-- Unified 1-Line Prize / Daily Reset + Countdown + Guest Link Strip -->
         <div class="rank-prize-banner compact-strip">
           <div class="rank-prize-left">
-            <span class="rank-prize-crown ui-ico-slot ui-ico-md" data-ui-icon="crown" data-ui-size="md" aria-hidden="true">👑</span>
-            <span class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 보상 <strong><span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span>500</strong></span>
+            <span id="rank-prize-crown" class="rank-prize-crown ui-ico-slot ui-ico-md" data-ui-icon="crown" data-ui-size="md" aria-hidden="true">👑</span>
+            <span id="rank-prize-inline-text" class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 보상 <strong><span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span>500</strong></span>
             <span class="rank-timer-chip">⏱️ <strong id="rank-week-countdown">0일 00:00:00</strong></span>
           </div>
           <div id="rank-guest-banner" class="rank-guest-inline hidden">
@@ -313,7 +385,7 @@
           <div class="rank-my-top">
             <img id="rank-my-avatar" src="assets/chars/port_yellow.png?v=20261121hd22" alt="내 캐릭터" class="rank-my-img" />
             <div class="rank-my-meta">
-              <div class="rank-my-title">이번 주 내 순위 <strong id="rank-my-pos">-위</strong></div>
+              <div class="rank-my-title"><span id="rank-my-title-label">이번 주 내 순위</span> <strong id="rank-my-pos">-위</strong></div>
               <div class="rank-my-sub" id="rank-my-score-line">주간 최고 0점 · 역대 최고 0점 · 최장 0m</div>
             </div>
           </div>
@@ -615,7 +687,7 @@
             <span id="tut-run-step-pill" class="tut-run-step-pill">튜토리얼 1/7</span>
             <div class="tut-run-text">
               <strong id="tut-run-title">⬆️ 장애물을 뛰어넘으세요!</strong>
-              <span id="tut-run-sub">왼쪽 [점프] 버튼 (Space / ↑)을 눌러 피하세요</span>
+              <span id="tut-run-sub">왼쪽 [점프] 버튼을 터치해 피하세요</span>
             </div>
             <button id="btn-tut-run-skip" class="tut-skip-btn" type="button">건너뛰기</button>
           </div>
@@ -628,7 +700,7 @@
       <div id="mobile-controls" class="cookie-controls">
         <!-- Left Thumb Stack: Small Umbrella ON TOP + Big Jump BELOW -->
         <div class="ctrl-stack left">
-          <button id="btn-toggle-umbrella" class="img-ctrl-btn gear-img-btn" type="button" aria-label="우산 토글" title="우산 펴기/접기 (Q · 10초 자동 해제)">
+          <button id="btn-toggle-umbrella" class="img-ctrl-btn gear-img-btn" type="button" aria-label="우산 토글" title="우산 펴기/접기 (10초 자동 해제)">
             <span class="ctrl-img-wrap">
               <img src="assets/ctrl/btn_umbrella_up.png" alt="우산" class="ctrl-img up" />
               <img src="assets/ctrl/btn_umbrella_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
@@ -671,7 +743,7 @@
 
         <!-- Right Thumb Stack: Small Mask ON TOP + Big Slide BELOW -->
         <div class="ctrl-stack right">
-          <button id="btn-toggle-mask" class="img-ctrl-btn gear-img-btn" type="button" aria-label="마스크 토글" title="마스크 쓰기/벗기 (E · 10초 자동 해제)">
+          <button id="btn-toggle-mask" class="img-ctrl-btn gear-img-btn" type="button" aria-label="마스크 토글" title="마스크 쓰기/벗기 (10초 자동 해제)">
             <span class="ctrl-img-wrap">
               <img src="assets/ctrl/btn_mask_up.png" alt="마스크" class="ctrl-img up" />
               <img src="assets/ctrl/btn_mask_down.png" alt="" class="ctrl-img down" aria-hidden="true" />
@@ -696,7 +768,7 @@
         <div class="cr-modal">
           <div class="cr-modal-bar"><span>일시정지</span></div>
           <div class="modal-body">
-            <p class="modal-msg">잠시 숨을 고르며 한국 날씨를 피하는 중입니다.<br /><small>PC 단축키: Space/↑ 점프 · ↓ 슬라이드 · Q 우산 · E 마스크</small></p>
+            <p class="modal-msg">잠시 숨을 고르며 한국 날씨를 피하는 중입니다.</p>
             <div class="modal-actions col">
               <button id="btn-resume-run" class="cr-gold-btn" type="button">▶ 계속 달리기</button>
               <button id="btn-pause-settings" class="cr-blue-btn" type="button">⚙️ 사운드 설정</button>
@@ -866,12 +938,31 @@
             <span id="vault-ticket-pill" class="vault-ticket-pill"><img src="assets/ui/gacha_ticket.png?v=20261121hd56" alt="뽑기권" class="ticket-ico sm" /> 뽑기권 0장</span>
           </div>
           <div class="score-road-bar-actions">
-            <button id="btn-vault-go-gacha" class="cr-gold-btn vault-go-gacha-btn" type="button">🎰 스킨 뽑기</button>
+            <button id="btn-vault-open-all" class="cr-blue-btn vault-open-all-btn hidden" type="button">⚡ 전체 열기</button>
+            <button id="btn-vault-go-gacha" class="cr-gold-btn vault-go-gacha-btn" type="button">🌦️ 스킨 뽑기</button>
             <button id="btn-close-vault" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
           </div>
         </div>
-        <div class="score-road-sub">상자를 직접 열거나 뽑기권으로 교환하세요! (나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = <img src="assets/ui/gacha_ticket.png?v=20261121hd56" alt="뽑기권" class="ticket-ico xs" /> 1장)</div>
+        <div class="score-road-sub">상자를 직접 열거나 한번에 개봉하고, 뽑기권으로 교환하세요! (나무 15 · 은 10 · 황금 5 · 다이아 2 = <img src="assets/ui/gacha_ticket.png?v=20261121hd56" alt="뽑기권" class="ticket-ico xs" /> 1장)</div>
         <div id="vault-modal-grid" class="vault-modal-grid"></div>
+      </div>
+    </div>
+
+    <!-- ================= VAULT BATCH CHEST OPEN RESULT MODAL ================= -->
+    <div id="vault-batch-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="상자 일괄 개봉 결과">
+      <div class="cr-modal settings-arcade-modal vault-batch-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <span id="vault-batch-title" class="settings-bar-title">⚡ 상자 일괄 개봉 결과</span>
+          <button id="btn-vault-batch-x" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div class="modal-body vault-batch-body">
+          <div id="vault-batch-summary" class="vault-batch-summary"></div>
+          <div id="vault-batch-grid" class="vault-batch-grid"></div>
+          <div class="vault-batch-actions">
+            <button id="btn-vault-batch-equip" class="cr-blue-btn hidden" type="button">✨ 신규 스킨 장착</button>
+            <button id="btn-vault-batch-close" class="cr-gold-btn" type="button">확인</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -879,7 +970,7 @@
     <div id="gacha-wish-overlay" class="modal-overlay gacha-wish-overlay hidden" role="dialog" aria-modal="true" aria-label="스킨 뽑기 연출">
       <canvas id="gacha-wish-canvas" class="gacha-wish-canvas"></canvas>
       <div id="gacha-wish-flash" class="gacha-wish-flash" aria-hidden="true"></div>
-      <div id="gacha-wish-banner" class="gacha-wish-banner hidden" aria-live="polite">✦ 스킨 소환! ✦</div>
+      <div id="gacha-wish-banner" class="gacha-wish-banner hidden" aria-live="polite">✦ 사계절 기상 소환! ✦</div>
       <button id="btn-gacha-wish-skip" class="gacha-wish-skip-btn" type="button">건너뛰기 ⏭️</button>
     </div>
 
@@ -918,13 +1009,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd65"></script>
-  <script src="js/ui-icons.js?v=20261121hd65"></script>
-  <script src="js/audio.js?v=20261121hd65"></script>
-  <script src="js/studio-intro.js?v=20261121hd65"></script>
-  <script src="js/online.js?v=20261121hd65"></script>
-  <script src="js/renderer.js?v=20261121hd65"></script>
-  <script src="js/game.js?v=20261121hd65"></script>
+  <script src="js/data.js?v=20261121hd66"></script>
+  <script src="js/ui-icons.js?v=20261121hd66"></script>
+  <script src="js/weather-live.js?v=20261121hd66"></script>
+  <script src="js/audio.js?v=20261121hd66"></script>
+  <script src="js/studio-intro.js?v=20261121hd66"></script>
+  <script src="js/online.js?v=20261121hd66"></script>
+  <script src="js/renderer.js?v=20261121hd66"></script>
+  <script src="js/game.js?v=20261121hd66"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

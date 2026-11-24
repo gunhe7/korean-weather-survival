@@ -1,5 +1,6 @@
 window.OnlineService = (function () {
   const BOARD_STORE_KEY = 'kr_weather_online_board_v5_live';
+  const DAILY_BOARD_STORE_KEY = 'kr_weather_daily_weather_board_v1';
   const RTDB_BOARD_ROOT = '/weekly_boards';
   const RTDB_SAVES_ROOT = '/user_saves';
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
@@ -169,6 +170,45 @@ window.OnlineService = (function () {
       prevWeekLabel: `${prev.year}년 ${prev.weekNo}주차`,
       msRemaining,
       countdownText
+    };
+  }
+
+  // ===================== KST DAILY CYCLE (RESETS EVERY DAY 00:00 KST — TODAY'S WEATHER MODE) =====================
+  function formatKstDateKey(kstDate) {
+    const y = kstDate.getUTCFullYear();
+    const m = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(kstDate.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function getKstDayInfo(nowMs = Date.now()) {
+    const kstNow = new Date(nowMs + KST_OFFSET_MS);
+    const prevKst = new Date(nowMs - 86400000 + KST_OFFSET_MS);
+    const dateKey = formatKstDateKey(kstNow);
+    const prevDateKey = formatKstDateKey(prevKst);
+    const dateLabel = `${kstNow.getUTCMonth() + 1}월 ${kstNow.getUTCDate()}일`;
+
+    const nextMidnightKstUtc = Date.UTC(
+      kstNow.getUTCFullYear(),
+      kstNow.getUTCMonth(),
+      kstNow.getUTCDate() + 1,
+      0, 0, 0, 0
+    );
+    const nextResetMs = nextMidnightKstUtc - KST_OFFSET_MS;
+    const msRemaining = Math.max(0, nextResetMs - nowMs);
+
+    const totalSec = Math.floor(msRemaining / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+
+    return {
+      dateKey,
+      dateLabel,
+      prevDateKey,
+      msRemaining,
+      countdownText: `${pad(h)}:${pad(m)}:${pad(s)}`
     };
   }
 
@@ -724,6 +764,161 @@ window.OnlineService = (function () {
     };
   }
 
+  // ===================== DAILY TODAY'S WEATHER LEADERBOARD (RESETS DAILY 00:00 KST) =====================
+  function readLocalDailyBoards() {
+    try {
+      const raw = localStorage.getItem(DAILY_BOARD_STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeLocalDailyBoards(all) {
+    try {
+      localStorage.setItem(DAILY_BOARD_STORE_KEY, JSON.stringify(all));
+    } catch {}
+  }
+
+  async function submitDailyWeatherScore(entry) {
+    if (!entry || !entry.uid) return null;
+    if (!isRankedProvider(entry.provider) || isLegacyUnverifiedUid(entry.uid)) return null;
+
+    const scoreVal = Math.max(0, Math.floor(Number(entry.score) || 0));
+    if (scoreVal <= 0) return null;
+
+    const dayInfo = getKstDayInfo();
+    const dateKey = entry.dateKey || dayInfo.dateKey;
+    const remoteBucket = `daily_${dateKey}`;
+    const cleanEntry = {
+      uid: String(entry.uid),
+      nickname: sanitizeNickname(entry.nickname, '날씨러너'),
+      provider: entry.provider,
+      charId: entry.charId || 'umbrella_master',
+      skinId: entry.skinId || null,
+      cityName: String(entry.cityName || '서울').slice(0, 8),
+      weatherTag: String(entry.weatherTag || '').slice(0, 20),
+      score: scoreVal,
+      dist: Math.max(0, Math.floor(Number(entry.dist) || 0)),
+      year: Math.max(1, Math.floor(Number(entry.year) || 1)),
+      updatedAt: Date.now()
+    };
+
+    const all = readLocalDailyBoards();
+    const dk = all[dateKey] || {};
+    const prev = dk[cleanEntry.uid];
+    if (!prev || cleanEntry.score >= (prev.score || 0)) {
+      dk[cleanEntry.uid] = cleanEntry;
+    } else {
+      dk[cleanEntry.uid] = {
+        ...prev,
+        nickname: cleanEntry.nickname,
+        provider: cleanEntry.provider,
+        charId: cleanEntry.charId,
+        skinId: cleanEntry.skinId,
+        updatedAt: Date.now()
+      };
+    }
+    all[dateKey] = dk;
+    // Prune older local daily entries beyond last 7 days
+    const keys = Object.keys(all).sort();
+    while (keys.length > 7) {
+      delete all[keys.shift()];
+    }
+    writeLocalDailyBoards(all);
+
+    if (hasRemoteDb()) {
+      const bodyStr = JSON.stringify(dk[cleanEntry.uid]);
+      const targets = [
+        `${RTDB_BOARD_ROOT}/${encodeURIComponent(remoteBucket)}/${encodeURIComponent(cleanEntry.uid)}.json`,
+        `/weekly_boards_v2/${encodeURIComponent(remoteBucket)}/${encodeURIComponent(cleanEntry.uid)}.json`
+      ];
+      for (const path of targets) {
+        try {
+          const { url } = await buildAuthedUrl(path, false, true);
+          const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyStr
+          });
+          if (res && res.ok) break;
+        } catch {}
+      }
+    }
+
+    if (channel) {
+      try { channel.postMessage({ type: 'board_update', mode: 'today_weather', dateKey, uid: cleanEntry.uid }); } catch {}
+    }
+    notifyListeners({ type: 'board_update', mode: 'today_weather', dateKey, uid: cleanEntry.uid });
+    return dk[cleanEntry.uid];
+  }
+
+  async function fetchDailyWeatherBoard(dateKey = null, myUid = null) {
+    const dayInfo = getKstDayInfo();
+    const targetDate = dateKey || dayInfo.dateKey;
+    const remoteBucket = `daily_${targetDate}`;
+
+    let remoteEntries = [];
+    let syncedOnline = false;
+
+    if (hasRemoteDb()) {
+      const roots = [RTDB_BOARD_ROOT, '/weekly_boards_v2'];
+      for (const root of roots) {
+        try {
+          const url = `${getDbUrl()}${root}/${encodeURIComponent(remoteBucket)}.json`;
+          const res = await fetch(url, { cache: 'no-store' });
+          if (res.ok) {
+            syncedOnline = true;
+            const data = await res.json();
+            if (data && typeof data === 'object') {
+              const valid = Object.values(data).filter(
+                (x) => x && x.uid && !isLegacyUnverifiedUid(x.uid) && isRankedProvider(x.provider) && typeof x.score === 'number' && x.score > 0
+              );
+              remoteEntries = remoteEntries.concat(valid);
+            }
+          }
+        } catch {}
+      }
+    }
+
+    const localDayObj = readLocalDailyBoards()[targetDate] || {};
+    const localEntries = Object.values(localDayObj).filter(
+      (x) => x && x.uid && !isLegacyUnverifiedUid(x.uid) && isRankedProvider(x.provider) && typeof x.score === 'number' && x.score > 0
+    );
+
+    const map = new Map();
+    localEntries.forEach((e) => {
+      const prev = map.get(e.uid);
+      if (!prev || (e.score || 0) >= (prev.score || 0)) map.set(e.uid, e);
+    });
+    remoteEntries.forEach((e) => {
+      const prev = map.get(e.uid);
+      if (!prev || (e.score || 0) >= (prev.score || 0)) map.set(e.uid, e);
+    });
+
+    const allSorted = Array.from(map.values())
+      .sort((a, b) => (b.score - a.score) || ((a.updatedAt || 0) - (b.updatedAt || 0)));
+
+    const board = allSorted
+      .slice(0, 100)
+      .map((entry, idx) => ({
+        ...entry,
+        rank: idx + 1,
+        isMe: Boolean(myUid && entry.uid === myUid)
+      }));
+
+    return {
+      dateKey: targetDate,
+      dayInfo,
+      board,
+      syncedOnline,
+      hasRemoteConfig: hasRemoteDb(),
+      totalParticipants: allSorted.length,
+      fetchedAt: Date.now()
+    };
+  }
+
   // ===================== WEEKLY #1 CHAMPION 500 GEM PAYOUT (LINKED USERS ONLY) =====================
   async function checkWeeklyChampionPayout(save) {
     if (!save || !save.auth || !save.auth.uid) return null;
@@ -764,6 +959,7 @@ window.OnlineService = (function () {
     onCloudSyncStatusChange,
     waitForAuthReady,
     getWeekInfo,
+    getKstDayInfo,
     getProviderMeta,
     sanitizeNickname,
     signInWithOAuth,
@@ -776,6 +972,8 @@ window.OnlineService = (function () {
     saveCloudUserSave,
     submitWeeklyScore,
     fetchWeeklyBoard,
+    submitDailyWeatherScore,
+    fetchDailyWeatherBoard,
     checkWeeklyChampionPayout,
     onBoardUpdate
   };

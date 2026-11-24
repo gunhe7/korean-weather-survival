@@ -1523,17 +1523,18 @@ window.RunRenderer = (function () {
   // ===================== UPLOADED SEASONAL SHEET OBSTACLES ONLY =====================
   function drawObstacle(ctx, ob, t) {
     // Right-edge glossy cartoon warning badge before fast flying aerial obstacle enters
-    if (ob.warn && ob.x > W - 18 && ob.lane !== 'icicle') {
+    const rightEdge = Math.floor(curView.maxX);
+    if (ob.warn && ob.x > rightEdge - 18 && ob.lane !== 'icicle') {
       const wy = Math.floor(ob.y + ob.h / 2);
       const blink = Math.floor(t * 14) % 2 === 0;
       ctx.save();
-      drawRoundRect(ctx, W - 28, wy - 13, 22, 26, 8);
+      drawRoundRect(ctx, rightEdge - 28, wy - 13, 22, 26, 8);
       ctx.fillStyle = blink ? '#ff2b44' : '#ff9814';
       ctx.fill();
       ctx.lineWidth = 2.2;
       ctx.strokeStyle = '#09152e';
       ctx.stroke();
-      drawRoundRect(ctx, W - 26, wy - 11, 18, 22, 6);
+      drawRoundRect(ctx, rightEdge - 26, wy - 11, 18, 22, 6);
       ctx.lineWidth = 1.2;
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.stroke();
@@ -1541,9 +1542,9 @@ window.RunRenderer = (function () {
       ctx.textAlign = 'center';
       ctx.lineWidth = 2.5;
       ctx.strokeStyle = '#09152e';
-      ctx.strokeText('!', W - 17, wy + 6);
+      ctx.strokeText('!', rightEdge - 17, wy + 6);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText('!', W - 17, wy + 6);
+      ctx.fillText('!', rightEdge - 17, wy + 6);
       ctx.restore();
       return;
     }
