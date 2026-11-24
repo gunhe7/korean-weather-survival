@@ -376,7 +376,6 @@
     btnSaveNickname: document.getElementById('btn-save-nickname'),
     btnLoginGoogle: document.getElementById('btn-login-google'),
     btnLoginGuest: document.getElementById('btn-login-guest'),
-    loginSetupNotice: document.getElementById('login-setup-notice'),
 
     btnHeaderProfile: document.getElementById('btn-header-profile'),
     btnHeaderProfileName: document.getElementById('btn-header-profile-name'),
@@ -2135,16 +2134,12 @@
     setProviderChip(el.settingsAccountBadge, auth.provider, false);
     if (el.settingsAccountName) el.settingsAccountName.textContent = nick;
     const syncSt = (ONLINE && ONLINE.getCloudSyncStatus) ? ONLINE.getCloudSyncStatus() : { ok: null, status: 0, error: '' };
-    const isPermErr = syncSt.ok === false && (syncSt.status === 401 || syncSt.status === 403 || syncSt.error === 'permission_denied');
+    const acctLabel = auth.email || meta.label;
     const syncStateTxt = !isLinked
-      ? '게스트 모드 (기기 저장 · 랭킹 미표시)'
-      : (isPermErr
-        ? `${meta.label} · ⚠️ 클라우드 DB 규칙(user_saves) 미게시 (HTTP ${syncSt.status || 401})`
-        : (syncSt.ok === false
-          ? `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · ⚠️ 동기화 재시도 필요`
-          : (syncSt.ok === true
-            ? `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · ☁️ 클라우드 동기화 완료`
-            : `${meta.label}${auth.email ? ` · ${auth.email}` : ''} · ☁️ 모든 기기 자동 동기화`)));
+      ? '게스트 모드 (기기 저장)'
+      : (syncSt.ok === true
+        ? `${acctLabel} · ☁️ 동기화 완료`
+        : `${acctLabel} · 자동 저장 중`);
 
     if (el.settingsAccountSub) {
       el.settingsAccountSub.textContent = syncStateTxt;
@@ -2153,13 +2148,10 @@
     setProviderChip(el.loginCurBadge, auth.provider, false);
     if (el.loginCurName) el.loginCurName.textContent = auth.loggedIn ? nick : '미로그인';
     if (el.loginCurSub) {
-      el.loginCurSub.textContent = !auth.loggedIn ? '계정을 선택해 로그인하세요' : syncStateTxt;
+      el.loginCurSub.textContent = !auth.loggedIn ? '계정을 선택해 주세요' : syncStateTxt;
     }
     if (el.btnLoginSync) el.btnLoginSync.classList.toggle('hidden', !auth.loggedIn || !isLinked);
     if (el.btnLoginLogout) el.btnLoginLogout.classList.toggle('hidden', !auth.loggedIn);
-    if (el.loginSetupNotice && ONLINE) {
-      el.loginSetupNotice.classList.toggle('hidden', ONLINE.hasFirebaseAuth() && !isPermErr);
-    }
     renderIntroAuthState();
   }
 
@@ -2810,13 +2802,10 @@
       if (!cloudRes || !cloudRes.ok) {
         renderProfileUI();
         if (opts.manual) {
-          const st = cloudRes ? cloudRes.status : 0;
-          if (st === 401 || st === 403 || (cloudRes && cloudRes.error === 'permission_denied')) {
-            showToast('⚠️ 클라우드 권한 오류(401) · Firebase DB 규칙에 user_saves 게시가 필요합니다!');
-          } else if (cloudRes && cloudRes.error === 'no_auth_token') {
-            showToast('⚠️ Google 로그인 세션이 만료되었습니다. Google 계정을 다시 연동해 주세요.');
+          if (cloudRes && cloudRes.error === 'no_auth_token') {
+            showToast('⚠️ 로그인 세션이 만료되었습니다. 다시 연동해 주세요.');
           } else {
-            showToast('⚠️ 클라우드 서버 연결 실패 · 네트워크를 확인 후 다시 시도해 주세요.');
+            showToast('☁️ 현재 기기에 안전하게 저장되어 있습니다. 잠시 후 다시 시도해 주세요.');
           }
         }
         return { ok: false, status: cloudRes ? cloudRes.status : 0 };
@@ -2864,8 +2853,8 @@
         renderProfileUI();
         if (opts.manual) {
           showToast(pushRes && pushRes.ok
-            ? '☁️ 현재 계정 데이터를 클라우드에 백업했습니다!'
-            : '⚠️ 클라우드 업로드 실패 · Firebase 규칙(user_saves)을 확인해 주세요.');
+            ? '☁️ 클라우드 동기화 완료!'
+            : '☁️ 기기에 데이터가 안전하게 저장되었습니다.');
         }
         return { ok: Boolean(pushRes && pushRes.ok), uploaded: true };
       }
@@ -2945,18 +2934,13 @@
       try { checkAndAwardWeeklyChampion(); } catch {}
     }
 
-    const meta = ONLINE ? ONLINE.getProviderMeta(save.auth.provider) : { label: '계정' };
     if (isLinked) {
-      if (cloudRes && !cloudRes.ok && (cloudRes.status === 401 || cloudRes.status === 403 || cloudRes.error === 'permission_denied')) {
-        showToast('⚠️ 클라우드 DB 권한(401) 오류! Firebase 규칙에 user_saves를 게시해 주세요.');
-      } else {
-        const restored = Boolean(cloudSlot);
-        showToast(restored
-          ? `☁️ ${meta.label} [${save.auth.nickname}] 클라우드 데이터 불러오기 완료!`
-          : `✅ ${meta.label} [${save.auth.nickname}] 연동 완료! (클라우드 저장 · 랭킹 참여)`);
-      }
+      const restored = Boolean(cloudSlot);
+      showToast(restored
+        ? `☁️ [${save.auth.nickname}] 데이터를 불러왔습니다!`
+        : `✅ [${save.auth.nickname}] 계정 연동 완료!`);
     } else {
-      showToast('👤 게스트로 입장했습니다. (랭킹은 Google 연동 시 참여)');
+      showToast('👤 게스트 모드로 시작합니다.');
     }
   }
 
@@ -2972,9 +2956,7 @@
         await switchToAccount(res.profile, { carryGuestSave: carryGuest });
         if (fromIntro) dismissIntroToHome();
       } else if (res && res.needsSetup) {
-        showToast(`⚙️ ${res.message}`);
-        openLoginOverlay();
-        if (el.loginSetupNotice) el.loginSetupNotice.classList.remove('hidden');
+        showToast(`⚠️ ${res.message || '네트워크 연결을 확인해 주세요.'}`);
       } else if (res && res.redirecting) {
         showToast('🔄 로그인 페이지로 이동 중입니다...');
       } else if (res && !res.cancelled && res.message) {
@@ -3184,7 +3166,7 @@
   function updateWeeklyRankCountdownUI() {
     if (!ONLINE) return;
     const info = ONLINE.getWeekInfo();
-    if (el.rankWeekLabel) el.rankWeekLabel.textContent = `${info.weekLabel} 주간 랭킹 1위 보상`;
+    if (el.rankWeekLabel) el.rankWeekLabel.textContent = info.weekLabel;
     if (el.rankWeekCountdown) el.rankWeekCountdown.textContent = info.countdownText;
   }
 
@@ -3208,8 +3190,8 @@
     el.rankMyAvatar.src = getSkinAvatar(myChar, mySkin);
     el.rankMyAvatar.style.filter = getSkinFilter(mySkin);
     el.rankMyScoreLine.textContent = isLinkedUser
-      ? `이번 주 ${weeklyBest.toLocaleString('ko-KR')}점 · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`
-      : `게스트 기록(비공개) · 역대 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · Google 연동 시 랭킹 등록`;
+      ? `주간 ${weeklyBest.toLocaleString('ko-KR')}점 · 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`
+      : `최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 최장 ${(save.bestDistanceM || 0).toLocaleString('ko-KR')}m`;
     el.rankStatYear.textContent = `${save.bestYear || 1}년 차`;
     el.rankStatCoins.textContent = `${(save.totalCoinsEver || 0).toLocaleString('ko-KR')}개`;
     el.rankStatCombo.textContent = `${save.maxDodgeComboEver || 0}연속`;
@@ -3247,28 +3229,29 @@
     }
 
     const myEntry = isLinkedUser ? board.find((r) => r.isMe) : null;
-    el.rankMyPos.textContent = !isLinkedUser ? '게스트 (미등록)' : (myEntry ? `${myEntry.rank}위` : '미참여');
+    el.rankMyPos.textContent = !isLinkedUser ? '미등록' : (myEntry ? `${myEntry.rank}위` : '미참여');
 
     if (el.rankLivePill) {
       if (curRes.syncedOnline) {
         el.rankLivePill.className = 'rank-live-pill';
-        el.rankLivePill.innerHTML = '<span class="live-dot"></span>LIVE 서버';
+        el.rankLivePill.innerHTML = '<span class="live-dot"></span>LIVE';
       } else {
         el.rankLivePill.className = 'rank-live-pill local';
-        el.rankLivePill.innerHTML = '📱 로컬 모드';
+        el.rankLivePill.innerHTML = '오프라인';
       }
     }
     if (el.rankOnlineCount) {
-      el.rankOnlineCount.textContent = curRes.syncedOnline
-        ? `연동 유저 ${board.length}명 참여`
-        : `연동 기록 ${board.length}명`;
+      const showOnlineCnt = board.length >= 10;
+      el.rankOnlineCount.classList.toggle('hidden', !showOnlineCnt);
+      if (showOnlineCnt) {
+        el.rankOnlineCount.textContent = `참여 ${board.length.toLocaleString('ko-KR')}명`;
+      }
     }
     if (el.rankLastWinner) {
-      if (prevRes && prevRes.board && prevRes.board[0]) {
-        const w = prevRes.board[0];
-        el.rankLastWinner.textContent = `지난 주(${info.prevWeekLabel}) 1위: 👑 ${w.nickname} (${w.score.toLocaleString('ko-KR')}점 · 💎500 지급)`;
-      } else {
-        el.rankLastWinner.textContent = '매주 월요일 00:00(KST) 정산 · Google 연동 유저 1위에게 💎 500 보석 지급!';
+      const lastChamp = prevRes && prevRes.board && prevRes.board[0];
+      el.rankLastWinner.classList.toggle('hidden', !lastChamp);
+      if (lastChamp) {
+        el.rankLastWinner.textContent = `지난주 1위 👑 ${lastChamp.nickname}`;
       }
     }
 
@@ -3278,8 +3261,8 @@
       empty.className = 'rank-empty-card';
       empty.innerHTML = `
         <div class="rank-empty-ico">🏆</div>
-        <div class="rank-empty-title">아직 이번 주 연동 유저 랭킹 기록이 없습니다</div>
-        <div class="rank-empty-sub">게스트와 봇을 제외하고 <strong>Google 연동 실제 유저만</strong> 표시됩니다.<br/>계정을 연동하고 첫 1위(💎500)를 선점해 보세요!</div>
+        <div class="rank-empty-title">이번 주 첫 1위에 도전해 보세요!</div>
+        <div class="rank-empty-sub">주간 최고 점수 1위에게 <strong>💎 500 보석</strong>이 지급됩니다.</div>
       `;
       el.rankBoardList.appendChild(empty);
       return;

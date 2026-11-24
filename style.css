@@ -2944,23 +2944,24 @@ input:focus-visible {
 .rank-my-card {
   background: linear-gradient(180deg, #274878 0%, #172e52 100%);
   border: 2.5px solid #ffd54f;
-  border-radius: 15px;
-  padding: 10px 12px;
+  border-radius: 14px;
+  padding: 8px 11px;
+  margin-bottom: 8px;
   color: #ffffff;
-  box-shadow: 0 5px 0 rgba(8, 17, 34, 0.55);
+  box-shadow: 0 4px 0 rgba(8, 17, 34, 0.55);
 }
 
 .rank-my-top {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 9px;
+  gap: 9px;
+  margin-bottom: 6px;
 }
 
 .rank-my-img {
-  width: 48px;
-  height: 48px;
-  border-radius: 11px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   background: linear-gradient(180deg, #ffe078, #f29d24);
   border: 2px solid #142642;
   object-fit: contain;
@@ -7876,7 +7877,7 @@ input:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .rank-live-title-row {
@@ -7969,74 +7970,90 @@ input:focus-visible {
 }
 
 .rank-last-winner {
-  margin: 3px 0 0;
-  font-size: 11px;
-  font-weight: 700;
-  color: #cde8ff;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 214, 72, 0.16);
+  border: 1px solid rgba(255, 224, 102, 0.45);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #ffe98a;
+  white-space: nowrap;
 }
 
-.rank-prize-banner {
+.rank-prize-banner.compact-strip {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 9px 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 11px;
   margin-bottom: 8px;
-  border-radius: 14px;
-  border: 2.5px solid #ffd94a;
+  border-radius: 12px;
+  border: 2px solid #ffd94a;
   background: linear-gradient(100deg, rgba(168, 102, 8, 0.85), rgba(32, 68, 148, 0.92));
-  box-shadow: 0 4px 0 #081226;
+  box-shadow: 0 3px 0 #081226;
 }
 
 .rank-prize-left {
   display: flex;
   align-items: center;
-  gap: 9px;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
 }
 
 .rank-prize-crown {
-  font-size: 24px;
+  font-size: 18px;
   line-height: 1;
 }
 
-.rank-prize-kicker {
-  font-size: 10.5px;
-  font-weight: 900;
-  color: #ffe980;
-}
-
-.rank-prize-main {
+.rank-prize-inline {
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 900;
   color: #ffffff;
+  white-space: nowrap;
 }
 
-.rank-prize-main strong {
+.rank-prize-inline strong {
   color: #7ef9ff;
 }
 
-.rank-prize-timer-box {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  padding: 4px 10px;
-  border-radius: 10px;
+.rank-timer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
   background: rgba(7, 17, 38, 0.72);
-  border: 1.5px solid rgba(130, 224, 255, 0.45);
-  flex-shrink: 0;
-}
-
-.rank-timer-lbl {
-  font-size: 9.5px;
+  border: 1px solid rgba(130, 224, 255, 0.42);
+  font-size: 11px;
   font-weight: 800;
   color: #9ad8ff;
+  white-space: nowrap;
 }
 
-.rank-timer-val {
-  font-size: 13px;
-  font-weight: 900;
+.rank-timer-chip strong {
   color: #ffe65c;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
+}
+
+.rank-guest-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+}
+
+.rank-guest-inline.hidden {
+  display: none !important;
+}
+
+.rank-guest-tag {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffe45e;
+  white-space: nowrap;
 }
 
 .rank-top1-prize {
@@ -8291,59 +8308,10 @@ input:focus-visible {
   flex-shrink: 0;
 }
 
-.login-setup-notice {
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 204, 66, 0.14);
-  border: 1.5px solid rgba(255, 214, 82, 0.55);
-  color: #ffe99e;
-  font-size: 10.5px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.login-setup-notice code {
-  background: rgba(0, 0, 0, 0.35);
-  padding: 1px 4px;
-  border-radius: 4px;
-  color: #7ef9ff;
-}
-
-/* Guest Ranking Exclusion Banner */
-.rank-guest-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 12px;
-  margin-bottom: 8px;
-  border-radius: 13px;
-  border: 2px solid #7fe0ff;
-  background: linear-gradient(95deg, rgba(24, 62, 132, 0.92), rgba(54, 28, 108, 0.92));
-  box-shadow: 0 4px 0 #081226;
-}
-
-.rank-guest-txt {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.rank-guest-txt strong {
-  font-size: 12px;
-  font-weight: 900;
-  color: #ffe45e;
-}
-
-.rank-guest-txt span {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #d6efff;
-}
-
 .rank-link-btn {
-  padding: 7px 12px;
-  font-size: 11.5px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 9px;
   flex-shrink: 0;
 }
 

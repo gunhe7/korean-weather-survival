@@ -16,7 +16,7 @@
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd62" />
+  <link rel="stylesheet" href="style.css?v=20261121hd63" />
 </head>
 <body>
   <div id="mobile-app">
@@ -47,7 +47,7 @@
               <span class="login-prov-label">게스트 시작</span>
             </button>
           </div>
-          <div class="intro-login-note">Google 연동 시 계정별 데이터 저장 &amp; 실시간 랭킹(1위 💎500) 참여 · 게스트는 랭킹 미표시</div>
+          <div class="intro-login-note">Google 로그인 시 클라우드 저장 · 주간 랭킹 참여</div>
         </div>
 
         <!-- Shown on Intro Right Below Logo When Already Logged In -->
@@ -69,7 +69,7 @@
           <img src="assets/icons/icon-192.png?v=20261121hd21" alt="앱 로고" class="login-app-icon" />
           <div class="login-brand-text">
             <h1 class="login-title">계정 연동 및 관리</h1>
-            <p class="login-sub">Google 계정은 <strong>개별 클라우드 저장 &amp; 실시간 랭킹(1위 💎500)</strong>이 지원됩니다.</p>
+            <p class="login-sub">클라우드 저장 및 주간 랭킹 참여를 위해 연동하세요.</p>
           </div>
           <button id="btn-close-login" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
         </div>
@@ -105,10 +105,6 @@
               <span class="login-prov-ico" aria-hidden="true">👤</span>
               <span class="login-prov-label">게스트 모드</span>
             </button>
-          </div>
-
-          <div id="login-setup-notice" class="login-setup-notice hidden">
-            ⚙️ <strong>클라우드 동기화 안내:</strong> 모든 기기 데이터 이어하기를 위해 Firebase 규칙에 <code>user_saves</code>를 게시해 주세요. (<code>AUTH_SETUP.md</code>)
           </div>
         </div>
       </div>
@@ -288,42 +284,29 @@
         <div id="bs-quest-grid" class="bs-quest-grid"></div>
       </section>
 
-      <!-- 5. ONLINE REAL-TIME WEEKLY RANKING TAB (TOP #1 = 500 GEMS EVERY WEEK!) -->
+      <!-- 5. ONLINE REAL-TIME WEEKLY RANKING TAB -->
       <section id="view-rank" class="tab-view">
         <div class="rank-live-header">
-          <div class="rank-live-title-col">
-            <div class="rank-live-title-row">
-              <h2>🏆 온라인 실시간 주간 랭킹</h2>
-              <span id="rank-live-pill" class="rank-live-pill"><span class="live-dot"></span>LIVE</span>
-              <span id="rank-online-count" class="rank-online-cnt">실제 참여 유저 0명</span>
-            </div>
-            <p id="rank-last-winner" class="rank-last-winner">매주 월요일 00:00(KST) 정산 · 주간 1위 유저에게 💎 500 보석 자동 지급!</p>
+          <div class="rank-live-title-row">
+            <h2>🏆 주간 랭킹</h2>
+            <span id="rank-live-pill" class="rank-live-pill"><span class="live-dot"></span>LIVE</span>
+            <span id="rank-online-count" class="rank-online-cnt hidden"></span>
+            <span id="rank-last-winner" class="rank-last-winner hidden"></span>
           </div>
           <button id="btn-rank-refresh" class="bs-hdr-pill prob" type="button">🔄 갱신</button>
         </div>
 
-        <!-- Weekly Champion 500 Gems Prize Banner -->
-        <div class="rank-prize-banner">
+        <!-- Unified 1-Line Weekly #1 Prize + Countdown + Guest Link Strip -->
+        <div class="rank-prize-banner compact-strip">
           <div class="rank-prize-left">
             <span class="rank-prize-crown">👑</span>
-            <div>
-              <div class="rank-prize-kicker" id="rank-week-label">이번 주 주간 랭킹 1위 보상</div>
-              <div class="rank-prize-main">최고 점수 1위 달성 시 <strong>💎 500 보석</strong> 자동 지급!</div>
-            </div>
+            <span class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 보상 <strong>💎500</strong></span>
+            <span class="rank-timer-chip">⏱️ <strong id="rank-week-countdown">0일 00:00:00</strong></span>
           </div>
-          <div class="rank-prize-timer-box">
-            <span class="rank-timer-lbl">정산까지 남은 시간</span>
-            <strong id="rank-week-countdown" class="rank-timer-val">0일 00:00:00</strong>
+          <div id="rank-guest-banner" class="rank-guest-inline hidden">
+            <span class="rank-guest-tag">게스트 미등록</span>
+            <button id="btn-rank-link-account" class="cr-gold-btn rank-link-btn" type="button">Google 연동</button>
           </div>
-        </div>
-
-        <!-- Guest Ranking Exclusion Banner (Visible Only to Guest Accounts) -->
-        <div id="rank-guest-banner" class="rank-guest-banner hidden">
-          <div class="rank-guest-txt">
-            <strong>🔒 게스트는 실시간 랭킹에 표시되지 않습니다</strong>
-            <span>Google 계정으로 연동하면 계정별 데이터가 저장되고 주간 1위(💎500)에 도전할 수 있습니다!</span>
-          </div>
-          <button id="btn-rank-link-account" class="cr-gold-btn rank-link-btn" type="button">계정 연동</button>
         </div>
 
         <div class="rank-my-card">
@@ -935,12 +918,12 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd62"></script>
-  <script src="js/audio.js?v=20261121hd62"></script>
-  <script src="js/studio-intro.js?v=20261121hd62"></script>
-  <script src="js/online.js?v=20261121hd62"></script>
-  <script src="js/renderer.js?v=20261121hd62"></script>
-  <script src="js/game.js?v=20261121hd62"></script>
+  <script src="js/data.js?v=20261121hd63"></script>
+  <script src="js/audio.js?v=20261121hd63"></script>
+  <script src="js/studio-intro.js?v=20261121hd63"></script>
+  <script src="js/online.js?v=20261121hd63"></script>
+  <script src="js/renderer.js?v=20261121hd63"></script>
+  <script src="js/game.js?v=20261121hd63"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

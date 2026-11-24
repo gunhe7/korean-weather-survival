@@ -241,13 +241,8 @@ window.OnlineService = (function () {
   function formatAuthError(err, prov) {
     const code = (err && err.code) || '';
     const label = prov === 'apple' ? 'Apple ID' : 'Google';
-    if (code === 'auth/unauthorized-domain') {
-      return `Firebase Authentication 승인된 도메인에 ${location.hostname}을 추가해 주세요.`;
-    }
-    if (code === 'auth/operation-not-allowed') {
-      return prov === 'apple'
-        ? 'Firebase 콘솔에서 Apple(또는 이메일/비밀번호) 로그인을 켜면 바로 사용할 수 있습니다.'
-        : 'Firebase 콘솔 Authentication에서 Google 로그인을 사용 설정해 주세요.';
+    if (code === 'auth/unauthorized-domain' || code === 'auth/operation-not-allowed') {
+      return `${label} 로그인을 현재 환경에서 사용할 수 없습니다.`;
     }
     if (code === 'auth/account-exists-with-different-credential') {
       return '같은 이메일로 이미 다른 로그인 방식(Google/Apple)이 연결되어 있습니다. 기존 방식으로 로그인해 주세요.';
@@ -276,7 +271,7 @@ window.OnlineService = (function () {
         ok: false,
         needsSetup: true,
         provider: prov,
-        message: 'Firebase Auth SDK를 불러오지 못했습니다. 네트워크를 확인해 주세요.'
+        message: '로그인 모듈을 불러오지 못했습니다. 네트워크를 확인해 주세요.'
       };
     }
 
@@ -343,7 +338,7 @@ window.OnlineService = (function () {
   async function signInWithAppleEmail(emailRaw, passwordRaw, nicknameRaw) {
     const auth = ensureFirebaseAuth();
     if (!auth) {
-      return { ok: false, message: 'Firebase Auth를 초기화하지 못했습니다.' };
+      return { ok: false, message: '로그인 모듈을 초기화하지 못했습니다.' };
     }
     const email = String(emailRaw || '').trim();
     const password = String(passwordRaw || '');
