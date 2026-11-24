@@ -83,7 +83,7 @@
     return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
   }
 
-  const ASSET_VER = '20261121hd57';
+  const ASSET_VER = '20261121hd56';
 
   function ticketIconHtml(cls = '') {
     return `<img src="assets/ui/gacha_ticket.png?v=${ASSET_VER}" alt="뽑기권" class="ticket-ico${cls ? ` ${cls}` : ''}" />`;
@@ -626,7 +626,7 @@
     globalToast: document.getElementById('global-toast')
   };
 
-  const runCtx = el.runCanvas.getContext('2d');
+  const runCtx = el.runCanvas.getContext('2d', { alpha: false, desynchronized: true }) || el.runCanvas.getContext('2d');
 
   // ===================== HELPERS =====================
   function getCharDef(id) {
@@ -802,15 +802,16 @@
     }
 
     const canvas = el.gachaWishCanvas;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const isMobWish = Boolean(Renderer && Renderer.IS_MOBILE);
+    const dpr = isMobWish ? Math.min(1.5, window.devicePixelRatio || 1) : Math.min(2, window.devicePixelRatio || 1);
     const W = Math.max(320, el.gachaWishOverlay.clientWidth || window.innerWidth || 960);
     const H = Math.max(240, el.gachaWishOverlay.clientHeight || window.innerHeight || 540);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
 
     // Background twinkling cosmos + soft horizon clouds
-    const bgStars = Array.from({ length: 115 }, () => ({
+    const bgStars = Array.from({ length: isMobWish ? 68 : 110 }, () => ({
       x: Math.random() * W,
       y: Math.random() * H * 0.92,
       r: 0.7 + Math.random() * 1.9,
@@ -1422,6 +1423,7 @@
 
   function openChestModal(tierId) {
     const chest = DATA.CHESTS[tierId] || DATA.CHESTS.wood;
+    if (Renderer && Renderer.preloadChestAnim) Renderer.preloadChestAnim(tierId);
     if (activeChestSession && activeChestSession.timers) {
       activeChestSession.timers.forEach((id) => clearTimeout(id));
     }
@@ -3137,15 +3139,19 @@
     el.headerBestScore.textContent = save.bestScore.toLocaleString('ko-KR');
 
     renderProfileUI();
-    renderAttendanceUI();
-    renderAchievementsUI();
-    renderSettingsUI();
-    renderHomeCharStage();
-    renderBrawlQuests();
-    renderCharList();
-    renderShopList();
-    renderRankingTab();
     updateNavMissionDot();
+
+    // Render ONLY the currently visible tab (eliminates hidden-tab DOM churn, image downloads & extra Firebase fetches!)
+    if (currentTab === 'home') renderHomeCharStage();
+    else if (currentTab === 'shop') renderShopList();
+    else if (currentTab === 'chars') renderCharList();
+    else if (currentTab === 'missions') renderBrawlQuests();
+    else if (currentTab === 'rank') renderRankingTab();
+
+    // Render modals ONLY when actively open
+    if (el.attendanceOverlay && !el.attendanceOverlay.classList.contains('hidden')) renderAttendanceUI();
+    if (el.achievementsOverlay && !el.achievementsOverlay.classList.contains('hidden')) renderAchievementsUI();
+    if (el.settingsOverlay && !el.settingsOverlay.classList.contains('hidden')) renderSettingsUI();
     if (detailCharIdx !== null) renderCharDetailModal();
     if (el.scoreRoadOverlay && !el.scoreRoadOverlay.classList.contains('hidden')) renderScoreRoadModal();
     if (el.vaultOverlay && !el.vaultOverlay.classList.contains('hidden')) renderVaultModal();
@@ -3711,10 +3717,13 @@
     return img.complete && img.naturalWidth > 0 ? src : null;
   }
 
+  let lastHomeAnimUpdate = 0;
   function updateHomeRunningHero(t) {
     if (currentTab !== 'home') return;
     if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
     if (el.loginOverlay && !el.loginOverlay.classList.contains('hidden')) return;
+    if (t - lastHomeAnimUpdate < 0.055) return;
+    lastHomeAnimUpdate = t;
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const skin = getEquippedSkin(ch.id);
     const anim = getCharAnimSpec(ch, skin);
@@ -4681,6 +4690,7 @@
       lastHitCause: '극한 한국 날씨에 체력이 다했습니다!'
     };
 
+    if (Renderer && Renderer.preloadForRun) Renderer.preloadForRun(ch, skinDef, 'spring');
     el.runPortraitImg.src = getSkinAvatar(ch, skinDef);
     el.runPortraitImg.style.filter = getSkinFilter(skinDef);
     el.runCanvasWrap.classList.toggle('fever-active', startFever > 0);
@@ -4690,6 +4700,8 @@
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
     el.pauseOverlay.classList.add('hidden');
     el.viewRun.classList.remove('hidden');
+    if (Renderer && Renderer.invalidateCanvasSize) Renderer.invalidateCanvasSize();
+    resetHudCache();
     updateTutorialHudUI();
 
     SFX.startBgm();
@@ -4700,7 +4712,7 @@
     if (!isTutorial) {
       showRunBanner(`🌸 1년 차 봄 출발! (${ch.name} Lv.${stats.level})`, 2400);
     }
-    updateRunHud();
+    updateRunHud(true);
   }
 
   function checkStageMilestone(year, seasonIdx) {
@@ -5332,6 +5344,12 @@
       const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
       const yearTime = run.elapsed % DATA.YEAR_DURATION;
       const newSeasonIdx = Math.floor(yearTime / DATA.SEASON_DURATION);
+      const timeIntoSeason = yearTime - newSeasonIdx * DATA.SEASON_DURATION;
+      // Quietly preload upcoming season's sprites 4 seconds before transition so zero pop-in or frame hitch!
+      if (timeIntoSeason > DATA.SEASON_DURATION - 4.5 && Renderer && Renderer.preloadSeason) {
+        const upcomingSeason = DATA.SEASONS[(newSeasonIdx + 1) % DATA.SEASONS.length];
+        if (upcomingSeason) Renderer.preloadSeason(upcomingSeason.id);
+      }
 
       if (newYear > run.year) {
         run.prevSeasonId = run.seasonId;
@@ -6076,12 +6094,12 @@
     }
 
     if (run.hp <= 0) {
-      updateRunHud();
+      updateRunHud(true);
       startDyingSequence();
       return;
     }
 
-    updateRunHud();
+    updateRunHud(false, dt);
   }
 
   function startDyingSequence() {
@@ -6159,22 +6177,71 @@
     Renderer.spawnFloater('-1 ❤️', '#ff5c5c', run.playerX, run.playerY - 44);
   }
 
-  function updateRunHud() {
+  // ===================== DIRTY-CHECKED & THROTTLED HUD UPDATER (ZERO 60FPS DOM THRASHING!) =====================
+  let hudCache = {};
+  let hudSlowAccum = 0;
+
+  function resetHudCache() {
+    hudCache = {};
+    hudSlowAccum = 1;
+  }
+
+  function hudText(key, node, val) {
+    if (!node || hudCache[key] === val) return;
+    hudCache[key] = val;
+    node.textContent = val;
+  }
+
+  function hudWidth(key, node, val) {
+    if (!node || hudCache[key] === val) return;
+    hudCache[key] = val;
+    node.style.width = val;
+  }
+
+  function hudClass(key, node, val) {
+    if (!node || hudCache[key] === val) return;
+    hudCache[key] = val;
+    node.className = val;
+  }
+
+  function hudToggle(key, node, cls, on) {
+    const b = Boolean(on);
+    if (!node || hudCache[key] === b) return;
+    hudCache[key] = b;
+    node.classList.toggle(cls, b);
+  }
+
+  function updateRunHud(force = false, dt = 0.016) {
     if (!run) return;
+    hudSlowAccum += dt;
+    const doSlow = force || hudSlowAccum >= 0.065;
+    if (doSlow) hudSlowAccum = 0;
+
     const ch = getCharDef(run.charId);
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const seasonObj = DATA.SEASONS[run.seasonIdx];
 
-    el.runYearNum.textContent = `${run.year}Y`;
+    hudText('yr', el.runYearNum, `${run.year}Y`);
     const yrTier = run.year >= 4 ? 'yr-4' : (run.year === 3 ? 'yr-3' : (run.year === 2 ? 'yr-2' : 'yr-1'));
-    el.runYearNum.className = `portrait-yr-badge ${yrTier}`;
-    el.runSeasonLabel.textContent = run.isTutorial
-      ? '📖 실전 튜토리얼 (체력 감소 없음)'
-      : `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
-    el.runScoreText.textContent = `${run.distanceM.toLocaleString('ko-KR')}m · ${Math.floor(run.score).toLocaleString('ko-KR')}점`;
-    el.runGoldText.textContent = run.gold.toLocaleString('ko-KR');
+    hudClass('yrCls', el.runYearNum, `portrait-yr-badge ${yrTier}`);
+    if (doSlow) {
+      const seasonLbl = run.isTutorial
+        ? '📖 실전 튜토리얼 (체력 감소 없음)'
+        : `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
+      hudText('seasonLbl', el.runSeasonLabel, seasonLbl);
+      const scoreInt = Math.floor(run.score);
+      const scoreKey = `${run.distanceM}|${scoreInt}`;
+      if (hudCache._scoreKey !== scoreKey) {
+        hudCache._scoreKey = scoreKey;
+        el.runScoreText.textContent = `${run.distanceM.toLocaleString('ko-KR')}m · ${scoreInt.toLocaleString('ko-KR')}점`;
+      }
+    }
+    if (hudCache._gold !== run.gold) {
+      hudCache._gold = run.gold;
+      el.runGoldText.textContent = run.gold.toLocaleString('ko-KR');
+    }
 
-    // Exact Heart-Based HP Rendering (1 heart = 1 hit!)
+    // Exact Heart-Based HP Rendering (instant on hit!)
     const curHp = Math.max(0, Math.round(run.hp));
     const maxHp = Math.max(1, Math.round(run.maxHp));
     const heartKey = `${curHp}/${maxHp}`;
@@ -6186,18 +6253,21 @@
         heartHtml += `<span class="heart-unit${i < curHp ? '' : ' empty'}">❤️</span>`;
       }
       el.runHearts.innerHTML = heartHtml;
+      hudText('hpTxt', el.runHpText, heartKey);
     }
-    el.runHpText.textContent = heartKey;
 
-    // Rainbow FEVER Gauge
-    const feverPct = Math.max(0, Math.min(100, run.feverCharge));
-    el.runFeverFill.style.width = `${feverPct.toFixed(1)}%`;
-    el.runFeverText.textContent = run.feverTimer > 0
-      ? `★ FEVER! ${run.feverTimer.toFixed(1)}s`
-      : `★ FEVER ${Math.floor(feverPct)}%`;
-
-    const yearPct = ((run.elapsed % DATA.YEAR_DURATION) / DATA.YEAR_DURATION) * 100;
-    el.runYearFill.style.width = `${yearPct.toFixed(1)}%`;
+    // Rainbow FEVER & Year Progress Gauges (throttled ~15Hz to skip per-frame layout reflow!)
+    if (doSlow) {
+      const feverPct = Math.max(0, Math.min(100, run.feverCharge));
+      hudWidth('fevW', el.runFeverFill, `${feverPct.toFixed(1)}%`);
+      hudText(
+        'fevT',
+        el.runFeverText,
+        run.feverTimer > 0 ? `★ FEVER! ${run.feverTimer.toFixed(1)}s` : `★ FEVER ${Math.floor(feverPct)}%`
+      );
+      const yearPct = ((run.elapsed % DATA.YEAR_DURATION) / DATA.YEAR_DURATION) * 100;
+      hudWidth('yrW', el.runYearFill, `${yearPct.toFixed(1)}%`);
+    }
 
     // Live Active Weather Status Pill (Cleanly hidden during calm clear sky — NO Weather Agency clutter!)
     const rainLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
@@ -6219,129 +6289,147 @@
 
     if (el.runWeatherBar) {
       const showBar = activeEv !== 'clear' || Boolean(incomingEv) || covidUrgent || run.heatGauge > 5;
-      el.runWeatherBar.classList.toggle('hidden', !showBar);
-      el.runWeatherBar.classList.toggle('urgent-danger', needFoldUmb || needCovidMask);
+      hudToggle('wBarHide', el.runWeatherBar, 'hidden', !showBar);
+      hudToggle('wBarUrg', el.runWeatherBar, 'urgent-danger', needFoldUmb || needCovidMask);
       if (showBar) {
         if (covidUrgent) {
-          if (el.weatherStatusBadge) el.weatherStatusBadge.textContent = '🦠 코로나 바이러스 발생!';
-          if (el.weatherStatusTip) {
-            el.weatherStatusTip.textContent = needCovidMask ? '마스크를 쓰세요!' : '😷 차단 준비 완료!';
-          }
+          hudText('wBadge', el.weatherStatusBadge, '🦠 코로나 바이러스 발생!');
+          hudText('wTip', el.weatherStatusTip, needCovidMask ? '마스크를 쓰세요!' : '😷 차단 준비 완료!');
         } else if (activeEv !== 'clear') {
           const curDef = DATA.WEATHER_EVENTS[activeEv] || DATA.WEATHER_EVENTS.clear;
-          if (el.weatherStatusBadge) el.weatherStatusBadge.textContent = `${curDef.icon || ''} ${curDef.label}`;
-          if (el.weatherStatusTip) {
-            el.weatherStatusTip.textContent = needFoldUmb ? '우산을 접으세요!' : (curDef.actionTip || '');
-          }
-        } else if (incomingEv) {
+          hudText('wBadge', el.weatherStatusBadge, `${curDef.icon || ''} ${curDef.label}`);
+          hudText('wTip', el.weatherStatusTip, needFoldUmb ? '우산을 접으세요!' : (curDef.actionTip || ''));
+        } else if (incomingEv && doSlow) {
           const nextDef = DATA.WEATHER_EVENTS[incomingEv] || DATA.WEATHER_EVENTS.clear;
           const sec = Math.max(0.1, run.weatherPrepTimer || 0).toFixed(1);
-          if (el.weatherStatusBadge) el.weatherStatusBadge.textContent = `${nextDef.icon || '⚡'} 곧 ${nextDef.label}`;
-          if (el.weatherStatusTip) el.weatherStatusTip.textContent = `${sec}초 후 접근`;
+          hudText('wBadge', el.weatherStatusBadge, `${nextDef.icon || '⚡'} 곧 ${nextDef.label}`);
+          hudText('wTip', el.weatherStatusTip, `${sec}초 후 접근`);
         }
       }
     }
 
     // Live Exposure / Fold / Corona Rush Countdown Pill!
-    if (covidUrgent) {
-      el.fcHeatPill.classList.remove('hidden');
-      if (needCovidMask) {
-        el.fcHeatPill.classList.add('urgent');
-        el.fcHeatPill.textContent = run.covidAttack.phase === 'warn'
-          ? `😷 마스크! ${Math.max(0, run.covidAttack.timer).toFixed(1)}s`
-          : '🦠 돌진! 지금 마스크!';
+    if (doSlow || covidUrgent || needFoldUmb) {
+      if (covidUrgent) {
+        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
+        if (needCovidMask) {
+          hudToggle('fcUrg', el.fcHeatPill, 'urgent', true);
+          hudText(
+            'fcTxt',
+            el.fcHeatPill,
+            run.covidAttack.phase === 'warn'
+              ? `😷 마스크! ${Math.max(0, run.covidAttack.timer).toFixed(1)}s`
+              : '🦠 돌진! 지금 마스크!'
+          );
+        } else {
+          hudToggle('fcUrg', el.fcHeatPill, 'urgent', false);
+          hudText('fcTxt', el.fcHeatPill, '🛡️ 마스크 차단 준비!');
+        }
+      } else if (needFoldUmb) {
+        const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
+        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
+        hudToggle('fcUrg', el.fcHeatPill, 'urgent', true);
+        hudText('fcTxt', el.fcHeatPill, `💨 우산 접기! ${rem.toFixed(1)}s`);
+      } else if (run.rainExposeTimer > 0.05 && !run.umbrellaOn && run.feverTimer <= 0) {
+        const rem = Math.max(0, rainLimit - run.rainExposeTimer);
+        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
+        hudToggle('fcUrg', el.fcHeatPill, 'urgent', rem <= 1.4);
+        hudText('fcTxt', el.fcHeatPill, `☂️ 우산 펴기 ${rem.toFixed(1)}s`);
+      } else if (run.dustExposeTimer > 0.05 && !run.maskOn && run.feverTimer <= 0) {
+        const rem = Math.max(0, dustLimit - run.dustExposeTimer);
+        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
+        hudToggle('fcUrg', el.fcHeatPill, 'urgent', rem <= 1.4);
+        hudText('fcTxt', el.fcHeatPill, `😷 마스크 착용 ${rem.toFixed(1)}s`);
+      } else if (activeEv === 'heat' && !ch.summerImmune) {
+        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
+        if (run.umbrellaOn) {
+          hudToggle('fcUrg', el.fcHeatPill, 'urgent', false);
+          hudText('fcTxt', el.fcHeatPill, '☂️ 양산 보호 중');
+        } else {
+          hudToggle('fcUrg', el.fcHeatPill, 'urgent', run.heatGauge >= 60);
+          hudText('fcTxt', el.fcHeatPill, `☂️ 폭염 ${Math.round(run.heatGauge)}%`);
+        }
+      } else if (run.heatGauge > 5) {
+        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
+        hudToggle('fcUrg', el.fcHeatPill, 'urgent', run.heatGauge >= 75);
+        hudText('fcTxt', el.fcHeatPill, `🌡️ 열기 ${Math.round(run.heatGauge)}%`);
       } else {
-        el.fcHeatPill.classList.remove('urgent');
-        el.fcHeatPill.textContent = '🛡️ 마스크 차단 준비!';
+        hudToggle('fcHide', el.fcHeatPill, 'hidden', true);
+        hudToggle('fcUrg', el.fcHeatPill, 'urgent', false);
       }
-    } else if (needFoldUmb) {
-      const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
-      el.fcHeatPill.classList.remove('hidden');
-      el.fcHeatPill.classList.add('urgent');
-      el.fcHeatPill.textContent = `💨 우산 접기! ${rem.toFixed(1)}s`;
-    } else if (run.rainExposeTimer > 0.05 && !run.umbrellaOn && run.feverTimer <= 0) {
-      const rem = Math.max(0, rainLimit - run.rainExposeTimer);
-      el.fcHeatPill.classList.remove('hidden');
-      el.fcHeatPill.classList.toggle('urgent', rem <= 1.4);
-      el.fcHeatPill.textContent = `☂️ 우산 펴기 ${rem.toFixed(1)}s`;
-    } else if (run.dustExposeTimer > 0.05 && !run.maskOn && run.feverTimer <= 0) {
-      const rem = Math.max(0, dustLimit - run.dustExposeTimer);
-      el.fcHeatPill.classList.remove('hidden');
-      el.fcHeatPill.classList.toggle('urgent', rem <= 1.4);
-      el.fcHeatPill.textContent = `😷 마스크 착용 ${rem.toFixed(1)}s`;
-    } else if (activeEv === 'heat' && !ch.summerImmune) {
-      el.fcHeatPill.classList.remove('hidden');
-      if (run.umbrellaOn) {
-        el.fcHeatPill.classList.remove('urgent');
-        el.fcHeatPill.textContent = '☂️ 양산 보호 중';
-      } else {
-        el.fcHeatPill.classList.toggle('urgent', run.heatGauge >= 60);
-        el.fcHeatPill.textContent = `☂️ 폭염 ${Math.round(run.heatGauge)}%`;
-      }
-    } else if (run.heatGauge > 5) {
-      el.fcHeatPill.classList.remove('hidden');
-      el.fcHeatPill.classList.toggle('urgent', run.heatGauge >= 75);
-      el.fcHeatPill.textContent = `🌡️ 열기 ${Math.round(run.heatGauge)}%`;
-    } else {
-      el.fcHeatPill.classList.add('hidden');
-      el.fcHeatPill.classList.remove('urgent');
     }
 
     // Muddy Water Splash Blindness Overlay
     if (run.mudBlindTimer > 0) {
-      el.mudOverlay.classList.remove('hidden');
-      el.mudOverlay.style.opacity = Math.min(1, run.mudBlindTimer / 1.0).toFixed(2);
+      hudToggle('mudHide', el.mudOverlay, 'hidden', false);
+      if (doSlow) {
+        const op = Math.min(1, run.mudBlindTimer / 1.0).toFixed(2);
+        if (hudCache.mudOp !== op) {
+          hudCache.mudOp = op;
+          el.mudOverlay.style.opacity = op;
+        }
+      }
     } else {
-      el.mudOverlay.classList.add('hidden');
+      hudToggle('mudHide', el.mudOverlay, 'hidden', true);
     }
 
-    // Umbrella & Mask Toggle Buttons (Zero Cooldown · 10s Live Countdown · 5s Broken Lockout)
+    // Umbrella & Mask Toggle Buttons (instant ON/OFF visual, throttled countdown bar!)
     const umbBroken = run.umbrellaBrokenTimer > 0;
-    el.btnToggleUmbrella.classList.toggle('on', run.umbrellaOn);
-    el.btnToggleUmbrella.classList.toggle('broken', umbBroken);
-    el.btnToggleUmbrella.classList.remove('cooldown');
-    el.btnToggleUmbrella.classList.toggle('urgent-fold', needFoldUmb);
-    el.btnToggleUmbrella.classList.toggle('urgent-open', needOpenUmb && !umbBroken);
-    if (umbBroken) {
-      el.gearUmbrellaState.textContent = `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`;
-      el.gearUmbrellaBar.style.width = `${((run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD) * 100).toFixed(1)}%`;
-    } else if (needFoldUmb) {
-      const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
-      el.gearUmbrellaState.textContent = `접기! ${rem.toFixed(1)}s`;
-      el.gearUmbrellaBar.style.width = `${Math.min(100, ((run.gustExposeTimer || 0) / gustLimit) * 100).toFixed(1)}%`;
-    } else if (run.umbrellaOn) {
-      el.gearUmbrellaState.textContent = `${run.umbrellaActiveTimer.toFixed(1)}s`;
-      el.gearUmbrellaBar.style.width = `${((run.umbrellaActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
-    } else {
-      el.gearUmbrellaState.textContent = '우산';
-      el.gearUmbrellaBar.style.width = '0%';
+    hudToggle('umbOn', el.btnToggleUmbrella, 'on', run.umbrellaOn);
+    hudToggle('umbBrk', el.btnToggleUmbrella, 'broken', umbBroken);
+    hudToggle('umbFold', el.btnToggleUmbrella, 'urgent-fold', needFoldUmb);
+    hudToggle('umbOpen', el.btnToggleUmbrella, 'urgent-open', needOpenUmb && !umbBroken);
+    if (doSlow || hudCache._umbStateSig !== `${umbBroken}|${needFoldUmb}|${run.umbrellaOn}`) {
+      hudCache._umbStateSig = `${umbBroken}|${needFoldUmb}|${run.umbrellaOn}`;
+      if (umbBroken) {
+        hudText('umbSt', el.gearUmbrellaState, `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`);
+        hudWidth('umbBar', el.gearUmbrellaBar, `${((run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD) * 100).toFixed(1)}%`);
+      } else if (needFoldUmb) {
+        const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
+        hudText('umbSt', el.gearUmbrellaState, `접기! ${rem.toFixed(1)}s`);
+        hudWidth('umbBar', el.gearUmbrellaBar, `${Math.min(100, ((run.gustExposeTimer || 0) / gustLimit) * 100).toFixed(1)}%`);
+      } else if (run.umbrellaOn) {
+        hudText('umbSt', el.gearUmbrellaState, `${run.umbrellaActiveTimer.toFixed(1)}s`);
+        hudWidth('umbBar', el.gearUmbrellaBar, `${((run.umbrellaActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`);
+      } else {
+        hudText('umbSt', el.gearUmbrellaState, '우산');
+        hudWidth('umbBar', el.gearUmbrellaBar, '0%');
+      }
     }
 
-    el.btnToggleMask.classList.toggle('on', run.maskOn);
-    el.btnToggleMask.classList.remove('cooldown');
-    el.btnToggleMask.classList.toggle('urgent-fold', needCovidMask);
-    el.btnToggleMask.classList.toggle('urgent-open', !needCovidMask && needOpenMask);
-    if (needCovidMask) {
-      el.gearMaskState.textContent = '타이밍!';
-      el.gearMaskBar.style.width = '100%';
-    } else if (covidUrgent && run.maskOn && run.maskParryTimer > 0) {
-      el.gearMaskState.textContent = '차단 ON';
-      el.gearMaskBar.style.width = `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
-    } else if (run.maskOn) {
-      el.gearMaskState.textContent = `${run.maskActiveTimer.toFixed(1)}s`;
-      el.gearMaskBar.style.width = `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`;
-    } else {
-      el.gearMaskState.textContent = '마스크';
-      el.gearMaskBar.style.width = '0%';
+    hudToggle('mskOn', el.btnToggleMask, 'on', run.maskOn);
+    hudToggle('mskFold', el.btnToggleMask, 'urgent-fold', needCovidMask);
+    hudToggle('mskOpen', el.btnToggleMask, 'urgent-open', !needCovidMask && needOpenMask);
+    const mskParryReady = covidUrgent && run.maskOn && run.maskParryTimer > 0;
+    if (doSlow || hudCache._mskStateSig !== `${needCovidMask}|${mskParryReady}|${run.maskOn}`) {
+      hudCache._mskStateSig = `${needCovidMask}|${mskParryReady}|${run.maskOn}`;
+      if (needCovidMask) {
+        hudText('mskSt', el.gearMaskState, '타이밍!');
+        hudWidth('mskBar', el.gearMaskBar, '100%');
+      } else if (mskParryReady) {
+        hudText('mskSt', el.gearMaskState, '차단 ON');
+        hudWidth('mskBar', el.gearMaskBar, `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`);
+      } else if (run.maskOn) {
+        hudText('mskSt', el.gearMaskState, `${run.maskActiveTimer.toFixed(1)}s`);
+        hudWidth('mskBar', el.gearMaskBar, `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`);
+      } else {
+        hudText('mskSt', el.gearMaskState, '마스크');
+        hudWidth('mskBar', el.gearMaskBar, '0%');
+      }
     }
 
-    // 4 Glossy HD Buff Orbs + Full-Canvas FEVER Frame Pulse + Dynamic BGM Mode
-    el.orbUiFever.classList.toggle('active', run.feverTimer > 0);
-    el.orbUiSpeed.classList.toggle('active', run.speedBoostTimer > 0);
-    el.orbUiMagnet.classList.toggle('active', run.magnetTimer > 0 || run.feverTimer > 0);
-    el.orbUiShield.classList.toggle('active', Boolean(run.shield));
-    el.runCanvasWrap.classList.toggle('fever-active', run.feverTimer > 0);
-    SFX.setBgmMode(run.feverTimer > 0 ? 'fever' : 'run');
+    // 4 Glossy HD Buff Orbs + Full-Canvas FEVER Frame Pulse + Dynamic BGM Mode (dirty-checked!)
+    const fevActive = run.feverTimer > 0;
+    hudToggle('orbFev', el.orbUiFever, 'active', fevActive);
+    hudToggle('orbSpd', el.orbUiSpeed, 'active', run.speedBoostTimer > 0);
+    hudToggle('orbMag', el.orbUiMagnet, 'active', run.magnetTimer > 0 || fevActive);
+    hudToggle('orbShd', el.orbUiShield, 'active', Boolean(run.shield));
+    hudToggle('wrapFev', el.runCanvasWrap, 'fever-active', fevActive);
+    const targetBgm = fevActive ? 'fever' : 'run';
+    if (hudCache.bgmMode !== targetBgm) {
+      hudCache.bgmMode = targetBgm;
+      SFX.setBgmMode(targetBgm);
+    }
   }
 
   function finishRunGameOver() {

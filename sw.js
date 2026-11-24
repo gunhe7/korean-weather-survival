@@ -1,4 +1,5 @@
-const CACHE_NAME = 'k-weather-survival-v20261121hd57';
+const CACHE_NAME = 'k-weather-survival-v20261121hd58';
+const ASSET_CACHE_NAME = 'k-weather-survival-assets-v1';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -23,7 +24,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE_NAME && k !== ASSET_CACHE_NAME)
+          .map((k) => caches.delete(k))
+      )
     ).then(() => self.clients.claim())
   );
 });
@@ -56,17 +61,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // PURE CACHE-FIRST for versioned images/fonts (ZERO redundant background fetch flood!)
+  // PERSISTENT CACHE-FIRST for versioned images & fonts (survives code updates for instant mobile loading!)
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((resp) => {
-        if (resp && resp.status === 200) {
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        }
-        return resp;
-      });
-    })
+    caches.open(ASSET_CACHE_NAME).then((assetCache) =>
+      assetCache.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((resp) => {
+          if (resp && resp.status === 200) {
+            const copy = resp.clone();
+            assetCache.put(event.request, copy);
+          }
+          return resp;
+        });
+      })
+    )
   );
 });
