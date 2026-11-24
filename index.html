@@ -16,7 +16,7 @@
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd68" />
+  <link rel="stylesheet" href="style.css?v=20261121hd69" />
 </head>
 <body>
   <div id="mobile-app">
@@ -964,13 +964,20 @@
                     <strong class="bs-ev-title">일반모드</strong>
                   </div>
                 </div>
-                <div class="bs-ev-desc">🌸☀️🍁❄️ 사계절 순환 생존 · 기존 기본 모드</div>
+                <div class="bs-ev-season-grid" aria-label="사계절 순환">
+                  <div class="bs-ev-season-tile sp"><span>🌸 봄</span><small>황사</small></div>
+                  <div class="bs-ev-season-tile su"><span>☀️ 여름</span><small>폭우·폭염</small></div>
+                  <div class="bs-ev-season-tile au"><span>🍁 가을</span><small>강풍·태풍</small></div>
+                  <div class="bs-ev-season-tile wi"><span>❄️ 겨울</span><small>한파·빙판</small></div>
+                </div>
+                <div id="mode-normal-best-row" class="bs-ev-record-strip">🏆 주간 최고 0점 · 역대 최고 0점</div>
                 <div class="bs-ev-pills">
-                  <span class="bs-ev-pill">사계절 순환</span>
-                  <span class="bs-ev-pill gold">주간 랭킹</span>
+                  <span class="bs-ev-pill">사계절 60초 순환</span>
+                  <span class="bs-ev-pill gold">월요일 00시 초기화</span>
                 </div>
                 <div class="bs-ev-cta normal">▶ 일반모드 출발!</div>
               </button>
+              <button id="btn-mode-open-rank" class="bs-ev-detail-link normal" type="button">🏆 주간 랭킹 확인</button>
             </div>
 
             <!-- Event Card 2: 오늘의 날씨모드 (실시간 기상청 일간 랭킹) -->
@@ -983,7 +990,9 @@
                     <strong class="bs-ev-title">오늘의 날씨모드</strong>
                   </div>
                 </div>
-                <div id="mode-card-weather-line" class="bs-ev-desc">실시간 한국 기상청 날씨 반영 중...</div>
+                <div id="mode-card-weather-line" class="bs-ev-live-strip">실시간 한국 기상청 날씨 반영 중...</div>
+                <div id="mode-today-mini-factors" class="bs-ev-mini-factors"></div>
+                <div id="mode-today-best-row" class="bs-ev-record-strip today">🌦️ 오늘 최고 0점 · 매일 00시 초기화</div>
                 <div id="mode-card-mod-pills" class="bs-ev-pills">
                   <span class="bs-ev-pill sky">실시간 버프/디버프</span>
                 </div>
@@ -1049,14 +1058,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd68"></script>
-  <script src="js/ui-icons.js?v=20261121hd68"></script>
-  <script src="js/weather-live.js?v=20261121hd68"></script>
-  <script src="js/audio.js?v=20261121hd68"></script>
-  <script src="js/studio-intro.js?v=20261121hd68"></script>
-  <script src="js/online.js?v=20261121hd68"></script>
-  <script src="js/renderer.js?v=20261121hd68"></script>
-  <script src="js/game.js?v=20261121hd68"></script>
+  <script src="js/data.js?v=20261121hd69"></script>
+  <script src="js/ui-icons.js?v=20261121hd69"></script>
+  <script src="js/weather-live.js?v=20261121hd69"></script>
+  <script src="js/audio.js?v=20261121hd69"></script>
+  <script src="js/studio-intro.js?v=20261121hd69"></script>
+  <script src="js/online.js?v=20261121hd69"></script>
+  <script src="js/renderer.js?v=20261121hd69"></script>
+  <script src="js/game.js?v=20261121hd69"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {
