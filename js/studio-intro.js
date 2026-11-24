@@ -152,18 +152,30 @@ window.StudioIntro = (function () {
     overlayEl.classList.remove('hidden', 'leaving');
 
     let audioStarted = false;
+    let audioPending = false;
     let animStartMs = 0;
     function tryStartStudioAudio() {
-      if (audioStarted || !active) return;
+      if (audioStarted || audioPending || !active) return;
       if (window.SFX && typeof window.SFX.playStudioIntro === 'function') {
         try {
           const elapsed = animStartMs > 0 ? Math.max(0, (performance.now() - animStartMs) / 1000) : 0;
+          if (elapsed >= DUR - 0.25) return;
           const handle = window.SFX.playStudioIntro(elapsed);
           if (handle && handle.started) {
             audioStarted = true;
             stopAudioFn = handle.stop;
+          } else if (handle && handle.resumePromise && typeof handle.resumePromise.then === 'function') {
+            audioPending = true;
+            handle.resumePromise.then(() => {
+              audioPending = false;
+              if (!audioStarted && active) tryStartStudioAudio();
+            }).catch(() => {
+              audioPending = false;
+            });
           }
-        } catch {}
+        } catch {
+          audioPending = false;
+        }
       }
     }
 

@@ -8,6 +8,9 @@ window.SFX = (function () {
   let bgmTimer = null;
   let bgmStep = 0;
   let bgmMode = 'menu'; // 'menu' | 'run' | 'fever'
+  let bgmStarted = false;
+  let studioIntroPlaying = false;
+  let activeStudioStop = null;
 
   // Reusable looping noise buffers (generated lazily once per AudioContext)
   let noiseBuffers = null;
@@ -557,7 +560,9 @@ window.SFX = (function () {
   };
 
   function tickBgm() {
-    if (!bgmEnabled || document.hidden || !ctx || ctx.state !== 'running') return;
+    if (!bgmEnabled || !bgmStarted || studioIntroPlaying) return;
+    if (typeof window !== 'undefined' && window.StudioIntro && window.StudioIntro.isActive()) return;
+    if (document.hidden || !ctx || ctx.state !== 'running') return;
     const pat = BGM_PATTERNS[bgmMode] || BGM_PATTERNS.menu;
     const idx = bgmStep % pat.lead.length;
     const leadF = pat.lead[idx];
@@ -572,7 +577,7 @@ window.SFX = (function () {
       clearInterval(bgmTimer);
       bgmTimer = null;
     }
-    if (!bgmEnabled) return;
+    if (!bgmEnabled || !bgmStarted) return;
     const pat = BGM_PATTERNS[bgmMode] || BGM_PATTERNS.menu;
     bgmTimer = setInterval(tickBgm, pat.tempoMs);
   }
@@ -624,13 +629,15 @@ window.SFX = (function () {
       if (bgmMode === target && bgmTimer) return;
       bgmMode = target;
       bgmStep = 0;
-      restartBgmTimer();
+      if (bgmStarted) restartBgmTimer();
     },
     startBgm() {
+      bgmStarted = true;
       ensure();
       restartBgmTimer();
     },
     stopBgm() {
+      bgmStarted = false;
       if (bgmTimer) {
         clearInterval(bgmTimer);
         bgmTimer = null;
@@ -838,14 +845,23 @@ window.SFX = (function () {
       }
     },
     playStudioIntro(offsetSec = 0) {
-      // YAGUN STUDIO 6-second cinematic intro audio (riser -> 1.45s sub impact + Cmaj9 chime + stereo pad -> sweep glint & text whoosh)
+      // YAGUN STUDIO 6-second cinematic intro audio (never overlaps BGM or itself!)
       if (!sfxEnabled || sfxVolume <= 0) return { started: false, stop() {} };
       const c = ensure();
       if (!c) return { started: false, stop() {} };
       if (c.state === 'suspended') {
-        try { c.resume(); } catch {}
-        if (c.state === 'suspended') return { started: false, stop() {} };
+        let resumePromise = null;
+        try { resumePromise = c.resume(); } catch {}
+        if (c.state === 'suspended') {
+          return { started: false, resumePromise, stop() {} };
+        }
       }
+
+      if (typeof activeStudioStop === 'function') {
+        try { activeStudioStop(); } catch {}
+        activeStudioStop = null;
+      }
+      studioIntroPlaying = true;
 
       const now = c.currentTime;
       const off = Math.max(0, offsetSec || 0);
@@ -985,24 +1001,33 @@ window.SFX = (function () {
       schedNoise('pink', 'bandpass', 900, 4600, 1.5, 2.48, 0.56, 0.11, 0.22);
 
       let stopped = false;
+      const clearTimer = setTimeout(() => {
+        if (!stopped) studioIntroPlaying = false;
+      }, Math.max(80, Math.round((6.02 - off) * 1000)));
+
+      const stopFn = () => {
+        if (stopped) return;
+        stopped = true;
+        studioIntroPlaying = false;
+        if (activeStudioStop === stopFn) activeStudioStop = null;
+        clearTimeout(clearTimer);
+        try {
+          const tNow = c.currentTime;
+          master.gain.cancelScheduledValues(tNow);
+          master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), tNow);
+          master.gain.linearRampToValueAtTime(0.0001, tNow + 0.12);
+        } catch {}
+        setTimeout(() => {
+          nodes.forEach((nd) => {
+            try { if (typeof nd.stop === 'function') nd.stop(); } catch {}
+            try { if (typeof nd.disconnect === 'function') nd.disconnect(); } catch {}
+          });
+        }, 160);
+      };
+      activeStudioStop = stopFn;
       return {
         started: true,
-        stop() {
-          if (stopped) return;
-          stopped = true;
-          try {
-            const tNow = c.currentTime;
-            master.gain.cancelScheduledValues(tNow);
-            master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), tNow);
-            master.gain.linearRampToValueAtTime(0.0001, tNow + 0.12);
-          } catch {}
-          setTimeout(() => {
-            nodes.forEach((nd) => {
-              try { if (typeof nd.stop === 'function') nd.stop(); } catch {}
-              try { if (typeof nd.disconnect === 'function') nd.disconnect(); } catch {}
-            });
-          }, 160);
-        }
+        stop: stopFn
       };
     }
   };

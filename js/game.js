@@ -7178,6 +7178,7 @@
     function unlockBgmOnGesture() {
       if (bgmUnlocked) return;
       if (window.StudioIntro && window.StudioIntro.isActive()) return;
+      if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
       bgmUnlocked = true;
       window.removeEventListener('pointerdown', unlockBgmOnGesture);
       try {
@@ -7192,7 +7193,6 @@
       if (window.StudioIntro && window.StudioIntro.isActive()) {
         if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
           e.preventDefault();
-          window.StudioIntro.skip();
         }
         return;
       }
@@ -7255,10 +7255,14 @@
   renderIntroAuthState();
   if (window.StudioIntro && typeof window.StudioIntro.play === 'function') {
     window.StudioIntro.play(() => {
-      try { SFX.introJingle(); } catch {}
+      // If OAuth redirect already bypassed title screen into lobby, start menu BGM cleanly after studio splash ends
+      if (el.introOverlay && el.introOverlay.classList.contains('hidden') && (!run || !run.active)) {
+        try {
+          SFX.startBgm();
+          SFX.setBgmMode('menu');
+        } catch {}
+      }
     });
-  } else {
-    try { SFX.introJingle(); } catch {}
   }
 
   // Handle Real Firebase OAuth Redirect / Persistent Session Restoration & Cross-Device Cloud Pull!
