@@ -142,7 +142,6 @@ window.StudioIntro = (function () {
   function play(onComplete) {
     overlayEl = document.getElementById('studio-splash-overlay');
     const canvas = document.getElementById('studio-splash-canvas');
-    const skipBtn = document.getElementById('btn-studio-skip');
     if (!overlayEl || !canvas) {
       if (typeof onComplete === 'function') onComplete(false);
       return;
@@ -151,14 +150,6 @@ window.StudioIntro = (function () {
     active = true;
     finishCb = onComplete || null;
     overlayEl.classList.remove('hidden', 'leaving');
-
-    if (skipBtn && !skipBtn._boundStudio) {
-      skipBtn._boundStudio = true;
-      skipBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        finish(true);
-      });
-    }
 
     let audioStarted = false;
     let animStartMs = 0;
