@@ -16,7 +16,7 @@
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd59" />
+  <link rel="stylesheet" href="style.css?v=20261121hd60" />
 </head>
 <body>
   <div id="mobile-app">
@@ -566,7 +566,6 @@
           <div class="run-hp-wrap">
             <div class="run-hearts-row">
               <div id="run-hearts" class="hearts-icons" aria-label="체력 하트"></div>
-              <span id="run-hp-text" class="hp-mini-num">5/5</span>
             </div>
             <div class="fever-bar-track rainbow" title="별과 코인을 모아 FEVER 발동!">
               <div id="run-fever-fill" class="fever-bar-fill rainbow-fill" style="width: 0%"></div>
@@ -596,17 +595,19 @@
           <span id="run-score-text" class="score-num">0m · 0점</span>
         </div>
 
-        <!-- Live Active Weather & Gear Action Strip (Only Shown During Active Weather Hazards!) -->
+        <!-- Compact Active Weather Timer Chip (Shown ONLY when needed, never duplicates center alert!) -->
         <div id="run-weather-bar" class="weather-status-strip hidden">
-          <span id="weather-status-badge" class="weather-status-badge">🌧️ 폭우</span>
-          <span id="weather-status-tip" class="weather-status-tip">우산 펴기!</span>
-          <span id="fc-heat-pill" class="fc-heat-pill hidden">☂️ 우산 필요 2.5s</span>
+          <span id="weather-status-badge" class="weather-status-badge">☂️ 우산!</span>
+          <span id="fc-heat-pill" class="fc-heat-pill hidden">2.5s</span>
         </div>
       </div>
 
       <!-- 2D Cookie Run 16:9 Widescreen Retina HD Stage -->
       <div id="run-canvas-wrap">
         <canvas id="runCanvas" width="1120" height="630"></canvas>
+
+        <!-- Colored Screen-Edge Vignette for Active Weather Hazards -->
+        <div id="weather-edge-vignette" class="weather-edge-vignette hidden" aria-hidden="true"></div>
 
         <!-- Muddy Water Splash Blindness Overlay -->
         <div id="mud-splatter-overlay" class="mud-overlay hidden">
@@ -620,10 +621,10 @@
         <!-- Crisp HTML Banner -->
         <div id="run-banner" class="run-banner hidden">1년 차 봄 시작!</div>
 
-        <!-- Center-Screen Big Flashing Weather Event Alert (황사 · 폭염 · 비 · 태풍) -->
+        <!-- Center-Screen Big Icon + Short Action Keyword Weather Alert -->
         <div id="weather-center-alert" class="weather-center-alert hidden" aria-live="polite">
-          <div id="weather-alert-title" class="weather-alert-title">🌧️ 국지성 폭우!</div>
-          <div id="weather-alert-sub" class="weather-alert-sub">☂️ 우산을 펴세요!</div>
+          <div id="weather-alert-icon" class="weather-alert-icon" aria-hidden="true">☂️</div>
+          <div id="weather-alert-title" class="weather-alert-title">우산!</div>
         </div>
 
         <!-- Cookie Run Style Live Playable Tutorial HUD Banner -->
@@ -664,13 +665,25 @@
           </button>
         </div>
 
-        <!-- Bottom Center Buff Orbs (4 Cohesive Glossy HD Icons) -->
-        <div class="ctrl-center-orbs">
+        <!-- Bottom Center Dynamic Buff Bar (Hidden when inactive; active buffs pop in with live remaining-time gauge!) -->
+        <div id="ctrl-center-orbs" class="ctrl-center-orbs hidden">
           <div class="status-orbs-row four-orbs">
-            <div id="orb-ui-fever" class="status-orb" title="FEVER 무적"><img src="assets/design/orb_star.png?v=20261121hd44" alt="피버" /></div>
-            <div id="orb-ui-speed" class="status-orb" title="스피드 부스트"><img src="assets/design/orb_bolt.png?v=20261121hd44" alt="스피드" /></div>
-            <div id="orb-ui-magnet" class="status-orb" title="자석"><img src="assets/design/orb_magnet.png?v=20261121hd44" alt="자석" /></div>
-            <div id="orb-ui-shield" class="status-orb" title="보호막"><img src="assets/atlas/spr_shield.png?v=20261121hd44" alt="보호막" /></div>
+            <div id="orb-ui-fever" class="status-orb" title="FEVER 무적">
+              <img src="assets/design/orb_star.png?v=20261121hd44" alt="피버" />
+              <span class="orb-timer-track"><span id="orb-bar-fever" class="orb-timer-fill fever" style="width: 0%"></span></span>
+            </div>
+            <div id="orb-ui-speed" class="status-orb" title="스피드 부스트">
+              <img src="assets/design/orb_bolt.png?v=20261121hd44" alt="스피드" />
+              <span class="orb-timer-track"><span id="orb-bar-speed" class="orb-timer-fill speed" style="width: 0%"></span></span>
+            </div>
+            <div id="orb-ui-magnet" class="status-orb" title="자석">
+              <img src="assets/design/orb_magnet.png?v=20261121hd44" alt="자석" />
+              <span class="orb-timer-track"><span id="orb-bar-magnet" class="orb-timer-fill magnet" style="width: 0%"></span></span>
+            </div>
+            <div id="orb-ui-shield" class="status-orb" title="보호막">
+              <img src="assets/atlas/spr_shield.png?v=20261121hd44" alt="보호막" />
+              <span class="orb-timer-track"><span id="orb-bar-shield" class="orb-timer-fill shield" style="width: 100%"></span></span>
+            </div>
           </div>
         </div>
 
@@ -923,12 +936,12 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd59"></script>
-  <script src="js/audio.js?v=20261121hd59"></script>
-  <script src="js/studio-intro.js?v=20261121hd59"></script>
-  <script src="js/online.js?v=20261121hd59"></script>
-  <script src="js/renderer.js?v=20261121hd59"></script>
-  <script src="js/game.js?v=20261121hd59"></script>
+  <script src="js/data.js?v=20261121hd60"></script>
+  <script src="js/audio.js?v=20261121hd60"></script>
+  <script src="js/studio-intro.js?v=20261121hd60"></script>
+  <script src="js/online.js?v=20261121hd60"></script>
+  <script src="js/renderer.js?v=20261121hd60"></script>
+  <script src="js/game.js?v=20261121hd60"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

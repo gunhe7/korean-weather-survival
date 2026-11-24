@@ -502,20 +502,19 @@
     runSeasonLabel: document.getElementById('run-season-label'),
     runScoreText: document.getElementById('run-score-text'),
     runHearts: document.getElementById('run-hearts'),
-    runHpText: document.getElementById('run-hp-text'),
     runFeverFill: document.getElementById('run-fever-fill'),
     runFeverText: document.getElementById('run-fever-text'),
     runGoldText: document.getElementById('run-gold-text'),
     runYearFill: document.getElementById('run-year-fill'),
     runWeatherBar: document.getElementById('run-weather-bar'),
     weatherStatusBadge: document.getElementById('weather-status-badge'),
-    weatherStatusTip: document.getElementById('weather-status-tip'),
     fcHeatPill: document.getElementById('fc-heat-pill'),
+    weatherEdgeVignette: document.getElementById('weather-edge-vignette'),
     mudOverlay: document.getElementById('mud-splatter-overlay'),
     runBanner: document.getElementById('run-banner'),
     weatherCenterAlert: document.getElementById('weather-center-alert'),
+    weatherAlertIcon: document.getElementById('weather-alert-icon'),
     weatherAlertTitle: document.getElementById('weather-alert-title'),
-    weatherAlertSub: document.getElementById('weather-alert-sub'),
 
     btnJump: document.getElementById('btn-jump'),
     btnSlide: document.getElementById('btn-slide'),
@@ -525,10 +524,15 @@
     btnToggleMask: document.getElementById('btn-toggle-mask'),
     gearMaskBar: document.getElementById('gear-mask-bar'),
     gearMaskState: document.getElementById('gear-mask-state'),
+    ctrlCenterOrbs: document.getElementById('ctrl-center-orbs'),
     orbUiFever: document.getElementById('orb-ui-fever'),
     orbUiSpeed: document.getElementById('orb-ui-speed'),
     orbUiMagnet: document.getElementById('orb-ui-magnet'),
     orbUiShield: document.getElementById('orb-ui-shield'),
+    orbBarFever: document.getElementById('orb-bar-fever'),
+    orbBarSpeed: document.getElementById('orb-bar-speed'),
+    orbBarMagnet: document.getElementById('orb-bar-magnet'),
+    orbBarShield: document.getElementById('orb-bar-shield'),
     btnLandscapeRun: document.getElementById('btn-landscape-run'),
     btnPauseRun: document.getElementById('btn-pause-run'),
 
@@ -1682,39 +1686,44 @@
   }
 
   let weatherAlertTimer = null;
+  let weatherAlertActive = false;
   const WEATHER_ALERT_META = {
-    rain:       { title: '🌧️ 국지성 폭우!', sub: '☂️ 우산을 펴세요!' },
-    flood:      { title: '🌊 장마 침수 경보!', sub: '☂️ 우산 ON · 차 지붕을 밟으세요!' },
-    dust:       { title: '😷 황사 · 미세먼지!', sub: '😷 마스크를 착용하세요!' },
-    heat:       { title: '☀️ 폭염 땡볕 경보!', sub: '☂️ 우산(양산)을 펴세요!' },
-    gust:       { title: '💨 태풍 · 강풍 돌풍!', sub: '☂️ 우산을 접고 슬라이드!' },
-    ice_road:   { title: '🧊 겨울 빙판길!', sub: '❄️ 미끄럼 주의!' },
-    covid:      { title: '🦠 코로나 경보!', sub: '😷 확진자 회피 · 돌진 직전 마스크!' },
-    covid_rush: { title: '🦠 코로나 바이러스 발생!', sub: '😷 마스크를 쓰세요!' }
+    rain:       { icon: '☂️', title: '우산!' },
+    flood:      { icon: '☂️', title: '우산!' },
+    dust:       { icon: '😷', title: '마스크!' },
+    heat:       { icon: '☀️', title: '우산!' },
+    gust:       { icon: '💨', title: '우산 접기!' },
+    ice_road:   { icon: '🧊', title: '빙판!' },
+    covid:      { icon: '🦠', title: '마스크!' },
+    covid_rush: { icon: '🦠', title: '마스크!' }
   };
 
-  function showWeatherCenterAlert(weatherId, customSub = null) {
+  function showWeatherCenterAlert(weatherId, customKeyword = null) {
     if (!el.weatherCenterAlert) return;
     const meta = WEATHER_ALERT_META[weatherId];
     if (!meta) return;
+    weatherAlertActive = true;
     el.weatherCenterAlert.className = `weather-center-alert ev-${weatherId}`;
-    el.weatherAlertTitle.textContent = meta.title;
-    el.weatherAlertSub.textContent = customSub || meta.sub;
+    if (el.weatherAlertIcon) el.weatherAlertIcon.textContent = meta.icon;
+    el.weatherAlertTitle.textContent = customKeyword || meta.title;
     // Force clean animation restart on consecutive events
     void el.weatherCenterAlert.offsetWidth;
     el.weatherCenterAlert.classList.add('show');
     if (weatherAlertTimer) clearTimeout(weatherAlertTimer);
     weatherAlertTimer = setTimeout(() => {
+      weatherAlertActive = false;
       if (el.weatherCenterAlert) el.weatherCenterAlert.classList.add('hidden');
-    }, 2200);
+    }, 1650);
   }
 
   function hideWeatherCenterAlert() {
+    weatherAlertActive = false;
     if (weatherAlertTimer) {
       clearTimeout(weatherAlertTimer);
       weatherAlertTimer = null;
     }
     if (el.weatherCenterAlert) el.weatherCenterAlert.classList.add('hidden');
+    if (el.weatherEdgeVignette) el.weatherEdgeVignette.className = 'weather-edge-vignette hidden';
   }
 
   // ===================== AUTO HARDWARE LANDSCAPE ORIENTATION LOCK =====================
@@ -2628,7 +2637,7 @@
           run.gustExposeTimer = 0;
           SFX.playWeatherCue('gust');
           SFX.setWeatherAmbient('gust');
-          showWeatherCenterAlert('gust', '⚠️ 제한 시간 안에 우산을 접으세요!');
+          showWeatherCenterAlert('gust', '우산 접기!');
           tut.phase = 'active';
           tut.timer = 0.72;
         }
@@ -4610,9 +4619,9 @@
       baseSpeed: isTutorial ? 186 : 196,
       speed: isTutorial ? 186 : 196,
 
-      // Player physics (16:9 Cookie Run widescreen framing)
-      basePlayerX: 132,
-      playerX: 132,
+      // Player physics (16:9 Cookie Run widescreen framing · clear of left thumb controls!)
+      basePlayerX: 144,
+      playerX: 144,
       playerY: Renderer.GROUND_Y,
       currentFloorY: Renderer.GROUND_Y,
       onPlatform: false,
@@ -5487,9 +5496,9 @@
       if (run.sliding) {
         run.playerX = Math.min(run.basePlayerX + 10, run.playerX + 72 * dt);
       } else if (run.playerY < run.currentFloorY - 2) {
-        run.playerX = Math.max(54, run.playerX - 58 * dt); // Blown back in midair!
+        run.playerX = Math.max(66, run.playerX - 58 * dt); // Blown back in midair!
       } else {
-        run.playerX = Math.max(66, run.playerX - 18 * dt);
+        run.playerX = Math.max(78, run.playerX - 18 * dt);
       }
     } else {
       // Gently return toward standard runner X position
@@ -6115,6 +6124,8 @@
     releaseAllControlButtons();
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
+    if (el.runWeatherBar) el.runWeatherBar.classList.add('hidden');
+    if (el.ctrlCenterOrbs) el.ctrlCenterOrbs.classList.add('hidden');
     el.runCanvasWrap.classList.remove('fever-active');
     SFX.setWeatherAmbient('clear');
     SFX.setAmbientPaused(false);
@@ -6253,7 +6264,6 @@
         heartHtml += `<span class="heart-unit${i < curHp ? '' : ' empty'}">❤️</span>`;
       }
       el.runHearts.innerHTML = heartHtml;
-      hudText('hpTxt', el.runHpText, heartKey);
     }
 
     // Rainbow FEVER & Year Progress Gauges (throttled ~15Hz to skip per-frame layout reflow!)
@@ -6269,7 +6279,7 @@
       hudWidth('yrW', el.runYearFill, `${yearPct.toFixed(1)}%`);
     }
 
-    // Live Active Weather Status Pill (Cleanly hidden during calm clear sky — NO Weather Agency clutter!)
+    // Colored Screen-Edge Vignette + Minimal Non-Duplicate Action Chip (No long competing prose!)
     const rainLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
     const dustLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
     const gustLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty);
@@ -6287,75 +6297,67 @@
     const needOpenUmb = (activeEv === 'rain' || activeEv === 'flood' || (activeEv === 'heat' && !ch.summerImmune)) && !run.umbrellaOn && run.feverTimer <= 0;
     const needOpenMask = activeEv === 'dust' && !run.maskOn && run.feverTimer <= 0;
 
-    if (el.runWeatherBar) {
-      const showBar = activeEv !== 'clear' || Boolean(incomingEv) || covidUrgent || run.heatGauge > 5;
-      hudToggle('wBarHide', el.runWeatherBar, 'hidden', !showBar);
-      hudToggle('wBarUrg', el.runWeatherBar, 'urgent-danger', needFoldUmb || needCovidMask);
-      if (showBar) {
-        if (covidUrgent) {
-          hudText('wBadge', el.weatherStatusBadge, '🦠 코로나 바이러스 발생!');
-          hudText('wTip', el.weatherStatusTip, needCovidMask ? '마스크를 쓰세요!' : '😷 차단 준비 완료!');
-        } else if (activeEv !== 'clear') {
-          const curDef = DATA.WEATHER_EVENTS[activeEv] || DATA.WEATHER_EVENTS.clear;
-          hudText('wBadge', el.weatherStatusBadge, `${curDef.icon || ''} ${curDef.label}`);
-          hudText('wTip', el.weatherStatusTip, needFoldUmb ? '우산을 접으세요!' : (curDef.actionTip || ''));
-        } else if (incomingEv && doSlow) {
-          const nextDef = DATA.WEATHER_EVENTS[incomingEv] || DATA.WEATHER_EVENTS.clear;
-          const sec = Math.max(0.1, run.weatherPrepTimer || 0).toFixed(1);
-          hudText('wBadge', el.weatherStatusBadge, `${nextDef.icon || '⚡'} 곧 ${nextDef.label}`);
-          hudText('wTip', el.weatherStatusTip, `${sec}초 후 접근`);
-        }
-      }
+    // 1. Colored Screen-Edge Vignette (instant peripheral weather cue!)
+    if (el.weatherEdgeVignette) {
+      const vigEv = covidUrgent ? 'covid_rush' : (activeEv !== 'clear' ? activeEv : '');
+      const vigUrgent = needCovidMask || needFoldUmb || needOpenUmb || needOpenMask || (activeEv === 'heat' && run.heatGauge >= 60);
+      const vigCls = vigEv
+        ? `weather-edge-vignette ev-${vigEv}${vigUrgent ? ' urgent' : ''}`
+        : 'weather-edge-vignette hidden';
+      hudClass('wVigCls', el.weatherEdgeVignette, vigCls);
     }
 
-    // Live Exposure / Fold / Corona Rush Countdown Pill!
-    if (doSlow || covidUrgent || needFoldUmb) {
+    // 2. Compact Top Action Timer Chip (hidden while center icon alert is flashing — zero duplication!)
+    if (el.runWeatherBar) {
+      let chipBadge = '';
+      let chipTimer = '';
+      let chipUrgent = false;
+
       if (covidUrgent) {
-        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
-        if (needCovidMask) {
-          hudToggle('fcUrg', el.fcHeatPill, 'urgent', true);
-          hudText(
-            'fcTxt',
-            el.fcHeatPill,
-            run.covidAttack.phase === 'warn'
-              ? `😷 마스크! ${Math.max(0, run.covidAttack.timer).toFixed(1)}s`
-              : '🦠 돌진! 지금 마스크!'
-          );
-        } else {
-          hudToggle('fcUrg', el.fcHeatPill, 'urgent', false);
-          hudText('fcTxt', el.fcHeatPill, '🛡️ 마스크 차단 준비!');
-        }
+        chipBadge = needCovidMask ? '🦠 마스크!' : '🛡️ 차단 OK';
+        chipTimer = needCovidMask
+          ? (run.covidAttack.phase === 'warn' ? `${Math.max(0, run.covidAttack.timer).toFixed(1)}s` : 'NOW!')
+          : '';
+        chipUrgent = needCovidMask;
       } else if (needFoldUmb) {
         const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
-        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
-        hudToggle('fcUrg', el.fcHeatPill, 'urgent', true);
-        hudText('fcTxt', el.fcHeatPill, `💨 우산 접기! ${rem.toFixed(1)}s`);
-      } else if (run.rainExposeTimer > 0.05 && !run.umbrellaOn && run.feverTimer <= 0) {
-        const rem = Math.max(0, rainLimit - run.rainExposeTimer);
-        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
-        hudToggle('fcUrg', el.fcHeatPill, 'urgent', rem <= 1.4);
-        hudText('fcTxt', el.fcHeatPill, `☂️ 우산 펴기 ${rem.toFixed(1)}s`);
-      } else if (run.dustExposeTimer > 0.05 && !run.maskOn && run.feverTimer <= 0) {
-        const rem = Math.max(0, dustLimit - run.dustExposeTimer);
-        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
-        hudToggle('fcUrg', el.fcHeatPill, 'urgent', rem <= 1.4);
-        hudText('fcTxt', el.fcHeatPill, `😷 마스크 착용 ${rem.toFixed(1)}s`);
-      } else if (activeEv === 'heat' && !ch.summerImmune) {
-        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
-        if (run.umbrellaOn) {
-          hudToggle('fcUrg', el.fcHeatPill, 'urgent', false);
-          hudText('fcTxt', el.fcHeatPill, '☂️ 양산 보호 중');
-        } else {
-          hudToggle('fcUrg', el.fcHeatPill, 'urgent', run.heatGauge >= 60);
-          hudText('fcTxt', el.fcHeatPill, `☂️ 폭염 ${Math.round(run.heatGauge)}%`);
-        }
-      } else if (run.heatGauge > 5) {
-        hudToggle('fcHide', el.fcHeatPill, 'hidden', false);
-        hudToggle('fcUrg', el.fcHeatPill, 'urgent', run.heatGauge >= 75);
-        hudText('fcTxt', el.fcHeatPill, `🌡️ 열기 ${Math.round(run.heatGauge)}%`);
-      } else {
-        hudToggle('fcHide', el.fcHeatPill, 'hidden', true);
-        hudToggle('fcUrg', el.fcHeatPill, 'urgent', false);
+        chipBadge = '💨 우산 접기!';
+        chipTimer = `${rem.toFixed(1)}s`;
+        chipUrgent = true;
+      } else if (needOpenUmb && (activeEv === 'rain' || activeEv === 'flood')) {
+        const rem = Math.max(0, rainLimit - (run.rainExposeTimer || 0));
+        chipBadge = '☂️ 우산!';
+        chipTimer = `${rem.toFixed(1)}s`;
+        chipUrgent = rem <= 1.4;
+      } else if (needOpenMask) {
+        const rem = Math.max(0, dustLimit - (run.dustExposeTimer || 0));
+        chipBadge = '😷 마스크!';
+        chipTimer = `${rem.toFixed(1)}s`;
+        chipUrgent = rem <= 1.4;
+      } else if (activeEv === 'heat' && !ch.summerImmune && !run.umbrellaOn) {
+        chipBadge = '☀️ 우산!';
+        chipTimer = `${Math.round(run.heatGauge)}%`;
+        chipUrgent = run.heatGauge >= 60;
+      } else if (run.heatGauge > 15 && !run.umbrellaOn) {
+        chipBadge = '🌡️ 열기';
+        chipTimer = `${Math.round(run.heatGauge)}%`;
+        chipUrgent = run.heatGauge >= 75;
+      } else if (incomingEv && activeEv === 'clear') {
+        const nextMeta = WEATHER_ALERT_META[incomingEv];
+        const sec = Math.max(0.1, run.weatherPrepTimer || 0).toFixed(1);
+        chipBadge = nextMeta ? `${nextMeta.icon} ${nextMeta.title}` : '⚡ 주의!';
+        chipTimer = `${sec}s`;
+      }
+
+      const showChip = Boolean(chipBadge) && !weatherAlertActive;
+      const barJustShown = showChip && hudCache.wBarHide !== false;
+      hudToggle('wBarHide', el.runWeatherBar, 'hidden', !showChip);
+      hudToggle('wBarUrg', el.runWeatherBar, 'urgent-danger', chipUrgent);
+      if (showChip && (barJustShown || doSlow || covidUrgent || needFoldUmb || hudCache.wBadge !== chipBadge)) {
+        hudText('wBadge', el.weatherStatusBadge, chipBadge);
+        hudToggle('fcHide', el.fcHeatPill, 'hidden', !chipTimer);
+        hudToggle('fcUrg', el.fcHeatPill, 'urgent', chipUrgent);
+        if (chipTimer) hudText('fcTxt', el.fcHeatPill, chipTimer);
       }
     }
 
@@ -6418,12 +6420,36 @@
       }
     }
 
-    // 4 Glossy HD Buff Orbs + Full-Canvas FEVER Frame Pulse + Dynamic BGM Mode (dirty-checked!)
+    // Dynamic Active-Only Bottom Buff Bar with Live Remaining-Time Gauges (hidden when no buff is active!)
     const fevActive = run.feverTimer > 0;
+    const spdActive = run.speedBoostTimer > 0;
+    const magActive = run.magnetTimer > 0 || fevActive;
+    const shdActive = Boolean(run.shield);
+    const anyBuff = fevActive || spdActive || magActive || shdActive;
+
+    hudToggle('orbsHide', el.ctrlCenterOrbs, 'hidden', !anyBuff);
     hudToggle('orbFev', el.orbUiFever, 'active', fevActive);
-    hudToggle('orbSpd', el.orbUiSpeed, 'active', run.speedBoostTimer > 0);
-    hudToggle('orbMag', el.orbUiMagnet, 'active', run.magnetTimer > 0 || fevActive);
-    hudToggle('orbShd', el.orbUiShield, 'active', Boolean(run.shield));
+    hudToggle('orbSpd', el.orbUiSpeed, 'active', spdActive);
+    hudToggle('orbMag', el.orbUiMagnet, 'active', magActive);
+    hudToggle('orbShd', el.orbUiShield, 'active', shdActive);
+    if (anyBuff && doSlow) {
+      if (fevActive) {
+        hudWidth('orbBarFev', el.orbBarFever, `${Math.max(0, Math.min(100, (run.feverTimer / 4.5) * 100)).toFixed(1)}%`);
+      }
+      if (spdActive) {
+        hudWidth('orbBarSpd', el.orbBarSpeed, `${Math.max(0, Math.min(100, (run.speedBoostTimer / 4.0) * 100)).toFixed(1)}%`);
+      }
+      if (magActive) {
+        const magPct = Math.max(
+          run.magnetTimer > 0 ? (run.magnetTimer / 6.0) * 100 : 0,
+          fevActive ? (run.feverTimer / 4.5) * 100 : 0
+        );
+        hudWidth('orbBarMag', el.orbBarMagnet, `${Math.max(0, Math.min(100, magPct)).toFixed(1)}%`);
+      }
+      if (shdActive) {
+        hudWidth('orbBarShd', el.orbBarShield, '100%');
+      }
+    }
     hudToggle('wrapFev', el.runCanvasWrap, 'fever-active', fevActive);
     const targetBgm = fevActive ? 'fever' : 'run';
     if (hudCache.bgmMode !== targetBgm) {
@@ -6439,6 +6465,8 @@
     releaseAllControlButtons();
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
+    if (el.runWeatherBar) el.runWeatherBar.classList.add('hidden');
+    if (el.ctrlCenterOrbs) el.ctrlCenterOrbs.classList.add('hidden');
     el.runCanvasWrap.classList.remove('fever-active');
     SFX.setWeatherAmbient('clear');
     SFX.setAmbientPaused(false);
@@ -6518,6 +6546,8 @@
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
+    if (el.runWeatherBar) el.runWeatherBar.classList.add('hidden');
+    if (el.ctrlCenterOrbs) el.ctrlCenterOrbs.classList.add('hidden');
     el.runCanvasWrap.classList.remove('fever-active');
     el.pauseOverlay.classList.add('hidden');
     el.gameoverOverlay.classList.add('hidden');

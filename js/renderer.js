@@ -342,6 +342,41 @@ window.RunRenderer = (function () {
   let cachedHillKey = '';
   let cachedHillGrad = null;
   const cloudSpriteCache = {};
+  const softBgSpriteCache = {};
+
+  const BG_ATMOSPHERE_TINT = {
+    spring: 'rgba(182, 218, 250, 0.17)',
+    summer: 'rgba(164, 214, 248, 0.16)',
+    autumn: 'rgba(226, 200, 174, 0.17)',
+    winter: 'rgba(212, 228, 248, 0.19)'
+  };
+
+  // Pre-bake desaturated + atmospheric-haze midground sprite ONCE (zero per-frame filter cost!)
+  function getSoftBgSprite(key, spr, seasonId) {
+    if (!spr || !spr.naturalWidth || !spr.naturalHeight) return spr;
+    const cacheKey = `${key}|${seasonId || 'spring'}`;
+    if (softBgSpriteCache[cacheKey]) return softBgSpriteCache[cacheKey];
+    const maxDim = 220;
+    const scale = Math.min(1, maxDim / Math.max(spr.naturalWidth, spr.naturalHeight));
+    const cw = Math.max(1, Math.round(spr.naturalWidth * scale));
+    const ch = Math.max(1, Math.round(spr.naturalHeight * scale));
+    const c = document.createElement('canvas');
+    c.width = cw;
+    c.height = ch;
+    const g = c.getContext('2d');
+    g.drawImage(spr, 0, 0, cw, ch);
+    // Reduce saturation & contrast (~18%) + apply subtle seasonal sky atmospheric perspective strictly inside silhouette
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = 'rgba(126, 134, 148, 0.16)';
+    g.fillRect(0, 0, cw, ch);
+    g.fillStyle = BG_ATMOSPHERE_TINT[seasonId] || BG_ATMOSPHERE_TINT.spring;
+    g.fillRect(0, 0, cw, ch);
+    g.fillStyle = 'rgba(14, 26, 48, 0.08)';
+    g.fillRect(0, 0, cw, ch);
+    g.globalCompositeOperation = 'source-over';
+    softBgSpriteCache[cacheKey] = c;
+    return c;
+  }
 
   function getCloudSprite(mode) {
     if (cloudSpriteCache[mode]) return cloudSpriteCache[mode];
@@ -521,37 +556,45 @@ window.RunRenderer = (function () {
       ctx.restore();
     }
 
-    // Midground Seasonal Trees, Bushes & Street Props strictly from uploaded sheet!
+    // Midground Seasonal Trees, Bushes & Street Props (softened saturation + atmospheric depth for crisp character contrast!)
     const treeSpr = getSprite(season.tree);
-    const treeAltSpr = getSprite(season.treeAlt || season.tree);
+    const treeAltKey = season.treeAlt || season.tree;
+    const treeAltSpr = getSprite(treeAltKey);
     const bushSpr = getSprite(season.bush);
     const propSpr = getSprite(season.prop);
+    const softTree = treeSpr ? getSoftBgSprite(season.tree, treeSpr, seasonId) : null;
+    const softTreeAlt = treeAltSpr ? getSoftBgSprite(treeAltKey, treeAltSpr, seasonId) : null;
+    const softBush = bushSpr ? getSoftBgSprite(season.bush, bushSpr, seasonId) : null;
+    const softProp = propSpr ? getSoftBgSprite(season.prop, propSpr, seasonId) : null;
     const propOff = Math.floor(scroll * 0.55) % 280;
     const pStartRep = Math.floor((minX - 280) / 280);
     const pEndRep = Math.ceil((maxX + 280) / 280);
+    ctx.save();
+    ctx.globalAlpha = 0.88;
     for (let rep = pStartRep; rep <= pEndRep; rep++) {
       const px = rep * 280 - propOff;
-      if (treeSpr) {
+      if (softTree && treeSpr) {
         const th = 58;
         const tw = Math.round(th * (treeSpr.naturalWidth / treeSpr.naturalHeight));
-        ctx.drawImage(treeSpr, Math.floor(px + 14), Math.floor(groundY - th + 4), tw, th);
+        ctx.drawImage(softTree, Math.floor(px + 14), Math.floor(groundY - th + 4), tw, th);
       }
-      if (bushSpr) {
+      if (softBush && bushSpr) {
         const bh = 26;
         const bw = Math.round(bh * (bushSpr.naturalWidth / bushSpr.naturalHeight));
-        ctx.drawImage(bushSpr, Math.floor(px + 94), Math.floor(groundY - bh + 3), bw, bh);
+        ctx.drawImage(softBush, Math.floor(px + 94), Math.floor(groundY - bh + 3), bw, bh);
       }
-      if (treeAltSpr) {
+      if (softTreeAlt && treeAltSpr) {
         const th2 = 50;
         const tw2 = Math.round(th2 * (treeAltSpr.naturalWidth / treeAltSpr.naturalHeight));
-        ctx.drawImage(treeAltSpr, Math.floor(px + 154), Math.floor(groundY - th2 + 4), tw2, th2);
+        ctx.drawImage(softTreeAlt, Math.floor(px + 154), Math.floor(groundY - th2 + 4), tw2, th2);
       }
-      if (propSpr) {
+      if (softProp && propSpr) {
         const ph = season.prop === 'sp_flower_patch' ? 24 : 44;
         const pw = Math.round(ph * (propSpr.naturalWidth / propSpr.naturalHeight));
-        ctx.drawImage(propSpr, Math.floor(px + 228), Math.floor(groundY - ph + 3), pw, ph);
+        ctx.drawImage(softProp, Math.floor(px + 228), Math.floor(groundY - ph + 3), pw, ph);
       }
     }
+    ctx.restore();
 
     // Tiled Pixel Ground strictly from uploaded sheet (sp_spring_tile / sp_metal_box / sp_ice_tile)!
     const tileSpr = getSprite(season.tile) || getSprite('sp_spring_tile');
@@ -1127,14 +1170,24 @@ window.RunRenderer = (function () {
     const cy = Math.floor(y);
     const isProne = sliding || dead;
 
-    if (!inAir) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(8, 16, 36, 0.30)';
-      ctx.beginPath();
-      ctx.ellipse(cx, cy + 1, isProne ? 22 : 15, 3.6, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
+    // Grounded semi-transparent elliptical contact shadow (stays anchored on ground/platform & scales smoothly with jump height!)
+    const shadowY = opts.floorY !== undefined ? opts.floorY : y;
+    const airH = Math.max(0, shadowY - y);
+    const shadowScale = Math.max(0.42, 1 - airH / 165);
+    const shadowAlpha = Math.max(0.14, 0.40 * (1 - airH / 195));
+    const shadowRx = (isProne ? 24 : 18) * shadowScale;
+    const shadowRy = (isProne ? 4.3 : 4.8) * shadowScale;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = `rgba(8, 16, 36, ${(shadowAlpha * 0.42).toFixed(2)})`;
+    ctx.beginPath();
+    ctx.ellipse(cx, Math.floor(shadowY) + 1.5, shadowRx * 1.24, shadowRy * 1.32, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(8, 16, 36, ${shadowAlpha.toFixed(2)})`;
+    ctx.beginPath();
+    ctx.ellipse(cx, Math.floor(shadowY) + 1.5, shadowRx, shadowRy, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     // Uploaded Golden / Blue Dash VFX streaks OR Custom Mythic Booster Jet (e.g. Hades 12-frame flipped purple flame!)
     if (!dead && (feverTimer > 0 || speedBoostTimer > 0)) {
@@ -1963,6 +2016,7 @@ window.RunRenderer = (function () {
     drawCharacter(ctx, charDef, run.playerX, run.playerY, {
       sliding: run.sliding,
       inAir: run.playerY < (run.currentFloorY || GROUND_Y) - 1,
+      floorY: run.currentFloorY || GROUND_Y,
       vy: run.vy || 0,
       gliding: run.gliding,
       invulnTimer: run.invulnTimer,
