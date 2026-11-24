@@ -8,9 +8,9 @@ window.UIIcons = (function () {
     gem:      { src: 'assets/icons/ico_gem.png',                   alt: '보석',   fallback: '💎' },
     crown:    { src: 'assets/icons/ico_crown.png',                 alt: '왕관',   fallback: '👑' },
     heart:    { src: 'assets/icons/ico_heart.png',                 alt: '체력',   fallback: '❤️' },
-    umbrella: { src: 'assets/icons/ico_umbrella.png',              alt: '우산',   fallback: '☂️' },
-    mask:     { src: 'assets/icons/ico_mask.png',                  alt: '마스크', fallback: '😷' },
-    chest:    { src: 'assets/icons/ico_chest.png',                 alt: '상자',   fallback: '📦' }
+    umbrella: { src: 'assets/icons/ico_umbrella.png?v=20261121hd65', alt: '우산', fallback: '☂️', prebuilt: true },
+    mask:     { src: 'assets/icons/ico_mask.png?v=20261121hd65',     alt: '마스크', fallback: '😷', prebuilt: true },
+    chest:    { src: 'assets/icons/ico_chest.png?v=20261121hd65',    alt: '상자', fallback: '📦', prebuilt: true }
   };
 
   const EMOJI_TO_KEY = {
