@@ -467,7 +467,6 @@
     btnModeOpenWeather: document.getElementById('btn-mode-open-weather'),
     weatherOverlay: document.getElementById('weather-overlay'),
     btnCloseWeather: document.getElementById('btn-close-weather'),
-    weatherCityPills: document.getElementById('weather-city-pills'),
     btnWeatherRefresh: document.getElementById('btn-weather-refresh'),
     weatherHeroIcon: document.getElementById('weather-hero-icon'),
     weatherHeroCity: document.getElementById('weather-hero-city'),
@@ -3526,29 +3525,8 @@
     const mods = getActiveLiveWeatherMods();
     if (!mods) return;
     const snap = mods.snapshot;
-    const activeCityId = LIVE_WEATHER.getSelectedCityId();
 
     updateHomeWeatherMiniSummary();
-
-    // City switcher pills
-    if (el.weatherCityPills) {
-      el.weatherCityPills.innerHTML = '';
-      LIVE_WEATHER.CITIES.forEach((city) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `weather-city-pill${city.id === activeCityId ? ' active' : ''}`;
-        btn.textContent = city.name;
-        btn.addEventListener('click', () => {
-          SFX.click();
-          LIVE_WEATHER.setSelectedCityId(city.id);
-          liveWeatherSnapshot = LIVE_WEATHER.getCachedWeather(city.id) || LIVE_WEATHER.buildFallbackSnapshot(city.id);
-          liveWeatherMods = LIVE_WEATHER.computeWeatherModifiers(liveWeatherSnapshot);
-          renderHomeWeatherTab();
-          refreshLiveWeatherUI(false);
-        });
-        el.weatherCityPills.appendChild(btn);
-      });
-    }
 
     if (el.weatherHeroIcon) el.weatherHeroIcon.textContent = mods.desc.icon;
     if (el.weatherHeroCity) el.weatherHeroCity.textContent = snap.cityName;

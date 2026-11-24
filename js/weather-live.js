@@ -5,13 +5,7 @@ window.LiveWeather = (function () {
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
   const CITIES = [
-    { id: 'seoul',   name: '서울', region: '수도권', lat: 37.5665, lon: 126.9780 },
-    { id: 'incheon', name: '인천', region: '수도권', lat: 37.4563, lon: 126.7052 },
-    { id: 'busan',   name: '부산', region: '영남권', lat: 35.1796, lon: 129.0756 },
-    { id: 'daegu',   name: '대구', region: '영남권', lat: 35.8714, lon: 128.6014 },
-    { id: 'daejeon', name: '대전', region: '충청권', lat: 36.3504, lon: 127.3845 },
-    { id: 'gwangju', name: '광주', region: '호남권', lat: 35.1595, lon: 126.8526 },
-    { id: 'jeju',    name: '제주', region: '제주권', lat: 33.4996, lon: 126.5312 }
+    { id: 'seoul', name: '서울', region: '수도권', lat: 37.5665, lon: 126.9780 }
   ];
 
   const SEASON_META = {
@@ -21,22 +15,17 @@ window.LiveWeather = (function () {
     winter: { id: 'winter', idx: 3, name: '겨울', icon: '❄️', bonusLabel: '겨울 계절 버프', bonusEffect: '자석 범위 +30' }
   };
 
-  function getCityById(cityId) {
-    return CITIES.find((c) => c.id === cityId) || CITIES[0];
+  function getCityById() {
+    return CITIES[0];
   }
 
   function getSelectedCityId() {
-    try {
-      const saved = localStorage.getItem(CITY_KEY);
-      if (saved && CITIES.some((c) => c.id === saved)) return saved;
-    } catch {}
     return 'seoul';
   }
 
-  function setSelectedCityId(cityId) {
-    const city = getCityById(cityId);
-    try { localStorage.setItem(CITY_KEY, city.id); } catch {}
-    return city;
+  function setSelectedCityId() {
+    try { localStorage.setItem(CITY_KEY, 'seoul'); } catch {}
+    return CITIES[0];
   }
 
   function getCurrentKstSeasonInfo(nowMs = Date.now()) {

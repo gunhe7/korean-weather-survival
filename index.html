@@ -16,7 +16,7 @@
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd69" />
+  <link rel="stylesheet" href="style.css?v=20261121hd70" />
 </head>
 <body>
   <div id="mobile-app">
@@ -998,26 +998,24 @@
                 </div>
                 <div class="bs-ev-cta today">🌦️ 오늘의 날씨 출발!</div>
               </button>
-              <button id="btn-mode-open-weather" class="bs-ev-detail-link" type="button">🌤️ 상세 날씨 · 지역 변경</button>
+              <button id="btn-mode-open-weather" class="bs-ev-detail-link" type="button">🌤️ 서울 실시간 날씨 상세</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ================= LIVE KMA WEATHER MODAL (OPENED FROM RIGHT-DOCK WEATHER BUTTON BELOW SETTINGS) ================= -->
-    <div id="weather-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="실시간 기상청 날씨">
+    <!-- ================= LIVE KMA WEATHER MODAL (SEOUL ONLY · OPENED FROM RIGHT-DOCK WEATHER BUTTON BELOW SETTINGS) ================= -->
+    <div id="weather-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="서울 실시간 기상청 날씨">
       <div class="cr-modal settings-arcade-modal bs-weather-modal">
         <div class="cr-modal-bar settings-arcade-bar">
-          <span class="settings-bar-title">🌤️ 실시간 기상청 날씨</span>
+          <span class="settings-bar-title">🌤️ 서울 실시간 기상청 날씨</span>
           <div class="score-road-bar-actions">
             <button id="btn-weather-refresh" class="weather-refresh-btn" type="button">🔄 갱신</button>
             <button id="btn-close-weather" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
           </div>
         </div>
         <div class="modal-body bs-weather-modal-body">
-          <div id="weather-city-pills" class="weather-city-pills" role="tablist" aria-label="지역 선택"></div>
-
           <div id="weather-live-hero" class="weather-live-hero">
             <div class="wlh-left">
               <div id="weather-hero-icon" class="wlh-icon" aria-hidden="true">🌤️</div>
@@ -1058,14 +1056,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd69"></script>
-  <script src="js/ui-icons.js?v=20261121hd69"></script>
-  <script src="js/weather-live.js?v=20261121hd69"></script>
-  <script src="js/audio.js?v=20261121hd69"></script>
-  <script src="js/studio-intro.js?v=20261121hd69"></script>
-  <script src="js/online.js?v=20261121hd69"></script>
-  <script src="js/renderer.js?v=20261121hd69"></script>
-  <script src="js/game.js?v=20261121hd69"></script>
+  <script src="js/data.js?v=20261121hd70"></script>
+  <script src="js/ui-icons.js?v=20261121hd70"></script>
+  <script src="js/weather-live.js?v=20261121hd70"></script>
+  <script src="js/audio.js?v=20261121hd70"></script>
+  <script src="js/studio-intro.js?v=20261121hd70"></script>
+  <script src="js/online.js?v=20261121hd70"></script>
+  <script src="js/renderer.js?v=20261121hd70"></script>
+  <script src="js/game.js?v=20261121hd70"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {
