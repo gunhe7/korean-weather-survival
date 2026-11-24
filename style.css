@@ -12017,6 +12017,18 @@ input:focus-visible {
   color: #031c36;
 }
 
+.portrait-yr-badge.yr-live {
+  background: linear-gradient(180deg, #4ae8ff, #1577e8);
+  border-color: #d6fbff;
+  color: #031c36;
+  font-size: 9px;
+  letter-spacing: -0.2px;
+}
+
+.run-sub-strip {
+  justify-content: space-between;
+}
+
 /* Compact Landscape Mobile Adjustments (Mobile-First #1 Priority!) */
 @media (max-height: 500px) {
   .bs-right-dock-btn {

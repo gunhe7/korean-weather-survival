@@ -573,6 +573,7 @@
     runFeverFill: document.getElementById('run-fever-fill'),
     runFeverText: document.getElementById('run-fever-text'),
     runGoldText: document.getElementById('run-gold-text'),
+    runSeasonExpWrap: document.getElementById('run-season-exp-wrap'),
     runYearFill: document.getElementById('run-year-fill'),
     runWeatherBar: document.getElementById('run-weather-bar'),
     weatherStatusBadge: document.getElementById('weather-status-badge'),
@@ -5940,22 +5941,12 @@
       }
 
       if (run.gameMode === 'today_weather' && run.todayWeather) {
-        // Today's Weather Mode: keep season & weather synced to live KMA data while scaling endless difficulty tier every 60s!
-        const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
-        if (newYear > run.year) {
-          run.year = newYear;
-          const yearGoldBonus = 20 + run.year * 5;
-          run.score += Math.round(600 * run.year * run.scoreMult);
-          run.gold += yearGoldBonus;
-          run.winPoseTimer = 0.9;
-          SFX.yearUp();
-          const nextDiff = DATA.getYearDifficulty(run.year, run.elapsed);
-          const snap = run.todayWeather.snapshot;
-          showRunBanner(`🌦️ ${snap.cityName} ${run.year}단계 돌파! 속도 ×${nextDiff.speedMult.toFixed(2)} (+${yearGoldBonus}G)`, 2600);
-          Renderer.spawnFloater(`${run.year}단계 난이도 UP!`, '#63d8ff', run.playerX + 40, run.playerY - 52);
-        }
+        // Today's Weather Mode: NO season passing or year-cycling — locked strictly to live Seoul weather & season!
+        run.year = 1;
         run.seasonIdx = run.todayWeather.seasonIdx;
         run.seasonId = run.todayWeather.seasonId;
+        run.prevSeasonId = null;
+        run.seasonTransition = 1;
         run.weatherEvent = run.todayWeather.primaryWeather;
         run.pendingWeather = null;
         run.weatherPrepTimer = 0;
@@ -6882,16 +6873,23 @@
     const diff = DATA.getYearDifficulty(run.year, run.elapsed);
     const seasonObj = DATA.SEASONS[run.seasonIdx];
 
-    hudText('yr', el.runYearNum, `${run.year}Y`);
-    const yrTier = run.year >= 4 ? 'yr-4' : (run.year === 3 ? 'yr-3' : (run.year === 2 ? 'yr-2' : 'yr-1'));
-    hudClass('yrCls', el.runYearNum, `portrait-yr-badge ${yrTier}`);
+    const isTodayWeather = run.gameMode === 'today_weather' && Boolean(run.todayWeather);
+    if (isTodayWeather) {
+      hudText('yr', el.runYearNum, 'LIVE');
+      hudClass('yrCls', el.runYearNum, 'portrait-yr-badge yr-live');
+    } else {
+      hudText('yr', el.runYearNum, `${run.year}Y`);
+      const yrTier = run.year >= 4 ? 'yr-4' : (run.year === 3 ? 'yr-3' : (run.year === 2 ? 'yr-2' : 'yr-1'));
+      hudClass('yrCls', el.runYearNum, `portrait-yr-badge ${yrTier}`);
+    }
+    hudToggle('seasonBarHide', el.runSeasonExpWrap, 'hidden', isTodayWeather);
     if (doSlow) {
       let seasonLbl;
       if (run.isTutorial) {
         seasonLbl = '📖 실전 튜토리얼 (체력 감소 없음)';
-      } else if (run.gameMode === 'today_weather' && run.todayWeather) {
+      } else if (isTodayWeather) {
         const snap = run.todayWeather.snapshot;
-        seasonLbl = `🌦️ ${snap.cityName} ${Math.round(snap.tempC)}°C · ⚡×${diff.speedMult.toFixed(2)}`;
+        seasonLbl = `🌦️ ${snap.cityName} ${Math.round(snap.tempC)}°C · ${run.todayWeather.desc.label} · ⚡×${diff.speedMult.toFixed(2)}`;
       } else {
         seasonLbl = `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
       }
@@ -6931,8 +6929,10 @@
         el.runFeverText,
         run.feverTimer > 0 ? `★ FEVER! ${run.feverTimer.toFixed(1)}s` : `★ FEVER ${Math.floor(feverPct)}%`
       );
-      const yearPct = ((run.elapsed % DATA.YEAR_DURATION) / DATA.YEAR_DURATION) * 100;
-      hudWidth('yrW', el.runYearFill, `${yearPct.toFixed(1)}%`);
+      if (!isTodayWeather) {
+        const yearPct = ((run.elapsed % DATA.YEAR_DURATION) / DATA.YEAR_DURATION) * 100;
+        hudWidth('yrW', el.runYearFill, `${yearPct.toFixed(1)}%`);
+      }
     }
 
     // Colored Screen-Edge Vignette + Minimal Non-Duplicate Action Chip (No long competing prose!)
