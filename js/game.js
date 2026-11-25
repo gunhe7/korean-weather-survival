@@ -138,6 +138,8 @@
     }
   }
 
+  const RANK_FRAME_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+
   function hydrateSaveData(raw, authProfile) {
     const today = getTodayKey();
     const week = getWeekKey();
@@ -180,7 +182,7 @@
       cloudUpdatedAt: 0,
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
       auth: cleanAuth,
-      profile: { avatarCharId: null, avatarSkinId: null, nameColor: '#ffffff', nameFrame: 'none', unlockedFrames: [] },
+      profile: { avatarCharId: null, avatarSkinId: null, nameColor: '#ffffff', nameFrame: 'none', unlockedFrames: [], frameExpires: {} },
       weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] },
       dailyWeatherRank: { dateKey: getKstDateKey(), bestScore: 0, bestDist: 0, bestYear: 1, cityName: '서울', weatherTag: '' }
     };
@@ -251,14 +253,28 @@
       profile: (() => {
         const pr = raw.profile && typeof raw.profile === 'object' ? raw.profile : {};
         const validAvId = pr.avatarCharId && validIds.has(pr.avatarCharId) ? pr.avatarCharId : null;
-        const rawFrames = toSafeArray(pr.unlockedFrames).filter((f) => ['rank_1', 'rank_2', 'rank_3'].includes(f));
+        const nowMs = Date.now();
+        const rawExpires = pr.frameExpires && typeof pr.frameExpires === 'object' ? { ...pr.frameExpires } : {};
+        const cleanExpires = {};
+        const rawFrames = toSafeArray(pr.unlockedFrames).filter((f) => {
+          if (!['rank_1', 'rank_2', 'rank_3'].includes(f)) return false;
+          const exp = Number(rawExpires[f]);
+          if (Number.isFinite(exp) && exp > 0) {
+            if (exp <= nowMs) return false;
+            cleanExpires[f] = exp;
+            return true;
+          }
+          cleanExpires[f] = nowMs + RANK_FRAME_DURATION_MS;
+          return true;
+        });
         const activeFrame = (typeof pr.nameFrame === 'string' && rawFrames.includes(pr.nameFrame)) ? pr.nameFrame : 'none';
         return {
           avatarCharId: validAvId,
           avatarSkinId: typeof pr.avatarSkinId === 'string' ? pr.avatarSkinId : null,
           nameColor: typeof pr.nameColor === 'string' && pr.nameColor ? pr.nameColor : '#ffffff',
           nameFrame: activeFrame,
-          unlockedFrames: rawFrames
+          unlockedFrames: rawFrames,
+          frameExpires: cleanExpires
         };
       })(),
       weeklyRank: (() => {
@@ -2417,10 +2433,48 @@
 
   function ensureSaveProfile() {
     if (!save.profile || typeof save.profile !== 'object') {
-      save.profile = { avatarCharId: null, avatarSkinId: null, nameColor: '#ffffff', nameFrame: 'none', unlockedFrames: [] };
+      save.profile = { avatarCharId: null, avatarSkinId: null, nameColor: '#ffffff', nameFrame: 'none', unlockedFrames: [], frameExpires: {} };
     }
     if (!Array.isArray(save.profile.unlockedFrames)) save.profile.unlockedFrames = [];
+    if (!save.profile.frameExpires || typeof save.profile.frameExpires !== 'object') save.profile.frameExpires = {};
+    const nowMs = Date.now();
+    let changed = false;
+    save.profile.unlockedFrames = save.profile.unlockedFrames.filter((fid) => {
+      if (!['rank_1', 'rank_2', 'rank_3'].includes(fid)) {
+        changed = true;
+        return false;
+      }
+      const exp = Number(save.profile.frameExpires[fid]);
+      if (!Number.isFinite(exp) || exp <= 0) {
+        save.profile.frameExpires[fid] = nowMs + RANK_FRAME_DURATION_MS;
+        return true;
+      }
+      if (exp <= nowMs) {
+        delete save.profile.frameExpires[fid];
+        changed = true;
+        return false;
+      }
+      return true;
+    });
+    if (save.profile.nameFrame && save.profile.nameFrame !== 'none' && !save.profile.unlockedFrames.includes(save.profile.nameFrame)) {
+      save.profile.nameFrame = 'none';
+      changed = true;
+    }
+    if (changed) {
+      try { persistSave(false, { localOnly: true }); } catch {}
+    }
     return save.profile;
+  }
+
+  function getFrameRemainingLabel(frameId) {
+    if (!frameId || frameId === 'none') return '';
+    const prof = ensureSaveProfile();
+    const exp = prof.frameExpires && Number(prof.frameExpires[frameId]);
+    if (!Number.isFinite(exp) || exp <= 0) return '30일';
+    const rem = exp - Date.now();
+    if (rem <= 0) return '';
+    if (rem >= 86400000) return `${Math.ceil(rem / 86400000)}일`;
+    return `${Math.max(1, Math.ceil(rem / 3600000))}시간`;
   }
 
   function getProfileAvatarInfo(profileObj, fallbackCharId, fallbackSkinId, checkLocalUnlock = false) {
@@ -2589,7 +2643,8 @@
     }
     if (el.profPrevNameWrap) {
       const frameToUse = prof.unlockedFrames.includes(prof.nameFrame) ? prof.nameFrame : 'none';
-      el.profPrevNameWrap.innerHTML = renderNameplateHtml(nick, frameToUse, prof.nameColor, 'lg');
+      const expTxt = frameToUse !== 'none' ? getFrameRemainingLabel(frameToUse) : '';
+      el.profPrevNameWrap.innerHTML = `${renderNameplateHtml(nick, frameToUse, prof.nameColor, 'lg')}${expTxt ? `<span class="prof-frame-exp-mini">${expTxt}</span>` : ''}`;
     }
     if (el.profPrevStats) {
       el.profPrevStats.textContent = `🏆 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 🏃 ${save.bestYear || 1}년 차 · 캐릭터 ${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
@@ -2677,12 +2732,14 @@
       (DATA.PROFILE_NAME_FRAMES || []).forEach((fr) => {
         const unlocked = fr.id === 'none' || prof.unlockedFrames.includes(fr.id);
         const eq = (prof.nameFrame || 'none') === fr.id && unlocked;
+        const expLabel = fr.id === 'none' ? '' : (unlocked ? getFrameRemainingLabel(fr.id) : '30일');
+        const expBadge = expLabel ? `<span class="prof-frame-exp${unlocked ? '' : ' locked'}">${expLabel}</span>` : '';
         const card = document.createElement('button');
         card.type = 'button';
         card.className = `prof-item-card prof-frame-card${eq ? ' equipped' : ''}${!unlocked ? ' locked' : ''}`;
         card.innerHTML = `
           <div class="prof-frame-meta">
-            <span class="prof-frame-title">${fr.name} ${eq ? '· 장착 중' : (!unlocked ? '· 🔒 미보유' : '')}</span>
+            <span class="prof-frame-title">${fr.name} ${expBadge} ${eq ? '· 장착 중' : (!unlocked ? '· 🔒 미보유' : '')}</span>
             <span class="prof-frame-desc">${fr.desc}</span>
           </div>
           <div class="prof-frame-preview">${renderNameplateHtml(nick, fr.id, prof.nameColor, 'md')}</div>
@@ -3676,7 +3733,7 @@
     if (el.weeklyChampGems) el.weeklyChampGems.innerHTML = `+${reward.gems.toLocaleString('ko-KR')} ${uiIcon('gem', 'sm')} 보석 지급!`;
     if (el.weeklyChampFramePreview) {
       if (reward.frameId) {
-        el.weeklyChampFramePreview.innerHTML = `${renderNameplateHtml(nick, reward.frameId, prof.nameColor, 'md')}<span class="champ-frame-note">👑 ${reward.frameName} 해금!</span>`;
+        el.weeklyChampFramePreview.innerHTML = `${renderNameplateHtml(nick, reward.frameId, prof.nameColor, 'md')}<span class="champ-frame-note">👑 ${reward.frameName} 해금! (30일)</span>`;
         el.weeklyChampFramePreview.classList.remove('hidden');
       } else {
         el.weeklyChampFramePreview.classList.add('hidden');
@@ -3695,11 +3752,14 @@
     pendingChampionReward = null;
     save.gems = (save.gems || 0) + rw.gems;
     const prof = ensureSaveProfile();
-    if (rw.frameId && !prof.unlockedFrames.includes(rw.frameId)) {
-      prof.unlockedFrames.push(rw.frameId);
-    }
-    if (rw.frameId && (!prof.nameFrame || prof.nameFrame === 'none')) {
-      prof.nameFrame = rw.frameId;
+    if (rw.frameId) {
+      if (!prof.unlockedFrames.includes(rw.frameId)) {
+        prof.unlockedFrames.push(rw.frameId);
+      }
+      prof.frameExpires[rw.frameId] = Date.now() + RANK_FRAME_DURATION_MS;
+      if (!prof.nameFrame || prof.nameFrame === 'none') {
+        prof.nameFrame = rw.frameId;
+      }
     }
     save.weeklyRank = save.weeklyRank || { weekKey: getWeekKey(), bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] };
     if (!Array.isArray(save.weeklyRank.claimedWeeks)) save.weeklyRank.claimedWeeks = [];

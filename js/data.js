@@ -573,9 +573,9 @@ window.RUN_DATA = (function () {
   ];
   const PROFILE_NAME_FRAMES = [
     { id: 'none', name: '기본 네임바', img: '', desc: '깔끔한 기본 프로필 닉네임 바' },
-    { id: 'rank_1', name: '1위 닉네임 장식', img: 'assets/ui/rank_frame_1.png', desc: '주간 랭킹 1위 달성 보상 (황금 월계관)' },
-    { id: 'rank_2', name: '2위 닉네임 장식', img: 'assets/ui/rank_frame_2.png', desc: '주간 랭킹 2위 달성 보상 (겨울 눈꽃)' },
-    { id: 'rank_3', name: '3위 닉네임 장식', img: 'assets/ui/rank_frame_3.png', desc: '주간 랭킹 3위 달성 보상 (가을 단풍)' }
+    { id: 'rank_1', name: '1위 닉네임 장식', img: 'assets/ui/rank_frame_1.png', desc: '주간 랭킹 1위 보상 · 30일 기간제 (황금 월계관)' },
+    { id: 'rank_2', name: '2위 닉네임 장식', img: 'assets/ui/rank_frame_2.png', desc: '주간 랭킹 2위 보상 · 30일 기간제 (겨울 눈꽃)' },
+    { id: 'rank_3', name: '3위 닉네임 장식', img: 'assets/ui/rank_frame_3.png', desc: '주간 랭킹 3위 보상 · 30일 기간제 (가을 단풍)' }
   ];
   const SCORE_ROAD_STEP = 1000;
 

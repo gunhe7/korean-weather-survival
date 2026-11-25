@@ -8518,6 +8518,9 @@ input:focus-visible {
 }
 
 .score-road-best-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 3px 10px;
   border-radius: 999px;
   border: 1.8px solid #071226;
@@ -8525,6 +8528,9 @@ input:focus-visible {
   color: #2b1200;
   font-size: 11px;
   font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0.2px;
+  text-shadow: none !important;
   white-space: nowrap;
   box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.6);
 }
@@ -10672,6 +10678,9 @@ input:focus-visible {
 
 /* ---- 4. Vault Ticket Exchange & Mileage Skin Exchange Bar ---- */
 .vault-ticket-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 3px 10px;
   border-radius: 999px;
   border: 1.8px solid #071226;
@@ -10679,6 +10688,9 @@ input:focus-visible {
   color: #05260e;
   font-size: 11px;
   font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0.2px;
+  text-shadow: none !important;
   white-space: nowrap;
   box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.6);
 }
@@ -12942,4 +12954,36 @@ input:focus-visible {
   .rank-nameplate.md .rnp-txt {
     font-size: 11px;
   }
+}
+
+/* Modal title pill layout & Rank Nameplate duration tag (30일) */
+.score-road-title-wrap {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.prof-frame-exp,
+.prof-frame-exp-mini {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1.4px solid rgba(255, 224, 96, 0.7);
+  background: rgba(12, 28, 62, 0.9);
+  color: #ffe878;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.prof-frame-exp.locked {
+  border-color: rgba(164, 206, 255, 0.45);
+  color: #a9ccf2;
+}
+
+.prof-frame-exp-mini {
+  font-size: 9.5px;
+  padding: 1px 5px;
 }
