@@ -4,6 +4,8 @@ window.OnlineService = (function () {
   const RTDB_BOARD_ROOT = '/weekly_boards';
   const RTDB_SAVES_ROOT = '/user_saves';
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+  // Launch season anchor: Monday 2026-11-23 00:00:00 KST = 1주차
+  const RANK_WEEK1_MON_KST_UTC = Date.UTC(2026, 10, 23, 0, 0, 0, 0);
   const WEEKLY_REWARD_GEMS = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP1_GEMS) || 500;
 
   // ===================== FIREBASE PROJECT CONFIG (korean-weather-survival) =====================
@@ -143,6 +145,17 @@ window.OnlineService = (function () {
     const prev = getIsoWeekKeyFromKstDate(prevKst);
 
     const dayOfWeek = kstNow.getUTCDay();
+    const daysSinceMon = dayOfWeek === 0 ? 6 : (dayOfWeek - 1);
+    const curMonKstUtc = Date.UTC(
+      kstNow.getUTCFullYear(),
+      kstNow.getUTCMonth(),
+      kstNow.getUTCDate() - daysSinceMon,
+      0, 0, 0, 0
+    );
+    const rawSeasonWeekNo = Math.floor((curMonKstUtc - RANK_WEEK1_MON_KST_UTC) / (7 * 86400000)) + 1;
+    const seasonWeekNo = Math.max(1, rawSeasonWeekNo);
+    const prevSeasonWeekNo = rawSeasonWeekNo - 1;
+
     const daysUntilMon = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
     const nextMonKstUtc = Date.UTC(
       kstNow.getUTCFullYear(),
@@ -165,9 +178,11 @@ window.OnlineService = (function () {
 
     return {
       weekKey: cur.key,
-      weekLabel: `${cur.year}년 ${cur.weekNo}주차`,
+      seasonWeekNo,
+      prevSeasonWeekNo,
+      weekLabel: `${seasonWeekNo}주차`,
       prevWeekKey: prev.key,
-      prevWeekLabel: `${prev.year}년 ${prev.weekNo}주차`,
+      prevWeekLabel: prevSeasonWeekNo >= 1 ? `${prevSeasonWeekNo}주차` : '',
       msRemaining,
       countdownText
     };
@@ -925,6 +940,7 @@ window.OnlineService = (function () {
     if (!isRankedProvider(save.auth.provider) || isLegacyUnverifiedUid(save.auth.uid)) return null;
 
     const info = getWeekInfo();
+    if ((info.prevSeasonWeekNo || 0) < 1) return null;
     const prevKey = info.prevWeekKey;
     const wr = save.weeklyRank || {};
     const claimed = Array.isArray(wr.claimedWeeks) ? wr.claimedWeeks : [];

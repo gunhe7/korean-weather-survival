@@ -3807,10 +3807,10 @@
       }
     }
     if (el.rankLastWinner) {
-      const lastChamp = !isTodayMode && prevRes && prevRes.board && prevRes.board[0];
+      const lastChamp = !isTodayMode && (weekInfo.prevSeasonWeekNo || 0) >= 1 && prevRes && prevRes.board && prevRes.board[0];
       el.rankLastWinner.classList.toggle('hidden', !lastChamp);
       if (lastChamp) {
-        el.rankLastWinner.innerHTML = uiText(`지난주 1위 👑 ${lastChamp.nickname}`, 'xs');
+        el.rankLastWinner.innerHTML = uiText(`${weekInfo.prevWeekLabel || '지난주'} 1위 👑 ${lastChamp.nickname}`, 'xs');
       }
     }
 
