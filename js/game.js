@@ -392,7 +392,6 @@
     btnRotateLock: document.getElementById('btn-rotate-lock'),
     tabContainer: document.getElementById('tab-container'),
     bottomNav: document.getElementById('bottom-nav'),
-    navDynamicHandle: document.getElementById('nav-dynamic-handle'),
 
     introOverlay: document.getElementById('intro-overlay'),
     introLoginBox: document.getElementById('intro-login-box'),
@@ -4562,7 +4561,7 @@
   }
 
   function renderShopList() {
-    if (!['gacha', 'chests', 'skins', 'gold', 'gems', 'boosters'].includes(currentShopSubtab)) {
+    if (!['gacha', 'chests', 'skins', 'gold', 'gems'].includes(currentShopSubtab)) {
       currentShopSubtab = 'gacha';
     }
     document.querySelectorAll('.subtab-btn').forEach((b) => {
@@ -5051,53 +5050,6 @@
 
       sec.appendChild(grid);
       el.shopItemsList.appendChild(sec);
-    } else {
-      // 1-RUN WEATHER BOOSTERS (PERMANENT UPGRADES REMOVED!)
-      const bstSec = document.createElement('div');
-      bstSec.className = 'bs-shop-section';
-      bstSec.innerHTML = `
-        <div class="bs-shop-sec-head boosters">
-          <span class="bs-shop-sec-title">⚡ 1회용 기상 부스터</span>
-          <span class="bs-shop-sec-sub">구매 시 다음 달리기에 자동 장착됩니다!</span>
-        </div>
-      `;
-      const bstGrid = document.createElement('div');
-      bstGrid.className = 'bs-shop-grid three';
-
-      DATA.BOOSTERS.forEach((b) => {
-        const ownedQty = save.boosters[b.id] || 0;
-        const card = document.createElement('div');
-        card.className = 'bs-offer-card booster-card';
-        card.innerHTML = `
-          <div class="bs-offer-ribbon">보유 ${ownedQty}개</div>
-          <div class="bs-offer-stage">
-            <img src="${b.icon}" alt="${b.name}" class="bs-offer-img upg" />
-          </div>
-          <div class="bs-offer-name">${b.name}</div>
-          <div class="bs-offer-sub">${b.desc}</div>
-        `;
-        const foot = document.createElement('div');
-        foot.className = 'bs-offer-foot';
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'bs-buy-btn gold';
-        btn.innerHTML = `${uiIcon('coin', 'btn')} ${b.price.toLocaleString('ko-KR')}`;
-        btn.disabled = save.gold < b.price;
-        btn.onclick = () => {
-          if (save.gold < b.price) return;
-          SFX.buy();
-          save.gold -= b.price;
-          save.boosters[b.id] = ownedQty + 1;
-          persistSave();
-          refreshAllMenus();
-          showToast(`${b.name} 구매 완료! 다음 달리기에 자동 적용됩니다.`);
-        };
-        foot.appendChild(btn);
-        card.appendChild(foot);
-        bstGrid.appendChild(card);
-      });
-      bstSec.appendChild(bstGrid);
-      el.shopItemsList.appendChild(bstSec);
     }
   }
 
@@ -5105,7 +5057,6 @@
     const next = currentTab === 'home' ? false : Boolean(collapsed);
     dockCollapsed = next;
     if (el.bottomNav) el.bottomNav.classList.toggle('dock-collapsed', next);
-    if (el.navDynamicHandle) el.navDynamicHandle.classList.toggle('hidden', !next);
   }
 
   function switchTab(tab) {
@@ -6102,7 +6053,13 @@
     // Timers
     if (run.invulnTimer > 0) run.invulnTimer = Math.max(0, run.invulnTimer - dt);
     if (run.magnetTimer > 0) run.magnetTimer = Math.max(0, run.magnetTimer - dt);
-    if (run.speedBoostTimer > 0) run.speedBoostTimer = Math.max(0, run.speedBoostTimer - dt);
+    if (run.speedBoostTimer > 0) {
+      run.speedBoostTimer = Math.max(0, run.speedBoostTimer - dt);
+      if (run.speedBoostTimer <= 0) {
+        run.invulnTimer = Math.max(run.invulnTimer || 0, 1.8);
+        Renderer.spawnFloater('⚡ 광속 질주 종료 · 잠시 무적!', '#7ceeff', run.playerX + 10, run.playerY - 46);
+      }
+    }
     if (run.mudBlindTimer > 0) run.mudBlindTimer = Math.max(0, run.mudBlindTimer - dt);
     if (run.umbrellaBrokenTimer > 0) run.umbrellaBrokenTimer = Math.max(0, run.umbrellaBrokenTimer - dt);
     if (run.shadeScoreCd > 0) run.shadeScoreCd = Math.max(0, run.shadeScoreCd - dt);
@@ -6114,15 +6071,20 @@
     if (run.feverTimer > 0) {
       run.feverTimer = Math.max(0, run.feverTimer - dt);
       run.feverCharge = (run.feverTimer / 4.5) * 100;
+      if (run.feverTimer <= 0) {
+        run.invulnTimer = Math.max(run.invulnTimer || 0, 1.8);
+        Renderer.spawnFloater('✨ 무적질주 종료 · 잠시 무적!', '#ffe866', run.playerX + 10, run.playerY - 46);
+      }
     }
 
-    // In-run shield item expires cleanly after 10 seconds (paid Shield Booster lasts until first hit!)
+    // In-run shield item expires cleanly after 10 seconds with brief grace invincibility
     if (run.shield && !run.shieldFromBooster) {
       run.shieldTimer = Math.max(0, (run.shieldTimer || 0) - dt);
       if (run.shieldTimer <= 0) {
         run.shield = false;
+        run.invulnTimer = Math.max(run.invulnTimer || 0, 1.8);
         SFX.umbrellaToggle(false);
-        Renderer.spawnFloater('🛡️ 보호막 지속시간 종료', '#9fd9ff', run.playerX + 10, run.playerY - 42);
+        Renderer.spawnFloater('🛡️ 보호막 종료 · 잠시 무적!', '#9fd9ff', run.playerX + 10, run.playerY - 42);
       }
     }
 
@@ -8104,16 +8066,6 @@
     });
 
     // Apple Dynamic Bar Collapsible Bottom Menu Bar (Active ONLY on non-home tabs!)
-    if (el.navDynamicHandle) {
-      el.navDynamicHandle.addEventListener('click', () => {
-        SFX.click();
-        if (dockAutoHideTimer) {
-          clearTimeout(dockAutoHideTimer);
-          dockAutoHideTimer = null;
-        }
-        setDynamicDockCollapsed(false);
-      });
-    }
     if (el.tabContainer) {
       let touchStartY = 0;
       let touchTracking = false;
