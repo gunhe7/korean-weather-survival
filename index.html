@@ -9,14 +9,14 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd87" />
+  <link rel="manifest" href="manifest.json?v=20261121hd88" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd87" />
+  <link rel="stylesheet" href="style.css?v=20261121hd88" />
 </head>
 <body>
   <div id="mobile-app">
@@ -224,7 +224,7 @@
           <div class="bs-home-left-dock">
             <button id="btn-home-season-pass" class="bs-pass-dock-btn" type="button" aria-label="시즌 패스 열기">
               <span class="bs-pass-art-wrap">
-                <img src="assets/ui/season_pass_ticket.png?v=20261121hd87" alt="시즌 패스" class="bs-pass-ticket-img" />
+                <img src="assets/ui/season_pass_ticket.png?v=20261121hd88" alt="시즌 패스" class="bs-pass-ticket-img" />
                 <span class="bs-pass-img-title">시즌 패스</span>
                 <span id="home-pass-dot" class="bs-pass-dot hidden" aria-hidden="true">!</span>
               </span>
@@ -939,58 +939,98 @@
     </div>
 
     <!-- ================= BRAWL STARS STYLE SEASON PASS MODAL (FREE + GOLD PASS ₩9,900!) ================= -->
-    <div id="season-pass-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="시즌 패스">
-      <div class="cr-modal score-road-modal sp-modal">
-        <div class="cr-modal-bar settings-arcade-bar score-road-bar">
-          <div class="score-road-title-wrap">
-            <span class="settings-bar-title">🎫 시즌 1 패스</span>
-            <span id="sp-tier-pill" class="score-road-best-pill">Lv.0 / 80</span>
-          </div>
-          <div class="score-road-bar-actions">
-            <button id="btn-sp-claim-all" class="cr-gold-btn score-road-claim-all hidden" type="button">🎁 모두 받기</button>
-            <button id="btn-close-season-pass" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
-          </div>
-        </div>
-
-        <div class="sp-top-banner">
-          <div class="sp-xp-col">
-            <div class="sp-xp-bar-track">
-              <div id="sp-xp-fill" class="sp-xp-bar-fill" style="width: 0%"></div>
-              <span id="sp-xp-text" class="sp-xp-bar-txt">다음 티어까지 0 / 100 XP</span>
-            </div>
-            <div class="sp-xp-hint">패스 일일 미션 완료 또는 💎100 티어 건너뛰기로만 패스 XP를 획득합니다!</div>
+    <div id="season-pass-overlay" class="modal-overlay sp-overlay hidden" role="dialog" aria-modal="true" aria-label="시즌 패스">
+      <div class="cr-modal sp-modal">
+        <div class="cr-modal-bar settings-arcade-bar sp-header-bar">
+          <div class="sp-hdr-left">
+            <img src="assets/ui/season_pass_ticket.png?v=20261121hd88" alt="" class="sp-bar-ticket-ico" />
+            <span class="sp-bar-title">시즌 1 패스</span>
+            <span id="sp-tier-pill" class="score-road-best-pill sp-tier-pill">Lv.0 / 80</span>
+            <span id="sp-season-timer" class="sp-timer-pill">종료 D-67</span>
           </div>
 
-          <div class="sp-pass-cta-col">
-            <button id="btn-sp-skip-tier" class="cr-gold-btn sp-skip-tier-btn" type="button">⏩ 1티어 💎100</button>
-            <button id="btn-buy-gold-pass" class="cr-gold-btn sp-buy-gold-btn" type="button">
-              👑 골드 패스 ₩9,900
+          <div class="sp-subtabs" role="tablist" aria-label="시즌 패스 보기">
+            <button id="btn-sp-tab-rewards" class="sp-subtab active" type="button" role="tab" aria-selected="true">패스 보상</button>
+            <button id="btn-sp-tab-missions" class="sp-subtab" type="button" role="tab" aria-selected="false">
+              <span>일일 미션</span>
+              <span id="sp-mission-dot" class="sp-tab-dot hidden" aria-hidden="true">!</span>
             </button>
-            <span id="sp-gold-active-pill" class="sp-gold-active-pill hidden">👑 골드 패스 활성!</span>
           </div>
-        </div>
 
-        <div class="sp-subtabs" role="tablist" aria-label="시즌 패스 보기">
-          <button id="btn-sp-tab-rewards" class="sp-subtab active" type="button" role="tab" aria-selected="true">🎫 패스 보상</button>
-          <button id="btn-sp-tab-missions" class="sp-subtab" type="button" role="tab" aria-selected="false">
-            📋 패스 일일 미션
-            <span id="sp-mission-dot" class="sp-tab-dot hidden" aria-hidden="true">!</span>
-          </button>
+          <div class="sp-hdr-right">
+            <button id="btn-sp-claim-all" class="sp-btn-claim-all hidden" type="button">모두 받기</button>
+            <button id="btn-close-season-pass" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </button>
+          </div>
         </div>
 
         <div id="sp-rewards-pane" class="sp-rewards-pane">
-          <div class="sp-track-legend">
-            <span class="sp-leg-pill gold">👑 골드 패스 (최종 80티어: 신화 스킨 · 얼음황제 + 무지개 프리즘)</span>
-            <span class="sp-leg-pill free">🎁 무료 패스 (보석 · 상자 · 뽑기권 · 골드)</span>
-            <span id="sp-season-timer" class="sp-leg-pill timer">⏳ 시즌 종료까지 -일</span>
+          <div class="sp-left-rail">
+            <div class="sp-rail-gold-box">
+              <div class="sp-rail-head">
+                <img src="assets/icons/ico_crown.svg?v=20261121hd88" alt="" class="sp-rail-ico" />
+                <span class="sp-rail-label gold">골드 패스</span>
+              </div>
+              <div class="sp-rail-sub">80티어 신화 얼음황제</div>
+              <button id="btn-buy-gold-pass" class="sp-btn-gold" type="button">₩9,900 활성화</button>
+              <span id="sp-gold-active-pill" class="sp-gold-active-pill hidden">활성화 완료</span>
+            </div>
+
+            <div class="sp-rail-xp-cell">
+              <div class="sp-xp-bar-track">
+                <div id="sp-xp-fill" class="sp-xp-bar-fill" style="width: 0%"></div>
+                <span id="sp-xp-text" class="sp-xp-bar-txt">0 / 100 XP</span>
+              </div>
+            </div>
+
+            <div class="sp-rail-free-box">
+              <div class="sp-rail-head">
+                <span class="sp-rail-label free">무료 패스</span>
+              </div>
+              <div class="sp-rail-sub">보석 · 상자 · 뽑기권</div>
+              <button id="btn-sp-skip-tier" class="sp-btn-skip" type="button">
+                <img src="assets/icons/ico_skip.svg?v=20261121hd88" alt="" class="sp-btn-ico" />
+                <span>1티어</span>
+                <img src="assets/icons/ico_gem.svg?v=20261121hd88" alt="" class="sp-btn-ico" />
+                <span>100</span>
+              </button>
+            </div>
           </div>
 
           <div id="sp-track" class="sp-track"></div>
         </div>
 
         <div id="sp-missions-pane" class="sp-missions-pane hidden">
-          <div class="sp-missions-banner">⏱️ 매일 초기화 · 패스 일일 미션을 완료하고 버튼을 눌러 패스 XP를 받으세요!</div>
+          <div class="sp-missions-banner">매일 00시 초기화 · 미션 완료 후 버튼을 눌러 패스 XP를 획득하세요.</div>
           <div id="sp-missions-list" class="sp-missions-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SEASON PASS TIER SKIP IN-GAME CONFIRM MODAL ================= -->
+    <div id="sp-skip-overlay" class="modal-overlay sp-skip-overlay hidden" role="dialog" aria-modal="true" aria-label="티어 건너뛰기 확인">
+      <div class="cr-modal settings-arcade-modal sp-skip-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <span class="settings-bar-title">티어 건너뛰기</span>
+          <button id="btn-close-sp-skip" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="sp-skip-body">
+          <div class="sp-skip-gem-wrap">
+            <img src="assets/icons/ico_gem.svg?v=20261121hd88" alt="보석" class="sp-skip-gem-hero" />
+          </div>
+          <div id="sp-skip-tier-range" class="sp-skip-tier-range">Lv.0 → Lv.1</div>
+          <div id="sp-skip-desc" class="sp-skip-desc">보석 100개로 1티어를 건너뜁니다.</div>
+          <div id="sp-skip-balance" class="sp-skip-balance">보유 보석 0</div>
+          <div class="sp-skip-actions">
+            <button id="btn-sp-skip-cancel" class="sp-skip-cancel-btn" type="button">취소</button>
+            <button id="btn-sp-skip-confirm" class="sp-skip-confirm-btn" type="button">
+              <img src="assets/icons/ico_gem.svg?v=20261121hd88" alt="" class="sp-btn-ico" />
+              <span id="sp-skip-confirm-txt">100 건너뛰기</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1179,14 +1219,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd87"></script>
-  <script src="js/ui-icons.js?v=20261121hd87"></script>
-  <script src="js/weather-live.js?v=20261121hd87"></script>
-  <script src="js/audio.js?v=20261121hd87"></script>
-  <script src="js/studio-intro.js?v=20261121hd87"></script>
-  <script src="js/online.js?v=20261121hd87"></script>
-  <script src="js/renderer.js?v=20261121hd87"></script>
-  <script src="js/game.js?v=20261121hd87"></script>
+  <script src="js/data.js?v=20261121hd88"></script>
+  <script src="js/ui-icons.js?v=20261121hd88"></script>
+  <script src="js/weather-live.js?v=20261121hd88"></script>
+  <script src="js/audio.js?v=20261121hd88"></script>
+  <script src="js/studio-intro.js?v=20261121hd88"></script>
+  <script src="js/online.js?v=20261121hd88"></script>
+  <script src="js/renderer.js?v=20261121hd88"></script>
+  <script src="js/game.js?v=20261121hd88"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

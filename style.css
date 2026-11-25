@@ -13236,40 +13236,336 @@ input:focus-visible {
   }
 }
 
-/* Season Pass Modal */
-.sp-modal {
-  max-width: 820px;
-  width: 96vw;
-  max-height: min(90dvh, 660px);
-  display: flex;
-  flex-direction: column;
+/* Season Pass Modal — True Brawl Stars Horizontal Layout (Zero Vertical Scroll!) */
+.sp-overlay {
+  padding: 12px;
 }
 
-.sp-top-banner {
+.sp-modal {
+  width: min(1040px, 95vw);
+  height: min(500px, 84dvh);
+  max-height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, #15367c 0%, #0b1a3d 100%) !important;
+  border: 3px solid #7fe2ff;
+  box-shadow: 0 18px 46px rgba(4, 12, 32, 0.8), 0 5px 0 #071228;
+}
+
+.sp-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 10px;
-  padding: 9px 14px;
-  background: linear-gradient(180deg, rgba(16, 36, 76, 0.94), rgba(11, 24, 52, 0.98));
-  border-bottom: 2px solid #081226;
+  flex-wrap: nowrap;
+  padding: 6px 12px !important;
+  min-height: 44px;
+  flex-shrink: 0;
 }
 
-.sp-xp-col {
+.sp-hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.sp-bar-ticket-ico {
+  height: 22px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.sp-bar-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 #071226;
+  white-space: nowrap;
+}
+
+.sp-timer-pill {
+  font-size: 10.5px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(8, 21, 50, 0.78);
+  border: 1.5px solid rgba(135, 220, 255, 0.55);
+  color: #d0f0ff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sp-subtabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 11px;
+  background: rgba(7, 17, 40, 0.78);
+  border: 1.8px solid #071022;
+  flex-shrink: 0;
+}
+
+.sp-subtab {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: #a7ccf5;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sp-subtab.active {
+  background: linear-gradient(180deg, #ffe357, #ee9608);
+  color: #241000;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.65);
+}
+
+.sp-tab-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ff3e55;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 900;
+  border: 1.5px solid #071022;
+}
+
+.sp-hdr-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.sp-btn-claim-all {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: auto;
+  padding: 5px 11px;
+  border-radius: 9px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #5ef89d, #19a863);
+  color: #032111;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 900;
+  box-shadow: 0 2.5px 0 #071022, inset 0 1.5px 0 rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sp-btn-claim-all:active {
+  transform: translateY(1.5px);
+}
+
+.sp-tab-dot.hidden,
+.sp-rewards-pane.hidden,
+.sp-missions-pane.hidden,
+.sp-btn-claim-all.hidden,
+.sp-btn-gold.hidden,
+.sp-gold-active-pill.hidden,
+.sp-btn-skip.hidden {
+  display: none !important;
+}
+
+/* Horizontal Brawl Pass Stage: Left Pinned Column + Right Horizontal Track */
+.sp-rewards-pane {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
   flex: 1;
-  min-width: 210px;
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #102759 0%, #091838 100%);
+}
+
+.sp-left-rail {
+  flex: 0 0 186px;
+  height: 100%;
+  padding: 8px 8px 10px 10px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 30px minmax(0, 1fr);
+  background: linear-gradient(180deg, #132d63 0%, #0b1b3e 100%);
+  border-right: 2.5px solid #071022;
+  box-shadow: 4px 0 14px rgba(4, 10, 28, 0.45);
+  z-index: 3;
+}
+
+.sp-rail-gold-box,
+.sp-rail-free-box {
+  height: 100%;
+  min-height: 0;
+  padding: 8px 9px;
+  border-radius: 12px;
+  border: 2.2px solid #071022;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
   gap: 4px;
+  box-shadow: 0 3px 0 #071022;
+  overflow: hidden;
+}
+
+.sp-rail-gold-box {
+  background: linear-gradient(180deg, #644306 0%, #372202 100%);
+  border-color: #f0b222;
+}
+
+.sp-rail-free-box {
+  background: linear-gradient(180deg, #1b3a75 0%, #10244d 100%);
+  border-color: #3567b8;
+}
+
+.sp-rail-head {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.sp-rail-ico {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.sp-rail-label {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.sp-rail-label.gold {
+  color: #ffe866;
+  text-shadow: 0 1.5px 0 #241000;
+}
+
+.sp-rail-label.free {
+  color: #bce8ff;
+  text-shadow: 0 1.5px 0 #071022;
+}
+
+.sp-rail-sub {
+  font-size: 10px;
+  font-weight: 800;
+  color: #dbeeff;
+  opacity: 0.9;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sp-btn-gold,
+.sp-btn-skip {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 9px;
+  border: 2px solid #071022;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2.5px 0 #071022, inset 0 1.5px 0 rgba(255, 255, 255, 0.48);
+  flex-shrink: 0;
+}
+
+.sp-btn-gold {
+  background: linear-gradient(180deg, #ffe557, #eb9400);
+  color: #241000;
+}
+
+.sp-btn-skip {
+  background: linear-gradient(180deg, #56e0ff, #1986db);
+  color: #ffffff;
+  text-shadow: 0 1.2px 0 #071022;
+}
+
+.sp-btn-gold:active,
+.sp-btn-skip:active {
+  transform: translateY(1.5px);
+}
+
+.sp-btn-skip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sp-btn-ico {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.sp-gold-active-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1.8px solid #ffe97a;
+  background: linear-gradient(180deg, #ffe24a, #f29d12);
+  color: #241000;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.sp-rail-xp-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
 }
 
 .sp-xp-bar-track {
   position: relative;
+  width: 100%;
   height: 22px;
   border-radius: 999px;
   border: 2px solid #071022;
-  background: #0a152e;
+  background: #081329;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -13288,121 +13584,65 @@ input:focus-visible {
 .sp-xp-bar-txt {
   position: relative;
   z-index: 2;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   color: #ffffff;
   text-shadow: 0 1.2px 0 #071022;
-}
-
-.sp-xp-hint {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #9dc8f5;
-}
-
-.sp-pass-cta-col {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-  flex-shrink: 0;
-}
-
-.sp-skip-tier-btn {
-  padding: 8px 12px !important;
-  font-size: 12.5px !important;
-  border-radius: 12px !important;
-  white-space: nowrap;
-  background: linear-gradient(180deg, #5fe3ff, #1f8fe0) !important;
-  color: #ffffff !important;
-  border-color: #081226 !important;
-}
-
-.sp-skip-tier-btn:disabled {
-  opacity: 0.5;
-}
-
-.sp-buy-gold-btn {
-  padding: 8px 14px !important;
-  font-size: 13px !important;
-  border-radius: 12px !important;
   white-space: nowrap;
 }
 
-.sp-gold-active-pill {
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 2px solid #ffe97a;
-  background: linear-gradient(180deg, #ffe24a, #f29d12);
-  color: #241000;
-  font-size: 12px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.sp-track-legend {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 14px 4px;
-}
-
-.sp-leg-pill.timer {
-  background: rgba(120, 214, 255, 0.14);
-  border-color: rgba(140, 222, 255, 0.55);
-  color: #d4f2ff;
-}
-
-.sp-leg-pill {
-  font-size: 10.5px;
-  font-weight: 900;
-  padding: 2px 9px;
-  border-radius: 999px;
-  border: 1.5px solid #081226;
-}
-
-.sp-leg-pill.gold {
-  background: rgba(255, 206, 62, 0.2);
-  border-color: rgba(255, 214, 78, 0.65);
-  color: #ffe878;
-}
-
-.sp-leg-pill.free {
-  background: rgba(84, 210, 255, 0.16);
-  border-color: rgba(114, 218, 255, 0.55);
-  color: #bce8ff;
-}
-
+/* Horizontal Scroll Track — Zero Vertical Scroll, Uniform Columns */
 .sp-track {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
   display: flex;
-  gap: 8px;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
   overflow-x: auto;
-  padding: 6px 14px 12px;
+  overflow-y: hidden;
+  padding: 8px 10px 4px 4px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #4dc2ff #0a1838;
+}
+
+.sp-track::-webkit-scrollbar {
+  height: 6px;
+}
+
+.sp-track::-webkit-scrollbar-track {
+  background: #091736;
+}
+
+.sp-track::-webkit-scrollbar-thumb {
+  background: #3daff5;
+  border-radius: 999px;
 }
 
 .sp-col {
-  flex: 0 0 118px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  flex: 0 0 116px;
+  height: 100%;
+  padding: 0 4px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 30px minmax(0, 1fr);
+  align-items: stretch;
   scroll-snap-align: start;
 }
 
 .sp-col.tier-final {
-  flex: 0 0 144px;
+  flex: 0 0 136px;
 }
 
 .sp-card {
   position: relative;
   width: 100%;
-  min-height: 118px;
+  height: 100%;
+  min-height: 0;
   padding: 6px 6px 7px;
-  border-radius: 13px;
+  border-radius: 12px;
   border: 2.2px solid #081226;
   display: flex;
   flex-direction: column;
@@ -13410,6 +13650,7 @@ input:focus-visible {
   justify-content: space-between;
   gap: 4px;
   box-shadow: 0 3px 0 #071022;
+  overflow: hidden;
 }
 
 .sp-card.gold-track {
@@ -13438,62 +13679,89 @@ input:focus-visible {
 }
 
 .sp-card.locked {
-  opacity: 0.68;
+  opacity: 0.9;
 }
 
-.sp-track-badge {
-  font-size: 9px;
+.sp-final-tag {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  font-size: 8.5px;
   font-weight: 900;
   padding: 1px 6px;
   border-radius: 999px;
-  border: 1.2px solid #071022;
-}
-
-.sp-track-badge.gold {
   background: linear-gradient(180deg, #ffe559, #eb9400);
   color: #241000;
+  border: 1.2px solid #071022;
+  white-space: nowrap;
 }
 
-.sp-track-badge.free {
-  background: #274f94;
-  color: #d2eaff;
+.sp-rw-box {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.sp-rw-art {
-  width: 44px;
-  height: 44px;
+.sp-rw-box .sp-rw-art,
+.sp-rw-box .ui-ico {
+  width: 48px !important;
+  height: 48px !important;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   display: block;
 }
 
-.sp-rw-art.chest {
-  width: 46px;
-  height: 46px;
-}
-
-.sp-rw-art.skin {
-  width: 52px;
-  height: 52px;
+.sp-rw-box .sp-rw-art.skin {
+  width: 56px !important;
+  height: 56px !important;
 }
 
 .sp-rw-lbl {
+  width: 100%;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 10.5px;
   font-weight: 900;
   color: #ffffff;
   text-align: center;
-  line-height: 1.18;
+  line-height: 1.15;
   white-space: pre-line;
+  flex-shrink: 0;
 }
 
 .sp-claim-btn {
   width: 100%;
-  padding: 4px 4px;
+  height: 26px;
+  padding: 0 5px;
   border-radius: 8px;
   border: 1.8px solid #071022;
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 900;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sp-claim-btn .sp-btn-ico,
+.sp-claim-btn .ui-ico {
+  width: 13px !important;
+  height: 13px !important;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 
 .sp-claim-btn.ready {
@@ -13508,9 +13776,9 @@ input:focus-visible {
 }
 
 .sp-claim-btn.locked {
-  background: #112244;
-  color: #88a8d4;
-  cursor: default;
+  background: #3a2b0d;
+  color: #ffe27a;
+  border-color: #9e7215;
 }
 
 .sp-claim-btn.skip {
@@ -13521,85 +13789,98 @@ input:focus-visible {
 
 .sp-claim-btn.skip-far {
   background: linear-gradient(180deg, #274d8a, #173262);
-  color: #bce6ff;
+  color: #cbe9ff;
 }
 
-.sp-card.locked {
-  opacity: 0.86;
-}
-
-.sp-subtabs {
+/* Continuous Horizontal Tier Rail */
+.sp-tier-cell {
+  position: relative;
   display: flex;
-  gap: 8px;
-  padding: 7px 14px 4px;
-  background: rgba(9, 20, 44, 0.88);
-  border-bottom: 1.5px solid rgba(110, 178, 255, 0.16);
-  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin: 0 -4px;
 }
 
-.sp-subtab {
-  flex: 1;
-  padding: 7px 12px;
-  border-radius: 10px;
-  border: 2px solid #081226;
-  background: #142b57;
-  color: #9ec4f0;
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  font-weight: 900;
-  cursor: pointer;
+.sp-tier-cell::before,
+.sp-tier-cell::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 6px;
+  width: 50%;
+  background: #0c1f45;
+  border-top: 1px solid #060e20;
+  border-bottom: 1px solid #060e20;
+  z-index: 1;
 }
 
-.sp-subtab.active {
-  background: linear-gradient(180deg, #ffd84a, #e8910a);
-  color: #241000;
-  border-color: #ffe878;
+.sp-tier-cell::before {
+  left: 0;
 }
 
-.sp-tab-dot {
+.sp-tier-cell::after {
+  right: 0;
+}
+
+.sp-col:last-child .sp-tier-cell::after {
+  display: none;
+}
+
+.sp-tier-cell.reached::before,
+.sp-tier-cell.reached::after {
+  background: linear-gradient(90deg, #3be88d, #2ed8ff);
+}
+
+.sp-tier-cell.next-tier::before {
+  background: linear-gradient(90deg, #3be88d, #2ed8ff);
+}
+
+.sp-tier-node {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 7px;
   border-radius: 999px;
-  background: #ff3e55;
-  color: #ffffff;
-  font-size: 10px;
+  border: 2px solid #081226;
+  background: #132852;
+  color: #a7ccf5;
+  font-size: 11px;
   font-weight: 900;
-  border: 1.5px solid #071022;
-  box-shadow: 0 1px 0 #071022;
 }
 
-.sp-tab-dot.hidden,
-.sp-rewards-pane.hidden,
-.sp-missions-pane.hidden {
-  display: none !important;
+.sp-tier-node.reached {
+  background: linear-gradient(180deg, #54f59a, #17a866);
+  color: #032111;
 }
 
-.sp-rewards-pane {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
+.sp-tier-node.next-tier {
+  background: linear-gradient(180deg, #ffe557, #eb9400);
+  color: #241000;
+  border-color: #fff29c;
 }
 
+/* Pass Daily Missions Tab */
 .sp-missions-pane {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 8px 14px 14px;
+  padding: 10px 14px 14px;
   gap: 8px;
+  background: linear-gradient(180deg, #102759 0%, #091838 100%);
 }
 
 .sp-missions-banner {
   font-size: 11.5px;
   font-weight: 800;
   color: #bfe4ff;
-  background: rgba(20, 48, 96, 0.72);
+  background: rgba(20, 48, 96, 0.78);
   border: 1.5px solid rgba(114, 210, 255, 0.3);
   border-radius: 10px;
   padding: 6px 10px;
@@ -13608,8 +13889,8 @@ input:focus-visible {
 }
 
 .sp-missions-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 8px;
 }
 
@@ -13618,7 +13899,7 @@ input:focus-visible {
   align-items: center;
   gap: 10px;
   padding: 9px 11px;
-  border-radius: 13px;
+  border-radius: 12px;
   border: 2px solid #081226;
   background: linear-gradient(180deg, #162e60, #0e1e42);
   box-shadow: 0 3px 0 #071022;
@@ -13638,13 +13919,20 @@ input:focus-visible {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: rgba(7, 16, 36, 0.65);
+  background: rgba(7, 16, 36, 0.68);
   border: 1.5px solid rgba(130, 198, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
   flex-shrink: 0;
+}
+
+.sp-mission-ico .ui-ico,
+.sp-mission-ico img {
+  width: 26px !important;
+  height: 26px !important;
+  object-fit: contain;
+  display: block;
 }
 
 .sp-mission-body {
@@ -13659,11 +13947,11 @@ input:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sp-mission-title {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 900;
   color: #ffffff;
   white-space: nowrap;
@@ -13672,7 +13960,7 @@ input:focus-visible {
 }
 
 .sp-mission-xp {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   padding: 2px 7px;
   border-radius: 999px;
@@ -13691,7 +13979,7 @@ input:focus-visible {
 
 .sp-mission-bar {
   flex: 1;
-  height: 10px;
+  height: 9px;
   border-radius: 999px;
   background: #08132a;
   border: 1.5px solid #060e20;
@@ -13706,7 +13994,7 @@ input:focus-visible {
 }
 
 .sp-mission-prog {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   color: #a7cdf5;
   white-space: nowrap;
@@ -13714,11 +14002,11 @@ input:focus-visible {
 }
 
 .sp-mission-btn {
-  padding: 7px 11px;
-  border-radius: 10px;
+  padding: 6px 10px;
+  border-radius: 9px;
   border: 2px solid #071022;
   font-family: var(--font-ui);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 900;
   cursor: pointer;
   flex-shrink: 0;
@@ -13741,65 +14029,272 @@ input:focus-visible {
   cursor: default;
 }
 
-.sp-tier-node {
-  display: inline-flex;
+/* Season Pass In-Game Tier Skip Confirm Modal (Replaces Native window.confirm) */
+#iap-overlay {
+  z-index: 70;
+}
+
+.sp-skip-overlay {
+  z-index: 72;
+}
+
+.sp-skip-modal {
+  width: min(370px, 90vw) !important;
+  overflow: hidden;
+}
+
+.sp-skip-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #132d63 0%, #0b1b3e 100%);
+}
+
+.sp-skip-gem-wrap {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(72, 224, 255, 0.36) 0%, rgba(16, 48, 108, 0) 72%);
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 34px;
-  height: 24px;
-  padding: 0 8px;
-  border-radius: 999px;
-  border: 2px solid #081226;
-  background: #132852;
-  color: #9ec4f0;
-  font-size: 11px;
+}
+
+.sp-skip-gem-hero {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  display: block;
+}
+
+.sp-skip-tier-range {
+  font-size: 18px;
   font-weight: 900;
+  color: #ffe866;
+  text-shadow: 0 2px 0 #071022;
 }
 
-.sp-tier-node.reached {
-  background: linear-gradient(180deg, #54f59a, #17a866);
-  color: #032111;
+.sp-skip-desc {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
 }
 
-@media (max-height: 500px) {
-  .sp-modal {
-    max-height: 94dvh;
+.sp-skip-balance {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #9cd2ff;
+  background: rgba(7, 16, 38, 0.58);
+  padding: 3px 11px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(114, 200, 255, 0.28);
+}
+
+.sp-skip-actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.sp-skip-cancel-btn,
+.sp-skip-confirm-btn {
+  height: 38px;
+  border-radius: 10px;
+  border: 2px solid #071022;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #071022, inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sp-skip-cancel-btn {
+  flex: 1;
+  background: linear-gradient(180deg, #334e7a, #1d3154);
+  color: #dceaff;
+}
+
+.sp-skip-confirm-btn {
+  flex: 1.45;
+  background: linear-gradient(180deg, #56e0ff, #1986db);
+  color: #ffffff;
+  text-shadow: 0 1.2px 0 #071022;
+}
+
+.sp-skip-cancel-btn:active,
+.sp-skip-confirm-btn:active {
+  transform: translateY(1.5px);
+}
+
+/* Mobile Landscape Compact Brawl Pass — Zero Vertical Scroll! */
+@media (max-height: 520px), (max-width: 860px) {
+  .sp-overlay {
+    padding: 6px !important;
   }
-  .sp-top-banner {
-    padding: 6px 10px;
+  .sp-modal {
+    width: 98vw;
+    height: 95dvh;
+    max-height: 95dvh;
+    border-radius: 14px;
+  }
+  .sp-header-bar {
+    padding: 4px 10px !important;
+    min-height: 36px;
     gap: 6px;
   }
-  .sp-xp-hint {
-    display: none;
+  .sp-bar-ticket-ico {
+    height: 18px;
   }
-  .sp-subtabs {
-    padding: 5px 10px 4px;
+  .sp-bar-title {
+    font-size: 13.5px;
+  }
+  .sp-timer-pill {
+    font-size: 9.5px;
+    padding: 2px 6px;
   }
   .sp-subtab {
-    padding: 5px 10px;
+    padding: 4px 9px;
+    font-size: 11px;
+  }
+  .sp-btn-claim-all {
+    padding: 4px 9px;
+    font-size: 10.5px;
+  }
+  .sp-left-rail {
+    flex: 0 0 144px;
+    padding: 5px 6px 6px 8px;
+    grid-template-rows: minmax(0, 1fr) 24px minmax(0, 1fr);
+  }
+  .sp-rail-gold-box,
+  .sp-rail-free-box {
+    padding: 5px 6px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+  .sp-rail-ico {
+    width: 14px;
+    height: 14px;
+  }
+  .sp-rail-label {
     font-size: 11.5px;
+  }
+  .sp-rail-sub {
+    font-size: 9px;
+  }
+  .sp-btn-gold,
+  .sp-btn-skip {
+    height: 25px;
+    font-size: 10.5px;
+    padding: 0 6px;
+  }
+  .sp-gold-active-pill {
+    height: 24px;
+    font-size: 10px;
+  }
+  .sp-xp-bar-track {
+    height: 18px;
+  }
+  .sp-xp-bar-txt {
+    font-size: 9.5px;
+  }
+  .sp-track {
+    padding: 5px 8px 3px 3px;
+  }
+  .sp-col {
+    flex: 0 0 96px;
+    padding: 0 3px;
+    grid-template-rows: minmax(0, 1fr) 24px minmax(0, 1fr);
+  }
+  .sp-col.tier-final {
+    flex: 0 0 112px;
+  }
+  .sp-tier-cell {
+    margin: 0 -3px;
+  }
+  .sp-tier-node {
+    min-width: 26px;
+    height: 20px;
+    font-size: 10px;
+    padding: 0 5px;
+  }
+  .sp-card {
+    padding: 4px 4px 5px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+  .sp-rw-box .sp-rw-art,
+  .sp-rw-box .ui-ico {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  .sp-rw-box .sp-rw-art.skin {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .sp-rw-lbl {
+    min-height: 20px;
+    font-size: 9.5px;
+  }
+  .sp-claim-btn {
+    height: 22px;
+    font-size: 9.5px;
+    padding: 0 4px;
+  }
+  .sp-claim-btn .sp-btn-ico,
+  .sp-claim-btn .ui-ico {
+    width: 11px !important;
+    height: 11px !important;
   }
   .sp-missions-pane {
     padding: 6px 10px 10px;
     gap: 6px;
   }
+  .sp-missions-list {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 6px;
+  }
   .sp-mission-card {
     padding: 7px 9px;
   }
-  .sp-col {
-    flex: 0 0 106px;
+  .sp-skip-body {
+    padding: 10px 14px 12px;
+    gap: 6px;
   }
-  .sp-card {
-    min-height: 96px;
-    padding: 5px;
+  .sp-skip-gem-wrap {
+    width: 44px;
+    height: 44px;
   }
-  .sp-rw-art {
-    width: 34px;
+  .sp-skip-gem-hero {
+    width: 36px;
+    height: 36px;
+  }
+  .sp-skip-tier-range {
+    font-size: 15.5px;
+  }
+  .sp-skip-desc {
+    font-size: 12px;
+  }
+  .sp-skip-cancel-btn,
+  .sp-skip-confirm-btn {
     height: 34px;
+    font-size: 12px;
   }
-  .sp-rw-art.skin {
-    width: 42px;
-    height: 42px;
+}
+
+@media (max-width: 680px) {
+  .sp-timer-pill {
+    display: none;
   }
 }
 
@@ -13818,11 +14313,11 @@ input:focus-visible {
 .skin-rar-pill,
 .bs-mythic-exclusive,
 .score-road-best-pill,
-.sp-track-badge,
 .sp-claim-btn,
 .sp-mission-btn,
-.sp-skip-tier-btn,
-.sp-buy-gold-btn,
+.sp-btn-skip,
+.sp-btn-gold,
+.sp-btn-claim-all,
 .sp-gold-active-pill,
 .sr-claim-btn,
 .bs-buy-btn,
@@ -13850,7 +14345,7 @@ input:focus-visible {
 .sp-subtab,
 .bs-shop-tab-btn,
 .rank-mode-btn,
-.sp-leg-pill {
+.sp-timer-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;

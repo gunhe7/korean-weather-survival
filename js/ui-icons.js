@@ -3,14 +3,20 @@
 // to replace fallback emojis everywhere automatically without code changes.
 window.UIIcons = (function () {
   const ICON_MAP = {
-    coin:     { src: 'assets/design/item_coin.png?v=20261121hd41', alt: '골드',   fallback: '🪙', prebuilt: true },
-    ticket:   { src: 'assets/ui/gacha_ticket.png?v=20261121hd56',  alt: '뽑기권', fallback: '🎟️', prebuilt: true },
-    gem:      { src: 'assets/icons/ico_gem.png',                   alt: '보석',   fallback: '💎' },
-    crown:    { src: 'assets/icons/ico_crown.png',                 alt: '왕관',   fallback: '👑' },
-    heart:    { src: 'assets/icons/ico_heart.png',                 alt: '체력',   fallback: '❤️' },
-    umbrella: { src: 'assets/icons/ico_umbrella.png?v=20261121hd65', alt: '우산', fallback: '☂️', prebuilt: true },
-    mask:     { src: 'assets/icons/ico_mask.png?v=20261121hd65',     alt: '마스크', fallback: '😷', prebuilt: true },
-    chest:    { src: 'assets/icons/ico_chest.png?v=20261121hd65',    alt: '상자', fallback: '📦', prebuilt: true }
+    coin:     { src: 'assets/design/item_coin.png?v=20261121hd41',    alt: '골드',   fallback: 'G', prebuilt: true },
+    ticket:   { src: 'assets/ui/gacha_ticket.png?v=20261121hd56',     alt: '뽑기권', fallback: 'T', prebuilt: true },
+    gem:      { src: 'assets/icons/ico_gem.svg?v=20261121hd88',       alt: '보석',   fallback: '보석', prebuilt: true },
+    crown:    { src: 'assets/icons/ico_crown.svg?v=20261121hd88',     alt: '왕관',   fallback: '골드', prebuilt: true },
+    heart:    { src: 'assets/icons/ico_heart.svg?v=20261121hd88',     alt: '체력',   fallback: 'HP', prebuilt: true },
+    umbrella: { src: 'assets/icons/ico_umbrella.png?v=20261121hd65',  alt: '우산',   fallback: '우산', prebuilt: true },
+    mask:     { src: 'assets/icons/ico_mask.png?v=20261121hd65',      alt: '마스크', fallback: '마스크', prebuilt: true },
+    chest:    { src: 'assets/icons/ico_chest.png?v=20261121hd65',     alt: '상자',   fallback: '상자', prebuilt: true },
+    skip:     { src: 'assets/icons/ico_skip.svg?v=20261121hd88',      alt: '건너뛰기', fallback: '>>', prebuilt: true },
+    check:    { src: 'assets/icons/ico_check.svg?v=20261121hd88',     alt: '완료',   fallback: 'OK', prebuilt: true },
+    m_play:   { src: 'assets/icons/ico_mission_play.svg?v=20261121hd88',  alt: '플레이', fallback: 'P', prebuilt: true },
+    m_dist:   { src: 'assets/icons/ico_mission_dist.svg?v=20261121hd88',  alt: '거리',   fallback: 'M', prebuilt: true },
+    m_jump:   { src: 'assets/icons/ico_mission_jump.svg?v=20261121hd88',  alt: '점프',   fallback: 'J', prebuilt: true },
+    m_dodge:  { src: 'assets/icons/ico_mission_dodge.svg?v=20261121hd88', alt: '회피',   fallback: 'D', prebuilt: true }
   };
 
   const EMOJI_TO_KEY = {

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="gTop" x1="32" y1="8" x2="32" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c6fbff"/>
+      <stop offset="1" stop-color="#45d2ff"/>
+    </linearGradient>
+    <linearGradient id="gBody" x1="32" y1="24" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#36c7ff"/>
+      <stop offset="1" stop-color="#0b67d4"/>
+    </linearGradient>
+  </defs>
+  <polygon points="18,10 46,10 58,25 32,56 6,25" fill="url(#gBody)" stroke="#071226" stroke-width="4.5" stroke-linejoin="round"/>
+  <polygon points="18,10 46,10 58,25 6,25" fill="url(#gTop)" stroke="#071226" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="18,10 32,25 6,25" fill="#7ceaff" opacity="0.72"/>
+  <polygon points="46,10 58,25 32,25" fill="#1da8f2" opacity="0.65"/>
+  <polygon points="21,25 43,25 32,53" fill="#29b3ff" opacity="0.7"/>
+  <polygon points="24,13 40,13 36,21 28,21" fill="#ffffff" opacity="0.75"/>
+  <path d="M18 10L23 25L32 54M46 10L41 25L32 54" stroke="#08285c" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round"/>
+</svg>

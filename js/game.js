@@ -755,6 +755,14 @@
     spMissionsPane: document.getElementById('sp-missions-pane'),
     spMissionsList: document.getElementById('sp-missions-list'),
     spTrack: document.getElementById('sp-track'),
+    spSkipOverlay: document.getElementById('sp-skip-overlay'),
+    btnCloseSpSkip: document.getElementById('btn-close-sp-skip'),
+    spSkipTierRange: document.getElementById('sp-skip-tier-range'),
+    spSkipDesc: document.getElementById('sp-skip-desc'),
+    spSkipBalance: document.getElementById('sp-skip-balance'),
+    btnSpSkipCancel: document.getElementById('btn-sp-skip-cancel'),
+    btnSpSkipConfirm: document.getElementById('btn-sp-skip-confirm'),
+    spSkipConfirmTxt: document.getElementById('sp-skip-confirm-txt'),
 
     vaultOverlay: document.getElementById('vault-overlay'),
     vaultTotalPill: document.getElementById('vault-total-pill'),
@@ -2263,6 +2271,8 @@
     return (DATA.PASS_DAILY_MISSIONS || []).filter((m) => Math.floor(prog[m.metric] || 0) >= m.target && !claimed[m.id]);
   }
 
+  let pendingSpSkip = null;
+
   function claimPassDailyMission(mission) {
     if (!mission) return;
     const sp = ensureSeasonPass();
@@ -2276,9 +2286,9 @@
     persistSave(true);
     refreshAllMenus();
     if (xpGain > 0) {
-      showToast(`🎫 패스 미션 완료! 시즌 패스 +${xpGain} XP 획득!`);
+      showToast(`패스 미션 완료! 시즌 패스 +${xpGain} XP 획득`);
     } else {
-      showToast('🎉 이미 시즌 패스 최고 티어(Lv.80)입니다!');
+      showToast('이미 시즌 패스 최고 티어(Lv.80)입니다.');
     }
   }
 
@@ -2309,10 +2319,15 @@
     return Math.max(0, Math.ceil((endsAt - Date.now()) / 86400000));
   }
 
+  function closeSeasonPassSkipModal() {
+    pendingSpSkip = null;
+    if (el.spSkipOverlay) el.spSkipOverlay.classList.add('hidden');
+  }
+
   function skipSeasonPassTier(targetTier = null) {
     const prog = getSeasonPassProgress();
     if (prog.isMax) {
-      showToast('🎉 이미 시즌 패스 최고 티어입니다!');
+      showToast('이미 시즌 패스 최고 티어입니다.');
       return;
     }
     const destTier = targetTier == null
@@ -2324,22 +2339,59 @@
     const totalCost = tiersToSkip * costPerTier;
     const curGems = save.gems || 0;
     if (curGems < totalCost) {
-      showToast(`💎 보석이 부족합니다! (보유 ${curGems.toLocaleString('ko-KR')} / 필요 ${totalCost.toLocaleString('ko-KR')})`);
+      showToast(`보석이 부족합니다. (보유 ${curGems.toLocaleString('ko-KR')} / 필요 ${totalCost.toLocaleString('ko-KR')})`);
       return;
     }
-    const msg = tiersToSkip === 1
-      ? `💎 ${totalCost}개로 시즌 패스를 1티어 건너뛸까요? (Lv.${prog.tier} → Lv.${destTier})`
-      : `💎 ${totalCost.toLocaleString('ko-KR')}개로 시즌 패스 ${tiersToSkip}티어를 한 번에 건너뛸까요? (Lv.${prog.tier} → Lv.${destTier})`;
-    if (!window.confirm(msg)) {
+    pendingSpSkip = {
+      fromTier: prog.tier,
+      destTier,
+      tiersToSkip,
+      totalCost,
+      xpGain: tiersToSkip * prog.xpPerTier
+    };
+    if (el.spSkipTierRange) {
+      el.spSkipTierRange.textContent = `Lv.${prog.tier} → Lv.${destTier}`;
+    }
+    if (el.spSkipDesc) {
+      el.spSkipDesc.textContent = tiersToSkip === 1
+        ? `보석 ${totalCost.toLocaleString('ko-KR')}개로 1티어를 건너뜁니다.`
+        : `보석 ${totalCost.toLocaleString('ko-KR')}개로 ${tiersToSkip}티어를 한 번에 건너뜁니다.`;
+    }
+    if (el.spSkipBalance) {
+      el.spSkipBalance.textContent = `보유 보석 ${curGems.toLocaleString('ko-KR')} → ${(curGems - totalCost).toLocaleString('ko-KR')}`;
+    }
+    if (el.spSkipConfirmTxt) {
+      el.spSkipConfirmTxt.textContent = `${totalCost.toLocaleString('ko-KR')} 건너뛰기`;
+    }
+    if (el.spSkipOverlay) {
+      el.spSkipOverlay.classList.remove('hidden');
+    } else {
+      confirmSeasonPassSkip();
+    }
+  }
+
+  function confirmSeasonPassSkip() {
+    if (!pendingSpSkip) return;
+    const req = pendingSpSkip;
+    const prog = getSeasonPassProgress();
+    if (prog.isMax) {
+      closeSeasonPassSkipModal();
+      showToast('이미 시즌 패스 최고 티어입니다.');
       return;
     }
-    save.gems = curGems - totalCost;
-    addSeasonPassXp(tiersToSkip * prog.xpPerTier);
+    const curGems = save.gems || 0;
+    if (curGems < req.totalCost) {
+      closeSeasonPassSkipModal();
+      showToast(`보석이 부족합니다. (보유 ${curGems.toLocaleString('ko-KR')} / 필요 ${req.totalCost.toLocaleString('ko-KR')})`);
+      return;
+    }
+    save.gems = curGems - req.totalCost;
+    addSeasonPassXp(req.xpGain);
+    closeSeasonPassSkipModal();
     SFX.reward();
     persistSave(true);
     refreshAllMenus();
-    renderSeasonPassModal();
-    showToast(`⏩ 시즌 패스 Lv.${destTier} 달성! (💎 -${totalCost.toLocaleString('ko-KR')})`);
+    showToast(`시즌 패스 Lv.${req.destTier} 달성! (보석 -${req.totalCost.toLocaleString('ko-KR')})`);
   }
 
   function getUnclaimedSeasonPassRewards() {
@@ -2366,7 +2418,7 @@
     const prog = getSeasonPassProgress();
     if (tierNum > prog.tier) return null;
     if (track === 'gold' && !sp.goldUnlocked) {
-      if (!silentToast) showToast('👑 골드 패스(₩9,900) 구매 후 수령할 수 있습니다!');
+      if (!silentToast) showToast('골드 패스(₩9,900) 구매 후 수령할 수 있습니다.');
       return null;
     }
     const key = String(tierNum);
@@ -2394,11 +2446,11 @@
             save.equippedSkins = save.equippedSkins || {};
             save.equippedSkins[sk.charId] = sk.id;
           }
-          note = `${rarInfo.name} 스킨 [${sk.name}] 획득!`;
+          note = `${rarInfo.name} 스킨 [${sk.name}] 획득`;
         } else {
           save.gold += rarInfo.dupGold;
           save.mileage = (save.mileage || 0) + rarInfo.mileagePrice;
-          note = `[${sk.name}] 중복 보상 +${rarInfo.dupGold}G · +${rarInfo.mileagePrice}✨`;
+          note = `[${sk.name}] 중복 보상 +${rarInfo.dupGold}G · 마일리지 +${rarInfo.mileagePrice}`;
         }
       }
     }
@@ -2408,7 +2460,7 @@
       else SFX.reward();
       persistSave();
       refreshAllMenus();
-      showToast(`🎫 ${tierNum}티어 ${track === 'gold' ? '골드' : '무료'} 보상! ${note}`);
+      showToast(`${tierNum}티어 ${track === 'gold' ? '골드' : '무료'} 보상 수령: ${note}`);
     }
     return rw;
   }
@@ -2435,36 +2487,36 @@
     persistSave();
     refreshAllMenus();
     const parts = [];
-    if (gSum > 0) parts.push(`🪙 ${gSum.toLocaleString('ko-KR')}G`);
-    if (gemSum > 0) parts.push(`💎 ${gemSum}`);
-    if (chestSum > 0) parts.push(`📦 상자 ${chestSum}개`);
-    if (tickSum > 0) parts.push(`🎫 뽑기권 ${tickSum}장`);
-    if (gotSkin) parts.push(`✨ 신화 스킨!`);
-    showToast(`🎉 시즌 패스 보상 ${ready.length}건 수령! (${parts.join(' · ')})`);
+    if (gSum > 0) parts.push(`골드 ${gSum.toLocaleString('ko-KR')}G`);
+    if (gemSum > 0) parts.push(`보석 ${gemSum}`);
+    if (chestSum > 0) parts.push(`상자 ${chestSum}개`);
+    if (tickSum > 0) parts.push(`뽑기권 ${tickSum}장`);
+    if (gotSkin) parts.push('신화 스킨');
+    showToast(`시즌 패스 보상 ${ready.length}건 수령 (${parts.join(' · ')})`);
   }
 
   function formatSeasonPassIconHtml(rw) {
     if (rw.kind === 'gold') {
-      return `<img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="골드" class="sp-rw-art" />`;
+      return `<div class="sp-rw-box"><img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="골드" class="sp-rw-art" /></div>`;
     }
     if (rw.kind === 'gems') {
-      return uiIcon('gem', 'xl', 'sp-rw-gem');
+      return `<div class="sp-rw-box">${uiIcon('gem', 'xl', 'sp-rw-gem')}</div>`;
     }
     if (rw.kind === 'ticket') {
-      return `<img src="assets/ui/gacha_ticket.png?v=${ASSET_VER}" alt="뽑기권" class="sp-rw-art" />`;
+      return `<div class="sp-rw-box"><img src="assets/ui/gacha_ticket.png?v=${ASSET_VER}" alt="뽑기권" class="sp-rw-art" /></div>`;
     }
     if (rw.kind === 'chest') {
       const ch = DATA.CHESTS[rw.chest] || DATA.CHESTS.wood;
-      return `<img src="${ch.icon}?v=${ASSET_VER}" alt="${ch.name}" class="sp-rw-art chest" />`;
+      return `<div class="sp-rw-box"><img src="${ch.icon}?v=${ASSET_VER}" alt="${ch.name}" class="sp-rw-art chest" /></div>`;
     }
     if (rw.kind === 'skin') {
       const sk = DATA.getSkinById(rw.skinId);
       const chDef = getCharDef(sk ? sk.charId : 'fashionista');
       const avSrc = getSkinAvatar(chDef, sk);
       const flt = getSkinFilter(sk);
-      return `<img src="${avSrc}" alt="${sk ? sk.name : '신화 스킨'}" class="sp-rw-art skin" style="${flt ? `filter:${flt};` : ''}" />`;
+      return `<div class="sp-rw-box"><img src="${avSrc}" alt="${sk ? sk.name : '신화 스킨'}" class="sp-rw-art skin" style="${flt ? `filter:${flt};` : ''}" /></div>`;
     }
-    return '🎁';
+    return '<div class="sp-rw-box"></div>';
   }
 
   function updateHomeSeasonPassUI() {
@@ -2516,25 +2568,25 @@
     if (el.spTierPill) el.spTierPill.textContent = `Lv.${prog.tier} / ${prog.maxTier}`;
     if (el.btnSpClaimAll) {
       el.btnSpClaimAll.classList.toggle('hidden', unclaimed.length === 0);
-      el.btnSpClaimAll.textContent = `🎁 모두 받기 (${unclaimed.length})`;
+      el.btnSpClaimAll.textContent = `모두 받기 (${unclaimed.length})`;
     }
     if (el.spXpFill) el.spXpFill.style.width = `${prog.pct.toFixed(1)}%`;
     if (el.spXpText) {
       el.spXpText.textContent = prog.isMax
-        ? `🎉 시즌 패스 최고 티어(${prog.maxTier}티어) 달성!`
-        : `다음 티어까지 ${prog.curXp} / ${prog.xpPerTier} XP`;
+        ? `MAX (${prog.maxTier})`
+        : `${prog.curXp} / ${prog.xpPerTier} XP`;
     }
     if (el.btnSpSkipTier) {
       const skipCost = spCfg.skipGemCost || 100;
-      el.btnSpSkipTier.innerHTML = uiText(`⏩ 1티어 💎${skipCost}`, 'xs');
+      el.btnSpSkipTier.innerHTML = `${uiIcon('skip', 'xs', 'sp-btn-ico')}<span>1티어</span>${uiIcon('gem', 'xs', 'sp-btn-ico')}<span>${skipCost}</span>`;
       el.btnSpSkipTier.disabled = prog.isMax;
       el.btnSpSkipTier.classList.toggle('hidden', prog.isMax);
     }
     if (el.spSeasonTimer) {
       const daysLeft = getSeasonDaysLeft();
       el.spSeasonTimer.textContent = daysLeft > 0
-        ? `⏳ 시즌 종료까지 ${daysLeft}일 · 종료 후 얼음황제 뽑기 출시`
-        : '✅ 시즌 종료 · 얼음황제 스킨 뽑기 출시!';
+        ? `종료 D-${daysLeft}`
+        : '얼음황제 뽑기 출시';
     }
     if (el.btnBuyGoldPass) el.btnBuyGoldPass.classList.toggle('hidden', sp.goldUnlocked);
     if (el.spGoldActivePill) el.spGoldActivePill.classList.toggle('hidden', !sp.goldUnlocked);
@@ -2553,7 +2605,7 @@
         const card = document.createElement('div');
         card.className = `sp-mission-card${isClaimed ? ' claimed' : (isDone ? ' ready' : '')}`;
         card.innerHTML = `
-          <div class="sp-mission-ico" aria-hidden="true">${m.icon}</div>
+          <div class="sp-mission-ico" aria-hidden="true">${uiIcon(m.iconKey || 'm_play', 'md')}</div>
           <div class="sp-mission-body">
             <div class="sp-mission-top">
               <span class="sp-mission-title">${m.title}</span>
@@ -2569,7 +2621,7 @@
         btn.type = 'button';
         if (isClaimed) {
           btn.className = 'sp-mission-btn done';
-          btn.textContent = '수령 완료 ✓';
+          btn.innerHTML = `${uiIcon('check', 'xs', 'sp-btn-ico')}<span>수령 완료</span>`;
           btn.disabled = true;
         } else if (isDone) {
           btn.className = 'sp-mission-btn ready';
@@ -2599,7 +2651,7 @@
       const card = document.createElement('div');
       card.className = `sp-card ${isGold ? 'gold-track' : 'free-track'}${isFinal ? ' tier-final' : ''}${isClaimed ? ' claimed' : (canClaim ? ' ready' : ' locked')}`;
       card.innerHTML = `
-        <span class="sp-track-badge ${track}">${isGold ? (isFinal ? '👑 최종' : '👑 골드') : '무료'}</span>
+        ${isGold && isFinal ? '<span class="sp-final-tag">최종 보상</span>' : ''}
         ${formatSeasonPassIconHtml(rw)}
         <div class="sp-rw-lbl">${rw.label}</div>
       `;
@@ -2611,19 +2663,19 @@
         btn.onclick = () => grantSeasonPassReward(tierNum, track, rw, false);
       } else if (isClaimed) {
         btn.className = 'sp-claim-btn done';
-        btn.textContent = '완료 ✓';
+        btn.innerHTML = `${uiIcon('check', 'xs', 'sp-btn-ico')}<span>완료</span>`;
         btn.disabled = true;
       } else if (needsPass) {
         btn.className = 'sp-claim-btn locked';
-        btn.textContent = '👑 패스 필요';
+        btn.innerHTML = `${uiIcon('crown', 'xs', 'sp-btn-ico')}<span>골드 필요</span>`;
         btn.onclick = () => openGoldPassPurchase();
       } else {
         const tiersNeeded = Math.max(1, tierNum - prog.tier);
         const skipUnit = spCfg.skipGemCost || 100;
         const totalSkipCost = tiersNeeded * skipUnit;
         btn.className = tiersNeeded === 1 ? 'sp-claim-btn skip' : 'sp-claim-btn skip-far';
-        btn.innerHTML = uiText(`⏩ 💎${totalSkipCost.toLocaleString('ko-KR')}`, 'xs');
-        btn.title = `${tiersNeeded}티어 건너뛰기 (보석 ${totalSkipCost}개)`;
+        btn.innerHTML = `${uiIcon('gem', 'xs', 'sp-btn-ico')}<span>${totalSkipCost.toLocaleString('ko-KR')}</span>`;
+        btn.title = `${tiersNeeded}티어 건너뛰기 (보석 ${totalSkipCost.toLocaleString('ko-KR')}개)`;
         btn.onclick = () => skipSeasonPassTier(tierNum);
       }
       card.appendChild(btn);
@@ -2632,14 +2684,18 @@
 
     (spCfg.tiers || []).forEach((row) => {
       const reached = prog.tier >= row.tier;
+      const isNext = !reached && row.tier === prog.tier + 1;
       const col = document.createElement('div');
       col.className = `sp-col${row.tier === spCfg.maxTier ? ' tier-final' : ''}`;
       col.appendChild(buildCard(row.tier, 'gold', row.gold, reached));
 
+      const tierCell = document.createElement('div');
+      tierCell.className = `sp-tier-cell${reached ? ' reached' : (isNext ? ' next-tier' : '')}`;
       const node = document.createElement('div');
-      node.className = `sp-tier-node${reached ? ' reached' : ''}`;
+      node.className = `sp-tier-node${reached ? ' reached' : (isNext ? ' next-tier' : '')}`;
       node.textContent = String(row.tier);
-      col.appendChild(node);
+      tierCell.appendChild(node);
+      col.appendChild(tierCell);
 
       col.appendChild(buildCard(row.tier, 'free', row.free, reached));
 
@@ -2653,7 +2709,8 @@
     if (currentSpTab === 'rewards' && focusCol && el.spTrack.scrollTo) {
       requestAnimationFrame(() => {
         try {
-          el.spTrack.scrollTo({ left: Math.max(0, focusCol.offsetLeft - 60), behavior: 'smooth' });
+          const targetX = Math.max(0, focusCol.offsetLeft - el.spTrack.offsetLeft - 12);
+          el.spTrack.scrollTo({ left: targetX, behavior: 'smooth' });
         } catch {}
       });
     }
@@ -2670,7 +2727,7 @@
     const spCfg = DATA.SEASON_PASS || {};
     const sp = ensureSeasonPass();
     if (sp.goldUnlocked) {
-      showToast('👑 이미 시즌 1 골드 패스가 활성화되어 있습니다!');
+      showToast('이미 시즌 1 골드 패스가 활성화되어 있습니다.');
       return;
     }
     openIapModal({
@@ -4223,7 +4280,7 @@
     if (el.iapPackName) el.iapPackName.textContent = pack.name;
     if (el.iapPackGems) {
       el.iapPackGems.innerHTML = pack.isGoldPass
-        ? '👑 골드 패스 활성화 + 즉시 3티어(300 XP) · 무지개 프리즘 닉네임 · 최종 신화 스킨 [얼음황제]!'
+        ? `${uiIcon('crown', 'sm')} 골드 패스 활성화 + 즉시 3티어(300 XP) · 무지개 프리즘 닉네임 · 최종 신화 스킨 [얼음황제]`
         : `+${pack.gems.toLocaleString('ko-KR')} ${uiIcon('gem', 'sm')} 즉시 지급`;
     }
     if (el.iapPackPrice) el.iapPackPrice.textContent = `₩${pack.krwPrice.toLocaleString('ko-KR')}`;
@@ -4231,11 +4288,10 @@
     if (el.iapPayNote) {
       el.iapPayNote.innerHTML = isNativeApp
         ? `Google Play / App Store 공식 인앱 결제 · 상품ID: ${pack.productId}`
-        : uiText(
+        : (
           pack.isGoldPass
             ? '스토어 결제 연동 규격 (₩9,900) · 웹 미리보기에서는 테스트 결제로 골드 패스가 활성화됩니다.'
-            : '스토어 결제 연동 규격 (100💎 = ₩1,000) · 웹 미리보기에서는 테스트 결제로 보석이 지급됩니다.',
-          'xs'
+            : `스토어 결제 연동 규격 (100${uiIcon('gem', 'xs')} = ₩1,000) · 웹 미리보기에서는 테스트 결제로 보석이 지급됩니다.`
         );
     }
     if (el.btnIapConfirm) {
@@ -4270,9 +4326,9 @@
     if (el.iapOverlay) el.iapOverlay.classList.add('hidden');
     refreshAllMenus();
     if (pack.isGoldPass) {
-      showToast('👑 시즌 1 골드 패스 활성화 완료! (+300 XP · 무지개 프리즘 닉네임 해금!)');
+      showToast('시즌 1 골드 패스 활성화 완료 (+300 XP · 무지개 프리즘 닉네임 해금)');
     } else {
-      showToast(`💎 ${pack.name} (₩${pack.krwPrice.toLocaleString('ko-KR')}) 결제 완료! +${pack.gems.toLocaleString('ko-KR')}💎 지급!`);
+      showToast(`${pack.name} (₩${pack.krwPrice.toLocaleString('ko-KR')}) 결제 완료 (+${pack.gems.toLocaleString('ko-KR')} 보석 지급)`);
     }
   }
 
@@ -8735,12 +8791,16 @@
     if (el.btnCloseSeasonPass) {
       el.btnCloseSeasonPass.addEventListener('click', () => {
         SFX.click();
+        closeSeasonPassSkipModal();
         if (el.seasonPassOverlay) el.seasonPassOverlay.classList.add('hidden');
       });
     }
     if (el.seasonPassOverlay) {
       el.seasonPassOverlay.addEventListener('click', (e) => {
-        if (e.target === el.seasonPassOverlay) el.seasonPassOverlay.classList.add('hidden');
+        if (e.target === el.seasonPassOverlay) {
+          closeSeasonPassSkipModal();
+          el.seasonPassOverlay.classList.add('hidden');
+        }
       });
     }
     if (el.btnSpClaimAll) {
@@ -8751,6 +8811,34 @@
         SFX.click();
         skipSeasonPassTier();
       });
+    }
+    if (el.btnCloseSpSkip) {
+      el.btnCloseSpSkip.addEventListener('click', () => {
+        SFX.click();
+        closeSeasonPassSkipModal();
+      });
+    }
+    if (el.btnSpSkipCancel) {
+      el.btnSpSkipCancel.addEventListener('click', () => {
+        SFX.click();
+        closeSeasonPassSkipModal();
+      });
+    }
+    if (el.btnSpSkipConfirm) {
+      el.btnSpSkipConfirm.addEventListener('click', confirmSeasonPassSkip);
+    }
+    if (el.spSkipOverlay) {
+      el.spSkipOverlay.addEventListener('click', (e) => {
+        if (e.target === el.spSkipOverlay) closeSeasonPassSkipModal();
+      });
+    }
+    if (el.spTrack) {
+      el.spTrack.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.spTrack.scrollWidth > el.spTrack.clientWidth) {
+          e.preventDefault();
+          el.spTrack.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
     }
     if (el.btnSpTabRewards) {
       el.btnSpTabRewards.addEventListener('click', () => {
