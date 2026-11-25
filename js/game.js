@@ -8287,7 +8287,7 @@
       const scoreKey = `${run.distanceM}|${scoreInt}`;
       if (hudCache._scoreKey !== scoreKey) {
         hudCache._scoreKey = scoreKey;
-        el.runScoreText.textContent = `${run.distanceM.toLocaleString('ko-KR')}m · ${scoreInt.toLocaleString('ko-KR')}점`;
+        el.runScoreText.innerHTML = `<span class="bs-score-dist">${run.distanceM.toLocaleString('ko-KR')}m</span><span class="bs-score-sep" aria-hidden="true"></span><span class="bs-score-pts">${scoreInt.toLocaleString('ko-KR')}점</span>`;
       }
     }
     if (hudCache._gold !== run.gold) {
