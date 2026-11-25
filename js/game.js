@@ -4655,6 +4655,24 @@
     if (el.weatherOverlay) el.weatherOverlay.classList.add('hidden');
   }
 
+  function getWeatherHeroSvg(mods) {
+    const lbl = (mods && mods.desc && mods.desc.label) || '';
+    const pw = (mods && mods.primaryWeather) || '';
+    if (lbl.includes('눈') || lbl.includes('폭설') || pw === 'snow' || pw === 'ice_road') {
+      return '<svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2L3.8 16.8M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5" fill="none" stroke="#9ee8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    if (lbl.includes('비') || lbl.includes('폭우') || lbl.includes('뇌우') || pw === 'rain') {
+      return '<svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path d="M6.5 14.5h10.2a3.3 3.3 0 0 0 .4-6.56A4.8 4.8 0 0 0 7.7 6.6 3.9 3.9 0 0 0 6.5 14.5z" fill="#d8eeff" stroke="#071022" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 17.5l-1 3M12.5 17.5l-1 3M16.5 17.5l-1 3" stroke="#62d2ff" stroke-width="2.1" stroke-linecap="round"/></svg>';
+    }
+    if (lbl.includes('안개') || pw === 'dust') {
+      return '<svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path d="M4 8.5h14a2.5 2.5 0 1 0-2.2-3.7M3 13h17a2.5 2.5 0 1 1-2.2 3.7M5 17.5h10" fill="none" stroke="#c8e2ff" stroke-width="2.2" stroke-linecap="round"/></svg>';
+    }
+    if (lbl.includes('흐림') || lbl.includes('구름')) {
+      return '<svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><circle cx="15.5" cy="8.5" r="3.6" fill="#ffe14a" stroke="#071022" stroke-width="1.5"/><path d="M6.2 17.8h10.6a3.4 3.4 0 0 0 .4-6.76A4.8 4.8 0 0 0 7.5 9.8a3.9 3.9 0 0 0-1.3 8z" fill="#ffffff" stroke="#071022" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#ffe14a" stroke="#071022" stroke-width="1.6"/><path d="M12 2.2v2.4M12 19.4v2.4M2.2 12h2.4M19.4 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19" stroke="#ffe14a" stroke-width="2.1" stroke-linecap="round"/></svg>';
+  }
+
   function renderHomeWeatherTab() {
     if (!LIVE_WEATHER) return;
     const mods = getActiveLiveWeatherMods();
@@ -4663,37 +4681,31 @@
 
     updateHomeWeatherMiniSummary();
 
-    if (el.weatherHeroIcon) el.weatherHeroIcon.textContent = mods.desc.icon;
+    if (el.weatherHeroIcon) el.weatherHeroIcon.innerHTML = getWeatherHeroSvg(mods);
     if (el.weatherHeroCity) el.weatherHeroCity.textContent = snap.cityName;
-    if (el.weatherHeroSeason) el.weatherHeroSeason.textContent = `${mods.season.icon} ${mods.season.name}`;
+    if (el.weatherHeroSeason) el.weatherHeroSeason.textContent = mods.season.name;
     if (el.weatherHeroLiveTag) {
       el.weatherHeroLiveTag.textContent = liveWeatherLoading
-        ? '기상청 동기화 중...'
-        : (snap.source === 'kma_live' ? '기상청 LIVE' : '오프라인 추정');
+        ? '동기화 중'
+        : (snap.source === 'kma_live' ? 'LIVE' : '추정');
       el.weatherHeroLiveTag.classList.toggle('offline', snap.source !== 'kma_live');
     }
     if (el.weatherHeroTemp) el.weatherHeroTemp.textContent = `${snap.tempC.toFixed(1)}°C`;
     if (el.weatherHeroDesc) el.weatherHeroDesc.textContent = `${mods.desc.label} · 대기 ${mods.airGrade.grade}`;
     if (el.weatherHeroMeta) {
-      el.weatherHeroMeta.textContent = `체감 ${Number(snap.feelsLikeC || snap.tempC).toFixed(0)}°C · 습도 ${snap.humidity}% · 바람 ${snap.windMs.toFixed(1)}m/s`;
-    }
-    if (el.weatherHeroUpdated) {
-      const obs = snap.observedAt ? String(snap.observedAt).replace('T', ' ') : '실시간';
-      el.weatherHeroUpdated.textContent = `${snap.sourceLabel} (${obs})`;
+      el.weatherHeroMeta.textContent = `습도 ${snap.humidity}% · 바람 ${snap.windMs.toFixed(1)}m/s`;
     }
 
     if (el.weatherBuffGrid) {
       el.weatherBuffGrid.innerHTML = '';
-      mods.factors.forEach((f) => {
+      mods.factors.slice(0, 4).forEach((f) => {
         const card = document.createElement('div');
         card.className = `weather-factor-card is-${f.kind}`;
         card.innerHTML = `
           <div class="wfc-top">
-            <span class="wfc-ico">${f.icon}</span>
             <strong class="wfc-lbl">${f.label}</strong>
             <span class="wfc-badge ${f.kind}">${f.badge}</span>
           </div>
-          <div class="wfc-val">${f.valueText}</div>
           <div class="wfc-eff">${f.effectText}</div>
         `;
         el.weatherBuffGrid.appendChild(card);
@@ -4701,23 +4713,18 @@
     }
 
     if (el.weatherModSummary) {
-      const parts = [
-        `${mods.season.icon} ${mods.season.bonusLabel}(${mods.season.bonusEffect})`,
-        `⭐ 점수 ×${mods.scoreMult.toFixed(2)}`,
-        `🪙 골드 ×${mods.goldMult.toFixed(2)}`
+      const pills = [
+        `<span class="wmod-pill score">점수 ×${mods.scoreMult.toFixed(2)}</span>`,
+        `<span class="wmod-pill gold">골드 ×${mods.goldMult.toFixed(2)}</span>`
       ];
-      if (mods.extraHp > 0) parts.push(`❤️ 체력 +${mods.extraHp}`);
-      if (mods.feverGainMult > 1.01) parts.push(`🔥 피버 ×${mods.feverGainMult.toFixed(2)}`);
-      if (mods.magnetBonus > 0) parts.push(`🧲 자석 +${mods.magnetBonus}`);
-      el.weatherModSummary.innerHTML = uiText(parts.join(' · '), 'xs');
+      if (mods.extraHp > 0) pills.push(`<span class="wmod-pill bonus">체력 +${mods.extraHp}</span>`);
+      if (mods.feverGainMult > 1.01) pills.push(`<span class="wmod-pill bonus">피버 ×${mods.feverGainMult.toFixed(2)}</span>`);
+      if (mods.magnetBonus > 0) pills.push(`<span class="wmod-pill bonus">자석 +${mods.magnetBonus}</span>`);
+      el.weatherModSummary.innerHTML = pills.join('');
     }
 
     if (el.btnWeatherPlayToday) {
-      const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
-      const unlocked = isCharUnlocked(ch.id);
-      el.btnWeatherPlayToday.textContent = unlocked
-        ? `🌦️ ${snap.cityName} 오늘의 날씨모드 바로 플레이! (${ch.name})`
-        : `🌦️ ${snap.cityName} 오늘의 날씨모드 바로 플레이!`;
+      el.btnWeatherPlayToday.textContent = '오늘의 날씨 플레이';
     }
   }
 
