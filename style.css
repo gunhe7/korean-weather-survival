@@ -13303,7 +13303,23 @@ input:focus-visible {
 .sp-pass-cta-col {
   display: flex;
   align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
   flex-shrink: 0;
+}
+
+.sp-skip-tier-btn {
+  padding: 8px 12px !important;
+  font-size: 12.5px !important;
+  border-radius: 12px !important;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #5fe3ff, #1f8fe0) !important;
+  color: #ffffff !important;
+  border-color: #081226 !important;
+}
+
+.sp-skip-tier-btn:disabled {
+  opacity: 0.5;
 }
 
 .sp-buy-gold-btn {
@@ -13331,6 +13347,12 @@ input:focus-visible {
   flex-wrap: wrap;
   gap: 6px;
   padding: 6px 14px 4px;
+}
+
+.sp-leg-pill.timer {
+  background: rgba(120, 214, 255, 0.14);
+  border-color: rgba(140, 222, 255, 0.55);
+  color: #d4f2ff;
 }
 
 .sp-leg-pill {
@@ -13556,6 +13578,7 @@ input:focus-visible {
 .score-road-best-pill,
 .sp-track-badge,
 .sp-claim-btn,
+.sp-skip-tier-btn,
 .sp-buy-gold-btn,
 .sp-gold-active-pill,
 .sr-claim-btn,

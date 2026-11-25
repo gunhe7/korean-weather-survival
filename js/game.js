@@ -731,8 +731,10 @@
     btnSpClaimAll: document.getElementById('btn-sp-claim-all'),
     spXpFill: document.getElementById('sp-xp-fill'),
     spXpText: document.getElementById('sp-xp-text'),
+    btnSpSkipTier: document.getElementById('btn-sp-skip-tier'),
     btnBuyGoldPass: document.getElementById('btn-buy-gold-pass'),
     spGoldActivePill: document.getElementById('sp-gold-active-pill'),
+    spSeasonTimer: document.getElementById('sp-season-timer'),
     spTrack: document.getElementById('sp-track'),
 
     vaultOverlay: document.getElementById('vault-overlay'),
@@ -868,11 +870,11 @@
       if (r < acc) { hitRarity = k; break; }
     }
 
-    let pool = DATA.SKINS.filter((s) => !s.seasonExclusive && s.rarity === hitRarity);
+    let pool = DATA.SKINS.filter((s) => DATA.isPassSkinReleased(s) && s.rarity === hitRarity);
     if (pool.length === 0) {
       // Gracefully fall back to rare skins if an intermediate tier has no skins yet (Mythic stays strictly at its exact rate!)
-      pool = DATA.SKINS.filter((s) => !s.seasonExclusive && s.rarity === 'rare');
-      if (pool.length === 0) pool = DATA.SKINS.filter((s) => !s.seasonExclusive);
+      pool = DATA.SKINS.filter((s) => DATA.isPassSkinReleased(s) && s.rarity === 'rare');
+      if (pool.length === 0) pool = DATA.SKINS.filter((s) => DATA.isPassSkinReleased(s));
     }
     const picked = pool[Math.floor(Math.random() * pool.length)];
     const alreadyOwned = save.unlockedSkins.includes(picked.id);
@@ -1782,6 +1784,7 @@
           <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 ${uiIcon('gem', 'xs')} 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립 + 중복 스킨 출현 시 ✨ +2 마일리지 추가 지급!</strong></li>
           <li><strong>${ticketIconHtml('xs')} 상자 → 뽑기권 교환 (상자 보관함):</strong> 나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 뽑기권 1장</li>
           <li>미출시 중간 등급(영웅·전설)은 희귀 스킨 풀로 자동 전환되며, 신화 스킨 확률(${gRates.mythic}%)은 그대로 유지됩니다.</li>
+          <li><strong>시즌 패스 전용 스킨(얼음황제):</strong> 시즌 기간 동안 골드 패스로만 획득할 수 있으며, 시즌 종료 후 신화 등급 뽑기 풀에 추가됩니다.</li>
         </ul>
       </div>
       <div class="prob-section">
@@ -2235,6 +2238,35 @@
     return add;
   }
 
+  function getSeasonDaysLeft() {
+    const endsAt = (DATA.SEASON_PASS && DATA.SEASON_PASS.endsAt) || 0;
+    return Math.max(0, Math.ceil((endsAt - Date.now()) / 86400000));
+  }
+
+  function skipSeasonPassTier() {
+    const prog = getSeasonPassProgress();
+    if (prog.isMax) {
+      showToast('🎉 이미 시즌 패스 최고 티어입니다!');
+      return;
+    }
+    const cost = (DATA.SEASON_PASS && DATA.SEASON_PASS.skipGemCost) || 100;
+    const curGems = save.gems || 0;
+    if (curGems < cost) {
+      showToast(`💎 보석이 부족합니다! (보유 ${curGems} / 필요 ${cost})`);
+      return;
+    }
+    if (!window.confirm(`💎 ${cost}개로 시즌 패스를 1티어 건너뛸까요? (Lv.${prog.tier} → Lv.${prog.tier + 1})`)) {
+      return;
+    }
+    save.gems = curGems - cost;
+    addSeasonPassXp(prog.xpPerTier);
+    SFX.reward();
+    persistSave(true);
+    refreshAllMenus();
+    renderSeasonPassModal();
+    showToast(`⏩ 시즌 패스 Lv.${prog.tier + 1} 달성! (💎 -${cost})`);
+  }
+
   function getUnclaimedSeasonPassRewards() {
     const spCfg = DATA.SEASON_PASS || { tiers: [] };
     const sp = ensureSeasonPass();
@@ -2397,6 +2429,18 @@
       el.spXpText.textContent = prog.isMax
         ? `🎉 시즌 패스 최고 티어(${prog.maxTier}티어) 달성!`
         : `다음 티어까지 ${prog.curXp} / ${prog.xpPerTier} XP`;
+    }
+    if (el.btnSpSkipTier) {
+      const skipCost = spCfg.skipGemCost || 100;
+      el.btnSpSkipTier.textContent = `⏩ 1티어 💎${skipCost}`;
+      el.btnSpSkipTier.disabled = prog.isMax;
+      el.btnSpSkipTier.classList.toggle('hidden', prog.isMax);
+    }
+    if (el.spSeasonTimer) {
+      const daysLeft = getSeasonDaysLeft();
+      el.spSeasonTimer.textContent = daysLeft > 0
+        ? `⏳ 시즌 종료까지 ${daysLeft}일 · 종료 후 얼음황제 뽑기 출시`
+        : '✅ 시즌 종료 · 얼음황제 스킨 뽑기 출시!';
     }
     if (el.btnBuyGoldPass) el.btnBuyGoldPass.classList.toggle('hidden', sp.goldUnlocked);
     if (el.spGoldActivePill) el.spGoldActivePill.classList.toggle('hidden', !sp.goldUnlocked);
@@ -5247,14 +5291,16 @@
         const isEq = equippedSkin && equippedSkin.id === sk.id;
         const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
         const milPrice = getSkinMileagePrice(sk);
-        const isPassEx = Boolean(sk.seasonExclusive);
+        const isPassEx = Boolean(sk.seasonExclusive) && !DATA.isPassSkinReleased(sk);
+        const isReleasedPass = Boolean(sk.seasonExclusive) && DATA.isPassSkinReleased(sk);
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = `skin-chip rar-${sk.rarity}${isEq ? ' active' : ''}${owned ? '' : ' locked'}`;
+        const unownedTag = isPassEx ? '👑 패스 80' : (isReleasedPass ? '🎲 뽑기' : `✨${milPrice}M`);
         chip.innerHTML = `
           <span class="skin-dot" style="background:${sk.glow || rar.color}"></span>
           <span>${sk.name}</span>
-          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : (isPassEx ? '👑 패스 80' : `✨${milPrice}M`)}</span>
+          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : unownedTag}</span>
         `;
         chip.onclick = () => {
           if (owned) {
@@ -5267,7 +5313,13 @@
             SFX.click();
             closeCharDetail();
             openSeasonPassModal();
-            showToast(`👑 [${sk.name}]은 시즌 1 골드 패스 80티어 최종 보상 신화 스킨입니다!`);
+            showToast(`👑 [${sk.name}]은 시즌 기간 동안 골드 패스 80티어로만 획득할 수 있습니다!`);
+          } else if (isReleasedPass) {
+            SFX.click();
+            closeCharDetail();
+            currentShopSubtab = 'gacha';
+            switchTab('shop');
+            showToast(`🎲 [${sk.name}]은 스킨 뽑기에서 획득할 수 있습니다!`);
           } else {
             SFX.click();
             closeCharDetail();
@@ -8528,6 +8580,12 @@
     }
     if (el.btnSpClaimAll) {
       el.btnSpClaimAll.addEventListener('click', claimAllSeasonPassRewards);
+    }
+    if (el.btnSpSkipTier) {
+      el.btnSpSkipTier.addEventListener('click', () => {
+        SFX.click();
+        skipSeasonPassTier();
+      });
     }
     if (el.btnBuyGoldPass) {
       el.btnBuyGoldPass.addEventListener('click', openGoldPassPurchase);

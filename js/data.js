@@ -314,6 +314,7 @@ window.RUN_DATA = (function () {
       rarity: 'mythic',
       charId: 'fashionista',
       seasonExclusive: true,
+      passSeasonId: 's1',
       filter: 'none',
       customAnimSkin: 'ice_emperor',
       customAnimFrames: 4,
@@ -329,7 +330,7 @@ window.RUN_DATA = (function () {
       customAuraFrames: 6,
       glow: '#62d4ff',
       trail: ['#8ef2ff', '#7a6bff', '#ffffff'],
-      desc: '시즌 1 골드 패스 80티어 최종 보상 신화 스킨! 얼음 제왕 마법 오라 · 전용 눈꽃 우산 & 마스크 · 6프레임 보호막 · 혜성 부스터!'
+      desc: '시즌 1 골드 패스 80티어 최종 보상 신화 스킨! 시즌 기간에는 골드 패스로만 획득 · 시즌 종료 후 스킨 뽑기에 출시 · 전용 눈꽃 우산 & 마스크 · 6프레임 보호막 · 혜성 부스터!'
     }
   ];
 
@@ -713,12 +714,21 @@ window.RUN_DATA = (function () {
       title: '시즌 1 : 얼음황제 패스',
       xpPerTier: 100,
       maxTier: 80,
+      startsAt: Date.UTC(2026, 10, 20, 15, 0, 0),
+      endsAt: Date.UTC(2027, 0, 31, 15, 0, 0),
+      skipGemCost: 100,
       goldPriceKrw: 9900,
       productId: 'com.gunhe7.kweathersurvival.goldpass_s1',
       finalSkinId: 'ice_emperor_mythic',
       tiers
     };
   })();
+
+  function isPassSkinReleased(sk, nowMs = Date.now()) {
+    if (!sk || !sk.seasonExclusive) return true;
+    if (!sk.passSeasonId || sk.passSeasonId !== SEASON_PASS.seasonId) return true; // older season skin -> already released
+    return nowMs >= (SEASON_PASS.endsAt || Infinity);
+  }
 
   return {
     SEASON_DURATION,
@@ -733,6 +743,7 @@ window.RUN_DATA = (function () {
     GOLD_PACKS,
     GEM_PACKS,
     SEASON_PASS,
+    isPassSkinReleased,
     SEASONS,
     CHARACTERS,
     BOOSTERS,
