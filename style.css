@@ -15768,3 +15768,274 @@ input:focus-visible {
     gap: 6px;
   }
 }
+
+/* =========================================================================
+   CUSTOM CONTROL BUTTON LAYOUT (SIZE + FREE DRAG POSITION · v20261121hd95)
+   ========================================================================= */
+#mobile-controls.cookie-controls.custom-layout .ctrl-stack {
+  position: static !important;
+  display: contents !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+
+#mobile-controls.cookie-controls.custom-layout .img-ctrl-btn {
+  position: absolute !important;
+  margin: 0 !important;
+  transform: translate(-50%, -50%) scale(var(--btn-scale, 1));
+  transform-origin: center center;
+}
+
+#mobile-controls.cookie-controls.custom-layout .img-ctrl-btn.pressed {
+  transform: translate(-50%, -50%) translateY(2px) scale(calc(var(--btn-scale, 1) * 0.96));
+}
+
+.bs-set-ctrl-bar {
+  padding: 9px 12px;
+  border-radius: 13px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #1b428a 0%, #10285a 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 1.5px 0 rgba(162, 224, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bs-set-ico.ctrl {
+  background: linear-gradient(180deg, #5ef59b, #149952);
+}
+
+.bs-set-action-btn.slate {
+  background: linear-gradient(180deg, #5b729c, #34476b);
+}
+
+/* Full-Viewport Brawl Stars Style Control Layout Editor */
+.ctrl-editor-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 76;
+  background: rgba(6, 15, 36, 0.9);
+  background-image:
+    linear-gradient(rgba(86, 178, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(86, 178, 255, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ctrl-editor-overlay.hidden {
+  display: none !important;
+}
+
+.ctrl-ed-hud-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: rgba(4, 10, 24, 0.42);
+  border-bottom: 1.5px dashed rgba(140, 198, 255, 0.34);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ctrl-ed-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  touch-action: none;
+}
+
+.ctrl-ed-bar {
+  position: relative;
+  z-index: 5;
+  margin: calc(var(--safe-top) + 8px) auto 0;
+  width: fit-content;
+  max-width: calc(100% - 20px);
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1b366a 0%, #0f2146 100%);
+  border: 2.5px solid #071022;
+  box-shadow: 0 5px 0 #071022, 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.ctrl-ed-sel-pill {
+  min-width: 68px;
+  padding: 5px 11px;
+  border-radius: 9px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #ffe554, #ed9308);
+  color: #241000;
+  font-size: 12.5px;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+  transform: skewX(-4deg);
+  box-shadow: 0 2.5px 0 #071022;
+}
+
+.ctrl-ed-size-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.ctrl-ed-size-lbl {
+  font-size: 12px;
+  font-weight: 900;
+  color: #e6f3ff;
+  white-space: nowrap;
+  text-shadow: 0 1.4px 0 #071022;
+}
+
+.ctrl-ed-slider {
+  width: clamp(92px, 20vw, 175px);
+}
+
+.ctrl-ed-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ctrl-ed-hint {
+  position: relative;
+  z-index: 5;
+  margin: 6px auto 0;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(9, 18, 38, 0.8);
+  border: 1px solid rgba(140, 198, 255, 0.3);
+  color: #d9ecff;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ctrl-ed-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  transform: translate(-50%, -50%) scale(var(--btn-scale, 1));
+  transform-origin: center center;
+  z-index: 3;
+}
+
+.ctrl-ed-node:active {
+  cursor: grabbing;
+}
+
+.ctrl-ed-node.main-node {
+  width: clamp(68px, 18vh, 92px);
+  height: clamp(68px, 18vh, 92px);
+}
+
+.ctrl-ed-node.gear-node {
+  width: clamp(42px, 11vh, 54px);
+  height: clamp(42px, 11vh, 54px);
+}
+
+.ctrl-ed-node img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
+}
+
+.ctrl-ed-node.selected {
+  z-index: 4;
+}
+
+.ctrl-ed-node.selected::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 999px;
+  border: 3px solid #ffe03b;
+  box-shadow: 0 0 16px rgba(255, 224, 59, 0.72), inset 0 0 10px rgba(255, 224, 59, 0.25);
+  pointer-events: none;
+}
+
+.ctrl-ed-node-lbl {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 1px 7px;
+  border-radius: 7px;
+  background: #0d1c3d;
+  border: 1.5px solid #35589e;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.ctrl-ed-node.selected .ctrl-ed-node-lbl {
+  border-color: #ffe03b;
+  color: #ffe86b;
+}
+
+@media (min-width: 760px) and (min-height: 520px) {
+  .ctrl-ed-node.main-node {
+    width: clamp(84px, 12.4vh, 114px);
+    height: clamp(84px, 12.4vh, 114px);
+  }
+  .ctrl-ed-node.gear-node {
+    width: clamp(52px, 7.9vh, 68px);
+    height: clamp(52px, 7.9vh, 68px);
+  }
+}
+
+@media (max-height: 460px) {
+  .bs-set-ctrl-bar {
+    padding: 7px 10px;
+  }
+  .ctrl-ed-bar {
+    gap: 6px;
+    padding: 5px 8px;
+  }
+  .ctrl-ed-sel-pill {
+    min-width: 56px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .ctrl-ed-slider {
+    width: clamp(72px, 16vw, 130px);
+  }
+  .ctrl-ed-bar .bs-set-action-btn {
+    height: 29px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+  .ctrl-ed-bar .bs-set-action-btn.gold {
+    min-width: 54px;
+  }
+  .ctrl-ed-hint {
+    margin-top: 4px;
+    font-size: 10px;
+    padding: 2px 9px;
+  }
+}

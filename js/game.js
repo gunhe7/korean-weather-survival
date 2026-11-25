@@ -140,6 +140,37 @@
 
   const RANK_FRAME_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
+  const DEFAULT_CONTROL_LAYOUT = {
+    customized: false,
+    jump: { x: 10, y: 84, scale: 1 },
+    umbrella: { x: 10, y: 61, scale: 1 },
+    slide: { x: 90, y: 84, scale: 1 },
+    mask: { x: 90, y: 61, scale: 1 }
+  };
+  const CTRL_LAYOUT_KEYS = ['jump', 'slide', 'umbrella', 'mask'];
+  const CTRL_LAYOUT_LABELS = { jump: '점프', slide: '슬라이드', umbrella: '우산', mask: '마스크' };
+
+  function clampCtrlVal(v, min, max, fallback) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.round(Math.max(min, Math.min(max, n)) * 100) / 100;
+  }
+
+  function normalizeControlLayout(raw) {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    const out = { customized: Boolean(src.customized) };
+    CTRL_LAYOUT_KEYS.forEach((k) => {
+      const defBtn = DEFAULT_CONTROL_LAYOUT[k];
+      const item = src[k] && typeof src[k] === 'object' ? src[k] : {};
+      out[k] = {
+        x: clampCtrlVal(item.x, 6, 94, defBtn.x),
+        y: clampCtrlVal(item.y, 22, 92, defBtn.y),
+        scale: clampCtrlVal(item.scale, 0.6, 1.5, defBtn.scale)
+      };
+    });
+    return out;
+  }
+
   function hydrateSaveData(raw, authProfile) {
     const today = getTodayKey();
     const week = getWeekKey();
@@ -181,6 +212,7 @@
       tutorialDone: false,
       cloudUpdatedAt: 0,
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
+      controlLayout: normalizeControlLayout(null),
       auth: cleanAuth,
       profile: { avatarCharId: null, avatarSkinId: null, nameColor: '#ffffff', nameFrame: 'none', unlockedFrames: [], frameExpires: {} },
       seasonPass: {
@@ -254,6 +286,7 @@
       tutorialDone: Boolean(raw.tutorialDone || (Number(raw.playCount) || 0) > 0 || (Number(raw.bestScore) || 0) > 0),
       cloudUpdatedAt: typeof raw.cloudUpdatedAt === 'number' && Number.isFinite(raw.cloudUpdatedAt) ? Math.max(0, Math.floor(raw.cloudUpdatedAt)) : 0,
       audioSettings: { ...def.audioSettings, ...(raw.audioSettings || {}) },
+      controlLayout: normalizeControlLayout(raw.controlLayout),
       auth: {
         ...cleanAuth,
         // Preserve custom saved nickname for this account if one was previously set
@@ -526,6 +559,15 @@
     btnSettingsSwitchLogin: document.getElementById('btn-settings-switch-login'),
     btnReplayTutorial: document.getElementById('btn-replay-tutorial'),
     btnSettingsOk: document.getElementById('btn-settings-ok'),
+    btnOpenCtrlEditor: document.getElementById('btn-open-ctrl-editor'),
+    ctrlEditorOverlay: document.getElementById('ctrl-editor-overlay'),
+    ctrlEdStage: document.getElementById('ctrl-ed-stage'),
+    ctrlEdSelectedName: document.getElementById('ctrl-ed-selected-name'),
+    rngCtrlSize: document.getElementById('rng-ctrl-size'),
+    lblCtrlSize: document.getElementById('lbl-ctrl-size'),
+    btnCtrlEdReset: document.getElementById('btn-ctrl-ed-reset'),
+    btnCtrlEdCancel: document.getElementById('btn-ctrl-ed-cancel'),
+    btnCtrlEdSave: document.getElementById('btn-ctrl-ed-save'),
 
     btnHomeWeather: document.getElementById('btn-home-weather'),
     homeWeatherBtnIco: document.getElementById('home-weather-btn-ico'),
@@ -661,6 +703,7 @@
     weatherAlertIcon: document.getElementById('weather-alert-icon'),
     weatherAlertTitle: document.getElementById('weather-alert-title'),
 
+    mobileControls: document.getElementById('mobile-controls'),
     btnJump: document.getElementById('btn-jump'),
     btnSlide: document.getElementById('btn-slide'),
     btnToggleUmbrella: document.getElementById('btn-toggle-umbrella'),
@@ -4697,8 +4740,35 @@
     return liveWeatherMods;
   }
 
+  function applyControlLayout() {
+    if (!el.mobileControls) return;
+    const lay = normalizeControlLayout(save && save.controlLayout);
+    const btnMap = {
+      jump: el.btnJump,
+      slide: el.btnSlide,
+      umbrella: el.btnToggleUmbrella,
+      mask: el.btnToggleMask
+    };
+    el.mobileControls.classList.toggle('custom-layout', lay.customized);
+    CTRL_LAYOUT_KEYS.forEach((k) => {
+      const btn = btnMap[k];
+      if (!btn) return;
+      if (!lay.customized) {
+        btn.style.left = '';
+        btn.style.top = '';
+        btn.style.removeProperty('--btn-scale');
+      } else {
+        const cfg = lay[k];
+        btn.style.left = cfg.x + '%';
+        btn.style.top = cfg.y + '%';
+        btn.style.setProperty('--btn-scale', String(cfg.scale));
+      }
+    });
+  }
+
   // ===================== HOME / MISSIONS / ATTENDANCE / CHARS / SHOP UI RENDER =====================
   function refreshAllMenus() {
+    applyControlLayout();
     ensureTodayMissions();
     ensureWeeklyRankCurrentWeek();
     el.uiGold.textContent = save.gold.toLocaleString('ko-KR');
@@ -6487,6 +6557,7 @@
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
     el.pauseOverlay.classList.add('hidden');
     el.viewRun.classList.remove('hidden');
+    applyControlLayout();
     if (Renderer && Renderer.invalidateCanvasSize) Renderer.invalidateCanvasSize();
     resetHudCache();
     updateTutorialHudUI();
@@ -9352,6 +9423,153 @@
       }
     });
 
+    // Brawl Stars Style Control Layout Editor (Jump / Slide / Umbrella / Mask Size & Position)
+    let ctrlEdDraft = null;
+    let ctrlEdSelected = 'jump';
+    let ctrlEdReturnSettings = false;
+    let ctrlEdDrag = null;
+    const ctrlEdNodes = el.ctrlEdStage ? Array.from(el.ctrlEdStage.querySelectorAll('.ctrl-ed-node')) : [];
+
+    function selectCtrlEdButton(id) {
+      if (!CTRL_LAYOUT_KEYS.includes(id)) id = 'jump';
+      ctrlEdSelected = id;
+      ctrlEdNodes.forEach((node) => {
+        node.classList.toggle('selected', node.dataset.ctrlId === id);
+      });
+      if (el.ctrlEdSelectedName) {
+        el.ctrlEdSelectedName.textContent = CTRL_LAYOUT_LABELS[id] || id;
+      }
+      if (ctrlEdDraft && ctrlEdDraft[id]) {
+        const pct = Math.round(clampCtrlVal(ctrlEdDraft[id].scale, 0.6, 1.5, 1) * 100);
+        if (el.rngCtrlSize) el.rngCtrlSize.value = String(pct);
+        if (el.lblCtrlSize) el.lblCtrlSize.textContent = pct + '%';
+      }
+    }
+
+    function renderCtrlEdNodes() {
+      if (!ctrlEdDraft) return;
+      ctrlEdNodes.forEach((node) => {
+        const id = node.dataset.ctrlId;
+        const cfg = ctrlEdDraft[id];
+        if (!cfg) return;
+        node.style.left = cfg.x + '%';
+        node.style.top = cfg.y + '%';
+        node.style.setProperty('--btn-scale', String(cfg.scale));
+      });
+      selectCtrlEdButton(ctrlEdSelected);
+    }
+
+    function openControlEditor() {
+      if (!el.ctrlEditorOverlay) return;
+      ctrlEdDraft = normalizeControlLayout(save.controlLayout);
+      ctrlEdReturnSettings = Boolean(el.settingsOverlay && !el.settingsOverlay.classList.contains('hidden'));
+      if (el.settingsOverlay) el.settingsOverlay.classList.add('hidden');
+      el.ctrlEditorOverlay.classList.remove('hidden');
+      renderCtrlEdNodes();
+    }
+
+    function closeControlEditor(reopenSettings) {
+      ctrlEdDrag = null;
+      if (el.ctrlEditorOverlay) el.ctrlEditorOverlay.classList.add('hidden');
+      if (reopenSettings && ctrlEdReturnSettings && el.settingsOverlay) {
+        renderSettingsUI();
+        el.settingsOverlay.classList.remove('hidden');
+      }
+    }
+
+    if (el.btnOpenCtrlEditor) {
+      el.btnOpenCtrlEditor.addEventListener('click', () => {
+        SFX.click();
+        openControlEditor();
+      });
+    }
+
+    ctrlEdNodes.forEach((node) => {
+      const id = node.dataset.ctrlId;
+      node.addEventListener('pointerdown', (e) => {
+        if (!ctrlEdDraft || !el.ctrlEdStage) return;
+        if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
+        selectCtrlEdButton(id);
+        const rect = el.ctrlEdStage.getBoundingClientRect();
+        if (rect.width < 10 || rect.height < 10) return;
+        const cfg = ctrlEdDraft[id] || DEFAULT_CONTROL_LAYOUT[id];
+        const centerX = rect.left + (cfg.x / 100) * rect.width;
+        const centerY = rect.top + (cfg.y / 100) * rect.height;
+        ctrlEdDrag = {
+          id,
+          pointerId: e.pointerId,
+          offsetX: e.clientX - centerX,
+          offsetY: e.clientY - centerY
+        };
+        try { node.setPointerCapture(e.pointerId); } catch {}
+      });
+
+      node.addEventListener('pointermove', (e) => {
+        if (!ctrlEdDrag || ctrlEdDrag.id !== id || ctrlEdDrag.pointerId !== e.pointerId || !ctrlEdDraft || !el.ctrlEdStage) return;
+        e.preventDefault();
+        const rect = el.ctrlEdStage.getBoundingClientRect();
+        if (rect.width < 10 || rect.height < 10) return;
+        const cx = e.clientX - ctrlEdDrag.offsetX;
+        const cy = e.clientY - ctrlEdDrag.offsetY;
+        const xPct = Math.round(Math.max(6, Math.min(94, ((cx - rect.left) / rect.width) * 100)) * 10) / 10;
+        const yPct = Math.round(Math.max(22, Math.min(92, ((cy - rect.top) / rect.height) * 100)) * 10) / 10;
+        ctrlEdDraft.customized = true;
+        ctrlEdDraft[id].x = xPct;
+        ctrlEdDraft[id].y = yPct;
+        node.style.left = xPct + '%';
+        node.style.top = yPct + '%';
+      });
+
+      const endCtrlDrag = (e) => {
+        if (!ctrlEdDrag || ctrlEdDrag.pointerId !== e.pointerId) return;
+        ctrlEdDrag = null;
+        try { node.releasePointerCapture(e.pointerId); } catch {}
+      };
+      node.addEventListener('pointerup', endCtrlDrag);
+      node.addEventListener('pointercancel', endCtrlDrag);
+    });
+
+    if (el.rngCtrlSize) {
+      el.rngCtrlSize.addEventListener('input', () => {
+        if (!ctrlEdDraft || !ctrlEdDraft[ctrlEdSelected]) return;
+        const scale = clampCtrlVal(Number(el.rngCtrlSize.value) / 100, 0.6, 1.5, 1);
+        const pct = Math.round(scale * 100);
+        ctrlEdDraft.customized = true;
+        ctrlEdDraft[ctrlEdSelected].scale = scale;
+        if (el.lblCtrlSize) el.lblCtrlSize.textContent = pct + '%';
+        const activeNode = ctrlEdNodes.find((n) => n.dataset.ctrlId === ctrlEdSelected);
+        if (activeNode) activeNode.style.setProperty('--btn-scale', String(scale));
+      });
+    }
+
+    if (el.btnCtrlEdReset) {
+      el.btnCtrlEdReset.addEventListener('click', () => {
+        SFX.click();
+        ctrlEdDraft = normalizeControlLayout(null);
+        renderCtrlEdNodes();
+        showToast('기본 위치와 크기로 초기화했습니다.');
+      });
+    }
+
+    if (el.btnCtrlEdCancel) {
+      el.btnCtrlEdCancel.addEventListener('click', () => {
+        SFX.click();
+        closeControlEditor(true);
+      });
+    }
+
+    if (el.btnCtrlEdSave) {
+      el.btnCtrlEdSave.addEventListener('click', () => {
+        SFX.click();
+        save.controlLayout = normalizeControlLayout(ctrlEdDraft);
+        persistSave();
+        applyControlLayout();
+        closeControlEditor(true);
+        showToast('조작 버튼 설정이 저장되었습니다.');
+      });
+    }
+
     function saveAudioState() {
       save.audioSettings = SFX.getSettings();
       persistSave();
@@ -9602,6 +9820,13 @@
       if (window.StudioIntro && window.StudioIntro.isActive()) {
         if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
           e.preventDefault();
+        }
+        return;
+      }
+      if (el.ctrlEditorOverlay && !el.ctrlEditorOverlay.classList.contains('hidden')) {
+        if (e.code === 'Escape') {
+          e.preventDefault();
+          closeControlEditor(true);
         }
         return;
       }
