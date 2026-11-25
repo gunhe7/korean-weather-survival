@@ -5,8 +5,15 @@ window.SFX = (function () {
   let sfxVolume = 0.8;
   let bgmVolume = 0.45;
 
-  let bgmTimer = null;
-  let bgmStep = 0;
+  const BGM_TRACK_URLS = {
+    home: 'assets/audio/bgm_home.m4a?v=20261121hd86',
+    game: 'assets/audio/bgm_game.m4a?v=20261121hd86'
+  };
+  const BGM_SOFT_SCALE = 0.22;
+  const bgmTracks = { home: null, game: null };
+  let activeBgmKey = null;
+  let bgmFadeTimer = null;
+  let bgmUnlockBound = false;
   let bgmMode = 'menu'; // 'menu' | 'run' | 'fever'
   let bgmStarted = false;
   let studioIntroPlaying = false;
@@ -543,49 +550,194 @@ window.SFX = (function () {
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', () => {
       updateAmbientMasterGain(0.12);
+      syncBgmTrack(false);
     });
   }
 
-  // Lightweight upbeat 8-bit chiptune BGM loops (no external audio files needed!)
-  const BGM_PATTERNS = {
-    menu: {
-      tempoMs: 260,
-      lead: [523.25, 0, 659.25, 783.99, 659.25, 0, 587.33, 659.25, 523.25, 0, 440, 523.25, 587.33, 0, 392, 0],
-      bass: [261.63, 0, 196, 0, 220, 0, 196, 0, 174.61, 0, 196, 0, 146.83, 0, 196, 0]
-    },
-    run: {
-      tempoMs: 175,
-      lead: [523.25, 659.25, 783.99, 659.25, 880, 783.99, 659.25, 587.33, 523.25, 587.33, 659.25, 783.99, 1046.5, 880, 783.99, 659.25],
-      bass: [261.63, 261.63, 196, 196, 220, 220, 196, 196, 174.61, 174.61, 196, 196, 261.63, 220, 196, 196]
-    },
-    fever: {
-      tempoMs: 135,
-      lead: [783.99, 987.77, 1046.5, 1318.5, 1174.66, 1046.5, 987.77, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1318.5, 1174.66, 1046.5, 987.77],
-      bass: [392, 392, 329.63, 329.63, 349.23, 349.23, 392, 392, 261.63, 261.63, 329.63, 329.63, 392, 440, 493.88, 392]
-    }
-  };
-
-  function tickBgm() {
-    if (!bgmEnabled || !bgmStarted || studioIntroPlaying) return;
-    if (typeof window !== 'undefined' && window.StudioIntro && window.StudioIntro.isActive()) return;
-    if (document.hidden || !ctx || ctx.state !== 'running') return;
-    const pat = BGM_PATTERNS[bgmMode] || BGM_PATTERNS.menu;
-    const idx = bgmStep % pat.lead.length;
-    const leadF = pat.lead[idx];
-    const bassF = pat.bass[idx];
-    if (leadF > 0) tone(leadF, pat.tempoMs / 1000 * 0.78, 'triangle', 0.042, 0, true);
-    if (bassF > 0) tone(bassF, pat.tempoMs / 1000 * 0.65, 'sine', 0.036, 0, true);
-    bgmStep = (bgmStep + 1) % pat.lead.length;
+  function isStudioIntroBlocking() {
+    return Boolean(
+      studioIntroPlaying ||
+      (typeof window !== 'undefined' && window.StudioIntro && typeof window.StudioIntro.isActive === 'function' && window.StudioIntro.isActive())
+    );
   }
 
-  function restartBgmTimer() {
-    if (bgmTimer) {
-      clearInterval(bgmTimer);
-      bgmTimer = null;
+  function getBgmTrackKey(mode) {
+    return (mode === 'run' || mode === 'fever') ? 'game' : 'home';
+  }
+
+  function getTargetBgmVol() {
+    return Math.max(0, Math.min(0.35, bgmVolume * BGM_SOFT_SCALE * (bgmMode === 'fever' ? 1.12 : 1.0)));
+  }
+
+  function routeBgmThroughWebAudio(el) {
+    if (!el || el._gainNode || el._mediaFailed) return;
+    const c = ctx || ensure();
+    if (!c || typeof c.createMediaElementSource !== 'function') return;
+    try {
+      const src = c.createMediaElementSource(el);
+      const gain = c.createGain();
+      gain.gain.value = typeof el._curLevel === 'number' ? el._curLevel : 0;
+      src.connect(gain);
+      gain.connect(c.destination);
+      el._gainNode = gain;
+      el.volume = 1;
+    } catch {
+      el._mediaFailed = true;
     }
-    if (!bgmEnabled || !bgmStarted) return;
-    const pat = BGM_PATTERNS[bgmMode] || BGM_PATTERNS.menu;
-    bgmTimer = setInterval(tickBgm, pat.tempoMs);
+  }
+
+  function setBgmTrackLevel(el, val) {
+    if (!el) return;
+    const v = Math.max(0, Math.min(1, Number(val) || 0));
+    el._curLevel = v;
+    if (el._gainNode) {
+      el.volume = 1;
+      try { el._gainNode.gain.value = v; } catch {}
+    } else {
+      el.volume = v;
+    }
+  }
+
+  function getBgmTrackLevel(el) {
+    if (!el) return 0;
+    return typeof el._curLevel === 'number' ? el._curLevel : el.volume;
+  }
+
+  function ensureBgmAudio(key) {
+    const k = key === 'game' ? 'game' : 'home';
+    if (bgmTracks[k]) return bgmTracks[k];
+    if (typeof Audio === 'undefined') return null;
+    const el = new Audio(BGM_TRACK_URLS[k]);
+    el.loop = true;
+    el.preload = 'auto';
+    el.volume = 0;
+    el._curLevel = 0;
+    try { el.setAttribute('playsinline', ''); } catch {}
+    bgmTracks[k] = el;
+    return el;
+  }
+
+  function bindBgmAutoUnlock() {
+    if (bgmUnlockBound || typeof window === 'undefined') return;
+    bgmUnlockBound = true;
+    const onUnlock = () => {
+      bgmUnlockBound = false;
+      ['pointerdown', 'touchstart', 'click', 'keydown'].forEach((ev) => {
+        window.removeEventListener(ev, onUnlock, true);
+      });
+      syncBgmTrack(false);
+    };
+    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach((ev) => {
+      window.addEventListener(ev, onUnlock, { capture: true, passive: true });
+    });
+  }
+
+  function clearBgmFadeTimer() {
+    if (bgmFadeTimer) {
+      clearInterval(bgmFadeTimer);
+      bgmFadeTimer = null;
+    }
+  }
+
+  function stopAllBgmImmediate() {
+    ['home', 'game'].forEach((k) => {
+      const el = bgmTracks[k];
+      if (el) {
+        setBgmTrackLevel(el, 0);
+        try { if (!el.paused) el.pause(); } catch {}
+      }
+    });
+    activeBgmKey = null;
+  }
+
+  function syncBgmTrack(restartOnSwitch = false) {
+    clearBgmFadeTimer();
+    const isHidden = typeof document !== 'undefined' && document.hidden;
+    const shouldPlay = bgmEnabled && bgmStarted && bgmVolume > 0 && !isStudioIntroBlocking() && !isHidden;
+
+    if (!shouldPlay) {
+      if (isHidden) {
+        stopAllBgmImmediate();
+        return;
+      }
+      const startVols = {
+        home: getBgmTrackLevel(bgmTracks.home),
+        game: getBgmTrackLevel(bgmTracks.game)
+      };
+      if (startVols.home <= 0.002 && startVols.game <= 0.002) {
+        stopAllBgmImmediate();
+        return;
+      }
+      let step = 0;
+      const steps = 10;
+      bgmFadeTimer = setInterval(() => {
+        step += 1;
+        const t = Math.min(1, step / steps);
+        ['home', 'game'].forEach((k) => {
+          setBgmTrackLevel(bgmTracks[k], Math.max(0, startVols[k] * (1 - t)));
+        });
+        if (step >= steps) {
+          clearBgmFadeTimer();
+          stopAllBgmImmediate();
+        }
+      }, 30);
+      return;
+    }
+
+    const wantKey = getBgmTrackKey(bgmMode);
+    const otherKey = wantKey === 'home' ? 'game' : 'home';
+    const wantEl = ensureBgmAudio(wantKey);
+    const otherEl = bgmTracks[otherKey];
+    const targetVol = getTargetBgmVol();
+
+    if (wantEl) {
+      routeBgmThroughWebAudio(wantEl);
+      if (restartOnSwitch && activeBgmKey !== wantKey && wantKey === 'game') {
+        try { wantEl.currentTime = 0; } catch {}
+      }
+      if (wantEl.paused) {
+        try {
+          const p = wantEl.play();
+          if (p && typeof p.catch === 'function') {
+            p.catch(() => bindBgmAutoUnlock());
+          }
+        } catch {
+          bindBgmAutoUnlock();
+        }
+      }
+    }
+    if (otherEl) routeBgmThroughWebAudio(otherEl);
+
+    const startWant = getBgmTrackLevel(wantEl);
+    const startOther = getBgmTrackLevel(otherEl);
+    const needFade = (wantEl && Math.abs(startWant - targetVol) > 0.005) || (otherEl && (!otherEl.paused || startOther > 0.002));
+    activeBgmKey = wantKey;
+
+    if (!needFade) {
+      setBgmTrackLevel(wantEl, targetVol);
+      if (otherEl) {
+        setBgmTrackLevel(otherEl, 0);
+        try { if (!otherEl.paused) otherEl.pause(); } catch {}
+      }
+      return;
+    }
+
+    let step = 0;
+    const steps = 12; // ~360ms smooth crossfade
+    bgmFadeTimer = setInterval(() => {
+      step += 1;
+      const t = Math.min(1, step / steps);
+      if (wantEl) setBgmTrackLevel(wantEl, startWant + (targetVol - startWant) * t);
+      if (otherEl) setBgmTrackLevel(otherEl, Math.max(0, startOther * (1 - t)));
+      if (step >= steps) {
+        clearBgmFadeTimer();
+        setBgmTrackLevel(wantEl, targetVol);
+        if (otherEl) {
+          setBgmTrackLevel(otherEl, 0);
+          try { if (!otherEl.paused) otherEl.pause(); } catch {}
+        }
+      }
+    }, 30);
   }
 
   function syncAmbientAfterSettingsChange() {
@@ -787,7 +939,7 @@ window.SFX = (function () {
       if (typeof opts.bgmOn === 'boolean') bgmEnabled = opts.bgmOn;
       if (typeof opts.sfxVol === 'number') sfxVolume = Math.max(0, Math.min(1, opts.sfxVol));
       if (typeof opts.bgmVol === 'number') bgmVolume = Math.max(0, Math.min(1, opts.bgmVol));
-      restartBgmTimer();
+      syncBgmTrack(false);
       syncAmbientAfterSettingsChange();
     },
     getSettings() {
@@ -797,7 +949,7 @@ window.SFX = (function () {
       const next = !(sfxEnabled || bgmEnabled);
       sfxEnabled = next;
       bgmEnabled = next;
-      restartBgmTimer();
+      syncBgmTrack(false);
       syncAmbientAfterSettingsChange();
       return next;
     },
@@ -809,27 +961,27 @@ window.SFX = (function () {
     toggleBgm() {
       bgmEnabled = !bgmEnabled;
       if (bgmEnabled) ensure();
-      restartBgmTimer();
+      syncBgmTrack(false);
       return bgmEnabled;
     },
     setBgmMode(mode) {
-      const target = BGM_PATTERNS[mode] ? mode : 'menu';
-      if (bgmMode === target && bgmTimer) return;
+      const target = (mode === 'run' || mode === 'fever') ? mode : 'menu';
+      const prevKey = getBgmTrackKey(bgmMode);
+      const nextKey = getBgmTrackKey(target);
+      const changed = bgmMode !== target;
       bgmMode = target;
-      bgmStep = 0;
-      if (bgmStarted) restartBgmTimer();
+      if (bgmStarted && (changed || activeBgmKey !== nextKey || !bgmTracks[nextKey] || bgmTracks[nextKey].paused)) {
+        syncBgmTrack(prevKey !== nextKey);
+      }
     },
     startBgm() {
       bgmStarted = true;
       ensure();
-      restartBgmTimer();
+      syncBgmTrack(false);
     },
     stopBgm() {
       bgmStarted = false;
-      if (bgmTimer) {
-        clearInterval(bgmTimer);
-        bgmTimer = null;
-      }
+      syncBgmTrack(false);
     },
     isEnabled() {
       return sfxEnabled || bgmEnabled;
@@ -1056,6 +1208,9 @@ window.SFX = (function () {
         src.connect(c.destination);
         src.start(0);
       } catch {}
+      if (bgmStarted && !isStudioIntroBlocking()) {
+        syncBgmTrack(false);
+      }
       return c;
     },
     playStudioIntro(offsetSec = 0, fromGesture = false) {
@@ -1274,7 +1429,10 @@ window.SFX = (function () {
 
       let stopped = false;
       const clearTimer = setTimeout(() => {
-        if (!stopped) studioIntroPlaying = false;
+        if (!stopped) {
+          studioIntroPlaying = false;
+          if (bgmStarted) setTimeout(() => syncBgmTrack(false), 120);
+        }
       }, Math.max(80, Math.round((6.02 - off) * 1000)));
 
       const stopFn = () => {
@@ -1284,6 +1442,7 @@ window.SFX = (function () {
         if (activeStudioStop === stopFn) activeStudioStop = null;
         clearTimeout(clearTimer);
         stopStudioHtmlAudio();
+        if (bgmStarted) setTimeout(() => syncBgmTrack(false), 120);
         try {
           const tNow = c.currentTime;
           master.gain.cancelScheduledValues(tNow);
@@ -1310,6 +1469,7 @@ window.SFX = (function () {
       }
       stopStudioHtmlAudio();
       studioIntroPlaying = false;
+      if (bgmStarted) setTimeout(() => syncBgmTrack(false), 120);
     }
   };
 })();
