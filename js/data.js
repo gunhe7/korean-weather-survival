@@ -150,7 +150,7 @@ window.RUN_DATA = (function () {
     },
     {
       id: 'iced_americano',
-      name: '스키어 (얼죽아)',
+      name: '스키어',
       tier: '3단 점프 · 숙련',
       icon: '❄️',
       spriteKey: 'skier_idle_0',
@@ -172,7 +172,7 @@ window.RUN_DATA = (function () {
     },
     {
       id: 'fashionista',
-      name: '산타복',
+      name: '산타',
       tier: '니어미스 · 생존',
       icon: '🛡️',
       spriteKey: 'santa_idle_0',
