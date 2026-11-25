@@ -13513,6 +13513,234 @@ input:focus-visible {
   cursor: default;
 }
 
+.sp-claim-btn.skip {
+  background: linear-gradient(180deg, #56dfff, #1b88dc);
+  color: #ffffff;
+  text-shadow: 0 1px 0 #071022;
+}
+
+.sp-claim-btn.skip-far {
+  background: linear-gradient(180deg, #274d8a, #173262);
+  color: #bce6ff;
+}
+
+.sp-card.locked {
+  opacity: 0.86;
+}
+
+.sp-subtabs {
+  display: flex;
+  gap: 8px;
+  padding: 7px 14px 4px;
+  background: rgba(9, 20, 44, 0.88);
+  border-bottom: 1.5px solid rgba(110, 178, 255, 0.16);
+  flex-shrink: 0;
+}
+
+.sp-subtab {
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 2px solid #081226;
+  background: #142b57;
+  color: #9ec4f0;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.sp-subtab.active {
+  background: linear-gradient(180deg, #ffd84a, #e8910a);
+  color: #241000;
+  border-color: #ffe878;
+}
+
+.sp-tab-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ff3e55;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  border: 1.5px solid #071022;
+  box-shadow: 0 1px 0 #071022;
+}
+
+.sp-tab-dot.hidden,
+.sp-rewards-pane.hidden,
+.sp-missions-pane.hidden {
+  display: none !important;
+}
+
+.sp-rewards-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.sp-missions-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 14px 14px;
+  gap: 8px;
+}
+
+.sp-missions-banner {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #bfe4ff;
+  background: rgba(20, 48, 96, 0.72);
+  border: 1.5px solid rgba(114, 210, 255, 0.3);
+  border-radius: 10px;
+  padding: 6px 10px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sp-missions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sp-mission-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 13px;
+  border: 2px solid #081226;
+  background: linear-gradient(180deg, #162e60, #0e1e42);
+  box-shadow: 0 3px 0 #071022;
+}
+
+.sp-mission-card.ready {
+  border-color: #5ef89d;
+  background: linear-gradient(180deg, #164940, #0d2b2b);
+  box-shadow: 0 0 10px rgba(74, 245, 146, 0.42), 0 3px 0 #071022;
+}
+
+.sp-mission-card.claimed {
+  opacity: 0.65;
+}
+
+.sp-mission-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(7, 16, 36, 0.65);
+  border: 1.5px solid rgba(130, 198, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.sp-mission-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sp-mission-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sp-mission-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sp-mission-xp {
+  font-size: 11px;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5ef89d, #19a863);
+  color: #042413;
+  border: 1.5px solid #071022;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sp-mission-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sp-mission-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: #08132a;
+  border: 1.5px solid #060e20;
+  overflow: hidden;
+}
+
+.sp-mission-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3bd6ff, #54f59a);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.sp-mission-prog {
+  font-size: 11px;
+  font-weight: 800;
+  color: #a7cdf5;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sp-mission-btn {
+  padding: 7px 11px;
+  border-radius: 10px;
+  border: 2px solid #071022;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sp-mission-btn.ready {
+  background: linear-gradient(180deg, #ffe24a, #eb9400);
+  color: #241000;
+}
+
+.sp-mission-btn.done {
+  background: #173059;
+  color: #7ee8ab;
+  cursor: default;
+}
+
+.sp-mission-btn.locked {
+  background: #102140;
+  color: #7e9ec9;
+  cursor: default;
+}
+
 .sp-tier-node {
   display: inline-flex;
   align-items: center;
@@ -13543,6 +13771,20 @@ input:focus-visible {
   }
   .sp-xp-hint {
     display: none;
+  }
+  .sp-subtabs {
+    padding: 5px 10px 4px;
+  }
+  .sp-subtab {
+    padding: 5px 10px;
+    font-size: 11.5px;
+  }
+  .sp-missions-pane {
+    padding: 6px 10px 10px;
+    gap: 6px;
+  }
+  .sp-mission-card {
+    padding: 7px 9px;
   }
   .sp-col {
     flex: 0 0 106px;
@@ -13578,6 +13820,7 @@ input:focus-visible {
 .score-road-best-pill,
 .sp-track-badge,
 .sp-claim-btn,
+.sp-mission-btn,
 .sp-skip-tier-btn,
 .sp-buy-gold-btn,
 .sp-gold-active-pill,
@@ -13604,6 +13847,7 @@ input:focus-visible {
 }
 
 .qtab-btn,
+.sp-subtab,
 .bs-shop-tab-btn,
 .rank-mode-btn,
 .sp-leg-pill {

@@ -724,6 +724,15 @@ window.RUN_DATA = (function () {
     };
   })();
 
+  // 시즌 패스 전용 일일 미션 (매일 초기화 · 완료 시 패스 경험치 +100~150 XP! 플레이 자체 경험치는 없음)
+  const PASS_DAILY_MISSIONS = [
+    { id: 'pm_runs_2', metric: 'runs', title: '생존 도전 2회 플레이', icon: '🎮', target: 2, unit: '회', xp: 100 },
+    { id: 'pm_dist_600', metric: 'dist', title: '누적 600m 달리기', icon: '🏃', target: 600, unit: 'm', xp: 100 },
+    { id: 'pm_coins_60', metric: 'coins', title: '코인 60개 모으기', icon: '🪙', target: 60, unit: '개', xp: 100 },
+    { id: 'pm_jumps_30', metric: 'jumps', title: '점프 30회 성공', icon: '⬆️', target: 30, unit: '회', xp: 100 },
+    { id: 'pm_dodges_15', metric: 'dodges', title: '장애물 15회 회피', icon: '⚡', target: 15, unit: '회', xp: 150 }
+  ];
+
   function isPassSkinReleased(sk, nowMs = Date.now()) {
     if (!sk || !sk.seasonExclusive) return true;
     if (!sk.passSeasonId || sk.passSeasonId !== SEASON_PASS.seasonId) return true; // older season skin -> already released
@@ -743,6 +752,7 @@ window.RUN_DATA = (function () {
     GOLD_PACKS,
     GEM_PACKS,
     SEASON_PASS,
+    PASS_DAILY_MISSIONS,
     isPassSkinReleased,
     SEASONS,
     CHARACTERS,

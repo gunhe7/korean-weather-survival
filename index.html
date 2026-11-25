@@ -9,14 +9,14 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd86" />
+  <link rel="manifest" href="manifest.json?v=20261121hd87" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd86" />
+  <link rel="stylesheet" href="style.css?v=20261121hd87" />
 </head>
 <body>
   <div id="mobile-app">
@@ -224,7 +224,7 @@
           <div class="bs-home-left-dock">
             <button id="btn-home-season-pass" class="bs-pass-dock-btn" type="button" aria-label="시즌 패스 열기">
               <span class="bs-pass-art-wrap">
-                <img src="assets/ui/season_pass_ticket.png?v=20261121hd86" alt="시즌 패스" class="bs-pass-ticket-img" />
+                <img src="assets/ui/season_pass_ticket.png?v=20261121hd87" alt="시즌 패스" class="bs-pass-ticket-img" />
                 <span class="bs-pass-img-title">시즌 패스</span>
                 <span id="home-pass-dot" class="bs-pass-dot hidden" aria-hidden="true">!</span>
               </span>
@@ -958,7 +958,7 @@
               <div id="sp-xp-fill" class="sp-xp-bar-fill" style="width: 0%"></div>
               <span id="sp-xp-text" class="sp-xp-bar-txt">다음 티어까지 0 / 100 XP</span>
             </div>
-            <div class="sp-xp-hint">달리기 플레이 및 일일(+80)·주간(+200) 미션 완료 시 XP 자동 적립!</div>
+            <div class="sp-xp-hint">패스 일일 미션 완료 또는 💎100 티어 건너뛰기로만 패스 XP를 획득합니다!</div>
           </div>
 
           <div class="sp-pass-cta-col">
@@ -970,13 +970,28 @@
           </div>
         </div>
 
-        <div class="sp-track-legend">
-          <span class="sp-leg-pill gold">👑 골드 패스 (최종 80티어: 신화 스킨 · 얼음황제 + 무지개 프리즘)</span>
-          <span class="sp-leg-pill free">🎁 무료 패스 (보석 · 상자 · 뽑기권 · 골드)</span>
-          <span id="sp-season-timer" class="sp-leg-pill timer">⏳ 시즌 종료까지 -일</span>
+        <div class="sp-subtabs" role="tablist" aria-label="시즌 패스 보기">
+          <button id="btn-sp-tab-rewards" class="sp-subtab active" type="button" role="tab" aria-selected="true">🎫 패스 보상</button>
+          <button id="btn-sp-tab-missions" class="sp-subtab" type="button" role="tab" aria-selected="false">
+            📋 패스 일일 미션
+            <span id="sp-mission-dot" class="sp-tab-dot hidden" aria-hidden="true">!</span>
+          </button>
         </div>
 
-        <div id="sp-track" class="sp-track"></div>
+        <div id="sp-rewards-pane" class="sp-rewards-pane">
+          <div class="sp-track-legend">
+            <span class="sp-leg-pill gold">👑 골드 패스 (최종 80티어: 신화 스킨 · 얼음황제 + 무지개 프리즘)</span>
+            <span class="sp-leg-pill free">🎁 무료 패스 (보석 · 상자 · 뽑기권 · 골드)</span>
+            <span id="sp-season-timer" class="sp-leg-pill timer">⏳ 시즌 종료까지 -일</span>
+          </div>
+
+          <div id="sp-track" class="sp-track"></div>
+        </div>
+
+        <div id="sp-missions-pane" class="sp-missions-pane hidden">
+          <div class="sp-missions-banner">⏱️ 매일 초기화 · 패스 일일 미션을 완료하고 버튼을 눌러 패스 XP를 받으세요!</div>
+          <div id="sp-missions-list" class="sp-missions-list"></div>
+        </div>
       </div>
     </div>
 
@@ -1164,14 +1179,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd86"></script>
-  <script src="js/ui-icons.js?v=20261121hd86"></script>
-  <script src="js/weather-live.js?v=20261121hd86"></script>
-  <script src="js/audio.js?v=20261121hd86"></script>
-  <script src="js/studio-intro.js?v=20261121hd86"></script>
-  <script src="js/online.js?v=20261121hd86"></script>
-  <script src="js/renderer.js?v=20261121hd86"></script>
-  <script src="js/game.js?v=20261121hd86"></script>
+  <script src="js/data.js?v=20261121hd87"></script>
+  <script src="js/ui-icons.js?v=20261121hd87"></script>
+  <script src="js/weather-live.js?v=20261121hd87"></script>
+  <script src="js/audio.js?v=20261121hd87"></script>
+  <script src="js/studio-intro.js?v=20261121hd87"></script>
+  <script src="js/online.js?v=20261121hd87"></script>
+  <script src="js/renderer.js?v=20261121hd87"></script>
+  <script src="js/game.js?v=20261121hd87"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {
