@@ -1865,8 +1865,10 @@
   }
 
   let bannerTimer = null;
+  let runBannerActive = false;
   function showRunBanner(msg, ms = 2200, tone = 'gold', tag = '') {
     if (!el.runBanner) return;
+    runBannerActive = true;
     el.runBanner.className = `run-banner bs-run-banner tone-${tone || 'gold'}`;
     if (tag) {
       el.runBanner.innerHTML = `<span class="rb-tag">${uiText(tag, 'xs')}</span><span class="rb-main">${uiText(msg, 'sm')}</span>`;
@@ -1875,7 +1877,10 @@
     }
     el.runBanner.classList.remove('hidden');
     if (bannerTimer) clearTimeout(bannerTimer);
-    bannerTimer = setTimeout(() => el.runBanner.classList.add('hidden'), ms);
+    bannerTimer = setTimeout(() => {
+      runBannerActive = false;
+      el.runBanner.classList.add('hidden');
+    }, ms);
   }
 
   let weatherAlertTimer = null;
@@ -8418,7 +8423,11 @@
         chipTimer = `${sec}s`;
       }
 
-      const showChip = Boolean(chipBadge) && !weatherAlertActive;
+      if ((weatherAlertActive || chipUrgent) && runBannerActive) {
+        runBannerActive = false;
+        if (el.runBanner) el.runBanner.classList.add('hidden');
+      }
+      const showChip = Boolean(chipBadge) && !weatherAlertActive && (!runBannerActive || chipUrgent);
       const barJustShown = showChip && hudCache.wBarHide !== false;
       hudToggle('wBarHide', el.runWeatherBar, 'hidden', !showChip);
       hudToggle('wBarUrg', el.runWeatherBar, 'urgent-danger', chipUrgent);

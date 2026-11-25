@@ -212,8 +212,35 @@ window.RunRenderer = (function () {
   }
 
   function spawnFloater(text, color, x, y) {
-    if (floaters.length >= 10) floaters.shift();
-    floaters.push({ text, color, x, y, life: 0.95, maxLife: 0.95 });
+    const cleanText = String(text || '');
+    const prefix = cleanText.split(/[0-9+]/)[0].trim();
+    if (prefix.length >= 3) {
+      for (let i = floaters.length - 1; i >= 0; i--) {
+        if (floaters[i].text.startsWith(prefix)) {
+          floaters.splice(i, 1);
+        }
+      }
+    }
+    const LINE_GAP = 16;
+    const safeTopY = Math.max(curView.minY + 86, 86);
+    let spawnY = Math.min(y, 206);
+    for (let attempt = 0; attempt < 6; attempt++) {
+      let clash = false;
+      for (let i = 0; i < floaters.length; i++) {
+        const f = floaters[i];
+        const prog = 1 - f.life / f.maxLife;
+        const curY = f.y - (1 - Math.pow(1 - prog, 3)) * 22;
+        if (Math.abs(f.x - x) < 120 && Math.abs(curY - spawnY) < LINE_GAP) {
+          clash = true;
+          break;
+        }
+      }
+      if (!clash) break;
+      spawnY -= LINE_GAP;
+    }
+    spawnY = Math.max(safeTopY, spawnY);
+    if (floaters.length >= 4) floaters.shift();
+    floaters.push({ text: cleanText, color, x, y: spawnY, life: 0.85, maxLife: 0.85 });
   }
 
   function spawnPickupEffect(x, y, color = '#ffe55c', big = false) {
@@ -1974,7 +2001,7 @@ window.RunRenderer = (function () {
     drawItemBubbleFront(ctx, x, y, bubbleR, rim, t);
   }
 
-  function drawFeverOverlay(ctx, t) {
+  function drawFeverOverlay(ctx, t, feverTimer = 4.5) {
     const minX = curView.minX;
     const maxX = curView.maxX;
     const minY = curView.minY;
@@ -1998,13 +2025,19 @@ window.RunRenderer = (function () {
     ctx.strokeRect(minX + 3, minY + 3, spanW - 6, spanH - 6);
     ctx.restore();
 
-    const spr = getSprite('ui_fever');
-    if (!spr) return;
-    const scale = 1 + Math.sin(t * 14) * 0.08;
-    const dw = Math.round(122 * scale);
-    const dh = Math.round(48 * scale);
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(spr, Math.floor(minX + (spanW - dw) / 2), Math.max(36, Math.floor(minY + 38)), dw, dh);
+    if (feverTimer > 3.1) {
+      const spr = getSprite('ui_fever');
+      if (!spr) return;
+      const alpha = feverTimer < 3.5 ? Math.max(0, (feverTimer - 3.1) / 0.4) : 1;
+      const scale = 1 + Math.sin(t * 14) * 0.06;
+      const dw = Math.round(92 * scale);
+      const dh = Math.round(36 * scale);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(spr, Math.floor(minX + (spanW - dw) / 2), Math.max(76, Math.floor(minY + 76)), dw, dh);
+      ctx.restore();
+    }
   }
 
   function drawFloaters(ctx, dt) {
@@ -2019,14 +2052,14 @@ window.RunRenderer = (function () {
       const easeOut = 1 - Math.pow(1 - prog, 3);
       const pop = prog < 0.14 ? (1.28 - (prog / 0.14) * 0.28) : 1.0;
       const fx = Math.max(curView.minX + 54, Math.min(curView.maxX - 54, Math.floor(f.x)));
-      const fy = Math.max(curView.minY + 22, Math.floor(f.y - easeOut * 30));
+      const fy = Math.max(curView.minY + 76, Math.floor(f.y - easeOut * 22));
       ctx.save();
       ctx.translate(fx, fy);
       ctx.scale(pop, pop);
       ctx.globalAlpha = Math.min(1, f.life * 2.4);
-      ctx.font = '900 13px "Paperlogy", "Malgun Gothic", sans-serif';
+      ctx.font = '900 12px "Paperlogy", "Malgun Gothic", sans-serif';
       ctx.textAlign = 'center';
-      ctx.lineWidth = 3.6;
+      ctx.lineWidth = 3.2;
       ctx.lineJoin = 'round';
       ctx.strokeStyle = '#09152e';
       ctx.strokeText(f.text, 0, 0);
@@ -2211,7 +2244,7 @@ window.RunRenderer = (function () {
 
     // FEVER! Full-screen Rainbow Edge + Speed Lines + Ribbon Banner!
     if (run.feverTimer > 0) {
-      drawFeverOverlay(ctx, t);
+      drawFeverOverlay(ctx, t, run.feverTimer);
     }
 
     // Red Damage Vignette Flash on Hit!
