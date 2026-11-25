@@ -16039,3 +16039,388 @@ input:focus-visible {
     padding: 2px 9px;
   }
 }
+
+/* =========================================================================
+   ZERO-SCROLL BRAWL STARS CHARACTER DETAIL MODAL (v20261121hd96)
+   ========================================================================= */
+#char-detail-overlay .brawl-detail-modal {
+  width: min(820px, 95vw);
+  height: min(450px, 90dvh);
+  max-height: 92dvh;
+  background: #0d1d42;
+  border: 3px solid #071022;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.76), 0 0 0 2px rgba(255, 224, 92, 0.25);
+}
+
+#char-detail-overlay .brawl-detail-header {
+  padding: 7px 12px;
+  background: linear-gradient(180deg, #35b5ff 0%, #166fd9 60%, #0f4ea8 100%);
+  border-bottom: 2.5px solid #071022;
+  flex-shrink: 0;
+}
+
+#char-detail-overlay .brawl-tier-pill {
+  padding: 2px 9px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #ffe554, #ed9308);
+  color: #241000;
+  font-size: 11px;
+  box-shadow: 0 2px 0 #071022;
+}
+
+#char-detail-overlay .brawl-detail-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-columns: 0.76fr 1.24fr !important;
+  align-items: stretch;
+}
+
+#char-detail-overlay .brawl-hero-stage {
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 10px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: none !important;
+  border-right: 3px solid #071022 !important;
+  overflow: hidden;
+}
+
+#char-detail-overlay .brawl-hero-center {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#char-detail-overlay .brawl-hero-img {
+  width: clamp(86px, 24vh, 134px);
+  height: clamp(86px, 24vh, 134px);
+}
+
+#char-detail-overlay .brawl-detail-podium-ring {
+  width: clamp(114px, 28vh, 156px);
+  height: 24px;
+  margin-top: -12px;
+}
+
+#char-detail-overlay .brawl-detail-podium-inner {
+  width: 66%;
+  height: 12px;
+}
+
+#char-detail-overlay .brawl-equipped-pill {
+  top: 8px;
+  right: 8px;
+  padding: 2px 9px;
+  border: 2px solid #071022;
+  font-size: 10.5px;
+  box-shadow: 0 2px 0 #071022;
+}
+
+#char-detail-overlay .brawl-nav-arrow {
+  top: 46%;
+  width: 30px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #071022;
+  background: rgba(11, 24, 52, 0.84);
+  color: #ffe466;
+  box-shadow: 0 3px 0 #071022;
+}
+
+#char-detail-overlay .brawl-nav-arrow.left {
+  left: 8px;
+}
+
+#char-detail-overlay .brawl-nav-arrow.right {
+  right: 8px;
+}
+
+#char-detail-overlay .brawl-detail-actions {
+  width: 100%;
+  position: relative;
+  z-index: 4;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+#char-detail-overlay .brawl-main-cta {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14.5px;
+  font-weight: 900;
+  border-radius: 10px;
+  border: 2.5px solid #071022;
+  box-shadow: 0 3.5px 0 #071022;
+  transform: skewX(-3deg);
+}
+
+#char-detail-overlay .brawl-main-cta:active:not(:disabled) {
+  transform: skewX(-3deg) translateY(2px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+#char-detail-overlay .brawl-detail-info {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 12px !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 7px !important;
+  background: radial-gradient(circle at 50% 0%, #1c4799 0%, #0e2354 72%, #0a183b 100%) !important;
+  color: #ffffff !important;
+}
+
+#char-detail-overlay .brawl-bio-text {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: #cce4ff;
+  text-align: left;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+#char-detail-overlay .brawl-stats-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  flex-shrink: 0;
+}
+
+#char-detail-overlay .brawl-stat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #173775 0%, #0f2452 100%);
+  box-shadow: 0 3px 0 #071022;
+}
+
+.brawl-stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.brawl-stat-ico {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+#char-detail-overlay .brawl-stat-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #b9dcff;
+}
+
+#char-detail-overlay .brawl-stat-val {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.2px 0 #071022;
+}
+
+#char-detail-overlay .brawl-stat-track {
+  height: 7px;
+  background: #07132c;
+  border: 1px solid #2b549c;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+#char-detail-overlay .brawl-passive-card {
+  padding: 8px 10px;
+  gap: 9px;
+  border-radius: 11px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #1d3f80 0%, #122857 100%);
+  box-shadow: 0 3px 0 #071022;
+  flex-shrink: 0;
+}
+
+#char-detail-overlay .brawl-passive-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 18px;
+}
+
+#char-detail-overlay .brawl-passive-kicker {
+  font-size: 10px;
+  color: #ffe46b;
+}
+
+#char-detail-overlay .brawl-passive-title {
+  font-size: 13px;
+  color: #ffffff;
+}
+
+#char-detail-overlay .brawl-passive-desc {
+  font-size: 11px;
+  line-height: 1.32;
+  color: #d5e9ff;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+#char-detail-overlay .detail-skins-wrap {
+  padding: 7px 9px;
+  border-radius: 11px;
+  border: 2px solid #071022;
+  background: rgba(7, 17, 40, 0.72);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+#char-detail-overlay .detail-skins-head {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #ffe25a;
+  margin: 0;
+}
+
+#char-detail-overlay .detail-skins-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 1px;
+}
+
+#char-detail-overlay .detail-skins-row::-webkit-scrollbar {
+  display: none;
+}
+
+#char-detail-overlay .skin-chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #1d3f80 0%, #122857 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 2.5px 0 #071022;
+}
+
+#char-detail-overlay .skin-chip.active {
+  border-color: #ffe047;
+  background: linear-gradient(180deg, #2769c7 0%, #164491 100%);
+  box-shadow: 0 2.5px 0 #071022, 0 0 10px rgba(255, 224, 71, 0.4);
+}
+
+@media (max-height: 460px) {
+  #char-detail-overlay .brawl-detail-modal {
+    height: 93dvh;
+  }
+  #char-detail-overlay .brawl-detail-header {
+    padding: 5px 10px;
+  }
+  #char-detail-overlay .brawl-detail-name {
+    font-size: 15px;
+  }
+  #char-detail-overlay .brawl-detail-info {
+    padding: 7px 10px !important;
+    gap: 5px !important;
+  }
+  #char-detail-overlay .brawl-hero-stage {
+    padding: 7px 8px !important;
+  }
+  #char-detail-overlay .brawl-hero-img {
+    width: clamp(72px, 23vh, 104px);
+    height: clamp(72px, 23vh, 104px);
+  }
+  #char-detail-overlay .brawl-main-cta {
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+  #char-detail-overlay .brawl-bio-text {
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+  #char-detail-overlay .brawl-stat-row {
+    padding: 4px 6px;
+    gap: 3px;
+  }
+  #char-detail-overlay .brawl-passive-card {
+    padding: 6px 8px;
+    gap: 7px;
+  }
+  #char-detail-overlay .brawl-passive-badge {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+  #char-detail-overlay .brawl-passive-desc {
+    font-size: 10px;
+    line-height: 1.24;
+  }
+  #char-detail-overlay .detail-skins-wrap {
+    padding: 5px 8px;
+    gap: 3px;
+  }
+  #char-detail-overlay .skin-chip {
+    padding: 4px 8px;
+    font-size: 10.5px;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 739px) {
+  #char-detail-overlay .brawl-detail-modal {
+    width: min(410px, 95vw);
+    height: auto;
+    max-height: 92dvh;
+  }
+  #char-detail-overlay .brawl-detail-body {
+    grid-template-columns: 1fr !important;
+  }
+  #char-detail-overlay .brawl-hero-stage {
+    min-height: 175px !important;
+    border-right: none !important;
+    border-bottom: 3px solid #071022 !important;
+  }
+}

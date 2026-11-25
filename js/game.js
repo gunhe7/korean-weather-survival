@@ -5599,6 +5599,22 @@
     el.charDetailOverlay.classList.add('hidden');
   }
 
+  function getCharPassiveSvg(charId) {
+    if (charId === 'umbrella_master') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3a9 9 0 0 0-9 9h18a9 9 0 0 0-9-9zm0 9v6.5a2.2 2.2 0 0 0 4.4 0" fill="none" stroke="#2a1400" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    if (charId === 'long_padding') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="3.4" fill="none" stroke="#2a1400" stroke-width="2.3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9" stroke="#2a1400" stroke-width="2.2" stroke-linecap="round"/></svg>';
+    }
+    if (charId === 'short_sleeve') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="#fff5c0" stroke="#2a1400" stroke-width="2.2"/><path d="M12 2.2v2.4M12 19.4v2.4M2.2 12h2.4M19.4 12h2.4M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7" stroke="#2a1400" stroke-width="2.1" stroke-linecap="round"/></svg>';
+    }
+    if (charId === 'iced_americano') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 4L6 10h4v4H6l6 6 6-6h-4v-4h4z" fill="#fff5c0" stroke="#2a1400" stroke-width="2" stroke-linejoin="round"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V6l7-3z" fill="#fff5c0" stroke="#2a1400" stroke-width="2.2" stroke-linejoin="round"/></svg>';
+  }
+
   function renderCharDetailModal() {
     if (detailCharIdx === null) return;
     const ch = DATA.CHARACTERS[detailCharIdx] || DATA.CHARACTERS[0];
@@ -5611,13 +5627,13 @@
     const charSprVer = getCharSpriteVer(anim.skin);
 
     el.detailHeroStage.className = `brawl-hero-stage ${tierCls}${unlocked ? '' : ' locked'}`;
-    el.detailCharTier.textContent = equippedSkin ? `✨ ${equippedSkin.name}` : ch.tier;
+    el.detailCharTier.textContent = equippedSkin ? equippedSkin.name : ch.tier;
     el.detailCharName.textContent = ch.name;
     el.detailEquippedPill.classList.toggle('hidden', !selected);
     lastDetailHeroSrc = `assets/chars/${anim.skin}_run_0.png?v=${charSprVer}`;
     el.detailCharImg.src = lastDetailHeroSrc;
     el.detailCharImg.style.filter = getSkinFilter(equippedSkin);
-    el.detailCharDesc.textContent = (equippedSkin && equippedSkin.desc) ? `${ch.desc} (${equippedSkin.desc})` : ch.desc;
+    el.detailCharDesc.textContent = ch.desc;
 
     el.detailStatHp.textContent = `${stats.maxHp}칸`;
     el.detailFillHp.style.width = `${Math.min(100, Math.round((stats.maxHp / 5) * 100))}%`;
@@ -5626,7 +5642,7 @@
     el.detailStatScore.textContent = `${Math.round(stats.scoreMult * 100)}%`;
     el.detailFillScore.style.width = `${Math.min(100, Math.round(((stats.scoreMult - 0.7) / 1.0) * 100))}%`;
 
-    el.detailPassiveIco.innerHTML = uiText(ch.icon || '★', 'md');
+    el.detailPassiveIco.innerHTML = getCharPassiveSvg(ch.id);
     el.detailPassiveName.textContent = ch.passiveName;
     el.detailPassiveDesc.textContent = ch.passiveDesc;
 
@@ -5656,11 +5672,11 @@
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = `skin-chip rar-${sk.rarity}${isEq ? ' active' : ''}${owned ? '' : ' locked'}`;
-        const unownedTag = isPassEx ? '👑 패스 80' : (isReleasedPass ? '🎲 뽑기' : `✨${milPrice}M`);
+        const unownedTag = isPassEx ? '패스 80' : (isReleasedPass ? '뽑기' : `${milPrice}M`);
         chip.innerHTML = `
           <span class="skin-dot" style="background:${sk.glow || rar.color}"></span>
           <span>${sk.name}</span>
-          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : unownedTag}</span>
+          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '장착' : rar.name) : unownedTag}</span>
         `;
         chip.onclick = () => {
           if (owned) {
@@ -5668,24 +5684,24 @@
             save.equippedSkins[ch.id] = sk.id;
             persistSave();
             refreshAllMenus();
-            showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
+            showToast(`[${sk.name}] 스킨 장착 완료!`);
           } else if (isPassEx) {
             SFX.click();
             closeCharDetail();
             openSeasonPassModal();
-            showToast(`👑 [${sk.name}]은 시즌 기간 동안 골드 패스 80티어로만 획득할 수 있습니다!`);
+            showToast(`[${sk.name}]은 시즌 기간 동안 골드 패스 80티어로만 획득할 수 있습니다!`);
           } else if (isReleasedPass) {
             SFX.click();
             closeCharDetail();
             currentShopSubtab = 'gacha';
             switchTab('shop');
-            showToast(`🎲 [${sk.name}]은 스킨 뽑기에서 획득할 수 있습니다!`);
+            showToast(`[${sk.name}]은 스킨 뽑기에서 획득할 수 있습니다!`);
           } else {
             SFX.click();
             closeCharDetail();
             currentShopSubtab = 'skins';
             switchTab('shop');
-            showToast(`✨ 상점 [스킨 교환]에서 ${milPrice} 마일리지로 교환하거나 [뽑기]에서 획득하세요!`);
+            showToast(`상점 [스킨 교환]에서 ${milPrice} 마일리지로 교환하거나 [뽑기]에서 획득하세요!`);
           }
         };
         el.detailSkinsRow.appendChild(chip);
@@ -5695,12 +5711,12 @@
     if (unlocked) {
       if (selected) {
         el.btnDetailMain.className = 'item-action-btn done brawl-main-cta';
-        el.btnDetailMain.textContent = '✓ 현재 장착 중';
+        el.btnDetailMain.textContent = '현재 장착 중';
         el.btnDetailMain.disabled = true;
         el.btnDetailMain.onclick = null;
       } else {
         el.btnDetailMain.className = 'cr-gold-btn brawl-main-cta';
-        el.btnDetailMain.textContent = '▶ 선택하기';
+        el.btnDetailMain.textContent = '선택하기';
         el.btnDetailMain.disabled = false;
         el.btnDetailMain.onclick = () => {
           SFX.click();
@@ -5713,7 +5729,7 @@
       }
     } else {
       el.btnDetailMain.className = 'cr-gold-btn brawl-main-cta';
-      el.btnDetailMain.textContent = `🔓 ${ch.price.toLocaleString('ko-KR')}G 해금`;
+      el.btnDetailMain.textContent = `${ch.price.toLocaleString('ko-KR')}G 해금`;
       el.btnDetailMain.disabled = save.gold < ch.price;
       el.btnDetailMain.onclick = () => buyCharacter(ch, detailCharIdx);
     }
