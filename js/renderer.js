@@ -33,6 +33,7 @@ window.RunRenderer = (function () {
     { id: 'hanbok', frames: 3, runFrames: 8 },
     { id: 'skier', frames: 4, runFrames: 8, ver: '20261121hd67' },
     { id: 'santa', frames: 4, runFrames: 8, ver: '20261121hd79' },
+    { id: 'ice_emperor', frames: 4, runFrames: 8, ver: '20261121hd83' },
     { id: 'catgirl', frames: 4, runFrames: 8 },
     { id: 'hades', frames: 3, runFrames: 4 }
   ];
@@ -43,7 +44,10 @@ window.RunRenderer = (function () {
     'hades_shield_0', 'hades_shield_1', 'hades_shield_2', 'hades_shield_3', 'hades_shield_4', 'hades_shield_5',
     'hades_booster_0', 'hades_booster_1', 'hades_booster_2', 'hades_booster_3', 'hades_booster_4', 'hades_booster_5',
     'hades_booster_6', 'hades_booster_7', 'hades_booster_8', 'hades_booster_9', 'hades_booster_10', 'hades_booster_11',
-    'hades_aura_0', 'hades_aura_1', 'hades_aura_2', 'hades_aura_3', 'hades_aura_4', 'hades_aura_5'
+    'hades_aura_0', 'hades_aura_1', 'hades_aura_2', 'hades_aura_3', 'hades_aura_4', 'hades_aura_5',
+    'ice_emperor_umbrella', 'ice_emperor_mask',
+    'ice_emperor_aura_0', 'ice_emperor_aura_1', 'ice_emperor_aura_2', 'ice_emperor_aura_3', 'ice_emperor_aura_4', 'ice_emperor_aura_5',
+    'ice_emperor_booster_0', 'ice_emperor_booster_1', 'ice_emperor_booster_2', 'ice_emperor_booster_3'
   ];
 
   const DESIGN_SPRITES = [
@@ -1344,11 +1348,17 @@ window.RunRenderer = (function () {
       const af = Math.floor(t * (isFever ? 14 : 9)) % (skinDef.customAuraFrames || 6);
       const auraSpr = getSprite(`${skinDef.customAuraPrefix}_${af}`) || getSprite(`${skinDef.customAuraPrefix}_0`);
       const auraCy = cy - (isProne ? 18 : scaleHeight * 0.48);
-      // Soft atmospheric ambient purple backlight behind Hades
+      // Soft atmospheric ambient backlight behind Mythic aura skins
       const backR = isFever ? (isProne ? 38 : scaleHeight * 0.82) : (isProne ? 30 : scaleHeight * 0.68);
       const backGrad = ctx.createRadialGradient(cx, auraCy, 4, cx, auraCy, backR);
-      backGrad.addColorStop(0, isFever ? 'rgba(180, 92, 255, 0.48)' : 'rgba(166, 78, 255, 0.28)');
-      backGrad.addColorStop(1, 'rgba(120, 42, 235, 0)');
+      const isIceEmp = skinDef.id === 'ice_emperor_mythic';
+      backGrad.addColorStop(
+        0,
+        isIceEmp
+          ? (isFever ? 'rgba(104, 214, 255, 0.48)' : 'rgba(96, 186, 255, 0.30)')
+          : (isFever ? 'rgba(180, 92, 255, 0.48)' : 'rgba(166, 78, 255, 0.28)')
+      );
+      backGrad.addColorStop(1, isIceEmp ? 'rgba(98, 114, 255, 0)' : 'rgba(120, 42, 235, 0)');
       ctx.save();
       ctx.fillStyle = backGrad;
       ctx.beginPath();

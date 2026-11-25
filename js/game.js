@@ -868,11 +868,11 @@
       if (r < acc) { hitRarity = k; break; }
     }
 
-    let pool = DATA.SKINS.filter((s) => s.rarity === hitRarity);
+    let pool = DATA.SKINS.filter((s) => !s.seasonExclusive && s.rarity === hitRarity);
     if (pool.length === 0) {
       // Gracefully fall back to rare skins if an intermediate tier has no skins yet (Mythic stays strictly at its exact rate!)
-      pool = DATA.SKINS.filter((s) => s.rarity === 'rare');
-      if (pool.length === 0) pool = DATA.SKINS;
+      pool = DATA.SKINS.filter((s) => !s.seasonExclusive && s.rarity === 'rare');
+      if (pool.length === 0) pool = DATA.SKINS.filter((s) => !s.seasonExclusive);
     }
     const picked = pool[Math.floor(Math.random() * pool.length)];
     const alreadyOwned = save.unlockedSkins.includes(picked.id);
@@ -1498,11 +1498,11 @@
   }
 
   function pickSkinOrDupGold(rarity, pityTriggered) {
-    // 신화(mythic) 등급은 상자에서 절대 출현하지 않음! (스킨 뽑기 / 마일리지 200 전용)
+    // 신화(mythic) 등급 및 시즌패스 전용(seasonExclusive) 스킨은 상자에서 절대 출현하지 않음!
     if (rarity === 'mythic') rarity = 'legendary';
-    let pool = DATA.SKINS.filter((s) => s.rarity === rarity && s.rarity !== 'mythic');
+    let pool = DATA.SKINS.filter((s) => !s.seasonExclusive && s.rarity === rarity && s.rarity !== 'mythic');
     if (pool.length === 0) {
-      pool = DATA.SKINS.filter((s) => s.rarity !== 'mythic');
+      pool = DATA.SKINS.filter((s) => !s.seasonExclusive && s.rarity !== 'mythic');
     }
     const unowned = pool.filter((s) => !save.unlockedSkins.includes(s.id));
     if (unowned.length > 0) {
@@ -1525,8 +1525,8 @@
     // 1. Check Pity Guarantee FIRST! (신화는 상자에서 미출현)
     if (tierId === 'gold' && (pity.gold || 0) >= chest.pityTarget - 1) {
       // 10th Gold Chest -> Guaranteed Epic+ unowned skin!
-      const unownedEpic = DATA.SKINS.filter((s) => s.rarity === 'epic' && !save.unlockedSkins.includes(s.id));
-      const unownedLeg = DATA.SKINS.filter((s) => s.rarity === 'legendary' && !save.unlockedSkins.includes(s.id));
+      const unownedEpic = DATA.SKINS.filter((s) => !s.seasonExclusive && s.rarity === 'epic' && !save.unlockedSkins.includes(s.id));
+      const unownedLeg = DATA.SKINS.filter((s) => !s.seasonExclusive && s.rarity === 'legendary' && !save.unlockedSkins.includes(s.id));
       let chosenRarity = 'epic';
       if (unownedLeg.length > 0 && (unownedEpic.length === 0 || Math.random() < 0.15)) {
         chosenRarity = 'legendary';
@@ -2202,7 +2202,7 @@
 
   // ===================== BRAWL STARS STYLE SEASON PASS ENGINE =====================
   function ensureSeasonPass() {
-    const spCfg = DATA.SEASON_PASS || { seasonId: 's1', xpPerTier: 100, maxTier: 30, tiers: [] };
+    const spCfg = DATA.SEASON_PASS || { seasonId: 's1', xpPerTier: 100, maxTier: 80, tiers: [] };
     if (!save.seasonPass || typeof save.seasonPass !== 'object') {
       save.seasonPass = { seasonId: spCfg.seasonId, xp: 0, goldUnlocked: false, claimedFree: {}, claimedGold: {} };
     }
@@ -2214,10 +2214,10 @@
   }
 
   function getSeasonPassProgress() {
-    const spCfg = DATA.SEASON_PASS || { xpPerTier: 100, maxTier: 30, tiers: [] };
+    const spCfg = DATA.SEASON_PASS || { xpPerTier: 100, maxTier: 80, tiers: [] };
     const sp = ensureSeasonPass();
     const xpPerTier = spCfg.xpPerTier || 100;
-    const maxTier = spCfg.maxTier || 30;
+    const maxTier = spCfg.maxTier || 80;
     const tier = Math.min(maxTier, Math.floor(sp.xp / xpPerTier));
     const isMax = tier >= maxTier;
     const curXp = isMax ? xpPerTier : (sp.xp % xpPerTier);
@@ -2228,9 +2228,9 @@
   function addSeasonPassXp(amount) {
     const add = Math.max(0, Math.floor(Number(amount) || 0));
     if (add <= 0) return 0;
-    const spCfg = DATA.SEASON_PASS || { xpPerTier: 100, maxTier: 30 };
+    const spCfg = DATA.SEASON_PASS || { xpPerTier: 100, maxTier: 80 };
     const sp = ensureSeasonPass();
-    const maxXp = (spCfg.maxTier || 30) * (spCfg.xpPerTier || 100);
+    const maxXp = (spCfg.maxTier || 80) * (spCfg.xpPerTier || 100);
     sp.xp = Math.min(maxXp, sp.xp + add);
     return add;
   }
@@ -2280,18 +2280,18 @@
     } else if (rw.kind === 'skin' && rw.skinId) {
       const sk = DATA.getSkinById(rw.skinId);
       if (sk) {
+        const rarInfo = (DATA.SKIN_RARITIES && DATA.SKIN_RARITIES[sk.rarity]) || DATA.SKIN_RARITIES.mythic;
         if (!save.unlockedSkins.includes(sk.id)) {
           save.unlockedSkins.push(sk.id);
           if (save.unlockedChars.includes(sk.charId)) {
             save.equippedSkins = save.equippedSkins || {};
             save.equippedSkins[sk.charId] = sk.id;
           }
-          note = `전설 스킨 [${sk.name}] 획득!`;
+          note = `${rarInfo.name} 스킨 [${sk.name}] 획득!`;
         } else {
-          const rInfo = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.legendary;
-          save.gold += rInfo.dupGold;
-          save.mileage = (save.mileage || 0) + rInfo.mileagePrice;
-          note = `[${sk.name}] 중복 보상 +${rInfo.dupGold}G · +${rInfo.mileagePrice}✨`;
+          save.gold += rarInfo.dupGold;
+          save.mileage = (save.mileage || 0) + rarInfo.mileagePrice;
+          note = `[${sk.name}] 중복 보상 +${rarInfo.dupGold}G · +${rarInfo.mileagePrice}✨`;
         }
       }
     }
@@ -2332,7 +2332,7 @@
     if (gemSum > 0) parts.push(`💎 ${gemSum}`);
     if (chestSum > 0) parts.push(`📦 상자 ${chestSum}개`);
     if (tickSum > 0) parts.push(`🎫 뽑기권 ${tickSum}장`);
-    if (gotSkin) parts.push(`✨ 전설 스킨!`);
+    if (gotSkin) parts.push(`✨ 신화 스킨!`);
     showToast(`🎉 시즌 패스 보상 ${ready.length}건 수령! (${parts.join(' · ')})`);
   }
 
@@ -2352,10 +2352,10 @@
     }
     if (rw.kind === 'skin') {
       const sk = DATA.getSkinById(rw.skinId);
-      const chDef = getCharDef(sk ? sk.charId : 'umbrella_master');
+      const chDef = getCharDef(sk ? sk.charId : 'fashionista');
       const avSrc = getSkinAvatar(chDef, sk);
       const flt = getSkinFilter(sk);
-      return `<img src="${avSrc}" alt="${sk ? sk.name : '전설 스킨'}" class="sp-rw-art skin" style="${flt ? `filter:${flt};` : ''}" />`;
+      return `<img src="${avSrc}" alt="${sk ? sk.name : '신화 스킨'}" class="sp-rw-art skin" style="${flt ? `filter:${flt};` : ''}" />`;
     }
     return '🎁';
   }
@@ -2778,6 +2778,10 @@
       save.profile.nameFrame = 'none';
       changed = true;
     }
+    if (save.profile.nameColor === 'rainbow' && !ensureSeasonPass().goldUnlocked) {
+      save.profile.nameColor = '#ffffff';
+      changed = true;
+    }
     if (changed) {
       try { persistSave(false, { localOnly: true }); } catch {}
     }
@@ -3027,19 +3031,29 @@
         });
       });
     } else if (currentProfileTab === 'colors') {
+      const hasGoldPass = ensureSeasonPass().goldUnlocked;
       (DATA.PROFILE_NAME_COLORS || []).forEach((col) => {
-        const eq = (prof.nameColor || '#ffffff') === col.color;
+        const locked = Boolean(col.requiresGoldPass && !hasGoldPass);
+        const eq = (prof.nameColor || '#ffffff') === col.color && !locked;
         const card = document.createElement('button');
         card.type = 'button';
-        card.className = `prof-item-card${eq ? ' equipped' : ''}`;
+        card.className = `prof-item-card${eq ? ' equipped' : ''}${locked ? ' locked' : ''}`;
         const swatchStyle = col.color === 'rainbow' ? '' : `style="background:${col.color};"`;
+        const badgeHtml = eq
+          ? '<span class="prof-eq-tag">장착</span>'
+          : (locked ? '<span class="prof-eq-tag" style="background:#ffb830;color:#241200;">👑 패스</span>' : '');
         card.innerHTML = `
-          ${eq ? '<span class="prof-eq-tag">장착</span>' : ''}
+          ${badgeHtml}
           <span class="prof-color-swatch${col.color === 'rainbow' ? ' rainbow' : ''}" ${swatchStyle}></span>
           <span class="prof-card-label">${col.name}</span>
         `;
         card.onclick = () => {
           SFX.click();
+          if (locked) {
+            showToast('👑 무지개 프리즘은 골드 패스 구매자만 장착할 수 있습니다!');
+            openGoldPassPurchase();
+            return;
+          }
           prof.nameColor = col.color;
           syncProfileOnlineIfLinked();
           showToast(`🎨 닉네임 색상 [${col.name}] 적용!`);
@@ -4000,7 +4014,7 @@
     if (el.iapPackName) el.iapPackName.textContent = pack.name;
     if (el.iapPackGems) {
       el.iapPackGems.innerHTML = pack.isGoldPass
-        ? '👑 골드 패스 활성화 + 즉시 3티어(300 XP) · 최종 전설 스킨!'
+        ? '👑 골드 패스 활성화 + 즉시 3티어(300 XP) · 무지개 프리즘 닉네임 · 최종 신화 스킨 [얼음황제]!'
         : `+${pack.gems.toLocaleString('ko-KR')} ${uiIcon('gem', 'sm')} 즉시 지급`;
     }
     if (el.iapPackPrice) el.iapPackPrice.textContent = `₩${pack.krwPrice.toLocaleString('ko-KR')}`;
@@ -4047,7 +4061,7 @@
     if (el.iapOverlay) el.iapOverlay.classList.add('hidden');
     refreshAllMenus();
     if (pack.isGoldPass) {
-      showToast('👑 시즌 1 골드 패스 활성화 완료! (+300 XP 보너스)');
+      showToast('👑 시즌 1 골드 패스 활성화 완료! (+300 XP · 무지개 프리즘 닉네임 해금!)');
     } else {
       showToast(`💎 ${pack.name} (₩${pack.krwPrice.toLocaleString('ko-KR')}) 결제 완료! +${pack.gems.toLocaleString('ko-KR')}💎 지급!`);
     }
@@ -5046,6 +5060,13 @@
     return (ch && CHAR_SHORT_SKILL[ch.id]) || (ch ? `${ch.icon || '★'} ${ch.passiveName}` : '');
   }
 
+  function getCharSpriteVer(animSkin) {
+    if (animSkin === 'skier') return '20261121hd67';
+    if (animSkin === 'santa') return '20261121hd79';
+    if (animSkin === 'ice_emperor') return '20261121hd83';
+    return ASSET_VER;
+  }
+
   function renderHomeCharStage() {
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const unlocked = isCharUnlocked(ch.id);
@@ -5056,7 +5077,7 @@
     el.homeHeroStage.className = `bs-home-stage ${tierCls}${unlocked ? '' : ' locked'}`;
     lastHomeHeroSrc = '';
     const homePose = (skin && skin.customIdleFrames) ? 'idle' : 'run';
-    const charSprVer = anim.skin === 'skier' ? '20261121hd67' : (anim.skin === 'santa' ? '20261121hd79' : ASSET_VER);
+    const charSprVer = getCharSpriteVer(anim.skin);
     el.homeHeroImg.src = `assets/chars/${anim.skin}_${homePose}_0.png?v=${charSprVer}`;
     el.homeHeroImg.alt = skin ? `${ch.name} (${skin.name})` : ch.name;
     el.homeHeroImg.style.filter = getSkinFilter(skin);
@@ -5065,7 +5086,7 @@
       const hasAura = Boolean(unlocked && skin && skin.customAuraPrefix);
       el.homeHeroAura.classList.toggle('hidden', !hasAura);
       if (hasAura) {
-        el.homeHeroAura.src = `assets/chars/${skin.customAuraPrefix}_0.png?v=${ASSET_VER}`;
+        el.homeHeroAura.src = `assets/chars/${skin.customAuraPrefix}_0.png?v=${charSprVer}`;
       }
     }
     el.homeCharLvBadge.textContent = unlocked ? getCharShortSkill(ch) : '잠금';
@@ -5112,7 +5133,7 @@
     const frameCnt = useIdle ? skin.customIdleFrames : anim.frames;
     const fps = useIdle ? 6.5 : (frameCnt >= 6 ? 13 : (frameCnt >= 3 ? 9.5 : 7.5));
     const frame = Math.floor(t * fps) % frameCnt;
-    const charSprVer = anim.skin === 'skier' ? '20261121hd67' : (anim.skin === 'santa' ? '20261121hd79' : ASSET_VER);
+    const charSprVer = getCharSpriteVer(anim.skin);
     return `assets/chars/${anim.skin}_${useIdle ? 'idle' : 'run'}_${frame}.png?v=${charSprVer}`;
   }
 
@@ -5135,7 +5156,7 @@
     }
     if (el.homeHeroAura && skin && skin.customAuraPrefix && isCharUnlocked(ch.id)) {
       const af = Math.floor(t * 9) % (skin.customAuraFrames || 6);
-      const auraSrc = `assets/chars/${skin.customAuraPrefix}_${af}.png?v=${ASSET_VER}`;
+      const auraSrc = `assets/chars/${skin.customAuraPrefix}_${af}.png?v=${getCharSpriteVer(getCharAnimSpec(ch, skin).skin)}`;
       const readyAura = getPreloadedHomeHeroSrc(auraSrc);
       if (readyAura && el.homeHeroAura.getAttribute('src') !== readyAura) {
         el.homeHeroAura.src = readyAura;
@@ -5183,7 +5204,7 @@
     const equippedSkin = getEquippedSkin(ch.id);
     const anim = getCharAnimSpec(ch, equippedSkin);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
-    const charSprVer = anim.skin === 'skier' ? '20261121hd67' : (anim.skin === 'santa' ? '20261121hd79' : ASSET_VER);
+    const charSprVer = getCharSpriteVer(anim.skin);
 
     el.detailHeroStage.className = `brawl-hero-stage ${tierCls}${unlocked ? '' : ' locked'}`;
     el.detailCharTier.textContent = equippedSkin ? `✨ ${equippedSkin.name}` : ch.tier;
@@ -5226,13 +5247,14 @@
         const isEq = equippedSkin && equippedSkin.id === sk.id;
         const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
         const milPrice = getSkinMileagePrice(sk);
+        const isPassEx = Boolean(sk.seasonExclusive);
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = `skin-chip rar-${sk.rarity}${isEq ? ' active' : ''}${owned ? '' : ' locked'}`;
         chip.innerHTML = `
           <span class="skin-dot" style="background:${sk.glow || rar.color}"></span>
           <span>${sk.name}</span>
-          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : `✨${milPrice}M`}</span>
+          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '✓' : rar.name) : (isPassEx ? '👑 패스 80' : `✨${milPrice}M`)}</span>
         `;
         chip.onclick = () => {
           if (owned) {
@@ -5241,6 +5263,11 @@
             persistSave();
             refreshAllMenus();
             showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
+          } else if (isPassEx) {
+            SFX.click();
+            closeCharDetail();
+            openSeasonPassModal();
+            showToast(`👑 [${sk.name}]은 시즌 1 골드 패스 80티어 최종 보상 신화 스킨입니다!`);
           } else {
             SFX.click();
             closeCharDetail();
@@ -5580,7 +5607,7 @@
       el.shopItemsList.appendChild(topBar);
 
       const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
-      const sortedSkins = [...DATA.SKINS].sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
+      const sortedSkins = DATA.SKINS.filter((s) => !s.seasonExclusive).sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
       const mythicSkins = sortedSkins.filter((s) => s.rarity === 'mythic');
       const otherSkins = sortedSkins.filter((s) => s.rarity !== 'mythic');
 
