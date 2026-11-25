@@ -107,8 +107,8 @@ window.RUN_DATA = (function () {
     {
       id: 'long_padding',
       name: '패딩 대원',
-      tier: '한파 탱커',
-      icon: '🧥',
+      tier: '자동 장비 · 입문',
+      icon: '🤖',
       spriteKey: 'blue_idle_0',
       animSkin: 'blue',
       animFrames: 3,
@@ -116,21 +116,21 @@ window.RUN_DATA = (function () {
       avatar: 'assets/chars/port_blue.png?v=20261121hd36',
       auraType: 'padding',
       price: 350,
-      baseHp: 5,
-      goldMult: 1.05,
-      scoreMult: 1.1,
-      extraInvuln: 0.65,
-      passiveName: '중무장 방한 탱커',
-      passiveDesc: '피격 후 무적 시간 +0.65초 대폭 연장! (전 캐릭터 체력 5하트 고정)',
-      desc: '중무장 화이트 패딩 탱커! 긴 피격 무적 시간으로 안정적인 생존력을 자랑합니다.',
-      tag: '무적 시간 +0.65초 · 안정 생존',
+      baseHp: 3,
+      goldMult: 1.08,
+      scoreMult: 1.12,
+      autoGear: true,
+      passiveName: '오토 기어 (자동 장비)',
+      passiveDesc: '비가 오면 우산 자동 펼침, 태풍 경고 시 우산 자동 접힘! 수동 조작 실수를 방지합니다. (대신 체력 3칸)',
+      desc: '조작이 복잡한 초보자·입문자용 오토 기어 러너! 우산 타이밍을 자동으로 맞춰줍니다.',
+      tag: '우산 자동 펼침·접힘 · 체력 3칸',
       colors: { top: '#f4f8ff', outer: '#cfdcf0', pants: '#1a243b', shoes: '#4d82e0', hat: '#ffffff' }
     },
     {
       id: 'short_sleeve',
       name: '한복 소년',
-      tier: '점수 특화',
-      icon: '🎩',
+      tier: '날씨 캔슬 · 전략',
+      icon: '☀️',
       spriteKey: 'hanbok_idle_0',
       animSkin: 'hanbok',
       animFrames: 3,
@@ -141,18 +141,18 @@ window.RUN_DATA = (function () {
       baseHp: 5,
       goldMult: 1.15,
       scoreMult: 1.25,
-      summerImmune: true,
-      passiveName: '풍류 점수 보너스',
-      passiveDesc: '모든 점수 획득 +25% & 여름 폭염 열사병(열기 게이지) 완전 면역!',
-      desc: '통풍 최강 한복 + 반팔충 기질! 여름 폭염을 무시하며 고득점 랭킹에 도전하세요.',
-      tag: '점수 +25% · 여름 열사병 면역',
+      clearSkyCancel: true,
+      passiveName: '쾌청 캔슬 (날씨 지우개)',
+      passiveDesc: '피버(FEVER) 발동 시 현재 진행 중인 악천후 기믹(황사·강풍 등)을 일시적으로 맑음으로 강제 전환!',
+      desc: '피버 타이밍을 설계해 악천후를 단번에 지워버리는 전략형 러너!',
+      tag: '피버 시 악천후 즉시 맑음 전환',
       colors: { top: '#ffffff', outer: '#7ab3f0', pants: '#3b5998', shoes: '#5ec9f2', hat: null }
     },
     {
       id: 'iced_americano',
       name: '스키어 (얼죽아)',
-      tier: '빙판 특화',
-      icon: '🧊',
+      tier: '3단 점프 · 숙련',
+      icon: '❄️',
       spriteKey: 'skier_idle_0',
       animSkin: 'skier',
       animFrames: 4,
@@ -162,20 +162,19 @@ window.RUN_DATA = (function () {
       price: 950,
       baseHp: 5,
       goldMult: 1.12,
-      scoreMult: 1.18,
-      iceMastery: true,
-      icedBonus: true,
-      passiveName: '빙판길 마스터 & 얼죽아',
-      passiveDesc: '빙판 미끄러짐 완전 제어 + 빙판 구간 이동/점수 +20%, 음료 아이템 점수·피버 대폭 증가!',
-      desc: '영하 15도에도 아아 한 잔! 겨울 빙판길에서 오히려 최고의 기동력을 발휘합니다.',
-      tag: '빙판 제어 & 가속 · 피버 특화',
+      scoreMult: 1.2,
+      tripleJumpStomp: true,
+      passiveName: '3단 점프 / 급강하',
+      passiveDesc: '공중에서 1회 추가 점프(총 3단 점프), 또는 공중에서 슬라이드 입력 시 즉시 바닥으로 급강하(스톰프)!',
+      desc: '정밀한 컨트롤을 선호하는 숙련자용 아크로바틱 러너!',
+      tag: '공중 3단 점프 · 즉시 급강하 스톰프',
       colors: { top: '#2b70d4', outer: '#1d54a8', pants: '#232c3d', shoes: '#d9e3f0', hat: null }
     },
     {
       id: 'fashionista',
       name: '산타복',
-      tier: '코인 특화',
-      icon: '🎅',
+      tier: '니어미스 · 생존',
+      icon: '🛡️',
       spriteKey: 'santa_idle_0',
       animSkin: 'santa',
       animFrames: 4,
@@ -184,13 +183,13 @@ window.RUN_DATA = (function () {
       auraType: 'santa',
       price: 1350,
       baseHp: 5,
-      goldMult: 1.45,
-      scoreMult: 1.2,
-      nearMissBonus: true,
-      passiveName: '산타의 선물 보따리',
-      passiveDesc: '코인·골드 획득 +45% & 장애물 아슬아슬 회피 시 NEAR MISS +2G 보너스!',
-      desc: '사계절 코인 잭팟 러너! 상점과 캐릭터 성장을 위한 골드 파밍 최강자.',
-      tag: '코인 +45% · 회피 골드 보너스',
+      goldMult: 1.35,
+      scoreMult: 1.22,
+      nearMissShield: true,
+      passiveName: '아슬아슬 보호막',
+      passiveDesc: '장애물을 연속 회피(니어미스 5회)할 때마다 게이지가 차고, 달성 시 1회용 보호막 자동 생성!',
+      desc: '하이리스크·하이리턴 생존형! 연속 회피로 보호막을 끊임없이 생성합니다.',
+      tag: '연속 회피 5회 시 보호막 자동 생성',
       colors: { top: '#d93232', outer: '#b82222', pants: '#2a2a33', shoes: '#362720', hat: null }
     }
   ];
@@ -554,15 +553,13 @@ window.RUN_DATA = (function () {
     return 140 + Math.max(0, currentLv - 1) * 130;
   }
 
-  function getCharEffectiveStats(charDef, charLv = 1, unlockedCount = 1) {
-    const lv = Math.max(1, Math.min(MAX_CHAR_LEVEL, charLv || 1));
-    const lvExtra = lv - 1;
+  function getCharEffectiveStats(charDef, _charLv = 1, unlockedCount = 1) {
     const dexScoreBonus = Math.max(0, unlockedCount - 1) * 0.03; // 도감 수집 보너스: 추가 해금당 점수 +3%!
     return {
-      level: lv,
-      maxHp: 5, // 전 캐릭터 체력 5하트 고정!
-      goldMult: Number((charDef.goldMult + lvExtra * 0.05).toFixed(2)),
-      scoreMult: Number((charDef.scoreMult + lvExtra * 0.05 + dexScoreBonus).toFixed(2)),
+      level: 1,
+      maxHp: charDef.baseHp || 5,
+      goldMult: Number((charDef.goldMult || 1).toFixed(2)),
+      scoreMult: Number(((charDef.scoreMult || 1) + dexScoreBonus).toFixed(2)),
       dexScorePct: Math.round(dexScoreBonus * 100)
     };
   }

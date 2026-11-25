@@ -3152,11 +3152,12 @@ input:focus-visible {
 
 
 /* ================= BRAWL STARS STYLE CHARACTER GRID & DETAIL SHOWCASE ================= */
+/* Brawl Stars Style Brawler Profile Grid */
 .brawl-char-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  padding-bottom: 10px;
+  gap: 11px;
+  padding-bottom: 12px;
 }
 
 .brawl-card {
@@ -3164,49 +3165,56 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   padding: 0;
-  border-radius: 15px;
-  border: 3px solid #0e1629;
+  border-radius: 16px;
+  border: 3.5px solid #091124;
   overflow: hidden;
-  background: #1a2d4f;
+  background: #0d162b;
   cursor: pointer;
   touch-action: manipulation;
   text-align: left;
   font-family: var(--font-ui);
-  box-shadow: 0 5px 0 #0a1224, inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 0 #070d1c, inset 0 2px 0 rgba(255, 255, 255, 0.38);
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .brawl-card:active {
   transform: translateY(3px) scale(0.98);
-  box-shadow: 0 2px 0 #0a1224;
+  box-shadow: 0 2px 0 #070d1c;
 }
 
 .brawl-card.selected {
   border-color: #ffe24a;
-  box-shadow: 0 0 14px rgba(255, 224, 74, 0.6), 0 5px 0 #8a4b00;
+  box-shadow: 0 0 0 2px #fff29b, 0 0 18px rgba(255, 224, 74, 0.7), 0 6px 0 #7a4100;
 }
 
 .brawl-card-stage {
   position: relative;
-  height: 112px;
+  height: 124px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   overflow: hidden;
-  padding-top: 12px;
+  padding-bottom: 8px;
 }
 
 .brawl-card-stage::before {
   content: '';
   position: absolute;
-  inset: -20%;
-  background: repeating-linear-gradient(
-    -24deg,
-    rgba(255, 255, 255, 0.11) 0px,
-    rgba(255, 255, 255, 0.11) 14px,
-    transparent 14px,
-    transparent 28px
+  inset: -25%;
+  background: repeating-conic-gradient(
+    from -8deg at 50% 56%,
+    rgba(255, 255, 255, 0.14) 0deg 14deg,
+    transparent 14deg 28deg
   );
+  pointer-events: none;
+}
+
+.brawl-card-stage::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 36px;
+  background: linear-gradient(180deg, rgba(6, 12, 26, 0) 0%, rgba(6, 12, 26, 0.56) 100%);
   pointer-events: none;
 }
 
@@ -3219,91 +3227,116 @@ input:focus-visible {
 .tier-santa { background: linear-gradient(155deg, #ffbe3b 0%, #d95226 100%); }
 
 .brawl-card.locked .brawl-card-stage {
-  filter: saturate(0.45) brightness(0.76);
+  filter: saturate(0.45) brightness(0.74);
 }
 
 .brawl-card-img {
   position: relative;
   z-index: 2;
-  width: 74px;
-  height: 74px;
+  width: 84px;
+  height: 84px;
   object-fit: contain;
   image-rendering: auto;
-  filter: drop-shadow(0 5px 0 rgba(10, 18, 36, 0.45));
+  filter: drop-shadow(0 5px 0 rgba(8, 14, 30, 0.65));
 }
 
-.brawl-lv-chip {
+.brawl-skill-chip {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: 7px;
+  left: 7px;
   z-index: 3;
-  padding: 2px 7px;
-  border-radius: 7px;
-  background: #141c33;
-  border: 1.5px solid #ffd54f;
-  color: #ffe875;
-  font-size: 10.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: calc(100% - 62px);
+  padding: 2.5px 7px;
+  border-radius: 8px;
+  background: rgba(11, 19, 39, 0.9);
+  border: 2px solid #ffd54f;
+  color: #fff29a;
+  font-size: 10px;
   font-weight: 900;
   line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
 }
 
-.brawl-card.locked .brawl-lv-chip {
-  border-color: #9bb3d4;
-  color: #e6f0ff;
+.brawl-card.locked .brawl-skill-chip {
+  border-color: #a9c1e2;
+  color: #eaf2ff;
 }
 
 .brawl-eq-chip {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 7px;
+  right: 7px;
   z-index: 3;
-  padding: 2px 7px;
-  border-radius: 7px;
+  padding: 2.5px 7px;
+  border-radius: 8px;
   background: linear-gradient(180deg, #ffe24a, #f09e0c);
-  border: 1.5px solid #592e00;
-  color: #2b1500;
+  border: 2px solid #3f1f00;
+  color: #241000;
   font-size: 10px;
   font-weight: 900;
   line-height: 1.15;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
 }
 
-.brawl-tap-hint {
+.brawl-skin-chip {
   position: absolute;
-  bottom: 4px;
-  right: 6px;
+  bottom: 5px;
+  right: 7px;
   z-index: 3;
-  padding: 1px 5px;
-  border-radius: 5px;
-  background: rgba(10, 18, 34, 0.65);
-  color: #d9ecff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(10, 18, 36, 0.78);
+  border: 1px solid rgba(255, 224, 102, 0.45);
+  color: #ffe98a;
   font-size: 9px;
   font-weight: 800;
 }
 
 .brawl-nameplate {
-  background: linear-gradient(180deg, #16233d 0%, #0d1629 100%);
-  border-top: 2.5px solid #0b1121;
-  padding: 7px 8px 8px;
+  background: linear-gradient(180deg, #162444 0%, #091124 100%);
+  border-top: 3px solid #070d1d;
+  padding: 7px 9px 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
+  gap: 5px;
 }
 
 .brawl-name {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 900;
   color: #ffffff;
-  text-shadow: 0 1.5px 0 #000000;
+  letter-spacing: -0.2px;
+  text-shadow:
+    -1.2px -1.2px 0 #070e1d,
+     1.2px -1.2px 0 #070e1d,
+    -1.2px  1.2px 0 #070e1d,
+     1.2px  1.2px 0 #070e1d,
+     0 2.5px 0 #000000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.brawl-card.selected .brawl-name {
+  color: #ffe866;
+}
+
 .brawl-tier-mini {
-  font-size: 10px;
-  font-weight: 800;
-  color: #9fd0ff;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(159, 208, 255, 0.3);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #b7dcff;
   white-space: nowrap;
 }
 
@@ -3366,10 +3399,12 @@ input:focus-visible {
 
 .brawl-hero-stage {
   position: relative;
-  height: 158px;
+  height: 174px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding-top: 8px;
   overflow: hidden;
   border-bottom: 3px solid #0c1429;
 }
@@ -3386,31 +3421,53 @@ input:focus-visible {
 .brawl-hero-img {
   position: relative;
   z-index: 2;
-  width: 104px;
-  height: 104px;
+  width: 108px;
+  height: 108px;
   object-fit: contain;
   image-rendering: auto;
   filter: drop-shadow(0 8px 0 rgba(10, 18, 36, 0.45));
   animation: brawlBob 1.7s ease-in-out infinite;
 }
 
+.brawl-hero-img.running-detail {
+  animation: heroRunBounce 0.34s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.brawl-hero-stage.locked .brawl-hero-img {
+  filter: saturate(0.55) brightness(0.78) drop-shadow(0 8px 0 rgba(10, 18, 36, 0.45));
+}
+
+.brawl-detail-podium-ring {
+  position: relative;
+  z-index: 1;
+  width: 148px;
+  height: 32px;
+  margin-top: -14px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, #38b6ff 0%, #1766d1 58%, #0d3a8a 100%);
+  border: 3px solid #0b1429;
+  box-shadow:
+    0 5px 0 #0b1429,
+    0 10px 20px rgba(5, 14, 34, 0.6),
+    0 0 18px rgba(72, 206, 255, 0.55),
+    inset 0 3px 0 rgba(190, 242, 255, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brawl-detail-podium-inner {
+  width: 96px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(182, 240, 255, 0.75);
+  background: radial-gradient(ellipse at center, rgba(16, 42, 92, 0.6) 0%, rgba(56, 186, 255, 0.15) 100%);
+}
+
 @keyframes brawlBob {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-6px); }
-}
-
-.brawl-power-pill {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 3;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(14, 22, 42, 0.88);
-  border: 2px solid #ffd54f;
-  color: #ffe875;
-  font-size: 11px;
-  font-weight: 900;
 }
 
 .brawl-equipped-pill {
@@ -3566,34 +3623,34 @@ input:focus-visible {
 
 .brawl-detail-actions {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: 1fr;
   gap: 8px;
   align-items: stretch;
 }
 
 .brawl-main-cta {
-  padding: 10px 12px;
-  font-size: 15px;
+  padding: 12px 14px;
+  font-size: 16px;
 }
 
 /* Landscape Brawl Stars 3-Col Grid & 2-Col Showcase Modal! */
 @media (orientation: landscape) and (max-height: 600px) {
   .brawl-char-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap: 9px;
   }
 
   .brawl-card-stage {
-    height: 86px;
+    height: 94px;
   }
 
   .brawl-card-img {
-    width: 60px;
-    height: 60px;
+    width: 68px;
+    height: 68px;
   }
 
   .brawl-detail-modal {
-    width: min(640px, 94vw);
+    width: min(650px, 94vw);
   }
 
   .brawl-detail-body {
@@ -3604,7 +3661,7 @@ input:focus-visible {
 
   .brawl-hero-stage {
     height: auto;
-    min-height: 220px;
+    min-height: 230px;
     border-bottom: none;
     border-right: 3px solid #0c1429;
   }

@@ -599,6 +599,188 @@ window.SFX = (function () {
     }
   }
 
+  let studioWavUrl = null;
+  let studioHtmlAudio = null;
+  let studioHtmlPlaying = false;
+  let studioWavWanted = false;
+  let studioWavReqId = 0;
+
+  function buildStudioIntroWavUrl() {
+    if (studioWavUrl !== null) return studioWavUrl;
+    if (typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) {
+      studioWavUrl = '';
+      return '';
+    }
+    try {
+      const sr = 22050;
+      const total = Math.round(sr * 6.0);
+      const mix = new Float32Array(total);
+      let seed = 0x13572468;
+      const nextRand = () => {
+        seed = (seed * 1664525 + 1013904223) | 0;
+        return ((seed >>> 16) / 32768) - 1;
+      };
+
+      const addOsc = (wave, fStart, fEnd, tAt, dur, amp, attFrac = 0.15) => {
+        const i0 = Math.max(0, Math.floor(tAt * sr));
+        const i1 = Math.min(total, Math.floor((tAt + dur) * sr));
+        const len = Math.max(1, i1 - i0);
+        const attSamples = Math.max(1, Math.min(Math.floor(0.025 * sr), Math.floor(len * attFrac)));
+        let phase = 0;
+        for (let i = i0; i < i1; i++) {
+          const u = (i - i0) / len;
+          const f = fEnd && fEnd !== fStart ? fStart * Math.pow(fEnd / fStart, u) : fStart;
+          phase += f / sr;
+          phase -= Math.floor(phase);
+          const val = wave === 'triangle'
+            ? (1 - 4 * Math.abs(phase - 0.5))
+            : Math.sin(phase * Math.PI * 2);
+          const k = i - i0;
+          const env = k < attSamples
+            ? (k / attSamples)
+            : Math.exp(-5.5 * ((k - attSamples) / Math.max(1, len - attSamples)));
+          mix[i] += val * amp * env;
+        }
+      };
+
+      const addFilteredNoise = (tAt, dur, cutoffStart, cutoffEnd, amp, attSec) => {
+        const i0 = Math.max(0, Math.floor(tAt * sr));
+        const i1 = Math.min(total, Math.floor((tAt + dur) * sr));
+        const len = Math.max(1, i1 - i0);
+        const attSamples = Math.max(1, Math.min(len, Math.floor(attSec * sr)));
+        let lp = 0;
+        let hp = 0;
+        for (let i = i0; i < i1; i++) {
+          const u = (i - i0) / len;
+          const cf = Math.min(sr * 0.42, cutoffStart * Math.pow(cutoffEnd / Math.max(40, cutoffStart), u));
+          const a = Math.min(0.85, (2 * Math.PI * cf) / sr);
+          const wn = nextRand();
+          lp += a * (wn - lp);
+          hp += 0.08 * (lp - hp);
+          const bp = lp - hp;
+          const k = i - i0;
+          const env = k < attSamples
+            ? (k / attSamples)
+            : Math.exp(-4.8 * ((k - attSamples) / Math.max(1, len - attSamples)));
+          mix[i] += bp * amp * env;
+        }
+      };
+
+      // 1. Airy Spectral Riser (0.35s -> 1.45s)
+      addFilteredNoise(0.35, 1.12, 360, 4200, 0.22, 0.92);
+      addOsc('sine', 200, 1500, 0.35, 1.10, 0.075);
+
+      // 2. Impact Boom (1.45s)
+      addOsc('sine', 114, 44, 1.45, 1.45, 0.42);
+      addOsc('sine', 98, 72, 1.45, 0.42, 0.16);
+      addFilteredNoise(1.45, 0.42, 1400, 220, 0.28, 0.005);
+
+      // 3. Cmaj9 Chime Arpeggio (1.47s+)
+      const chimes = [
+        [1046.5, 1.7, 0.068],
+        [1318.5, 1.5, 0.058],
+        [1568.0, 1.6, 0.062],
+        [1975.5, 1.3, 0.046],
+        [2093.0, 1.2, 0.048],
+        [2637.0, 1.0, 0.036]
+      ];
+      chimes.forEach(([fq, tau, amp], idx) => {
+        const t0 = 1.47 + 0.05 * idx;
+        addOsc('sine', fq, fq, t0, tau * 1.4, amp);
+        addOsc('sine', fq * 2.76, fq * 2.76, t0, 0.38, amp * 0.22);
+      });
+
+      // 4. Warm Cmaj9 Pad (1.42s -> 5.90s)
+      [130.81, 196.0, 261.63, 329.63, 392.0].forEach((fq) => {
+        const i0 = Math.floor(1.42 * sr);
+        const i1 = Math.min(total, Math.floor(5.87 * sr));
+        const att = Math.floor(0.85 * sr);
+        const relStart = i1 - Math.floor(0.9 * sr);
+        let ph1 = 0;
+        let ph2 = 0;
+        const df = fq / 220;
+        for (let i = i0; i < i1; i++) {
+          ph1 += (fq - df) / sr;
+          ph1 -= Math.floor(ph1);
+          ph2 += (fq + df) / sr;
+          ph2 -= Math.floor(ph2);
+          const v = (1 - 4 * Math.abs(ph1 - 0.5)) + (1 - 4 * Math.abs(ph2 - 0.5));
+          let env = 1;
+          if (i - i0 < att) env = (i - i0) / att;
+          else if (i > relStart) env = Math.max(0, (i1 - i) / (i1 - relStart));
+          mix[i] += v * 0.022 * env;
+        }
+      });
+
+      // 5. Metallic Sweep Glint & Wordmark Whoosh
+      addOsc('sine', 2200, 4200, 2.22, 0.65, 0.032);
+      addFilteredNoise(2.48, 0.56, 900, 4400, 0.11, 0.22);
+
+      const buf = new ArrayBuffer(44 + total * 2);
+      const view = new DataView(buf);
+      const writeStr = (off, s) => {
+        for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+      };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + total * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, total * 2, true);
+
+      const fadeStartSample = Math.floor(5.10 * sr);
+      const fadeEndSample = Math.floor(5.95 * sr);
+      for (let i = 0; i < total; i++) {
+        let g = 1;
+        if (i >= fadeStartSample) {
+          g = Math.max(0, 1 - (i - fadeStartSample) / Math.max(1, fadeEndSample - fadeStartSample));
+        }
+        const s = Math.tanh(mix[i] * g * 1.1);
+        view.setInt16(44 + i * 2, Math.max(-32767, Math.min(32767, Math.round(s * 32767))), true);
+      }
+      const blob = new Blob([buf], { type: 'audio/wav' });
+      studioWavUrl = URL.createObjectURL(blob);
+      return studioWavUrl;
+    } catch {
+      studioWavUrl = '';
+      return '';
+    }
+  }
+
+  function ensureStudioHtmlAudio() {
+    if (studioHtmlAudio) return studioHtmlAudio;
+    if (typeof Audio === 'undefined') return null;
+    const url = buildStudioIntroWavUrl();
+    if (!url) return null;
+    const el = new Audio(url);
+    el.preload = 'auto';
+    try { el.setAttribute('playsinline', ''); } catch {}
+    el.addEventListener('ended', () => {
+      studioHtmlPlaying = false;
+      if (!activeStudioStop) studioIntroPlaying = false;
+    });
+    studioHtmlAudio = el;
+    return el;
+  }
+
+  function stopStudioHtmlAudio() {
+    studioWavWanted = false;
+    studioWavReqId += 1;
+    studioHtmlPlaying = false;
+    if (studioHtmlAudio) {
+      try { studioHtmlAudio.pause(); } catch {}
+      try { studioHtmlAudio.currentTime = 0; } catch {}
+    }
+    if (!activeStudioStop) studioIntroPlaying = false;
+  }
+
   return {
     applySettings(opts = {}) {
       if (typeof opts.sfxOn === 'boolean') sfxEnabled = opts.sfxOn;
@@ -880,15 +1062,73 @@ window.SFX = (function () {
       // YAGUN STUDIO 6-second cinematic intro audio (never overlaps BGM or itself!)
       if (!sfxEnabled || sfxVolume <= 0) return { started: false, stop() {} };
       const c = fromGesture ? this.unlock() : ensure();
-      if (!c) return { started: false, stop() {} };
-      if (c.state === 'suspended' || c.state === 'interrupted') {
+      if (studioHtmlPlaying && studioHtmlAudio && !studioHtmlAudio.paused) {
+        studioIntroPlaying = true;
+        return { started: true, stop: stopStudioHtmlAudio };
+      }
+      if (!c || c.state !== 'running') {
+        const a = ensureStudioHtmlAudio();
         let resumePromise = null;
-        try { resumePromise = c.resume(); } catch {}
-        if (!fromGesture && c.state !== 'running') {
-          return { started: false, resumePromise, stop() {} };
+        if (c) {
+          try { resumePromise = c.resume(); } catch {}
         }
+        const reqId = ++studioWavReqId;
+        studioWavWanted = true;
+        let htmlPlayPromise = null;
+        if (a && (offsetSec || 0) < 5.75) {
+          try {
+            a.volume = Math.min(1, sfxVolume * 0.85);
+            const targetTime = Math.max(0, Math.min(5.7, offsetSec || 0));
+            if (Math.abs((a.currentTime || 0) - targetTime) > 0.12) {
+              a.currentTime = targetTime;
+            }
+            const p = a.play();
+            if (p && typeof p.then === 'function') {
+              htmlPlayPromise = p.then(
+                () => {
+                  if (
+                    reqId !== studioWavReqId ||
+                    !studioWavWanted ||
+                    (typeof window !== 'undefined' && window.StudioIntro && !window.StudioIntro.isActive())
+                  ) {
+                    try { a.pause(); } catch {}
+                    return false;
+                  }
+                  studioHtmlPlaying = true;
+                  studioIntroPlaying = true;
+                  return true;
+                },
+                () => {
+                  if (reqId === studioWavReqId) studioHtmlPlaying = false;
+                  return false;
+                }
+              );
+            }
+          } catch {}
+        }
+        const combinedPromise = (resumePromise || htmlPlayPromise)
+          ? new Promise((resolve) => {
+              let settled = false;
+              const doneWait = (ready) => {
+                if (!settled && ready) {
+                  settled = true;
+                  resolve();
+                }
+              };
+              if (resumePromise && typeof resumePromise.then === 'function') {
+                resumePromise.then(() => {
+                  if (c && c.state === 'running') doneWait(true);
+                }).catch(() => {});
+              }
+              if (htmlPlayPromise && typeof htmlPlayPromise.then === 'function') {
+                htmlPlayPromise.then((ok) => doneWait(Boolean(ok))).catch(() => {});
+              }
+            })
+          : null;
+        return { started: false, resumePromise: combinedPromise, stop: stopStudioHtmlAudio };
       }
 
+      stopStudioHtmlAudio();
       if (typeof activeStudioStop === 'function') {
         try { activeStudioStop(); } catch {}
         activeStudioStop = null;
@@ -1043,6 +1283,7 @@ window.SFX = (function () {
         studioIntroPlaying = false;
         if (activeStudioStop === stopFn) activeStudioStop = null;
         clearTimeout(clearTimer);
+        stopStudioHtmlAudio();
         try {
           const tNow = c.currentTime;
           master.gain.cancelScheduledValues(tNow);
@@ -1061,6 +1302,14 @@ window.SFX = (function () {
         started: true,
         stop: stopFn
       };
+    },
+    stopStudioIntro() {
+      if (typeof activeStudioStop === 'function') {
+        try { activeStudioStop(); } catch {}
+        activeStudioStop = null;
+      }
+      stopStudioHtmlAudio();
+      studioIntroPlaying = false;
     }
   };
 })();

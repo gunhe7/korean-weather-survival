@@ -118,7 +118,9 @@ window.StudioIntro = (function () {
     }
     if (unlockTapFn) {
       try { window.removeEventListener('touchstart', unlockTapFn, true); } catch {}
+      try { window.removeEventListener('touchend', unlockTapFn, true); } catch {}
       try { window.removeEventListener('pointerdown', unlockTapFn, true); } catch {}
+      try { window.removeEventListener('pointerup', unlockTapFn, true); } catch {}
       try { window.removeEventListener('click', unlockTapFn, true); } catch {}
       try { window.removeEventListener('keydown', unlockTapFn, true); } catch {}
       unlockTapFn = null;
@@ -169,11 +171,11 @@ window.StudioIntro = (function () {
             audioStarted = true;
             audioPending = false;
             stopAudioFn = handle.stop;
-          } else if (!fromGesture && handle && handle.resumePromise && typeof handle.resumePromise.then === 'function') {
+          } else if (handle && handle.resumePromise && typeof handle.resumePromise.then === 'function') {
             audioPending = true;
             handle.resumePromise.then(() => {
               audioPending = false;
-              if (!audioStarted && active) tryStartStudioAudio(true);
+              if (!audioStarted && active) tryStartStudioAudio(false);
             }).catch(() => {
               audioPending = false;
             });
@@ -184,14 +186,16 @@ window.StudioIntro = (function () {
       }
     }
 
-    // Attempt immediate audio playback; also synchronously unlock & sync on first mobile gesture
+    // Attempt immediate audio playback; also synchronously unlock & sync on touch/click/key gestures
     tryStartStudioAudio(false);
     unlockTapFn = () => {
-      if (!active) return;
-      if (!audioStarted) tryStartStudioAudio(true);
+      if (!active || audioStarted) return;
+      tryStartStudioAudio(true);
     };
     window.addEventListener('touchstart', unlockTapFn, true);
+    window.addEventListener('touchend', unlockTapFn, true);
     window.addEventListener('pointerdown', unlockTapFn, true);
+    window.addEventListener('pointerup', unlockTapFn, true);
     window.addEventListener('click', unlockTapFn, true);
     window.addEventListener('keydown', unlockTapFn, true);
 
@@ -510,36 +514,6 @@ window.StudioIntro = (function () {
         // 6. Subtle Cinema Vignette
         ctx.fillStyle = vigGrad;
         ctx.fillRect(0, 0, W, H);
-
-        // 7. Mobile Autoplay Unlock Prompt (shown ONLY while browser holds audio suspended)
-        if (!audioStarted && t > 0.25 && t < DUR - 0.8) {
-          const pulse = 0.62 + 0.38 * Math.sin(t * 4.5);
-          ctx.save();
-          ctx.globalAlpha = pulse * globalFade;
-          const lbl = '🔊 화면을 터치하면 사운드가 켜집니다';
-          ctx.font = '700 13px "Paperlogy", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
-          const tw = ctx.measureText(lbl).width;
-          const bw = tw + 26;
-          const bh = 28;
-          const bx = W * 0.5 - bw * 0.5;
-          const by = Math.max(16, H - 46);
-          ctx.fillStyle = 'rgba(10, 18, 38, 0.72)';
-          ctx.strokeStyle = 'rgba(156, 206, 255, 0.55)';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(bx, by, bw, bh, 14);
-          } else {
-            ctx.rect(bx, by, bw, bh);
-          }
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = '#e6f2ff';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(lbl, W * 0.5, by + bh * 0.5 + 0.5);
-          ctx.restore();
-        }
 
         rafId = requestAnimationFrame(drawFrame);
       }

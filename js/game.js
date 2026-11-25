@@ -608,7 +608,6 @@
     detailHeroStage: document.getElementById('detail-hero-stage'),
     detailCharTier: document.getElementById('detail-char-tier'),
     detailCharName: document.getElementById('detail-char-name'),
-    detailCharLv: document.getElementById('detail-char-lv'),
     detailEquippedPill: document.getElementById('detail-equipped-pill'),
     detailCharImg: document.getElementById('detail-char-img'),
     detailCharDesc: document.getElementById('detail-char-desc'),
@@ -622,7 +621,6 @@
     detailPassiveName: document.getElementById('detail-passive-name'),
     detailPassiveDesc: document.getElementById('detail-passive-desc'),
     detailSkinsRow: document.getElementById('detail-skins-row'),
-    btnDetailSub: document.getElementById('btn-detail-sub'),
     btnDetailMain: document.getElementById('btn-detail-main'),
 
     viewRun: document.getElementById('view-run'),
@@ -5036,10 +5034,21 @@
     return card;
   }
 
+  const CHAR_SHORT_SKILL = {
+    raincoat_boy: '💧 방수 우비',
+    long_padding: '🤖 오토 기어',
+    short_sleeve: '☀️ 쾌청 캔슬',
+    iced_americano: '❄️ 3단·스톰프',
+    fashionista: '🛡️ 회피 실드'
+  };
+
+  function getCharShortSkill(ch) {
+    return (ch && CHAR_SHORT_SKILL[ch.id]) || (ch ? `${ch.icon || '★'} ${ch.passiveName}` : '');
+  }
+
   function renderHomeCharStage() {
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const unlocked = isCharUnlocked(ch.id);
-    const stats = getCharStats(ch);
     const skin = getEquippedSkin(ch.id);
     const anim = getCharAnimSpec(ch, skin);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
@@ -5059,7 +5068,7 @@
         el.homeHeroAura.src = `assets/chars/${skin.customAuraPrefix}_0.png?v=${ASSET_VER}`;
       }
     }
-    el.homeCharLvBadge.textContent = unlocked ? `POWER ${stats.level}` : '잠금';
+    el.homeCharLvBadge.textContent = unlocked ? getCharShortSkill(ch) : '잠금';
     el.homeCharTier.textContent = unlocked
       ? (skin ? `✨ ${skin.name}` : ch.tier)
       : `🔒 ${ch.price.toLocaleString('ko-KR')}G`;
@@ -5077,7 +5086,7 @@
     if (unlocked) {
       el.btnPlayStart.disabled = false;
       el.btnPlayLabel.textContent = '플레이';
-      el.btnPlaySub.textContent = `${ch.name} Lv.${stats.level}`;
+      el.btnPlaySub.textContent = ch.name;
     } else {
       el.btnPlayStart.disabled = save.gold < ch.price;
       el.btnPlayLabel.textContent = `${ch.price.toLocaleString('ko-KR')}G 해금`;
@@ -5097,6 +5106,16 @@
     return img.complete && img.naturalWidth > 0 ? src : null;
   }
 
+  function getCharShowcaseFrameSrc(ch, skin, t, forceRun = false) {
+    const anim = getCharAnimSpec(ch, skin);
+    const useIdle = !forceRun && Boolean(skin && skin.customIdleFrames);
+    const frameCnt = useIdle ? skin.customIdleFrames : anim.frames;
+    const fps = useIdle ? 6.5 : (frameCnt >= 6 ? 13 : (frameCnt >= 3 ? 9.5 : 7.5));
+    const frame = Math.floor(t * fps) % frameCnt;
+    const charSprVer = anim.skin === 'skier' ? '20261121hd67' : (anim.skin === 'santa' ? '20261121hd79' : ASSET_VER);
+    return `assets/chars/${anim.skin}_${useIdle ? 'idle' : 'run'}_${frame}.png?v=${charSprVer}`;
+  }
+
   let lastHomeAnimUpdate = 0;
   function updateHomeRunningHero(t) {
     if (currentTab !== 'home') return;
@@ -5108,13 +5127,7 @@
     lastHomeAnimUpdate = t;
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const skin = getEquippedSkin(ch.id);
-    const anim = getCharAnimSpec(ch, skin);
-    const useIdle = Boolean(skin && skin.customIdleFrames);
-    const frameCnt = useIdle ? skin.customIdleFrames : anim.frames;
-    const fps = useIdle ? 6.5 : (frameCnt >= 6 ? 13 : (frameCnt >= 3 ? 9.5 : 7.5));
-    const frame = Math.floor(t * fps) % frameCnt;
-    const charSprVer = anim.skin === 'skier' ? '20261121hd67' : (anim.skin === 'santa' ? '20261121hd79' : ASSET_VER);
-    const src = `assets/chars/${anim.skin}_${useIdle ? 'idle' : 'run'}_${frame}.png?v=${charSprVer}`;
+    const src = getCharShowcaseFrameSrc(ch, skin, t, false);
     const readySrc = getPreloadedHomeHeroSrc(src);
     if (readySrc && readySrc !== lastHomeHeroSrc) {
       lastHomeHeroSrc = readySrc;
@@ -5130,27 +5143,26 @@
     }
   }
 
-  function levelUpCharacter(ch) {
-    if (!isCharUnlocked(ch.id)) return;
-    const curLv = getCharLevel(ch.id);
-    if (curLv >= DATA.MAX_CHAR_LEVEL) return;
-    const price = DATA.getCharLevelPrice(curLv);
-    if (save.gold < price) {
-      showToast(`골드가 부족합니다! (필요: ${price}G)`);
-      return;
+  let lastDetailHeroSrc = '';
+  let lastDetailAnimUpdate = 0;
+  function updateDetailRunningHero(t) {
+    if (detailCharIdx === null || !el.charDetailOverlay || el.charDetailOverlay.classList.contains('hidden') || !el.detailCharImg) return;
+    if (t - lastDetailAnimUpdate < 0.055) return;
+    lastDetailAnimUpdate = t;
+    const ch = DATA.CHARACTERS[detailCharIdx] || DATA.CHARACTERS[0];
+    const skin = getEquippedSkin(ch.id);
+    const src = getCharShowcaseFrameSrc(ch, skin, t, true);
+    const readySrc = getPreloadedHomeHeroSrc(src);
+    if (readySrc && readySrc !== lastDetailHeroSrc) {
+      lastDetailHeroSrc = readySrc;
+      el.detailCharImg.src = readySrc;
     }
-    save.gold -= price;
-    const nextLv = curLv + 1;
-    save.charLevels[ch.id] = nextLv;
-    SFX.levelUp();
-    persistSave();
-    refreshAllMenus();
-    showToast(`⬆️ ${ch.name} Lv.${nextLv} 성장 완료! (골드·점수 +5%)`);
   }
 
   function openCharDetail(idx) {
     SFX.click();
     detailCharIdx = ((idx % DATA.CHARACTERS.length) + DATA.CHARACTERS.length) % DATA.CHARACTERS.length;
+    lastDetailHeroSrc = '';
     renderCharDetailModal();
     el.charDetailOverlay.classList.remove('hidden');
   }
@@ -5158,6 +5170,7 @@
   function closeCharDetail() {
     SFX.click();
     detailCharIdx = null;
+    lastDetailHeroSrc = '';
     el.charDetailOverlay.classList.add('hidden');
   }
 
@@ -5168,23 +5181,21 @@
     const selected = save.selectedChar === ch.id;
     const stats = getCharStats(ch);
     const equippedSkin = getEquippedSkin(ch.id);
-    const isMaxLv = stats.level >= DATA.MAX_CHAR_LEVEL;
-    const lvPrice = DATA.getCharLevelPrice(stats.level);
+    const anim = getCharAnimSpec(ch, equippedSkin);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
+    const charSprVer = anim.skin === 'skier' ? '20261121hd67' : (anim.skin === 'santa' ? '20261121hd79' : ASSET_VER);
 
-    el.detailHeroStage.className = `brawl-hero-stage ${tierCls}`;
+    el.detailHeroStage.className = `brawl-hero-stage ${tierCls}${unlocked ? '' : ' locked'}`;
     el.detailCharTier.textContent = equippedSkin ? `✨ ${equippedSkin.name}` : ch.tier;
     el.detailCharName.textContent = ch.name;
-    el.detailCharLv.textContent = unlocked
-      ? `POWER Lv.${stats.level} / ${DATA.MAX_CHAR_LEVEL}`
-      : `🔒 ${ch.price.toLocaleString('ko-KR')}G 필요`;
     el.detailEquippedPill.classList.toggle('hidden', !selected);
-    el.detailCharImg.src = getSkinAvatar(ch, equippedSkin);
+    lastDetailHeroSrc = `assets/chars/${anim.skin}_run_0.png?v=${charSprVer}`;
+    el.detailCharImg.src = lastDetailHeroSrc;
     el.detailCharImg.style.filter = getSkinFilter(equippedSkin);
     el.detailCharDesc.textContent = (equippedSkin && equippedSkin.desc) ? `${ch.desc} (${equippedSkin.desc})` : ch.desc;
 
     el.detailStatHp.textContent = `${stats.maxHp}칸`;
-    el.detailFillHp.style.width = `${Math.min(100, Math.round((stats.maxHp / 12) * 100))}%`;
+    el.detailFillHp.style.width = `${Math.min(100, Math.round((stats.maxHp / 5) * 100))}%`;
     el.detailStatGold.textContent = `${Math.round(stats.goldMult * 100)}%`;
     el.detailFillGold.style.width = `${Math.min(100, Math.round(((stats.goldMult - 0.7) / 1.0) * 100))}%`;
     el.detailStatScore.textContent = `${Math.round(stats.scoreMult * 100)}%`;
@@ -5243,18 +5254,6 @@
     }
 
     if (unlocked) {
-      if (isMaxLv) {
-        el.btnDetailSub.className = 'item-action-btn done';
-        el.btnDetailSub.textContent = '레벨 MAX';
-        el.btnDetailSub.disabled = true;
-        el.btnDetailSub.onclick = null;
-      } else {
-        el.btnDetailSub.className = 'item-action-btn purple';
-        el.btnDetailSub.textContent = `⬆️ Lv.${stats.level + 1} (${lvPrice}G)`;
-        el.btnDetailSub.disabled = save.gold < lvPrice;
-        el.btnDetailSub.onclick = () => levelUpCharacter(ch);
-      }
-
       if (selected) {
         el.btnDetailMain.className = 'item-action-btn done brawl-main-cta';
         el.btnDetailMain.textContent = '✓ 현재 장착 중';
@@ -5274,16 +5273,6 @@
         };
       }
     } else {
-      el.btnDetailSub.className = 'item-action-btn ghost';
-      el.btnDetailSub.textContent = '🏠 홈에서 선택';
-      el.btnDetailSub.disabled = false;
-      el.btnDetailSub.onclick = () => {
-        SFX.click();
-        previewCharIdx = detailCharIdx;
-        closeCharDetail();
-        switchTab('home');
-      };
-
       el.btnDetailMain.className = 'cr-gold-btn brawl-main-cta';
       el.btnDetailMain.textContent = `🔓 ${ch.price.toLocaleString('ko-KR')}G 해금`;
       el.btnDetailMain.disabled = save.gold < ch.price;
@@ -5314,10 +5303,10 @@
       card.setAttribute('aria-label', `${ch.name} 능력치 상세 보기`);
       card.innerHTML = `
         <div class="brawl-card-stage ${tierCls}">
-          <span class="brawl-lv-chip">${unlocked ? `Lv.${stats.level}` : `🔒 ${ch.price}G`}</span>
-          ${selected ? '<span class="brawl-eq-chip">장착 중</span>' : ''}
+          <span class="brawl-skill-chip">${unlocked ? getCharShortSkill(ch) : `🔒 ${ch.price.toLocaleString('ko-KR')}G`}</span>
+          ${selected ? '<span class="brawl-eq-chip">✓ 장착</span>' : ''}
           <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="brawl-card-img" style="${getSkinFilter(eqSkin) ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
-          <span class="brawl-tap-hint">${eqSkin ? `✨ ${eqSkin.name}` : '터치해 능력·스킨 보기'}</span>
+          <span class="brawl-skin-chip">${eqSkin ? `✨ ${eqSkin.name}` : `❤️ ${stats.maxHp}칸`}</span>
         </div>
         <div class="brawl-nameplate">
           <span class="brawl-name">${ch.name}</span>
@@ -5909,6 +5898,43 @@
     persistSave();
   }
 
+  function activateFeverMode(ch, showBanner = true) {
+    if (!run || run.feverTimer > 0) return;
+    run.feverTimer = 4.5;
+    run.winPoseTimer = 0.7;
+    SFX.feverStart();
+    let canceledWeather = false;
+    const hadTwHazard = Boolean(
+      run.todayWeather && run.todayWeather.hazards &&
+      (run.todayWeather.hazards.rainActive || run.todayWeather.hazards.floodActive || run.todayWeather.hazards.dustActive || run.todayWeather.hazards.heatActive)
+    );
+    if (
+      ch && ch.clearSkyCancel &&
+      (run.weatherEvent !== 'clear' || run.pendingWeather || run.hailAttack || run.covidAttack || hadTwHazard)
+    ) {
+      run.weatherEvent = 'clear';
+      run.pendingWeather = null;
+      run.weatherPrepTimer = 0;
+      run.weatherEventTimer = 6.5;
+      run.clearSkyTimer = 6.5;
+      run.hailAttack = null;
+      run.covidAttack = null;
+      run.heatGauge = 0;
+      run.mudBlindTimer = 0;
+      run.rainExposeTimer = 0;
+      run.dustExposeTimer = 0;
+      run.gustExposeTimer = 0;
+      canceledWeather = true;
+      SFX.setWeatherAmbient('clear');
+      hideWeatherCenterAlert();
+    }
+    if (canceledWeather) {
+      Renderer.spawnFloater('☀️ 쾌청 캔슬! 악천후 소거!', '#ffe866', run.playerX + 12, run.playerY - 56);
+    } else if (showBanner) {
+      Renderer.spawnFloater('FEVER! 무적 질주!', '#ffe85c', run.playerX + 16, run.playerY - 48);
+    }
+  }
+
   function startRun(opts = {}) {
     const isTutorial = Boolean(opts && opts.isTutorial);
     const gameMode = isTutorial ? 'normal' : ((opts && opts.mode) || selectedGameMode || 'normal');
@@ -5972,6 +5998,7 @@
       dodgesTotal: 0,
       dodgeCombo: 0,
       maxDodgeCombo: 0,
+      nearMissGauge: 0,
       elapsed: 0,
       year: 1,
       seasonIdx: initSeasonIdx,
@@ -5993,7 +6020,9 @@
       onPlatform: false,
       petY: Renderer.GROUND_Y,
       vy: 0,
-      jumpsLeft: 2,
+      jumpsLeft: ch.tripleJumpStomp ? 3 : 2,
+      stomping: false,
+      clearSkyTimer: 0,
       jumpHeld: false,
       jumpBufferTimer: 0,
       coyoteTimer: 0.095,
@@ -6276,6 +6305,7 @@
     const twJumpFactor = (run.todayWeather && run.todayWeather.jumpMult) ? run.todayWeather.jumpMult : 1.0;
 
     run.sliding = false;
+    run.stomping = false;
     run.iceSlideInertia = 0;
     run.jumpBufferTimer = 0;
     run.coyoteTimer = 0;
@@ -6285,7 +6315,7 @@
 
     if (isGroundJump) {
       run.vy = -384 * floodFactor * twJumpFactor;
-      run.jumpsLeft = 1;
+      run.jumpsLeft = ch.tripleJumpStomp ? 2 : 1;
       run.squashX = 0.84;
       run.squashY = 1.18;
       Renderer.spawnLandDust(run.playerX, run.playerY);
@@ -6300,7 +6330,8 @@
       Renderer.spawnDust(run.playerX, run.playerY - 6, true);
       SFX.doubleJump();
       haptic(12);
-      Renderer.spawnFloater('2단 점프!', '#9be6ff', run.playerX, run.playerY - 40);
+      const airLabel = (ch.tripleJumpStomp && run.jumpsLeft === 0) ? '❄️ 3단 점프!' : '2단 점프!';
+      Renderer.spawnFloater(airLabel, ch.tripleJumpStomp && run.jumpsLeft === 0 ? '#7ceeff' : '#9be6ff', run.playerX, run.playerY - 40);
     }
   }
 
@@ -6353,15 +6384,27 @@
         return;
       }
     }
+    const ch = getCharDef(run.charId);
     run.slideInputHeld = true;
     const inAirNow = run.playerY < run.currentFloorY - 2;
     if (inAirNow) {
-      // Snappy Fast-Fall Dive into instant Slide!
-      run.vy = Math.max(run.vy, 470);
-      run.squashX = 0.86;
-      run.squashY = 1.16;
-      SFX.fastFall();
-      haptic(8);
+      if (ch.tripleJumpStomp) {
+        // 스키어: 공중 슬라이드 입력 시 즉시 바닥으로 초고속 급강하 (스톰프)!
+        run.vy = Math.max(run.vy, 920);
+        run.stomping = true;
+        run.squashX = 0.82;
+        run.squashY = 1.22;
+        SFX.fastFall();
+        haptic(12);
+        Renderer.spawnFloater('⬇️ 급강하 스톰프!', '#7ceeff', run.playerX + 8, run.playerY - 38);
+      } else {
+        // Snappy Fast-Fall Dive into instant Slide!
+        run.vy = Math.max(run.vy, 470);
+        run.squashX = 0.86;
+        run.squashY = 1.16;
+        SFX.fastFall();
+        haptic(8);
+      }
     } else if (!run.sliding) {
       run.squashX = 1.14;
       run.squashY = 0.88;
@@ -6373,13 +6416,12 @@
 
   function doSlideEnd() {
     if (!run) return;
-    const ch = getCharDef(run.charId);
     run.slideInputHeld = false;
     if (run.isTutorial && run.tut && run.tut.autoSlideTimer > 0) {
       return; // Smoothly finish gliding underneath the tutorial cloud even after a quick mobile tap!
     }
-    if (run.weatherEvent === 'ice_road' && !ch.iceMastery) {
-      // Ice inertia keeps sliding slightly longer (Skier controls it cleanly!)
+    if (run.weatherEvent === 'ice_road') {
+      // Ice inertia keeps sliding slightly longer!
       run.iceSlideInertia = 0.24;
     } else {
       run.sliding = false;
@@ -6909,13 +6951,8 @@
     if (run.weatherEvent === 'flood' && !run.onPlatform && run.playerY >= Renderer.GROUND_Y - 2) {
       weatherSpeedMult *= ch.floodResist ? 0.92 : 0.72; // 우비 소년 mitigates flood drag!
     }
-    if (run.weatherEvent === 'ice_road') {
-      if (ch.iceMastery) {
-        weatherSpeedMult *= 1.15; // 스키어 excels on icy roads!
-        iceScoreBonus = 1.2;
-      } else if (run.sliding) {
-        weatherSpeedMult *= 1.38; // Fast slippery ice slide!
-      }
+    if (run.weatherEvent === 'ice_road' && run.sliding) {
+      weatherSpeedMult *= 1.38; // Fast slippery ice slide!
     }
     if (run.weatherEvent === 'gust' && run.sliding) {
       weatherSpeedMult *= 1.12; // Aerodynamic crouch cuts headwind!
@@ -6924,7 +6961,7 @@
     run.speed = run.baseSpeed * diff.speedMult * feverBoost * weatherSpeedMult;
     run.scroll += run.speed * dt;
     run.distanceM = Math.floor(run.scroll / 14);
-    run.score += run.speed * dt * 0.16 * run.scoreMult * diff.scoreMult * iceScoreBonus * boostScoreMult;
+    run.score += run.speed * dt * 0.16 * run.scoreMult * diff.scoreMult * boostScoreMult;
 
     // Gust Headwind Horizontal Push-Back vs Slide Push-Forward!
     if (run.weatherEvent === 'gust' && run.feverTimer <= 0) {
@@ -6975,22 +7012,28 @@
       const wasAir = prevY < floorY - 4;
       run.playerY = floorY;
       run.vy = 0;
-      run.jumpsLeft = 2;
+      run.jumpsLeft = ch.tripleJumpStomp ? 3 : 2;
       run.coyoteTimer = 0.095;
       run.gliding = false;
       run.onPlatform = landedPlatform;
       if (wasAir) {
+        if (run.stomping) {
+          run.stomping = false;
+          triggerCameraShake(3.8, 0.14);
+        }
         run.squashX = 1.18;
         run.squashY = 0.84;
         Renderer.spawnLandDust(run.playerX, floorY);
         SFX.land();
-        if (run.weatherEvent === 'ice_road' && !landedPlatform && !ch.iceMastery) {
-          run.iceSlipTimer = 0.28; // Slippery landing on winter ice (Skier has full control!)
+        if (run.weatherEvent === 'ice_road' && !landedPlatform) {
+          run.iceSlipTimer = 0.28; // Slippery landing on winter ice!
         }
         // Consume 130ms Jump Input Buffer on exact frame-1 landing!
         if (run.jumpBufferTimer > 0) {
           executeJump(true);
         }
+      } else {
+        run.stomping = false;
       }
     } else {
       run.onPlatform = false;
@@ -7006,7 +7049,8 @@
         f.triggered = true;
         run.vy = -495;
         run.springLaunchTimer = 0.45;
-        run.jumpsLeft = 1;
+        run.jumpsLeft = ch.tripleJumpStomp ? 2 : 1;
+        run.stomping = false;
         run.onPlatform = false;
         run.squashX = 0.80;
         run.squashY = 1.24;
@@ -7022,12 +7066,35 @@
     }
 
     // ---- ACTIVE WEATHER EXPOSURE SYSTEM (RAIN/HEAT WITHOUT UMBRELLA · YELLOW DUST WITHOUT MASK -> -1 HEART!) ----
-    const twHaz = (run.todayWeather && run.todayWeather.hazards) ? run.todayWeather.hazards : null;
+    if (run.clearSkyTimer > 0) run.clearSkyTimer = Math.max(0, run.clearSkyTimer - dt);
+    const twHaz = (run.todayWeather && run.todayWeather.hazards && !(run.clearSkyTimer > 0)) ? run.todayWeather.hazards : null;
     const rainExposeLimit = Math.max(1.8, (run.weatherEvent === 'flood' ? 4.0 : 3.0) - diff.exposureGracePenalty) + (ch.rainGraceBonus || 0);
     const dustExposeLimit = Math.max(1.8, 3.0 - diff.exposureGracePenalty);
     const isRainingNow = run.weatherEvent === 'rain' || run.weatherEvent === 'flood' || Boolean(twHaz && (twHaz.rainActive || twHaz.floodActive));
     const isDustNow = run.weatherEvent === 'dust' || Boolean(twHaz && twHaz.dustActive);
     const isHeatNow = run.weatherEvent === 'heat' || Boolean(twHaz && twHaz.heatActive);
+
+    if (ch.autoGear && !run.isTutorial) {
+      const hailIncoming = Boolean(run.hailAttack && (run.hailAttack.phase === 'warn' || run.hailAttack.phase === 'fall'));
+      if (run.pendingWeather === 'gust' || run.weatherEvent === 'gust') {
+        if (run.umbrellaOn) {
+          run.umbrellaOn = false;
+          run.umbrellaActiveTimer = 0;
+          run.umbrellaParryTimer = 0;
+          run.gustExposeTimer = 0;
+          SFX.umbrellaToggle(false);
+          Renderer.spawnFloater('🤖 오토 기어: 우산 자동 접힘!', '#ffcf6e', run.playerX + 8, run.playerY - 46);
+        }
+      } else if ((isRainingNow || hailIncoming) && !run.umbrellaOn && run.umbrellaBrokenTimer <= 0) {
+        run.umbrellaOn = true;
+        run.umbrellaActiveTimer = GEAR_DURATION;
+        run.umbrellaParryTimer = UMBRELLA_PARRY_WINDOW;
+        run.umbrellaCooldown = 0;
+        run.rainExposeTimer = 0;
+        SFX.umbrellaToggle(true);
+        Renderer.spawnFloater('🤖 오토 기어: 우산 자동 펼침!', '#8ce0ff', run.playerX + 8, run.playerY - 46);
+      }
+    }
 
     if (run.feverTimer <= 0 && !run.isTutorial) {
       // 1. Rain without Umbrella for set duration -> -1 Heart!
@@ -7065,7 +7132,7 @@
       }
 
       // 3. Summer Heatwave (폭염): Open Umbrella(양산) to stay cool! Without Umbrella, heat builds -> -1 Heart!
-      if (isHeatNow && !ch.summerImmune) {
+      if (isHeatNow) {
         if (run.umbrellaOn) {
           run.heatGauge = Math.max(0, run.heatGauge - 46 * dt);
         } else {
@@ -7186,9 +7253,7 @@
             run.score += Math.round(bonusPts * run.scoreMult);
             run.feverCharge = Math.min(100, run.feverCharge + feverGain);
             if (run.feverCharge >= 100 && run.feverTimer <= 0) {
-              run.feverTimer = 4.5;
-              run.winPoseTimer = 0.7;
-              SFX.feverStart();
+              activateFeverMode(ch, false);
             } else {
               SFX.guard();
             }
@@ -7318,9 +7383,7 @@
             run.score += Math.round(bonusPts * run.scoreMult);
             run.feverCharge = Math.min(100, run.feverCharge + feverGain * twFevMult);
             if (run.feverCharge >= 100 && run.feverTimer <= 0) {
-              run.feverTimer = 4.5;
-              run.winPoseTimer = 0.7;
-              SFX.feverStart();
+              activateFeverMode(ch, false);
             } else {
               SFX.hailBlock();
             }
@@ -7448,10 +7511,7 @@
       const feverMult = (run.todayWeather && run.todayWeather.feverGainMult) ? run.todayWeather.feverGainMult : 1.0;
       run.feverCharge = Math.min(100, run.feverCharge + amount * feverMult);
       if (run.feverCharge >= 100) {
-        run.feverTimer = 4.5;
-        run.winPoseTimer = 0.7;
-        SFX.feverStart();
-        Renderer.spawnFloater('FEVER! 무적 질주!', '#ffe85c', run.playerX + 16, run.playerY - 48);
+        activateFeverMode(ch, true);
       }
     }
 
@@ -7549,8 +7609,8 @@
           Renderer.spawnFloater(`보물상자 +${bonusG}G!`, '#ffe55c', it.x, it.y - 14);
         } else if (it.kind === 'coffee') {
           // Energy drink / Iced Americano -> Score + FEVER + Heat cooling (NO HP healing!)
-          const bonusSc = ch.icedBonus ? 280 : 120;
-          const feverGain = ch.icedBonus ? 9 : 6;
+          const bonusSc = 120;
+          const feverGain = 6;
           run.heatGauge = Math.max(0, run.heatGauge - 25);
           run.score += Math.round(bonusSc * run.scoreMult);
           addFeverCharge(feverGain);
@@ -7558,7 +7618,7 @@
           SFX.heal();
           Renderer.spawnPickupEffect(it.x, it.y, '#70f59b', true);
           Renderer.spawnFloater(
-            ch.icedBonus ? `얼죽아 파워! +${bonusSc} · 피버+${feverGain}%` : `이온음료! +${bonusSc} · 피버+${feverGain}%`,
+            `이온음료! +${bonusSc} · 피버+${feverGain}%`,
             '#70f59b',
             run.playerX + 10,
             run.playerY - 40
@@ -7661,14 +7721,24 @@
             Renderer.spawnFloater(`${run.dodgeCombo}연속 회피! +${comboBonus}`, '#9ef5ff', run.playerX + 12, run.playerY - 48);
           }
         }
-        if (ch.nearMissBonus && !ob.nearMissed && ob.x + ob.w < pBox.x) {
+        if (ch.nearMissShield && !ob.nearMissed && ob.x + ob.w < pBox.x) {
           ob.nearMissed = true;
           const vertDist = Math.min(Math.abs(pBox.y - (oBox.y + oBox.h)), Math.abs((pBox.y + pBox.h) - oBox.y));
-          if (vertDist < 28) {
-            run.score += 120;
-            run.gold += 2;
-            SFX.coin();
-            Renderer.spawnFloater('NEAR MISS +2G!', '#ff9ce6', run.playerX + 10, run.playerY - 45);
+          if (vertDist < 34) {
+            run.nearMissGauge = (run.nearMissGauge || 0) + 1;
+            if (run.nearMissGauge >= 5) {
+              run.nearMissGauge = 0;
+              run.shield = true;
+              run.shieldFromBooster = false;
+              run.shieldTimer = 10.0;
+              run.shieldMaxTimer = 10.0;
+              SFX.guard();
+              Renderer.spawnPickupEffect(run.playerX + 12, run.playerY - 30, '#ffe27a', true);
+              Renderer.spawnFloater('🛡️ 아슬아슬 보호막 발동!', '#ffe27a', run.playerX + 12, run.playerY - 48);
+            } else {
+              SFX.coin();
+              Renderer.spawnFloater(`🛡️ 회피 게이지 ${run.nearMissGauge}/5`, '#ffe27a', run.playerX + 10, run.playerY - 44);
+            }
           }
         }
       }
@@ -7754,18 +7824,19 @@
 
     // Every obstacle hit deducts 1 heart (no score deduction!)
     run.hp = Math.max(0, run.hp - 1);
-    run.invulnTimer = 1.5 + (ch.extraInvuln || 0);
+    run.invulnTimer = 1.5;
     run.hitPoseTimer = 0.45;
     run.hitFlashTimer = 0.3;
     run.hitStopTimer = 0.055;
     run.squashX = 1.24;
     run.squashY = 0.78;
     run.dodgeCombo = 0;
+    run.nearMissGauge = 0;
     triggerCameraShake(7, 0.28);
     haptic(35);
 
     const seasonName = DATA.SEASONS[run.seasonIdx].name;
-    if (run.weatherEvent === 'ice_road' && !ch.iceMastery) {
+    if (run.weatherEvent === 'ice_road') {
       run.lastHitCause = `${run.year}년 차 겨울 빙판에서 미끄러져 '${ob.name}'에 부딪혔습니다!`;
     } else {
       run.lastHitCause = `${run.year}년 차 ${seasonName}, '${ob.name}'에 부딪혀 쓰러졌습니다!`;
@@ -7893,7 +7964,7 @@
     const gustLimit = Math.max(1.8, 2.8 - diff.exposureGracePenalty);
 
     const activeEv = run.weatherEvent || 'clear';
-    const twHazHud = (run.todayWeather && run.todayWeather.hazards) ? run.todayWeather.hazards : null;
+    const twHazHud = (run.todayWeather && run.todayWeather.hazards && !(run.clearSkyTimer > 0)) ? run.todayWeather.hazards : null;
     const incomingEv = (run.pendingWeather && run.pendingWeather !== 'clear') ? run.pendingWeather : null;
     const covidUrgent = Boolean(
       run.covidAttack &&
@@ -7913,7 +7984,7 @@
     const hudRainNow = activeEv === 'rain' || activeEv === 'flood' || Boolean(twHazHud && (twHazHud.rainActive || twHazHud.floodActive));
     const hudHeatNow = activeEv === 'heat' || Boolean(twHazHud && twHazHud.heatActive);
     const hudDustNow = activeEv === 'dust' || Boolean(twHazHud && twHazHud.dustActive);
-    const needOpenUmb = needHailUmb || ((hudRainNow || (hudHeatNow && !ch.summerImmune)) && !run.umbrellaOn && run.feverTimer <= 0);
+    const needOpenUmb = needHailUmb || ((hudRainNow || hudHeatNow) && !run.umbrellaOn && run.feverTimer <= 0);
     const needOpenMask = hudDustNow && !run.maskOn && run.feverTimer <= 0;
 
     // 1. Colored Screen-Edge Vignette (instant peripheral weather cue!)
@@ -7959,7 +8030,7 @@
         chipBadge = '😷 마스크!';
         chipTimer = `${rem.toFixed(1)}s`;
         chipUrgent = rem <= 1.4;
-      } else if (hudHeatNow && !ch.summerImmune && !run.umbrellaOn) {
+      } else if (hudHeatNow && !run.umbrellaOn) {
         chipBadge = '☀️ 우산!';
         chipTimer = `${Math.round(run.heatGauge)}%`;
         chipUrgent = run.heatGauge >= 60;
@@ -8250,8 +8321,9 @@
           }
         }
       }
-    } else if (currentTab === 'home') {
-      updateHomeRunningHero(t);
+    } else {
+      if (currentTab === 'home') updateHomeRunningHero(t);
+      updateDetailRunningHero(t);
     }
 
     requestAnimationFrame(loop);
