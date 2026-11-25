@@ -5075,15 +5075,7 @@
       el.tabContainer.scrollTop = 0;
       lastTabScrollTop = 0;
     }
-    if (tab === 'home') {
-      setDynamicDockCollapsed(false);
-    } else {
-      setDynamicDockCollapsed(false);
-      dockAutoHideTimer = setTimeout(() => {
-        dockAutoHideTimer = null;
-        if (currentTab !== 'home') setDynamicDockCollapsed(true);
-      }, 650);
-    }
+    setDynamicDockCollapsed(false);
     refreshAllMenus();
   }
 
@@ -5284,7 +5276,7 @@
       covidAttack: null,
       covidAttackCd: 0,
       hailAttack: null,
-      hailAttackCd: 11.5,
+      hailAttackCd: 3.2,
 
       // Obstacles & Collectibles
       obstacleCd: 1.5,
@@ -6601,11 +6593,11 @@
           run.hailAttack = null;
         }
       }
-    } else if (!run.isTutorial && !run.covidAttack && run.weatherEvent !== 'gust' && run.weatherEvent !== 'covid') {
+    } else if (!run.isTutorial && run.seasonId === 'winter' && (run.year || 1) >= 3 && !run.covidAttack && run.weatherEvent !== 'gust' && run.weatherEvent !== 'covid') {
       run.hailAttackCd -= dt;
       if (run.hailAttackCd <= 0) {
         const warnDur = Math.max(1.55, 2.0 / Math.min(1.25, diff.weatherPaceMult));
-        run.hailAttackCd = Math.max(9.5, (14.5 + Math.random() * 4.5) / Math.min(1.35, diff.weatherPaceMult));
+        run.hailAttackCd = Math.max(5.5, (7.5 + Math.random() * 2.5) / Math.min(1.3, diff.weatherPaceMult));
         run.hailAttack = {
           phase: 'warn',
           timer: warnDur,
@@ -6624,6 +6616,8 @@
         SFX.playWeatherCue('hail');
         showWeatherCenterAlert('hail');
       }
+    } else {
+      run.hailAttackCd = Math.min(run.hailAttackCd, 3.2);
     }
 
     // ---- SPAWN TIMERS ----
@@ -8065,53 +8059,55 @@
       try { tryAutoLockLandscape(false); } catch {}
     });
 
-    // Apple Dynamic Bar Collapsible Bottom Menu Bar (Active ONLY on non-home tabs!)
+    // iPhone App Style Dynamic Bottom Menu Bar (Home fixed; non-home hides on scroll down, shows on scroll up / bottom-edge swipe or tap)
     if (el.tabContainer) {
+      const scrollTopMap = new WeakMap();
       let touchStartY = 0;
+      let touchStartX = 0;
       let touchTracking = false;
 
-      el.tabContainer.addEventListener('scroll', () => {
+      // Capture-phase scroll catches inner scrollable panes (.bs-shop-stage, .tab-view, lists) just like iOS UIScrollView!
+      el.tabContainer.addEventListener('scroll', (e) => {
         if (currentTab === 'home') return;
-        const st = el.tabContainer.scrollTop;
-        const delta = st - lastTabScrollTop;
-        if (delta > 7 && st > 12) {
-          if (dockAutoHideTimer) {
-            clearTimeout(dockAutoHideTimer);
-            dockAutoHideTimer = null;
-          }
+        const target = e.target;
+        if (!target || typeof target.scrollTop !== 'number') return;
+        const st = target.scrollTop;
+        const prev = scrollTopMap.has(target) ? scrollTopMap.get(target) : st;
+        const delta = st - prev;
+        scrollTopMap.set(target, st);
+        if (st <= 8) {
+          setDynamicDockCollapsed(false);
+        } else if (delta > 6 && st > 16) {
           setDynamicDockCollapsed(true);
-        } else if (delta < -7) {
-          if (dockAutoHideTimer) {
-            clearTimeout(dockAutoHideTimer);
-            dockAutoHideTimer = null;
-          }
+        } else if (delta < -6) {
           setDynamicDockCollapsed(false);
         }
-        lastTabScrollTop = st;
-      }, { passive: true });
+      }, { capture: true, passive: true });
 
-      el.tabContainer.addEventListener('touchstart', (e) => {
-        if (!e || !e.touches || !e.touches.length) return;
-        touchStartY = e.touches[0].clientY;
+      document.addEventListener('touchstart', (e) => {
+        if (currentTab === 'home' || !e || !e.touches || !e.touches.length) return;
+        const t = e.touches[0];
+        touchStartY = t.clientY;
+        touchStartX = t.clientX;
         touchTracking = true;
-      }, { passive: true });
-
-      el.tabContainer.addEventListener('touchmove', (e) => {
-        if (!touchTracking || currentTab === 'home' || !e || !e.touches || !e.touches.length) return;
-        const dy = e.touches[0].clientY - touchStartY;
-        const fromBottomEdge = touchStartY >= window.innerHeight - 96;
-        if (dy > 24 || (fromBottomEdge && dy < -20)) {
-          if (dockAutoHideTimer) {
-            clearTimeout(dockAutoHideTimer);
-            dockAutoHideTimer = null;
-          }
+        // Tapping near the bottom edge while bar is collapsed brings it back like iOS Safari
+        if (dockCollapsed && touchStartY >= window.innerHeight - 36) {
           setDynamicDockCollapsed(false);
           touchTracking = false;
-        } else if (dy < -28 && !fromBottomEdge) {
-          if (dockAutoHideTimer) {
-            clearTimeout(dockAutoHideTimer);
-            dockAutoHideTimer = null;
-          }
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchmove', (e) => {
+        if (!touchTracking || currentTab === 'home' || !e || !e.touches || !e.touches.length) return;
+        const t = e.touches[0];
+        const dy = t.clientY - touchStartY;
+        const dx = Math.abs(t.clientX - touchStartX);
+        if (dx > Math.abs(dy) * 1.25) return; // ignore horizontal swipes (e.g. horizontal carousels)
+        const fromBottomEdge = touchStartY >= window.innerHeight - 68;
+        if (dy > 20 || (fromBottomEdge && dy < -18)) {
+          setDynamicDockCollapsed(false);
+          touchTracking = false;
+        } else if (dy < -24 && !fromBottomEdge) {
           setDynamicDockCollapsed(true);
           touchTracking = false;
         }
@@ -8119,17 +8115,9 @@
 
       el.tabContainer.addEventListener('wheel', (e) => {
         if (currentTab === 'home' || !e) return;
-        if (e.deltaY > 12) {
-          if (dockAutoHideTimer) {
-            clearTimeout(dockAutoHideTimer);
-            dockAutoHideTimer = null;
-          }
+        if (e.deltaY > 10) {
           setDynamicDockCollapsed(true);
-        } else if (e.deltaY < -12) {
-          if (dockAutoHideTimer) {
-            clearTimeout(dockAutoHideTimer);
-            dockAutoHideTimer = null;
-          }
+        } else if (e.deltaY < -10) {
           setDynamicDockCollapsed(false);
         }
       }, { passive: true });

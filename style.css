@@ -7259,13 +7259,13 @@ input:focus-visible {
 .bs-prof-avatar-box {
   position: relative;
   z-index: 4;
-  width: 46px;
-  height: 46px;
+  width: 56px;
+  height: 56px;
   padding: 0;
   margin: 0;
   flex-shrink: 0;
-  border-radius: 10px;
-  border: 2.5px solid #071022;
+  border-radius: 12px;
+  border: 3px solid #071022;
   background: radial-gradient(circle at 50% 30%, #72e6ff 0%, #1d75e8 62%, #0c3585 100%);
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.58),
@@ -7298,15 +7298,15 @@ input:focus-visible {
   left: -5px;
   bottom: -5px;
   z-index: 6;
-  min-width: 22px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 6px;
+  min-width: 26px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 7px;
   border: 1.8px solid #071022;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.2px;
@@ -7333,10 +7333,10 @@ input:focus-visible {
 .bs-prof-body {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-left: -6px;
-  min-width: 170px;
-  max-width: 222px;
+  gap: 4px;
+  margin-left: -7px;
+  min-width: 204px;
+  max-width: 264px;
 }
 
 .bs-prof-unskew {
@@ -7351,10 +7351,10 @@ input:focus-visible {
   display: flex;
   align-items: center;
   width: 100%;
-  height: 22px;
-  padding: 0 9px 0 12px;
+  height: 27px;
+  padding: 0 11px 0 14px;
   margin: 0;
-  border-radius: 0 7px 7px 0;
+  border-radius: 0 8px 8px 0;
   border: 2.2px solid #071022;
   border-left: none;
   background: linear-gradient(180deg, #2d497f 0%, #192c52 54%, #111f3d 100%);
@@ -7381,7 +7381,7 @@ input:focus-visible {
 }
 
 .bs-prof-name {
-  font-size: 12.5px;
+  font-size: 15px;
   font-weight: 900;
   color: #ffffff;
   letter-spacing: 0.2px;
@@ -7430,14 +7430,14 @@ input:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 19px;
-  padding: 0 5px;
+  height: 23px;
+  padding: 0 7px;
   margin-right: -4px;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 2px solid #071022;
   background: linear-gradient(180deg, #ffe759 0%, #f09500 100%);
   color: #2b1000;
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
@@ -7449,8 +7449,8 @@ input:focus-visible {
 .bs-prof-trophy-track {
   position: relative;
   flex: 1;
-  height: 19px;
-  border-radius: 0 6px 6px 0;
+  height: 23px;
+  border-radius: 0 7px 7px 0;
   border: 2px solid #071022;
   background: linear-gradient(180deg, #0b1428 0%, #162646 100%);
   box-shadow:
@@ -7478,8 +7478,8 @@ input:focus-visible {
   position: relative;
   z-index: 3;
   gap: 3px;
-  padding: 0 6px 0 8px;
-  font-size: 11px;
+  padding: 0 7px 0 10px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1;
   color: #ffffff;
@@ -7493,7 +7493,7 @@ input:focus-visible {
 }
 
 .bs-prof-trophy-next {
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 800;
   color: #ffe89e;
   opacity: 0.94;
@@ -7523,42 +7523,42 @@ input:focus-visible {
 
 @media (max-height: 440px), (orientation: portrait) and (max-width: 520px) {
   .bs-prof-avatar-box {
-    width: 39px;
-    height: 39px;
-    border-radius: 8px;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
   }
   .bs-prof-rank-badge {
-    min-width: 19px;
-    height: 14px;
-    font-size: 8.5px;
+    min-width: 23px;
+    height: 17px;
+    font-size: 10px;
     left: -4px;
     bottom: -4px;
   }
   .bs-prof-body {
-    min-width: 152px;
-    max-width: 194px;
-    gap: 2px;
+    min-width: 180px;
+    max-width: 232px;
+    gap: 3px;
   }
   .bs-prof-name-strip {
-    height: 19px;
-    padding: 0 7px 0 10px;
+    height: 23px;
+    padding: 0 9px 0 12px;
   }
   .bs-prof-name {
-    font-size: 11px;
+    font-size: 13px;
   }
   .bs-prof-score-tag {
-    height: 16px;
-    font-size: 8px;
-    padding: 0 4px;
+    height: 20px;
+    font-size: 9.5px;
+    padding: 0 5px;
   }
   .bs-prof-trophy-track {
-    height: 16px;
+    height: 20px;
   }
   .bs-prof-trophy-val {
-    font-size: 9.5px;
+    font-size: 11.5px;
   }
   .bs-prof-trophy-next {
-    font-size: 8px;
+    font-size: 9.5px;
   }
 }
 
@@ -9506,26 +9506,49 @@ input:focus-visible {
     padding: calc(var(--safe-top) + 10px) max(20px, var(--safe-right)) 8px max(20px, var(--safe-left)) !important;
   }
   .bs-prof-avatar-box {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
+    width: 72px;
+    height: 72px;
+    border-radius: 15px;
+    border-width: 3px;
   }
   .bs-prof-rank-badge {
-    min-width: 26px;
-    height: 19px;
-    font-size: 11px;
+    min-width: 32px;
+    height: 23px;
+    font-size: 13px;
+    border-radius: 8px;
+    left: -6px;
+    bottom: -6px;
   }
   .bs-prof-body {
-    min-width: 204px;
-    max-width: 264px;
-    gap: 4px;
+    min-width: 256px;
+    max-width: 332px;
+    gap: 5px;
+    margin-left: -8px;
   }
   .bs-prof-name-strip {
-    height: 26px;
-    padding: 0 11px 0 14px;
+    height: 34px;
+    padding: 0 14px 0 18px;
+    border-radius: 0 10px 10px 0;
   }
   .bs-prof-name {
-    font-size: 15px;
+    font-size: 19px;
+  }
+  .bs-prof-score-tag {
+    height: 29px;
+    padding: 0 9px;
+    font-size: 13px;
+    border-radius: 7px;
+  }
+  .bs-prof-trophy-track {
+    height: 29px;
+    border-radius: 0 9px 9px 0;
+  }
+  .bs-prof-trophy-val {
+    font-size: 16px;
+    padding: 0 9px 0 12px;
+  }
+  .bs-prof-trophy-next {
+    font-size: 13px;
   }
   #app-header .res-pill {
     height: 48px;
