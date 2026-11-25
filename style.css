@@ -3086,6 +3086,7 @@ input:focus-visible {
 .rank-row-info {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .rank-row-name {
@@ -3094,13 +3095,26 @@ input:focus-visible {
   color: #142a4d;
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rank-row-name > span:not(.prov-chip):not(.item-badge):not(.rank-top1-prize):not(.rank-nameplate) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rank-row-sub {
   font-size: 11px;
   font-weight: 600;
   color: #4f6685;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rank-row-score {
@@ -3109,6 +3123,7 @@ input:focus-visible {
   font-weight: 900;
   color: #16448a;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Landscape Compact Sizing for the 5-Button Pixel Nav Bar */
@@ -8163,9 +8178,16 @@ input:focus-visible {
 }
 
 .rank-top1-prize {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.15;
   margin-left: 4px;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 999px;
   background: linear-gradient(90deg, #ffe24a, #ff9d1c);
   color: #241000;
@@ -13063,55 +13085,75 @@ input:focus-visible {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 3px;
-  min-width: 112px;
-  padding: 7px 10px 8px;
-  border-radius: 14px;
-  border: 2.5px solid #081226;
-  background: linear-gradient(180deg, #ffe24a 0%, #f59c0c 58%, #cf7400 100%);
-  color: #241000;
+  width: 118px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
   font-family: var(--font-ui);
   cursor: pointer;
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.72),
-    0 4px 0 #081226,
-    0 6px 14px rgba(5, 12, 32, 0.45);
   transition: transform 0.1s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .bs-pass-dock-btn:active {
-  transform: translateY(2px) scale(0.97);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.6), 0 2px 0 #081226;
+  transform: translateY(2px) scale(0.96);
 }
 
-.bs-pass-dock-btn.gold-active {
-  border-color: #fff294;
-  background: linear-gradient(180deg, #ffea5e 0%, #ffaa0a 56%, #d96b00 100%);
+.bs-pass-art-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.bs-pass-kicker {
-  font-size: 8.5px;
-  font-weight: 900;
-  letter-spacing: 0.6px;
-  padding: 1px 6px;
+.bs-pass-ticket-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 0 #081226) drop-shadow(0 5px 10px rgba(4, 10, 28, 0.52));
+}
+
+.bs-pass-dock-btn.gold-active .bs-pass-ticket-img {
+  filter: drop-shadow(0 3px 0 #081226) drop-shadow(0 0 11px rgba(255, 224, 72, 0.78));
+}
+
+.bs-pass-img-title {
+  margin-top: -10px;
+  position: relative;
+  z-index: 2;
+  padding: 1.5px 9px;
   border-radius: 999px;
-  background: #1a2a4f;
-  color: #ffe96e;
-  line-height: 1.25;
+  border: 2px solid #081226;
+  background: linear-gradient(180deg, #ffe24a 0%, #f09508 100%);
+  color: #241000;
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 #081226, inset 0 1.5px 0 rgba(255, 255, 255, 0.75);
 }
 
-.bs-pass-title {
-  font-size: 13px;
-  font-weight: 900;
-  color: #1f0d00;
-  line-height: 1.15;
+.bs-pass-meta-bar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5px;
+  padding: 3px 7px 4px;
+  border-radius: 10px;
+  border: 2px solid #081226;
+  background: rgba(10, 20, 44, 0.9);
+  box-shadow: 0 2.5px 0 #071022;
 }
 
 .bs-pass-prog-track {
   width: 100%;
-  height: 7px;
+  height: 6px;
   border-radius: 999px;
   border: 1.5px solid #081226;
   background: rgba(16, 24, 48, 0.72);
@@ -13127,16 +13169,18 @@ input:focus-visible {
 }
 
 .bs-pass-lv {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 900;
-  color: #361700;
-  line-height: 1;
+  color: #ffe878;
+  white-space: nowrap;
+  line-height: 1.1;
 }
 
 .bs-pass-dot {
   position: absolute;
-  right: -6px;
-  top: -6px;
+  right: -4px;
+  top: -4px;
+  z-index: 3;
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
@@ -13154,16 +13198,19 @@ input:focus-visible {
 
 @media (max-height: 500px) {
   .bs-pass-dock-btn {
-    min-width: 96px;
-    padding: 5px 8px 6px;
-    border-radius: 12px;
+    width: 96px;
     gap: 2px;
   }
-  .bs-pass-title {
-    font-size: 11.5px;
+  .bs-pass-img-title {
+    font-size: 10px;
+    padding: 1px 7px;
+    margin-top: -8px;
+  }
+  .bs-pass-meta-bar {
+    padding: 2.5px 5px 3.5px;
   }
   .bs-pass-lv {
-    font-size: 9px;
+    font-size: 8.5px;
   }
 }
 
@@ -13173,19 +13220,19 @@ input:focus-visible {
     left: 6px;
   }
   .bs-pass-dock-btn {
-    min-width: 142px;
-    padding: 9px 13px 10px;
-    border-radius: 16px;
+    width: 146px;
     gap: 4px;
   }
-  .bs-pass-kicker {
-    font-size: 10px;
+  .bs-pass-img-title {
+    font-size: 13px;
+    padding: 2px 11px;
+    margin-top: -12px;
   }
-  .bs-pass-title {
-    font-size: 15.5px;
+  .bs-pass-meta-bar {
+    padding: 4px 8px 5px;
   }
   .bs-pass-lv {
-    font-size: 11.5px;
+    font-size: 11px;
   }
 }
 
@@ -13489,5 +13536,130 @@ input:focus-visible {
   .sp-rw-art.skin {
     width: 42px;
     height: 42px;
+  }
+}
+
+/* ================= GLOBAL ANTI-WRAP PROTECTION FOR BADGES, PILLS, ICONS & BUTTONS ================= */
+.item-badge,
+.prov-chip,
+.rank-top1-prize,
+.bs-power-tag,
+.bs-tier-tag,
+.brawl-tier-pill,
+.brawl-skill-chip,
+.brawl-eq-chip,
+.brawl-skin-chip,
+.brawl-equipped-pill,
+.skin-chip,
+.skin-rar-pill,
+.bs-mythic-exclusive,
+.score-road-best-pill,
+.sp-track-badge,
+.sp-claim-btn,
+.sp-buy-gold-btn,
+.sp-gold-active-pill,
+.sr-claim-btn,
+.bs-buy-btn,
+.bs-quest-reward,
+.bs-quest-claim-btn,
+.res-pill,
+.hdr-score-pill,
+.prof-eq-tag,
+.prof-frame-exp,
+.prof-frame-exp-mini,
+.vb-pill,
+.gc-rate-pill,
+.podium-score-pill,
+.rank-live-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.qtab-btn,
+.bs-shop-tab-btn,
+.rank-mode-btn,
+.sp-leg-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nick-rainbow,
+.podium-plain-name,
+.bs-pass-lv,
+.bs-pass-img-title,
+.settings-bar-title,
+.prof-frame-title,
+.sp-xp-bar-txt {
+  white-space: nowrap;
+}
+
+.prof-card-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.ui-ico,
+.ui-ico-slot,
+.prov-google-img {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.rank-row-info,
+.score-road-title-wrap,
+.prof-frame-meta,
+.bs-quest-main {
+  min-width: 0;
+}
+
+.settings-bar-title,
+.prof-frame-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 560px), (orientation: landscape) and (max-height: 520px) {
+  .rank-row {
+    gap: 6px;
+    padding: 7px 8px;
+  }
+  .rank-medal {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  .rank-row-avatar {
+    width: 30px;
+    height: 30px;
+  }
+  .rank-nameplate.sm {
+    width: 112px;
+    height: 19px;
+  }
+  .rank-nameplate.sm .rnp-txt {
+    font-size: 9px;
+  }
+  .rank-top1-prize {
+    font-size: 9px;
+    padding: 1.5px 5px;
+    margin-left: 2px;
   }
 }
