@@ -9460,6 +9460,16 @@ input:focus-visible {
   padding: calc(var(--safe-top) + 6px) max(14px, var(--safe-right)) 6px max(14px, var(--safe-left)) !important;
 }
 
+#tab-container {
+  padding-left: max(14px, var(--safe-left)) !important;
+  padding-right: max(14px, var(--safe-right)) !important;
+}
+
+.modal-overlay {
+  padding-left: max(14px, var(--safe-left));
+  padding-right: max(14px, var(--safe-right));
+}
+
 .tut-run-hud {
   top: calc(var(--safe-top) + 76px) !important;
 }
@@ -9485,100 +9495,135 @@ input:focus-visible {
 }
 
 .bs-home-actions {
-  left: max(12px, var(--safe-left));
-  right: max(12px, var(--safe-right));
+  left: 4px;
+  right: 4px;
   bottom: calc(max(10px, var(--safe-bottom)) + 4px);
 }
 
-/* iPad & Large Tablet Lush Scaling (4:3 / 3:2 / Pro — Eliminates Empty Space!) */
+/* iPad & Large Tablet Lush Scaling (4:3 / 3:2 / Pro — Brawl Stars Proportions) */
 @media (min-width: 740px) and (min-height: 620px) {
+  #app-header {
+    padding: calc(var(--safe-top) + 10px) max(20px, var(--safe-right)) 8px max(20px, var(--safe-left)) !important;
+  }
+  .bs-prof-avatar-box {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+  }
+  .bs-prof-rank-badge {
+    min-width: 26px;
+    height: 19px;
+    font-size: 11px;
+  }
+  .bs-prof-body {
+    min-width: 204px;
+    max-width: 264px;
+    gap: 4px;
+  }
+  .bs-prof-name-strip {
+    height: 26px;
+    padding: 0 11px 0 14px;
+  }
+  .bs-prof-name {
+    font-size: 15px;
+  }
   #app-header .res-pill {
-    height: 40px;
-    font-size: 16px;
-    padding: 0 13px 0 8px;
+    height: 48px;
+    font-size: 19px;
+    padding: 0 16px 0 10px;
   }
   .hdr-gear-btn {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
+  }
+  .bs-home-stage {
+    padding: 0 0 88px;
   }
   .bs-spotlight {
-    width: clamp(360px, 50vh, 500px);
-    height: clamp(360px, 50vh, 500px);
+    width: clamp(430px, 60vh, 600px);
+    height: clamp(430px, 60vh, 600px);
   }
   .bs-podium-row {
-    max-width: min(640px, 80vw);
+    max-width: min(760px, 86vw);
   }
   .bs-hero-img {
-    width: clamp(195px, 28vh, 265px);
-    height: clamp(195px, 28vh, 265px);
+    width: clamp(245px, 37vh, 340px);
+    height: clamp(245px, 37vh, 340px);
   }
   .bs-hero-aura {
-    width: clamp(260px, 37vh, 350px);
-    height: clamp(260px, 37vh, 350px);
-    margin-top: calc(clamp(260px, 37vh, 350px) * -0.57);
-    margin-left: calc(clamp(260px, 37vh, 350px) * -0.5);
+    width: clamp(325px, 49vh, 450px);
+    height: clamp(325px, 49vh, 450px);
+    margin-top: calc(clamp(325px, 49vh, 450px) * -0.57);
+    margin-left: calc(clamp(325px, 49vh, 450px) * -0.5);
   }
   .bs-podium-ring {
-    width: clamp(220px, 32vh, 295px);
-    height: clamp(50px, 7vh, 64px);
-    margin-top: -22px;
+    width: clamp(280px, 41vh, 375px);
+    height: clamp(60px, 8.2vh, 78px);
+    margin-top: -24px;
   }
   .bs-podium-inner {
-    width: clamp(148px, 21vh, 200px);
-    height: clamp(26px, 3.6vh, 34px);
+    width: clamp(190px, 27.5vh, 255px);
+    height: clamp(32px, 4.4vh, 42px);
   }
   .bs-hero-name {
-    font-size: clamp(30px, 4.2vh, 42px);
+    font-size: clamp(36px, 5vh, 50px);
   }
   .bs-power-tag,
   .bs-tier-tag {
-    font-size: 14px;
-    padding: 4px 14px;
+    font-size: 16px;
+    padding: 5px 17px;
   }
   .bs-side-arrow {
-    width: 52px;
-    height: 68px;
-    font-size: 24px;
+    width: 62px;
+    height: 82px;
+    font-size: 28px;
   }
   .bs-brawler-btn {
-    min-width: 196px;
-    min-height: 76px;
-    padding: 8px 14px;
+    min-width: 232px;
+    min-height: 90px;
+    padding: 10px 18px;
   }
   .bs-brawler-lbl {
-    font-size: 18px;
+    font-size: 21px;
+  }
+  .bs-brawler-cnt {
+    font-size: 13.5px;
+  }
+  .bs-mini-avatar {
+    width: 54px;
+    height: 54px;
   }
   .bs-play-btn {
-    min-width: 265px;
-    min-height: 84px;
-    padding: 10px 20px;
+    min-width: 305px;
+    min-height: 96px;
+    padding: 12px 24px;
   }
   .bs-play-main {
-    font-size: 32px;
+    font-size: 38px;
   }
   .bs-play-sub {
-    font-size: 13px;
+    font-size: 15px;
   }
   #bottom-nav.pixel-nav-bar {
-    grid-template-columns: 74px 74px 96px 74px 74px;
-    gap: 8px;
-    padding: 7px 16px 8px;
-    border-radius: 30px;
+    grid-template-columns: 86px 86px 112px 86px 86px;
+    gap: 10px;
+    padding: 8px 18px 9px;
+    border-radius: 34px;
   }
   #bottom-nav.pixel-nav-bar .nav-spr-stack {
-    max-width: 74px;
-    height: 60px;
+    max-width: 86px;
+    height: 70px;
   }
   #bottom-nav.pixel-nav-bar .nav-spr-stack.home-stack {
-    max-width: 96px;
-    height: 74px;
-    margin-top: -16px;
+    max-width: 112px;
+    height: 86px;
+    margin-top: -18px;
   }
   #view-shop,
   #view-chars,
   #view-missions,
   #view-rank {
-    padding-bottom: 104px;
+    padding-bottom: 118px;
   }
 
   /* Larger Ergonomic iPad Runner HUD & Thumb Controls */
@@ -12255,4 +12300,28 @@ input:focus-visible {
 
 .ndh-lbl {
   line-height: 1;
+}
+
+/* iPad Brawl Stars Proportions — Right-Dock Weather Button */
+@media (min-width: 740px) and (min-height: 620px) {
+  .bs-home-right-dock {
+    top: 8px;
+    right: 6px;
+  }
+  .bs-right-dock-btn {
+    min-width: 76px;
+    padding: 9px 11px;
+    border-radius: 16px;
+    gap: 3px;
+  }
+  .bs-rd-ico {
+    font-size: 28px;
+  }
+  .bs-rd-lbl {
+    font-size: 13px;
+  }
+  .bs-rd-temp {
+    font-size: 11.5px;
+    padding: 2px 8px;
+  }
 }
