@@ -270,6 +270,18 @@ window.RUN_DATA = (function () {
     { id: 'frost_santa',      name: '겨울왕국 산타',   rarity: 'rare', charId: 'fashionista',     filter: 'hue-rotate(198deg) saturate(1.45) brightness(1.12)', glow: '#75e6ff', trail: ['#75e6ff', '#ffffff'] },
     { id: 'mythic_typhoon',   name: '태풍의 지배자',   rarity: 'rare', charId: 'umbrella_master', filter: 'hue-rotate(225deg) saturate(1.75) brightness(1.12)', glow: '#ff52b8', trail: ['#ff52b8', '#5ef5ff', '#ffe859'] },
     { id: 'mythic_celestial', name: '천상의 기상술사', rarity: 'rare', charId: 'iced_americano',  filter: 'hue-rotate(265deg) saturate(1.7) brightness(1.14)',  glow: '#c96bff', trail: ['#c96bff', '#ffe866', '#66f2ff'] },
+    // 전설 시즌패스 전용 스킨 (시즌 1 골드 패스 30티어 최종 보상!)
+    {
+      id: 'season1_emperor_rain',
+      name: '황금 천둥 제왕',
+      rarity: 'legendary',
+      charId: 'umbrella_master',
+      filter: 'hue-rotate(-16deg) saturate(1.85) brightness(1.15) contrast(1.08)',
+      glow: '#ffcf38',
+      trail: ['#fff275', '#ff9d1c', '#ffffff'],
+      seasonExclusive: true,
+      desc: '시즌 1 골드 패스 30티어 최종 보상 전설 스킨! 황금 번개 오라와 프리미엄 트레일 효과!'
+    },
     // 신화 스페셜 스킨 (스킨 뽑기 · 마일리지 200 교환!)
     {
       id: 'catgirl_hoodie',
@@ -638,6 +650,61 @@ window.RUN_DATA = (function () {
     { id: 'gem_pack_1000', productId: 'com.gunhe7.kweathersurvival.gems1000', name: '보석 1,000개', gems: 1000, krwPrice: 10000, badge: '스킨 뽑기 팩', accent: '#ff5ea8', tier: 'xl' }
   ];
 
+  // 브롤스타즈 스타일 시즌 1 패스 (30티어 · 무료 보상: 보석/상자/뽑기권/골드 · 골드패스 ₩9,900 최종 보상: 전설 스킨!)
+  const SEASON_PASS = (() => {
+    const tiers = [];
+    for (let t = 1; t <= 30; t++) {
+      let free;
+      if (t === 30) {
+        free = { kind: 'chest', chest: 'diamond', amount: 2, label: '다이아 상자 ×2' };
+      } else if (t % 10 === 0) {
+        free = { kind: 'ticket', amount: 2, label: '뽑기권 ×2' };
+      } else if (t % 5 === 0) {
+        free = { kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1' };
+      } else if (t % 3 === 0) {
+        const g = 10 + Math.floor(t / 3) * 5;
+        free = { kind: 'gems', amount: g, label: `보석 ${g}개` };
+      } else if (t % 2 === 0) {
+        const chestTier = t >= 16 ? 'silver' : 'wood';
+        free = { kind: 'chest', chest: chestTier, amount: 1, label: chestTier === 'silver' ? '실버 상자 ×1' : '나무 상자 ×1' };
+      } else {
+        const coins = 200 + Math.floor(t / 2) * 50;
+        free = { kind: 'gold', amount: coins, label: `${coins.toLocaleString('ko-KR')} G` };
+      }
+
+      let gold;
+      if (t === 30) {
+        gold = { kind: 'skin', skinId: 'season1_emperor_rain', amount: 1, label: '전설 스킨\n황금 천둥 제왕' };
+      } else if (t === 25 || t === 15) {
+        gold = { kind: 'chest', chest: 'diamond', amount: 1, label: '다이아 상자 ×1' };
+      } else if (t === 20 || t === 10) {
+        gold = { kind: 'ticket', amount: t === 20 ? 5 : 3, label: `뽑기권 ×${t === 20 ? 5 : 3}` };
+      } else if (t % 4 === 0) {
+        const g = 35 + Math.floor(t / 4) * 15;
+        gold = { kind: 'gems', amount: g, label: `보석 ${g}개` };
+      } else if (t % 3 === 0) {
+        gold = { kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1' };
+      } else if (t % 2 === 0) {
+        gold = { kind: 'ticket', amount: 1, label: '뽑기권 ×1' };
+      } else {
+        const coins = 600 + Math.floor(t / 2) * 150;
+        gold = { kind: 'gold', amount: coins, label: `${coins.toLocaleString('ko-KR')} G` };
+      }
+
+      tiers.push({ tier: t, free, gold });
+    }
+    return {
+      seasonId: 's1',
+      title: '시즌 1 : 번개 폭풍 패스',
+      xpPerTier: 100,
+      maxTier: 30,
+      goldPriceKrw: 9900,
+      productId: 'com.gunhe7.kweathersurvival.goldpass_s1',
+      finalSkinId: 'season1_emperor_rain',
+      tiers
+    };
+  })();
+
   return {
     SEASON_DURATION,
     YEAR_DURATION,
@@ -650,6 +717,7 @@ window.RUN_DATA = (function () {
     getScoreRoadMilestone,
     GOLD_PACKS,
     GEM_PACKS,
+    SEASON_PASS,
     SEASONS,
     CHARACTERS,
     BOOSTERS,
