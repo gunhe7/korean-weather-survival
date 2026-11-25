@@ -9,14 +9,14 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd89" />
+  <link rel="manifest" href="manifest.json?v=20261121hd90" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd89" />
+  <link rel="stylesheet" href="style.css?v=20261121hd90" />
 </head>
 <body>
   <div id="mobile-app">
@@ -224,7 +224,7 @@
           <div class="bs-home-left-dock">
             <button id="btn-home-season-pass" class="bs-pass-dock-btn" type="button" aria-label="시즌 패스 열기">
               <span class="bs-pass-art-wrap">
-                <img src="assets/ui/season_pass_ticket.png?v=20261121hd89" alt="시즌 패스" class="bs-pass-ticket-img" />
+                <img src="assets/ui/season_pass_ticket.png?v=20261121hd90" alt="시즌 패스" class="bs-pass-ticket-img" />
                 <span class="bs-pass-img-title">시즌 패스</span>
                 <span id="home-pass-dot" class="bs-pass-dot hidden" aria-hidden="true">!</span>
               </span>
@@ -484,63 +484,69 @@
       </div>
     </div>
 
-    <!-- ================= GLOSSY ARCADE SETTINGS MODAL ================= -->
-    <div id="settings-overlay" class="modal-overlay hidden">
-      <div class="cr-modal settings-arcade-modal">
-        <div class="cr-modal-bar settings-arcade-bar">
+    <!-- ================= BRAWL STARS STYLE SETTINGS MODAL ================= -->
+    <div id="settings-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="설정">
+      <div class="cr-modal settings-arcade-modal bs-settings-modal">
+        <div class="cr-modal-bar settings-arcade-bar bs-settings-bar">
           <span class="settings-bar-title">
             <img src="assets/ui/btn_settings_gear.png" alt="" class="settings-bar-gear" aria-hidden="true" />
             <span>설정</span>
           </span>
-          <button id="btn-close-settings" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+          <button id="btn-close-settings" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
-        <div class="modal-body settings-arcade-body">
-          <div class="setting-group settings-ice-card">
-            <div class="setting-row">
-              <label for="chk-bgm-on" class="setting-label">
-                <span class="setting-ico-badge bgm">🎵</span>
-                <span>배경음 (BGM)</span>
-              </label>
-              <button id="chk-bgm-on" class="toggle-pill on" type="button">ON</button>
-            </div>
-            <div class="setting-slider-row">
-              <input id="rng-bgm-vol" class="arcade-slider" type="range" min="0" max="100" value="45" aria-label="배경음 볼륨" />
-              <span id="lbl-bgm-vol" class="vol-num">45%</span>
-            </div>
-          </div>
-
-          <div class="setting-group settings-ice-card">
-            <div class="setting-row">
-              <label for="chk-sfx-on" class="setting-label">
-                <span class="setting-ico-badge sfx">🔊</span>
-                <span>효과음 (SFX)</span>
-              </label>
-              <button id="chk-sfx-on" class="toggle-pill on" type="button">ON</button>
-            </div>
-            <div class="setting-slider-row">
-              <input id="rng-sfx-vol" class="arcade-slider" type="range" min="0" max="100" value="80" aria-label="효과음 볼륨" />
-              <span id="lbl-sfx-vol" class="vol-num">80%</span>
-            </div>
-          </div>
-
-          <div class="setting-group settings-ice-card settings-account-card">
-            <div class="setting-row">
-              <div class="settings-acc-info">
-                <span id="settings-account-badge" class="prov-chip guest">GUEST</span>
-                <div>
-                  <div id="settings-account-name" class="settings-acc-name">날씨러너</div>
-                  <div id="settings-account-sub" class="settings-acc-sub">게스트 로그인 중</div>
-                </div>
+        <div class="modal-body bs-settings-body">
+          <div class="bs-settings-audio-grid">
+            <div class="bs-set-tile">
+              <div class="bs-set-tile-top">
+                <span class="bs-set-tile-head">
+                  <span class="bs-set-ico bgm" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path d="M9 17.5a2.5 2.5 0 1 1-2-2.45V6l11-2v10.5a2.5 2.5 0 1 1-2-2.45V7.6L9 8.9v8.6z" fill="#ffffff"/></svg>
+                  </span>
+                  <span class="bs-set-name">배경음</span>
+                </span>
+                <button id="chk-bgm-on" class="bs-set-toggle on" type="button">ON</button>
               </div>
-              <button id="btn-settings-switch-login" class="toggle-pill account-btn" type="button">계정 변경</button>
+              <div class="bs-set-slider-row">
+                <input id="rng-bgm-vol" class="arcade-slider bs-slider" type="range" min="0" max="100" value="45" aria-label="배경음 볼륨" />
+                <span id="lbl-bgm-vol" class="bs-vol-pill">45%</span>
+              </div>
+            </div>
+
+            <div class="bs-set-tile">
+              <div class="bs-set-tile-top">
+                <span class="bs-set-tile-head">
+                  <span class="bs-set-ico sfx" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 9h4l5-4v14l-5-4H4V9zm12.5-1.5a5.5 5.5 0 0 1 0 9M19 5a9 9 0 0 1 0 14" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                  <span class="bs-set-name">효과음</span>
+                </span>
+                <button id="chk-sfx-on" class="bs-set-toggle on" type="button">ON</button>
+              </div>
+              <div class="bs-set-slider-row">
+                <input id="rng-sfx-vol" class="arcade-slider bs-slider" type="range" min="0" max="100" value="80" aria-label="효과음 볼륨" />
+                <span id="lbl-sfx-vol" class="bs-vol-pill">80%</span>
+              </div>
             </div>
           </div>
 
-          <div class="settings-footer-row">
-            <div class="save-safe-note">💾 게임 데이터 자동 저장 보호 중</div>
-            <div class="settings-footer-btns">
-              <button id="btn-replay-tutorial" class="toggle-pill tutorial-replay-btn" type="button">📖 튜토리얼</button>
-              <button id="btn-settings-ok" class="cr-gold-btn settings-ok-btn" type="button">확인</button>
+          <div class="bs-set-account-bar">
+            <div class="settings-acc-info">
+              <span id="settings-account-badge" class="prov-chip guest">GUEST</span>
+              <div class="bs-set-acc-txt">
+                <div id="settings-account-name" class="settings-acc-name">날씨러너</div>
+                <div id="settings-account-sub" class="settings-acc-sub">게스트 로그인 중</div>
+              </div>
+            </div>
+            <button id="btn-settings-switch-login" class="bs-set-action-btn sky" type="button">계정 변경</button>
+          </div>
+
+          <div class="bs-settings-footer">
+            <span class="bs-save-tag">자동 저장 활성</span>
+            <div class="bs-settings-footer-btns">
+              <button id="btn-replay-tutorial" class="bs-set-action-btn navy" type="button">튜토리얼</button>
+              <button id="btn-settings-ok" class="bs-set-action-btn gold" type="button">확인</button>
             </div>
           </div>
         </div>
@@ -630,9 +636,12 @@
             <div class="run-hearts-row">
               <div id="run-hearts" class="hearts-icons" aria-label="체력 하트"></div>
             </div>
-            <div class="fever-bar-track rainbow" title="별과 코인을 모아 FEVER 발동!">
-              <div id="run-fever-fill" class="fever-bar-fill rainbow-fill" style="width: 0%"></div>
-              <span id="run-fever-text" class="fever-bar-text">★ FEVER 0%</span>
+            <div class="fever-bar-track custom-frame" title="별과 코인을 모아 FEVER 발동">
+              <div class="fever-bar-inner">
+                <div id="run-fever-fill" class="fever-bar-fill rainbow-fill" style="width: 0%"></div>
+              </div>
+              <img src="assets/ui/gauge_fever_frame.png?v=20261121hd90" alt="" class="fever-frame-img" aria-hidden="true" />
+              <span id="run-fever-text" class="fever-bar-text">FEVER 0%</span>
             </div>
           </div>
 
@@ -641,19 +650,26 @@
               <img src="assets/design/item_coin.png?v=20261121hd41" alt="G" class="coin-sprite sm" />
               <span id="run-gold-text">0</span>
             </div>
-            <button id="btn-landscape-run" class="pause-square-btn rotate-btn" type="button" title="가로 전체화면" aria-label="가로 전체화면 전환">⛶</button>
-            <button id="btn-pause-run" class="pause-square-btn" type="button" aria-label="일시정지">❚❚</button>
+            <button id="btn-pause-run" class="pause-square-btn bs-pause-btn" type="button" aria-label="일시정지">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <rect x="4.5" y="4" width="5.5" height="16" rx="2" fill="#ffffff" stroke="#071022" stroke-width="2"/>
+                <rect x="14" y="4" width="5.5" height="16" rx="2" fill="#ffffff" stroke="#071022" stroke-width="2"/>
+              </svg>
+            </button>
           </div>
         </div>
 
         <!-- Score + Distance (m) + 4-Season Cycle Progress (Hidden in Today's Weather Mode!) -->
         <div class="run-sub-strip">
           <span id="run-season-label" class="season-pill">1년 차 봄</span>
-          <div id="run-season-exp-wrap" class="season-exp-wrap">
-            <div class="season-exp-segments">
-              <span>봄</span><span>여름</span><span>가을</span><span>겨울</span>
+          <div id="run-season-exp-wrap" class="season-exp-wrap custom-frame">
+            <div class="season-exp-inner">
+              <div id="run-year-fill" class="season-exp-fill" style="width: 0%"></div>
+              <div class="season-exp-segments">
+                <span>봄</span><span>여름</span><span>가을</span><span>겨울</span>
+              </div>
             </div>
-            <div id="run-year-fill" class="season-exp-fill" style="width: 0%"></div>
+            <img src="assets/ui/gauge_season_frame.png?v=20261121hd90" alt="" class="season-frame-img" aria-hidden="true" />
           </div>
           <span id="run-score-text" class="score-num">0m · 0점</span>
         </div>
@@ -772,17 +788,25 @@
         </div>
       </div>
 
-      <!-- Pause Modal -->
-      <div id="pause-overlay" class="modal-overlay hidden">
-        <div class="cr-modal">
-          <div class="cr-modal-bar"><span>일시정지</span></div>
-          <div class="modal-body">
-            <p class="modal-msg">잠시 숨을 고르며 한국 날씨를 피하는 중입니다.</p>
-            <div class="modal-actions col">
-              <button id="btn-resume-run" class="cr-gold-btn" type="button">▶ 계속 달리기</button>
-              <button id="btn-pause-settings" class="cr-blue-btn" type="button">⚙️ 사운드 설정</button>
-              <button id="btn-quit-home" class="cr-blue-btn" type="button">🏠 홈으로 돌아가기</button>
-            </div>
+      <!-- Brawl Stars Style Pause Modal -->
+      <div id="pause-overlay" class="modal-overlay bs-pause-overlay hidden" role="dialog" aria-modal="true" aria-label="일시정지">
+        <div class="bs-pause-card">
+          <div class="bs-pause-ribbon">
+            <span class="bs-pause-title">일시정지</span>
+          </div>
+          <div class="bs-pause-actions">
+            <button id="btn-resume-run" class="bs-pause-action resume" type="button">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><polygon points="6,4 20,12 6,20" fill="#ffffff" stroke="#2a1200" stroke-width="2.2" stroke-linejoin="round"/></svg>
+              <span>계속 달리기</span>
+            </button>
+            <button id="btn-pause-settings" class="bs-pause-action settings" type="button">
+              <img src="assets/ui/btn_settings_gear.png" alt="" class="bs-pause-gear-ico" aria-hidden="true" />
+              <span>설정</span>
+            </button>
+            <button id="btn-quit-home" class="bs-pause-action quit" type="button">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 11L12 4L20 11V20H14.5V14.5H9.5V20H4V11Z" fill="#ffffff" stroke="#360910" stroke-width="2.2" stroke-linejoin="round"/></svg>
+              <span>나가기</span>
+            </button>
           </div>
         </div>
       </div>
@@ -943,7 +967,7 @@
       <div class="cr-modal sp-modal">
         <div class="cr-modal-bar settings-arcade-bar sp-header-bar">
           <div class="sp-hdr-left">
-            <img src="assets/ui/season_pass_ticket.png?v=20261121hd89" alt="" class="sp-bar-ticket-ico" />
+            <img src="assets/ui/season_pass_ticket.png?v=20261121hd90" alt="" class="sp-bar-ticket-ico" />
             <span class="sp-bar-title">시즌 1 패스</span>
             <span id="sp-tier-pill" class="score-road-best-pill sp-tier-pill">Lv.0 / 80</span>
             <span id="sp-season-timer" class="sp-timer-pill">종료 D-67</span>
@@ -969,7 +993,7 @@
           <div class="sp-left-rail">
             <div class="sp-rail-gold-box">
               <div class="sp-rail-head">
-                <img src="assets/icons/ico_crown.svg?v=20261121hd89" alt="" class="sp-rail-ico" />
+                <img src="assets/icons/ico_crown.svg?v=20261121hd90" alt="" class="sp-rail-ico" />
                 <span class="sp-rail-label gold">골드 패스</span>
               </div>
               <div class="sp-rail-sub">80티어 신화 얼음황제</div>
@@ -990,9 +1014,9 @@
               </div>
               <div class="sp-rail-sub">완료 후 500 XP마다 다이아 상자</div>
               <button id="btn-sp-skip-tier" class="sp-btn-skip" type="button">
-                <img src="assets/icons/ico_skip.svg?v=20261121hd89" alt="" class="sp-btn-ico" />
+                <img src="assets/icons/ico_skip.svg?v=20261121hd90" alt="" class="sp-btn-ico" />
                 <span>1티어</span>
-                <img src="assets/icons/ico_gem.svg?v=20261121hd89" alt="" class="sp-btn-ico" />
+                <img src="assets/icons/ico_gem.svg?v=20261121hd90" alt="" class="sp-btn-ico" />
                 <span>100</span>
               </button>
             </div>
@@ -1019,7 +1043,7 @@
         </div>
         <div class="sp-skip-body">
           <div class="sp-skip-gem-wrap">
-            <img src="assets/icons/ico_gem.svg?v=20261121hd89" alt="보석" class="sp-skip-gem-hero" />
+            <img src="assets/icons/ico_gem.svg?v=20261121hd90" alt="보석" class="sp-skip-gem-hero" />
           </div>
           <div id="sp-skip-tier-range" class="sp-skip-tier-range">Lv.0 → Lv.1</div>
           <div id="sp-skip-desc" class="sp-skip-desc">보석 100개로 1티어를 건너뜁니다.</div>
@@ -1027,7 +1051,7 @@
           <div class="sp-skip-actions">
             <button id="btn-sp-skip-cancel" class="sp-skip-cancel-btn" type="button">취소</button>
             <button id="btn-sp-skip-confirm" class="sp-skip-confirm-btn" type="button">
-              <img src="assets/icons/ico_gem.svg?v=20261121hd89" alt="" class="sp-btn-ico" />
+              <img src="assets/icons/ico_gem.svg?v=20261121hd90" alt="" class="sp-btn-ico" />
               <span id="sp-skip-confirm-txt">100 건너뛰기</span>
             </button>
           </div>
@@ -1108,60 +1132,47 @@
       </div>
     </div>
 
-    <!-- ================= BRAWL STARS STYLE GAME MODE SELECT MODAL (OPENED ON PLAY TAP!) ================= -->
+    <!-- ================= BRAWL STARS STYLE GAME MODE SELECT MODAL (SIMPLIFIED EVENT CARDS) ================= -->
     <div id="mode-select-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="게임 모드 선택">
       <div class="cr-modal settings-arcade-modal bs-mode-modal">
-        <div class="cr-modal-bar settings-arcade-bar">
-          <span class="settings-bar-title">🎮 모드 선택</span>
-          <button id="btn-close-mode-select" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+        <div class="cr-modal-bar settings-arcade-bar bs-settings-bar">
+          <span class="settings-bar-title">모드 선택</span>
+          <button id="btn-close-mode-select" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
         <div class="modal-body bs-mode-body">
           <div class="bs-mode-grid">
-            <!-- Event Card 1: 일반모드 (4계절 주간 랭킹) -->
-            <div class="bs-event-card normal">
+            <!-- Event Card 1: 일반모드 -->
+            <div class="bs-event-card simple normal">
               <button id="btn-select-mode-normal" class="bs-event-hit" type="button">
-                <div class="bs-ev-banner normal">
-                  <span class="bs-ev-ico" aria-hidden="true">🏃</span>
-                  <div class="bs-ev-head">
-                    <span class="bs-ev-kicker">주간 랭킹 · 1위 5,000💎</span>
-                    <strong class="bs-ev-title">일반모드</strong>
-                  </div>
+                <div class="bs-ev-simple-head normal">
+                  <strong class="bs-ev-simple-title">일반모드</strong>
+                  <span class="bs-ev-simple-tag">주간 랭킹</span>
                 </div>
-                <div class="bs-ev-season-grid" aria-label="사계절 순환">
-                  <div class="bs-ev-season-tile sp"><span>🌸 봄</span><small>황사</small></div>
-                  <div class="bs-ev-season-tile su"><span>☀️ 여름</span><small>폭우·폭염</small></div>
-                  <div class="bs-ev-season-tile au"><span>🍁 가을</span><small>강풍·태풍</small></div>
-                  <div class="bs-ev-season-tile wi"><span>❄️ 겨울</span><small>한파·빙판</small></div>
+                <div class="bs-ev-simple-body">
+                  <div class="bs-ev-simple-sub">사계절 60초 순환</div>
+                  <div id="mode-normal-best-row" class="bs-ev-simple-best">주간 최고 0점</div>
+                  <div class="bs-ev-simple-play normal">플레이</div>
                 </div>
-                <div id="mode-normal-best-row" class="bs-ev-record-strip">🏆 주간 최고 0점 · 역대 최고 0점</div>
-                <div class="bs-ev-pills">
-                  <span class="bs-ev-pill">사계절 60초 순환</span>
-                  <span class="bs-ev-pill gold">월요일 00시 초기화</span>
-                </div>
-                <div class="bs-ev-cta normal">▶ 일반모드 출발!</div>
               </button>
-              <button id="btn-mode-open-rank" class="bs-ev-detail-link normal" type="button">🏆 주간 랭킹 확인</button>
+              <button id="btn-mode-open-rank" class="bs-ev-simple-foot" type="button">주간 랭킹 보기</button>
             </div>
 
-            <!-- Event Card 2: 오늘의 날씨모드 (실시간 기상청 일간 랭킹) -->
-            <div class="bs-event-card today">
+            <!-- Event Card 2: 오늘의 날씨 -->
+            <div class="bs-event-card simple today">
               <button id="btn-select-mode-today" class="bs-event-hit" type="button">
-                <div class="bs-ev-banner today">
-                  <span id="mode-today-ico" class="bs-ev-ico" aria-hidden="true">🌦️</span>
-                  <div class="bs-ev-head">
-                    <span class="bs-ev-kicker">기상청 LIVE · 매일 초기화</span>
-                    <strong class="bs-ev-title">오늘의 날씨모드</strong>
-                  </div>
+                <div class="bs-ev-simple-head today">
+                  <strong class="bs-ev-simple-title">오늘의 날씨</strong>
+                  <span class="bs-ev-simple-tag">LIVE</span>
                 </div>
-                <div id="mode-card-weather-line" class="bs-ev-live-strip">실시간 한국 기상청 날씨 반영 중...</div>
-                <div id="mode-today-mini-factors" class="bs-ev-mini-factors"></div>
-                <div id="mode-today-best-row" class="bs-ev-record-strip today">🌦️ 오늘 최고 0점 · 매일 00시 초기화</div>
-                <div id="mode-card-mod-pills" class="bs-ev-pills">
-                  <span class="bs-ev-pill sky">실시간 버프/디버프</span>
+                <div class="bs-ev-simple-body">
+                  <div id="mode-card-weather-line" class="bs-ev-simple-sub">실시간 기상청 날씨 반영</div>
+                  <div id="mode-today-best-row" class="bs-ev-simple-best">오늘 최고 0점</div>
+                  <div class="bs-ev-simple-play today">플레이</div>
                 </div>
-                <div class="bs-ev-cta today">🌦️ 오늘의 날씨 출발!</div>
               </button>
-              <button id="btn-mode-open-weather" class="bs-ev-detail-link" type="button">🌤️ 서울 실시간 날씨 상세</button>
+              <button id="btn-mode-open-weather" class="bs-ev-simple-foot" type="button">날씨 상세 보기</button>
             </div>
           </div>
         </div>
@@ -1219,14 +1230,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd89"></script>
-  <script src="js/ui-icons.js?v=20261121hd89"></script>
-  <script src="js/weather-live.js?v=20261121hd89"></script>
-  <script src="js/audio.js?v=20261121hd89"></script>
-  <script src="js/studio-intro.js?v=20261121hd89"></script>
-  <script src="js/online.js?v=20261121hd89"></script>
-  <script src="js/renderer.js?v=20261121hd89"></script>
-  <script src="js/game.js?v=20261121hd89"></script>
+  <script src="js/data.js?v=20261121hd90"></script>
+  <script src="js/ui-icons.js?v=20261121hd90"></script>
+  <script src="js/weather-live.js?v=20261121hd90"></script>
+  <script src="js/audio.js?v=20261121hd90"></script>
+  <script src="js/studio-intro.js?v=20261121hd90"></script>
+  <script src="js/online.js?v=20261121hd90"></script>
+  <script src="js/renderer.js?v=20261121hd90"></script>
+  <script src="js/game.js?v=20261121hd90"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

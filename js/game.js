@@ -4563,43 +4563,19 @@
     ensureDailyWeatherRankToday();
 
     const wkBest = (save.weeklyRank && save.weeklyRank.bestScore) || 0;
-    const allBest = save.bestScore || 0;
     const dayBest = (save.dailyWeatherRank && save.dailyWeatherRank.bestScore) || 0;
     if (el.modeNormalBestRow) {
-      el.modeNormalBestRow.textContent = `🏆 주간 최고 ${wkBest.toLocaleString('ko-KR')}점 · 역대 ${allBest.toLocaleString('ko-KR')}점`;
+      el.modeNormalBestRow.textContent = `주간 최고 ${wkBest.toLocaleString('ko-KR')}점`;
     }
     if (el.modeTodayBestRow) {
-      el.modeTodayBestRow.textContent = `🌦️ 오늘 최고 ${dayBest.toLocaleString('ko-KR')}점 · 매일 00시 초기화`;
+      el.modeTodayBestRow.textContent = `오늘 최고 ${dayBest.toLocaleString('ko-KR')}점`;
     }
 
     const mods = getActiveLiveWeatherMods();
     if (!mods) return;
     const snap = mods.snapshot;
-    if (el.modeTodayIco) el.modeTodayIco.textContent = mods.desc.icon;
     if (el.modeCardWeatherLine) {
-      el.modeCardWeatherLine.textContent = `${snap.cityName} ${mods.desc.icon} ${snap.tempC.toFixed(1)}°C · ${mods.desc.label} · ${mods.season.icon} ${mods.season.name}`;
-    }
-    if (el.modeTodayMiniFactors) {
-      el.modeTodayMiniFactors.innerHTML = mods.factors.map((f) => {
-        const shortName = f.label.split('·')[0].trim();
-        const shortState = (f.label.split('·')[1] || f.badge).trim();
-        return `<div class="bs-ev-mf is-${f.kind}"><span class="mf-ico">${f.icon}</span><span class="mf-lbl">${shortName}</span><strong class="mf-st">${shortState}</strong></div>`;
-      }).join('');
-    }
-    if (el.modeCardModPills) {
-      const pills = [
-        `<span class="bs-ev-pill sky">${uiText(`⭐ 점수 ×${mods.scoreMult.toFixed(2)}`, 'xs')}</span>`,
-        `<span class="bs-ev-pill gold">${uiText(`🪙 골드 ×${mods.goldMult.toFixed(2)}`, 'xs')}</span>`
-      ];
-      if (mods.extraHp > 0) {
-        pills.push(`<span class="bs-ev-pill buff">${uiText(`❤️ 체력 +${mods.extraHp}`, 'xs')}</span>`);
-      }
-      if (mods.debuffCount > 0) {
-        pills.push(`<span class="bs-ev-pill debuff">⚠️ 기상 기믹 ${mods.debuffCount}종</span>`);
-      } else {
-        pills.push(`<span class="bs-ev-pill buff">✨ 버프 ${mods.buffCount}종</span>`);
-      }
-      el.modeCardModPills.innerHTML = pills.join('');
+      el.modeCardWeatherLine.textContent = `${snap.cityName} ${Math.round(snap.tempC)}°C · ${mods.desc.label}`;
     }
   }
 
@@ -8299,12 +8275,12 @@
     if (doSlow) {
       let seasonLbl;
       if (run.isTutorial) {
-        seasonLbl = '📖 실전 튜토리얼 (체력 감소 없음)';
+        seasonLbl = '실전 튜토리얼';
       } else if (isTodayWeather) {
         const snap = run.todayWeather.snapshot;
-        seasonLbl = `🌦️ ${snap.cityName} ${Math.round(snap.tempC)}°C · ${run.todayWeather.desc.label} · ⚡×${diff.speedMult.toFixed(2)}`;
+        seasonLbl = `${snap.cityName} ${Math.round(snap.tempC)}°C · ${run.todayWeather.desc.label} · ×${diff.speedMult.toFixed(2)}`;
       } else {
-        seasonLbl = `${run.year}년 차 ${seasonObj.name} · ⚡×${diff.speedMult.toFixed(2)}`;
+        seasonLbl = `${run.year}년 차 ${seasonObj.name} · ×${diff.speedMult.toFixed(2)}`;
       }
       hudText('seasonLbl', el.runSeasonLabel, seasonLbl);
       const scoreInt = Math.floor(run.score);
@@ -8340,7 +8316,7 @@
       hudText(
         'fevT',
         el.runFeverText,
-        run.feverTimer > 0 ? `★ FEVER! ${run.feverTimer.toFixed(1)}s` : `★ FEVER ${Math.floor(feverPct)}%`
+        run.feverTimer > 0 ? `FEVER! ${run.feverTimer.toFixed(1)}s` : `FEVER ${Math.floor(feverPct)}%`
       );
       if (!isTodayWeather) {
         const yearPct = ((run.elapsed % DATA.YEAR_DURATION) / DATA.YEAR_DURATION) * 100;
