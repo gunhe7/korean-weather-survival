@@ -32,7 +32,7 @@ window.RunRenderer = (function () {
     { id: 'blue', frames: 3, runFrames: 8 },
     { id: 'hanbok', frames: 3, runFrames: 8 },
     { id: 'skier', frames: 4, runFrames: 8, ver: '20261121hd67' },
-    { id: 'santa', frames: 2 },
+    { id: 'santa', frames: 4, runFrames: 8, ver: '20261121hd79' },
     { id: 'catgirl', frames: 4, runFrames: 8 },
     { id: 'hades', frames: 3, runFrames: 4 }
   ];

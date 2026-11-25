@@ -116,8 +116,11 @@ window.StudioIntro = (function () {
       cancelAnimationFrame(rafId);
       rafId = 0;
     }
-    if (overlayEl && unlockTapFn) {
-      try { overlayEl.removeEventListener('pointerdown', unlockTapFn); } catch {}
+    if (unlockTapFn) {
+      try { window.removeEventListener('touchstart', unlockTapFn, true); } catch {}
+      try { window.removeEventListener('pointerdown', unlockTapFn, true); } catch {}
+      try { window.removeEventListener('click', unlockTapFn, true); } catch {}
+      try { window.removeEventListener('keydown', unlockTapFn, true); } catch {}
       unlockTapFn = null;
     }
     if (typeof stopAudioFn === 'function') {
@@ -154,21 +157,23 @@ window.StudioIntro = (function () {
     let audioStarted = false;
     let audioPending = false;
     let animStartMs = 0;
-    function tryStartStudioAudio() {
-      if (audioStarted || audioPending || !active) return;
+    function tryStartStudioAudio(fromGesture = false) {
+      if (audioStarted || !active) return;
+      if (!fromGesture && audioPending) return;
       if (window.SFX && typeof window.SFX.playStudioIntro === 'function') {
         try {
           const elapsed = animStartMs > 0 ? Math.max(0, (performance.now() - animStartMs) / 1000) : 0;
           if (elapsed >= DUR - 0.25) return;
-          const handle = window.SFX.playStudioIntro(elapsed);
+          const handle = window.SFX.playStudioIntro(elapsed, fromGesture);
           if (handle && handle.started) {
             audioStarted = true;
+            audioPending = false;
             stopAudioFn = handle.stop;
-          } else if (handle && handle.resumePromise && typeof handle.resumePromise.then === 'function') {
+          } else if (!fromGesture && handle && handle.resumePromise && typeof handle.resumePromise.then === 'function') {
             audioPending = true;
             handle.resumePromise.then(() => {
               audioPending = false;
-              if (!audioStarted && active) tryStartStudioAudio();
+              if (!audioStarted && active) tryStartStudioAudio(true);
             }).catch(() => {
               audioPending = false;
             });
@@ -179,13 +184,16 @@ window.StudioIntro = (function () {
       }
     }
 
-    // Attempt immediate audio playback; also unlock & sync on first user tap if browser suspended WebAudio
-    tryStartStudioAudio();
+    // Attempt immediate audio playback; also synchronously unlock & sync on first mobile gesture
+    tryStartStudioAudio(false);
     unlockTapFn = () => {
       if (!active) return;
-      if (!audioStarted) tryStartStudioAudio();
+      if (!audioStarted) tryStartStudioAudio(true);
     };
-    overlayEl.addEventListener('pointerdown', unlockTapFn, { passive: true });
+    window.addEventListener('touchstart', unlockTapFn, true);
+    window.addEventListener('pointerdown', unlockTapFn, true);
+    window.addEventListener('click', unlockTapFn, true);
+    window.addEventListener('keydown', unlockTapFn, true);
 
     const isMobile = (() => {
       try {
@@ -502,6 +510,36 @@ window.StudioIntro = (function () {
         // 6. Subtle Cinema Vignette
         ctx.fillStyle = vigGrad;
         ctx.fillRect(0, 0, W, H);
+
+        // 7. Mobile Autoplay Unlock Prompt (shown ONLY while browser holds audio suspended)
+        if (!audioStarted && t > 0.25 && t < DUR - 0.8) {
+          const pulse = 0.62 + 0.38 * Math.sin(t * 4.5);
+          ctx.save();
+          ctx.globalAlpha = pulse * globalFade;
+          const lbl = '🔊 화면을 터치하면 사운드가 켜집니다';
+          ctx.font = '700 13px "Paperlogy", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+          const tw = ctx.measureText(lbl).width;
+          const bw = tw + 26;
+          const bh = 28;
+          const bx = W * 0.5 - bw * 0.5;
+          const by = Math.max(16, H - 46);
+          ctx.fillStyle = 'rgba(10, 18, 38, 0.72)';
+          ctx.strokeStyle = 'rgba(156, 206, 255, 0.55)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(bx, by, bw, bh, 14);
+          } else {
+            ctx.rect(bx, by, bw, bh);
+          }
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#e6f2ff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(lbl, W * 0.5, by + bh * 0.5 + 0.5);
+          ctx.restore();
+        }
 
         rafId = requestAnimationFrame(drawFrame);
       }

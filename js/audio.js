@@ -860,15 +860,31 @@ window.SFX = (function () {
         });
       }
     },
-    playStudioIntro(offsetSec = 0) {
+    unlock() {
+      const c = ensure();
+      if (!c) return null;
+      try {
+        if (c.state === 'suspended' || c.state === 'interrupted') {
+          c.resume().catch(() => {});
+        }
+        // iOS Safari hardware WebAudio unlock inside synchronous gesture
+        const buf = c.createBuffer(1, 1, c.sampleRate || 44100);
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        src.connect(c.destination);
+        src.start(0);
+      } catch {}
+      return c;
+    },
+    playStudioIntro(offsetSec = 0, fromGesture = false) {
       // YAGUN STUDIO 6-second cinematic intro audio (never overlaps BGM or itself!)
       if (!sfxEnabled || sfxVolume <= 0) return { started: false, stop() {} };
-      const c = ensure();
+      const c = fromGesture ? this.unlock() : ensure();
       if (!c) return { started: false, stop() {} };
-      if (c.state === 'suspended') {
+      if (c.state === 'suspended' || c.state === 'interrupted') {
         let resumePromise = null;
         try { resumePromise = c.resume(); } catch {}
-        if (c.state === 'suspended') {
+        if (!fromGesture && c.state !== 'running') {
           return { started: false, resumePromise, stop() {} };
         }
       }
