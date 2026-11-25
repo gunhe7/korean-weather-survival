@@ -6,7 +6,7 @@ window.OnlineService = (function () {
   const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
   // Launch season anchor: Monday 2026-11-23 00:00:00 KST = 1주차
   const RANK_WEEK1_MON_KST_UTC = Date.UTC(2026, 10, 23, 0, 0, 0, 0);
-  const WEEKLY_REWARD_GEMS = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP1_GEMS) || 500;
+  const WEEKLY_REWARD_GEMS = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP1_GEMS) || 5000;
 
   // ===================== FIREBASE PROJECT CONFIG (korean-weather-survival) =====================
   const FIREBASE_CONFIG = Object.assign({
@@ -664,6 +664,10 @@ window.OnlineService = (function () {
       provider: entry.provider,
       charId: entry.charId || 'umbrella_master',
       skinId: entry.skinId || null,
+      profileCharId: entry.profileCharId || entry.charId || 'umbrella_master',
+      profileSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : (entry.skinId || null),
+      nameColor: typeof entry.nameColor === 'string' ? entry.nameColor.slice(0, 24) : '#ffffff',
+      nameFrame: typeof entry.nameFrame === 'string' ? entry.nameFrame.slice(0, 16) : 'none',
       score: scoreVal,
       dist: Math.max(0, Math.floor(Number(entry.dist) || 0)),
       year: Math.max(1, Math.floor(Number(entry.year) || 1)),
@@ -682,6 +686,10 @@ window.OnlineService = (function () {
         provider: cleanEntry.provider,
         charId: cleanEntry.charId,
         skinId: cleanEntry.skinId,
+        profileCharId: cleanEntry.profileCharId,
+        profileSkinId: cleanEntry.profileSkinId,
+        nameColor: cleanEntry.nameColor,
+        nameFrame: cleanEntry.nameFrame,
         updatedAt: Date.now()
       };
     }
@@ -812,6 +820,10 @@ window.OnlineService = (function () {
       provider: entry.provider,
       charId: entry.charId || 'umbrella_master',
       skinId: entry.skinId || null,
+      profileCharId: entry.profileCharId || entry.charId || 'umbrella_master',
+      profileSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : (entry.skinId || null),
+      nameColor: typeof entry.nameColor === 'string' ? entry.nameColor.slice(0, 24) : '#ffffff',
+      nameFrame: typeof entry.nameFrame === 'string' ? entry.nameFrame.slice(0, 16) : 'none',
       cityName: String(entry.cityName || '서울').slice(0, 8),
       weatherTag: String(entry.weatherTag || '').slice(0, 20),
       score: scoreVal,
@@ -832,6 +844,10 @@ window.OnlineService = (function () {
         provider: cleanEntry.provider,
         charId: cleanEntry.charId,
         skinId: cleanEntry.skinId,
+        profileCharId: cleanEntry.profileCharId,
+        profileSkinId: cleanEntry.profileSkinId,
+        nameColor: cleanEntry.nameColor,
+        nameFrame: cleanEntry.nameFrame,
         updatedAt: Date.now()
       };
     }
@@ -934,7 +950,7 @@ window.OnlineService = (function () {
     };
   }
 
-  // ===================== WEEKLY #1 CHAMPION 500 GEM PAYOUT (LINKED USERS ONLY) =====================
+  // ===================== WEEKLY TOP 1/2/3 CHAMPION REWARD PAYOUT (LINKED USERS ONLY) =====================
   async function checkWeeklyChampionPayout(save) {
     if (!save || !save.auth || !save.auth.uid) return null;
     if (!isRankedProvider(save.auth.provider) || isLegacyUnverifiedUid(save.auth.uid)) return null;
@@ -952,14 +968,25 @@ window.OnlineService = (function () {
     if (myPrevScore <= 0) return null;
 
     const prevRes = await fetchWeeklyBoard(prevKey, save.auth.uid);
-    const top1 = prevRes.board[0];
-    if (top1 && top1.uid === save.auth.uid) {
+    const top3 = (prevRes && Array.isArray(prevRes.board)) ? prevRes.board.slice(0, 3) : [];
+    const rankIdx = top3.findIndex((entry) => entry && entry.uid === save.auth.uid);
+    if (rankIdx >= 0) {
+      const rank = rankIdx + 1;
+      const rewardTable = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP_REWARDS) || {
+        1: { rank: 1, gems: 5000, frameId: 'rank_1', frameName: '1위 닉네임 장식' },
+        2: { rank: 2, gems: 3000, frameId: 'rank_2', frameName: '2위 닉네임 장식' },
+        3: { rank: 3, gems: 1000, frameId: 'rank_3', frameName: '3위 닉네임 장식' }
+      };
+      const rw = rewardTable[rank] || rewardTable[1];
       return {
         won: true,
+        rank,
         weekKey: prevKey,
         weekLabel: info.prevWeekLabel,
-        score: top1.score,
-        gems: WEEKLY_REWARD_GEMS
+        score: top3[rankIdx].score,
+        gems: rw.gems,
+        frameId: rw.frameId,
+        frameName: rw.frameName
       };
     }
     return null;

@@ -9,14 +9,14 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd77" />
+  <link rel="manifest" href="manifest.json?v=20261121hd78" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd77" />
+  <link rel="stylesheet" href="style.css?v=20261121hd78" />
 </head>
 <body>
   <div id="mobile-app">
@@ -122,6 +122,45 @@
       </div>
     </div>
 
+    <!-- ================= BRAWL STARS STYLE PROFILE CUSTOMIZATION MODAL ================= -->
+    <div id="profile-edit-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="프로필 꾸미기">
+      <div class="cr-modal settings-arcade-modal bs-profile-modal">
+        <div class="cr-modal-bar settings-arcade-bar">
+          <span class="settings-bar-title">✨ 프로필 꾸미기</span>
+          <button id="btn-close-profile-edit" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div class="modal-body bs-profile-modal-body">
+          <!-- Live Brawl Stars Battle Card Preview -->
+          <div class="prof-preview-card">
+            <div class="prof-prev-avatar-box">
+              <img id="prof-prev-avatar" src="assets/chars/port_yellow.png?v=20261121hd41" alt="프로필 미리보기" class="prof-prev-avatar" />
+              <span id="prof-prev-rank" class="bs-prof-rank-badge tier-blue">★1</span>
+            </div>
+            <div class="prof-prev-info">
+              <div id="prof-prev-name-wrap" class="prof-prev-name-wrap">날씨러너</div>
+              <div id="prof-prev-stats" class="prof-prev-stats">🏆 최고 0점 · 🏃 0년 차 · 캐릭터 1/5</div>
+            </div>
+          </div>
+
+          <!-- Nickname & Account Quick Row -->
+          <div class="prof-nick-row">
+            <input id="prof-nickname-input" class="login-input prof-nick-input" type="text" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="nickname" />
+            <button id="btn-prof-save-nick" class="login-nick-save" type="button">변경</button>
+            <button id="btn-prof-open-account" class="intro-switch-btn prof-acc-btn" type="button">☁️ 계정 관리</button>
+          </div>
+
+          <!-- 3 Brawl Stars Profile Tabs -->
+          <div class="prof-custom-tabs" role="tablist" aria-label="프로필 꾸미기 분류">
+            <button class="prof-tab-btn active" data-proftab="icons" type="button">🎭 아이콘</button>
+            <button class="prof-tab-btn" data-proftab="colors" type="button">🎨 닉네임 색상</button>
+            <button class="prof-tab-btn" data-proftab="frames" type="button">👑 닉네임 장식</button>
+          </div>
+
+          <div id="prof-custom-grid" class="prof-custom-grid"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= TOP RESOURCE BAR ================= -->
     <header id="app-header">
       <div class="hdr-left-group">
@@ -132,7 +171,8 @@
           </button>
 
           <div class="bs-prof-body">
-            <button id="btn-header-profile-name" class="bs-prof-name-strip" type="button" title="계정 정보 및 닉네임 변경">
+            <button id="btn-header-profile-name" class="bs-prof-name-strip" type="button" title="프로필 꾸미기 및 닉네임 변경">
+              <img id="hdr-profile-frame-bg" class="hdr-frame-bg hidden" src="" alt="" aria-hidden="true" />
               <span class="bs-prof-unskew bs-prof-name-row">
                 <span id="hdr-profile-name" class="bs-prof-name">날씨러너</span>
                 <span id="hdr-profile-badge" class="prov-chip mini guest">GUEST</span>
@@ -326,7 +366,7 @@
         <div class="rank-prize-banner compact-strip">
           <div class="rank-prize-left">
             <span id="rank-prize-crown" class="rank-prize-crown ui-ico-slot ui-ico-md" data-ui-icon="crown" data-ui-size="md" aria-hidden="true">👑</span>
-            <span id="rank-prize-inline-text" class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 보상 <strong><span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span>500</strong></span>
+            <span id="rank-prize-inline-text" class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 <strong>5,000<span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span></strong> · 2위 <strong>3,000</strong> · 3위 <strong>1,000</strong></span>
             <span class="rank-timer-chip">⏱️ <strong id="rank-week-countdown">0일 00:00:00</strong></span>
           </div>
           <div id="rank-guest-banner" class="rank-guest-inline hidden">
@@ -351,6 +391,7 @@
           </div>
         </div>
 
+        <div id="rank-podium-stage" class="rank-podium-stage hidden"></div>
         <div id="rank-board-list" class="rank-board-list"></div>
       </section>
     </main>
@@ -845,21 +886,22 @@
       </div>
     </div>
 
-    <!-- ================= WEEKLY #1 CHAMPION 500 GEMS REWARD MODAL ================= -->
+    <!-- ================= WEEKLY TOP 1/2/3 CHAMPION REWARD MODAL ================= -->
     <div id="weekly-champ-overlay" class="modal-overlay hidden">
       <div class="cr-modal settings-arcade-modal champ-modal">
         <div class="cr-modal-bar settings-arcade-bar">
-          <span class="settings-bar-title">🏆 주간 랭킹 1위 우승!</span>
+          <span id="weekly-champ-title" class="settings-bar-title">🏆 주간 랭킹 TOP 3 보상!</span>
         </div>
         <div class="modal-body iap-body">
           <div class="iap-showcase champ-showcase">
             <div class="iap-gem-glow"><span class="ui-ico-slot ui-ico-xl" data-ui-icon="crown" data-ui-size="xl" aria-hidden="true">👑</span></div>
-            <div id="weekly-champ-week" class="iap-pack-name">지난 주 랭킹 최종 1위</div>
+            <div id="weekly-champ-week" class="iap-pack-name">지난 주 랭킹 최종 TOP 3</div>
             <div id="weekly-champ-score" class="champ-score-txt">최고 점수 0점</div>
-            <div id="weekly-champ-gems" class="iap-pack-gems">+500 <span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 보석 지급!</div>
+            <div id="weekly-champ-gems" class="iap-pack-gems">+5,000 <span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 보석 지급!</div>
+            <div id="weekly-champ-frame-preview" class="champ-frame-preview hidden"></div>
           </div>
-          <p class="iap-pay-note">매주 월요일 00:00(KST) 기준 최고 점수 1위 보상이 지급되었습니다!</p>
-          <button id="btn-claim-weekly-champ" class="cr-gold-btn settings-ok-btn" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 500 보석 받기!</button>
+          <p class="iap-pay-note">매주 월요일 00:00(KST) 기준 주간 1·2·3위 보석 및 닉네임 장식 보상이 지급됩니다!</p>
+          <button id="btn-claim-weekly-champ" class="cr-gold-btn settings-ok-btn" type="button">🎁 보상 받기!</button>
         </div>
       </div>
     </div>
@@ -971,7 +1013,7 @@
                 <div class="bs-ev-banner normal">
                   <span class="bs-ev-ico" aria-hidden="true">🏃</span>
                   <div class="bs-ev-head">
-                    <span class="bs-ev-kicker">주간 랭킹 · 1위 500💎</span>
+                    <span class="bs-ev-kicker">주간 랭킹 · 1위 5,000💎</span>
                     <strong class="bs-ev-title">일반모드</strong>
                   </div>
                 </div>
@@ -1067,14 +1109,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd77"></script>
-  <script src="js/ui-icons.js?v=20261121hd77"></script>
-  <script src="js/weather-live.js?v=20261121hd77"></script>
-  <script src="js/audio.js?v=20261121hd77"></script>
-  <script src="js/studio-intro.js?v=20261121hd77"></script>
-  <script src="js/online.js?v=20261121hd77"></script>
-  <script src="js/renderer.js?v=20261121hd77"></script>
-  <script src="js/game.js?v=20261121hd77"></script>
+  <script src="js/data.js?v=20261121hd78"></script>
+  <script src="js/ui-icons.js?v=20261121hd78"></script>
+  <script src="js/weather-live.js?v=20261121hd78"></script>
+  <script src="js/audio.js?v=20261121hd78"></script>
+  <script src="js/studio-intro.js?v=20261121hd78"></script>
+  <script src="js/online.js?v=20261121hd78"></script>
+  <script src="js/renderer.js?v=20261121hd78"></script>
+  <script src="js/game.js?v=20261121hd78"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

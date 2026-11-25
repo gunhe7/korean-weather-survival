@@ -180,6 +180,7 @@
       cloudUpdatedAt: 0,
       audioSettings: { sfxOn: true, bgmOn: true, sfxVol: 0.8, bgmVol: 0.45 },
       auth: cleanAuth,
+      profile: { avatarCharId: null, avatarSkinId: null, nameColor: '#ffffff', nameFrame: 'none', unlockedFrames: [] },
       weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] },
       dailyWeatherRank: { dateKey: getKstDateKey(), bestScore: 0, bestDist: 0, bestYear: 1, cityName: '서울', weatherTag: '' }
     };
@@ -247,6 +248,19 @@
         // Preserve custom saved nickname for this account if one was previously set
         nickname: (raw.auth && raw.auth.nickname) ? raw.auth.nickname : cleanAuth.nickname
       },
+      profile: (() => {
+        const pr = raw.profile && typeof raw.profile === 'object' ? raw.profile : {};
+        const validAvId = pr.avatarCharId && validIds.has(pr.avatarCharId) ? pr.avatarCharId : null;
+        const rawFrames = toSafeArray(pr.unlockedFrames).filter((f) => ['rank_1', 'rank_2', 'rank_3'].includes(f));
+        const activeFrame = (typeof pr.nameFrame === 'string' && rawFrames.includes(pr.nameFrame)) ? pr.nameFrame : 'none';
+        return {
+          avatarCharId: validAvId,
+          avatarSkinId: typeof pr.avatarSkinId === 'string' ? pr.avatarSkinId : null,
+          nameColor: typeof pr.nameColor === 'string' && pr.nameColor ? pr.nameColor : '#ffffff',
+          nameFrame: activeFrame,
+          unlockedFrames: rawFrames
+        };
+      })(),
       weeklyRank: (() => {
         const wr = raw.weeklyRank && typeof raw.weeklyRank === 'object' ? raw.weeklyRank : {};
         const hist = { ...(wr.history || {}) };
@@ -415,8 +429,20 @@
     btnLoginGoogle: document.getElementById('btn-login-google'),
     btnLoginGuest: document.getElementById('btn-login-guest'),
 
+    profileEditOverlay: document.getElementById('profile-edit-overlay'),
+    btnCloseProfileEdit: document.getElementById('btn-close-profile-edit'),
+    profPrevAvatar: document.getElementById('prof-prev-avatar'),
+    profPrevRank: document.getElementById('prof-prev-rank'),
+    profPrevNameWrap: document.getElementById('prof-prev-name-wrap'),
+    profPrevStats: document.getElementById('prof-prev-stats'),
+    profNicknameInput: document.getElementById('prof-nickname-input'),
+    btnProfSaveNick: document.getElementById('btn-prof-save-nick'),
+    btnProfOpenAccount: document.getElementById('btn-prof-open-account'),
+    profCustomGrid: document.getElementById('prof-custom-grid'),
+
     btnHeaderProfile: document.getElementById('btn-header-profile'),
     btnHeaderProfileName: document.getElementById('btn-header-profile-name'),
+    hdrProfileFrameBg: document.getElementById('hdr-profile-frame-bg'),
     hdrProfileAvatar: document.getElementById('hdr-profile-avatar'),
     hdrProfileRank: document.getElementById('hdr-profile-rank'),
     hdrProfileBadge: document.getElementById('hdr-profile-badge'),
@@ -545,6 +571,7 @@
     rankStatCoins: document.getElementById('rank-stat-coins'),
     rankStatCombo: document.getElementById('rank-stat-combo'),
     rankStatDex: document.getElementById('rank-stat-dex'),
+    rankPodiumStage: document.getElementById('rank-podium-stage'),
     rankBoardList: document.getElementById('rank-board-list'),
 
     charDetailOverlay: document.getElementById('char-detail-overlay'),
@@ -656,9 +683,11 @@
     btnIapConfirm: document.getElementById('btn-iap-confirm'),
 
     weeklyChampOverlay: document.getElementById('weekly-champ-overlay'),
+    weeklyChampTitle: document.getElementById('weekly-champ-title'),
     weeklyChampWeek: document.getElementById('weekly-champ-week'),
     weeklyChampScore: document.getElementById('weekly-champ-score'),
     weeklyChampGems: document.getElementById('weekly-champ-gems'),
+    weeklyChampFramePreview: document.getElementById('weekly-champ-frame-preview'),
     btnClaimWeeklyChamp: document.getElementById('btn-claim-weekly-champ'),
 
     scoreRoadOverlay: document.getElementById('score-road-overlay'),
@@ -2373,17 +2402,99 @@
     el.vaultOverlay.classList.remove('hidden');
   }
 
+  const RANK_ART_VER = '20261121hd78';
+  let currentProfileTab = 'icons';
+
+  function escapeNickHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[ch]));
+  }
+
+  function ensureSaveProfile() {
+    if (!save.profile || typeof save.profile !== 'object') {
+      save.profile = { avatarCharId: null, avatarSkinId: null, nameColor: '#ffffff', nameFrame: 'none', unlockedFrames: [] };
+    }
+    if (!Array.isArray(save.profile.unlockedFrames)) save.profile.unlockedFrames = [];
+    return save.profile;
+  }
+
+  function getProfileAvatarInfo(profileObj, fallbackCharId, fallbackSkinId, checkLocalUnlock = false) {
+    const useCharId = (profileObj && profileObj.avatarCharId) || fallbackCharId || save.selectedChar;
+    const ch = DATA.CHARACTERS.find((c) => c.id === useCharId) || getCharDef(fallbackCharId || save.selectedChar);
+    let sk = null;
+    if (profileObj && profileObj.avatarCharId) {
+      if (profileObj.avatarSkinId) {
+        const candidate = DATA.getSkinById(profileObj.avatarSkinId);
+        if (candidate && candidate.charId === ch.id && (!checkLocalUnlock || save.unlockedSkins.includes(candidate.id))) {
+          sk = candidate;
+        }
+      }
+    } else if (fallbackSkinId) {
+      const candidate = DATA.getSkinById(fallbackSkinId);
+      if (candidate && (!checkLocalUnlock || save.unlockedSkins.includes(candidate.id))) sk = candidate;
+    }
+    return {
+      src: getSkinAvatar(ch, sk),
+      filter: getSkinFilter(sk),
+      charDef: ch,
+      skinDef: sk
+    };
+  }
+
+  function getNameFrameMeta(frameId) {
+    const frames = DATA.PROFILE_NAME_FRAMES || [];
+    return frames.find((f) => f.id === frameId) || null;
+  }
+
+  function applyNameColorStyle(node, nameColor) {
+    if (!node) return;
+    const isRainbow = nameColor === 'rainbow';
+    node.classList.toggle('nick-rainbow', isRainbow);
+    node.style.color = isRainbow ? '' : (nameColor || '#ffffff');
+  }
+
+  function renderNameplateHtml(nickname, nameFrame, nameColor, sizeClass = 'sm', extraPlainClass = '') {
+    const safeNick = escapeNickHtml(nickname || '날씨러너');
+    const isRainbow = nameColor === 'rainbow';
+    const colorAttr = isRainbow ? '' : `style="color:${escapeNickHtml(nameColor || '#ffffff')};"`;
+    const rainbowCls = isRainbow ? ' nick-rainbow' : '';
+    const frameMeta = getNameFrameMeta(nameFrame);
+    if (frameMeta && frameMeta.img) {
+      return `<span class="rank-nameplate ${frameMeta.id} ${sizeClass}"><img src="${frameMeta.img}?v=${RANK_ART_VER}" alt="" class="rnp-bg" /><span class="rnp-txt${rainbowCls}" ${colorAttr}>${safeNick}</span></span>`;
+    }
+    const cls = `${extraPlainClass}${rainbowCls}`.trim();
+    return `<span${cls ? ` class="${cls}"` : ''} ${colorAttr}>${safeNick}</span>`;
+  }
+
+  async function syncProfileOnlineIfLinked() {
+    persistSave(true);
+    renderProfileUI();
+    if (currentTab === 'rank') renderRankingTab();
+    if (ONLINE && save.auth && ONLINE.isRankedProvider(save.auth.provider)) {
+      try { await syncMyWeeklyScore(); } catch {}
+      try { await syncMyDailyWeatherScore(); } catch {}
+      if (currentTab === 'rank') renderRankingTab();
+    }
+  }
+
   function renderProfileUI() {
     const auth = save.auth || { loggedIn: false, provider: 'guest', nickname: '게스트' };
     const meta = ONLINE ? ONLINE.getProviderMeta(auth.provider) : { badge: 'GUEST', label: '게스트' };
     const nick = auth.nickname || meta.label;
     const isLinked = ONLINE ? ONLINE.isRankedProvider(auth.provider) : false;
+    const prof = ensureSaveProfile();
 
     const selCh = DATA.CHARACTERS.find((c) => c.id === save.selectedChar) || DATA.CHARACTERS[0];
     const selSkin = getEquippedSkin(selCh.id);
+    const avInfo = getProfileAvatarInfo(prof, selCh.id, selSkin ? selSkin.id : null, true);
     if (el.hdrProfileAvatar) {
-      el.hdrProfileAvatar.src = getSkinAvatar(selCh, selSkin);
-      el.hdrProfileAvatar.style.filter = getSkinFilter(selSkin);
+      el.hdrProfileAvatar.src = avInfo.src;
+      el.hdrProfileAvatar.style.filter = avInfo.filter;
     }
 
     const bracket = getScoreRoadBracket(save.bestScore || 0);
@@ -2410,7 +2521,26 @@
     }
 
     setProviderChip(el.hdrProfileBadge, auth.provider, true);
-    if (el.hdrProfileName) el.hdrProfileName.textContent = nick;
+    const activeFrame = (prof.unlockedFrames.includes(prof.nameFrame) && getNameFrameMeta(prof.nameFrame)) ? getNameFrameMeta(prof.nameFrame) : null;
+    if (el.btnHeaderProfileName) {
+      el.btnHeaderProfileName.classList.toggle('has-rank-frame', Boolean(activeFrame && activeFrame.img));
+      el.btnHeaderProfileName.classList.remove('frame-rank_1', 'frame-rank_2', 'frame-rank_3');
+      if (activeFrame && activeFrame.img) {
+        el.btnHeaderProfileName.classList.add(`frame-${activeFrame.id}`);
+      }
+    }
+    if (el.hdrProfileFrameBg) {
+      if (activeFrame && activeFrame.img) {
+        el.hdrProfileFrameBg.src = `${activeFrame.img}?v=${RANK_ART_VER}`;
+        el.hdrProfileFrameBg.classList.remove('hidden');
+      } else {
+        el.hdrProfileFrameBg.classList.add('hidden');
+      }
+    }
+    if (el.hdrProfileName) {
+      el.hdrProfileName.textContent = nick;
+      applyNameColorStyle(el.hdrProfileName, prof.nameColor);
+    }
 
     setProviderChip(el.settingsAccountBadge, auth.provider, false);
     if (el.settingsAccountName) el.settingsAccountName.textContent = nick;
@@ -2434,6 +2564,153 @@
     if (el.btnLoginSync) el.btnLoginSync.classList.toggle('hidden', !auth.loggedIn || !isLinked);
     if (el.btnLoginLogout) el.btnLoginLogout.classList.toggle('hidden', !auth.loggedIn);
     renderIntroAuthState();
+    if (el.profileEditOverlay && !el.profileEditOverlay.classList.contains('hidden')) {
+      renderProfileEditModal();
+    }
+  }
+
+  function renderProfileEditModal() {
+    if (!el.profCustomGrid) return;
+    const prof = ensureSaveProfile();
+    const auth = save.auth || { nickname: '게스트' };
+    const nick = auth.nickname || '날씨러너';
+    const selCh = DATA.CHARACTERS.find((c) => c.id === save.selectedChar) || DATA.CHARACTERS[0];
+    const selSkin = getEquippedSkin(selCh.id);
+    const avInfo = getProfileAvatarInfo(prof, selCh.id, selSkin ? selSkin.id : null, true);
+    const bracket = getScoreRoadBracket(save.bestScore || 0);
+
+    if (el.profPrevAvatar) {
+      el.profPrevAvatar.src = avInfo.src;
+      el.profPrevAvatar.style.filter = avInfo.filter;
+    }
+    if (el.profPrevRank) {
+      el.profPrevRank.textContent = `★${bracket.rank}`;
+      el.profPrevRank.className = `bs-prof-rank-badge ${bracket.tierCls}`;
+    }
+    if (el.profPrevNameWrap) {
+      const frameToUse = prof.unlockedFrames.includes(prof.nameFrame) ? prof.nameFrame : 'none';
+      el.profPrevNameWrap.innerHTML = renderNameplateHtml(nick, frameToUse, prof.nameColor, 'lg');
+    }
+    if (el.profPrevStats) {
+      el.profPrevStats.textContent = `🏆 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 🏃 ${save.bestYear || 1}년 차 · 캐릭터 ${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
+    }
+
+    document.querySelectorAll('.prof-tab-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.proftab === currentProfileTab);
+    });
+
+    el.profCustomGrid.innerHTML = '';
+    el.profCustomGrid.className = `prof-custom-grid ${currentProfileTab === 'colors' ? 'colors-mode' : (currentProfileTab === 'frames' ? 'frames-mode' : '')}`;
+
+    if (currentProfileTab === 'icons') {
+      const makeIconCard = (label, src, filter, equipped, locked, onSelect) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `prof-item-card${equipped ? ' equipped' : ''}${locked ? ' locked' : ''}`;
+        card.innerHTML = `
+          ${equipped ? '<span class="prof-eq-tag">장착</span>' : (locked ? '<span class="prof-eq-tag">🔒</span>' : '')}
+          <img src="${src}" alt="${escapeNickHtml(label)}" class="prof-card-avatar" style="${filter ? `filter:${filter};` : ''}" />
+          <span class="prof-card-label">${escapeNickHtml(label)}</span>
+        `;
+        card.onclick = () => {
+          if (locked) {
+            SFX.error();
+            showToast('🔒 캐릭터 또는 스킨을 먼저 해금해 주세요!');
+            return;
+          }
+          SFX.click();
+          onSelect();
+        };
+        el.profCustomGrid.appendChild(card);
+      };
+
+      makeIconCard('대표 캐릭터', getSkinAvatar(selCh, selSkin), getSkinFilter(selSkin), !prof.avatarCharId, false, () => {
+        prof.avatarCharId = null;
+        prof.avatarSkinId = null;
+        syncProfileOnlineIfLinked();
+        showToast('🎭 프로필 아이콘이 대표 캐릭터 연동으로 설정되었습니다!');
+      });
+
+      DATA.CHARACTERS.forEach((ch) => {
+        const unlocked = save.unlockedChars.includes(ch.id);
+        const eq = prof.avatarCharId === ch.id && !prof.avatarSkinId;
+        makeIconCard(ch.name, ch.avatar, '', eq, !unlocked, () => {
+          prof.avatarCharId = ch.id;
+          prof.avatarSkinId = null;
+          syncProfileOnlineIfLinked();
+          showToast(`🎭 프로필 아이콘 [${ch.name}] 장착!`);
+        });
+
+        DATA.getSkinsForChar(ch.id).forEach((sk) => {
+          if (sk.isDefault) return;
+          const skUnlocked = unlocked && save.unlockedSkins.includes(sk.id);
+          const skEq = prof.avatarCharId === ch.id && prof.avatarSkinId === sk.id;
+          makeIconCard(sk.name, getSkinAvatar(ch, sk), getSkinFilter(sk), skEq, !skUnlocked, () => {
+            prof.avatarCharId = ch.id;
+            prof.avatarSkinId = sk.id;
+            syncProfileOnlineIfLinked();
+            showToast(`✨ 프로필 아이콘 [${sk.name}] 장착!`);
+          });
+        });
+      });
+    } else if (currentProfileTab === 'colors') {
+      (DATA.PROFILE_NAME_COLORS || []).forEach((col) => {
+        const eq = (prof.nameColor || '#ffffff') === col.color;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `prof-item-card${eq ? ' equipped' : ''}`;
+        const swatchStyle = col.color === 'rainbow' ? '' : `style="background:${col.color};"`;
+        card.innerHTML = `
+          ${eq ? '<span class="prof-eq-tag">장착</span>' : ''}
+          <span class="prof-color-swatch${col.color === 'rainbow' ? ' rainbow' : ''}" ${swatchStyle}></span>
+          <span class="prof-card-label">${col.name}</span>
+        `;
+        card.onclick = () => {
+          SFX.click();
+          prof.nameColor = col.color;
+          syncProfileOnlineIfLinked();
+          showToast(`🎨 닉네임 색상 [${col.name}] 적용!`);
+        };
+        el.profCustomGrid.appendChild(card);
+      });
+    } else {
+      (DATA.PROFILE_NAME_FRAMES || []).forEach((fr) => {
+        const unlocked = fr.id === 'none' || prof.unlockedFrames.includes(fr.id);
+        const eq = (prof.nameFrame || 'none') === fr.id && unlocked;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `prof-item-card prof-frame-card${eq ? ' equipped' : ''}${!unlocked ? ' locked' : ''}`;
+        card.innerHTML = `
+          <div class="prof-frame-meta">
+            <span class="prof-frame-title">${fr.name} ${eq ? '· 장착 중' : (!unlocked ? '· 🔒 미보유' : '')}</span>
+            <span class="prof-frame-desc">${fr.desc}</span>
+          </div>
+          <div class="prof-frame-preview">${renderNameplateHtml(nick, fr.id, prof.nameColor, 'md')}</div>
+        `;
+        card.onclick = () => {
+          if (!unlocked) {
+            SFX.error();
+            showToast(`🔒 ${fr.desc}`);
+            return;
+          }
+          SFX.click();
+          prof.nameFrame = fr.id;
+          syncProfileOnlineIfLinked();
+          showToast(`👑 [${fr.name}] 장착 완료!`);
+        };
+        el.profCustomGrid.appendChild(card);
+      });
+    }
+  }
+
+  function openProfileEditModal() {
+    if (!el.profileEditOverlay) return;
+    SFX.click();
+    if (el.profNicknameInput) {
+      el.profNicknameInput.value = (save.auth && save.auth.nickname) || '';
+    }
+    renderProfileEditModal();
+    el.profileEditOverlay.classList.remove('hidden');
   }
 
   function openLoginOverlay() {
@@ -3317,23 +3594,25 @@
     showToast('👋 로그아웃되었습니다. 로고 아래에서 계정을 선택해 주세요.');
   }
 
-  async function saveEditedNickname() {
-    if (!el.loginNicknameInput) return;
-    const raw = el.loginNicknameInput.value.trim();
+  async function saveNicknameValue(rawVal) {
+    const raw = String(rawVal || '').trim();
     if (!raw) {
       showToast('닉네임을 입력해 주세요.');
-      return;
+      return false;
     }
     SFX.click();
     const clean = ONLINE ? ONLINE.sanitizeNickname(raw, '날씨러너') : raw.slice(0, 12);
     save.auth = { ...(save.auth || activeAuth), nickname: clean };
-    persistSave(true);
-    renderProfileUI();
-    if (ONLINE && ONLINE.isRankedProvider(save.auth.provider)) {
-      try { await syncMyWeeklyScore(); } catch {}
-    }
-    renderRankingTab();
+    if (el.loginNicknameInput) el.loginNicknameInput.value = clean;
+    if (el.profNicknameInput) el.profNicknameInput.value = clean;
+    await syncProfileOnlineIfLinked();
     showToast(`🏷️ 닉네임이 [${clean}](으)로 저장되었습니다!`);
+    return true;
+  }
+
+  async function saveEditedNickname() {
+    if (!el.loginNicknameInput) return;
+    await saveNicknameValue(el.loginNicknameInput.value);
   }
 
   // ===================== IN-APP PURCHASE (REAL-MONEY GEM STORE: 100💎 = ₩1,000) =====================
@@ -3380,7 +3659,7 @@
     showToast(`💎 ${pack.name} (₩${pack.krwPrice.toLocaleString('ko-KR')}) 결제 완료! +${pack.gems.toLocaleString('ko-KR')}💎 지급!`);
   }
 
-  // ===================== WEEKLY #1 CHAMPION 500 GEMS AUTOMATIC PAYOUT =====================
+  // ===================== WEEKLY TOP 1/2/3 CHAMPION AUTOMATIC PAYOUT =====================
   let pendingChampionReward = null;
 
   async function checkAndAwardWeeklyChampion() {
@@ -3388,9 +3667,21 @@
     const reward = await ONLINE.checkWeeklyChampionPayout(save);
     if (!reward || !reward.won) return;
     pendingChampionReward = reward;
-    if (el.weeklyChampWeek) el.weeklyChampWeek.textContent = `${reward.weekLabel} 주간 최종 1위!`;
-    if (el.weeklyChampScore) el.weeklyChampScore.textContent = `우승 점수 ${reward.score.toLocaleString('ko-KR')}점`;
+    const rankNum = reward.rank || 1;
+    const nick = (save.auth && save.auth.nickname) || '날씨러너';
+    const prof = ensureSaveProfile();
+    if (el.weeklyChampTitle) el.weeklyChampTitle.textContent = `🏆 주간 랭킹 ${rankNum}위 달성!`;
+    if (el.weeklyChampWeek) el.weeklyChampWeek.textContent = `${reward.weekLabel} 주간 최종 ${rankNum}위!`;
+    if (el.weeklyChampScore) el.weeklyChampScore.textContent = `달성 점수 ${reward.score.toLocaleString('ko-KR')}점`;
     if (el.weeklyChampGems) el.weeklyChampGems.innerHTML = `+${reward.gems.toLocaleString('ko-KR')} ${uiIcon('gem', 'sm')} 보석 지급!`;
+    if (el.weeklyChampFramePreview) {
+      if (reward.frameId) {
+        el.weeklyChampFramePreview.innerHTML = `${renderNameplateHtml(nick, reward.frameId, prof.nameColor, 'md')}<span class="champ-frame-note">👑 ${reward.frameName} 해금!</span>`;
+        el.weeklyChampFramePreview.classList.remove('hidden');
+      } else {
+        el.weeklyChampFramePreview.classList.add('hidden');
+      }
+    }
     if (el.weeklyChampOverlay) el.weeklyChampOverlay.classList.remove('hidden');
     SFX.chestJackpot();
   }
@@ -3403,16 +3694,35 @@
     const rw = pendingChampionReward;
     pendingChampionReward = null;
     save.gems = (save.gems || 0) + rw.gems;
+    const prof = ensureSaveProfile();
+    if (rw.frameId && !prof.unlockedFrames.includes(rw.frameId)) {
+      prof.unlockedFrames.push(rw.frameId);
+    }
+    if (rw.frameId && (!prof.nameFrame || prof.nameFrame === 'none')) {
+      prof.nameFrame = rw.frameId;
+    }
     save.weeklyRank = save.weeklyRank || { weekKey: getWeekKey(), bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] };
     if (!Array.isArray(save.weeklyRank.claimedWeeks)) save.weeklyRank.claimedWeeks = [];
     if (!save.weeklyRank.claimedWeeks.includes(rw.weekKey)) {
       save.weeklyRank.claimedWeeks.push(rw.weekKey);
     }
-    persistSave();
+    syncProfileOnlineIfLinked();
     if (el.weeklyChampOverlay) el.weeklyChampOverlay.classList.add('hidden');
     SFX.chestJackpot();
     refreshAllMenus();
-    showToast(`👑 ${rw.weekLabel} 주간 1위 보상 💎 ${rw.gems} 보석 수령 완료!`);
+    const frameMsg = rw.frameName ? ` + ${rw.frameName}` : '';
+    showToast(`👑 ${rw.weekLabel} 주간 ${rw.rank || 1}위 보상 💎 ${rw.gems.toLocaleString('ko-KR')}${frameMsg} 수령 완료!`);
+  }
+
+  function buildMyBoardProfileMeta(myChar, mySkin) {
+    const prof = ensureSaveProfile();
+    const validFrame = (prof.nameFrame && prof.unlockedFrames.includes(prof.nameFrame)) ? prof.nameFrame : 'none';
+    return {
+      profileCharId: prof.avatarCharId || myChar.id,
+      profileSkinId: prof.avatarCharId ? (prof.avatarSkinId || null) : (mySkin ? mySkin.id : null),
+      nameColor: prof.nameColor || '#ffffff',
+      nameFrame: validFrame
+    };
   }
 
   async function syncMyWeeklyScore() {
@@ -3428,6 +3738,7 @@
       provider: save.auth.provider || 'guest',
       charId: myChar.id,
       skinId: mySkin ? mySkin.id : null,
+      ...buildMyBoardProfileMeta(myChar, mySkin),
       score: weeklyBest,
       dist: save.weeklyRank.bestDist || save.bestDistanceM || 0,
       year: save.weeklyRank.bestYear || save.bestYear || 1
@@ -3449,6 +3760,7 @@
       provider: save.auth.provider || 'guest',
       charId: myChar.id,
       skinId: mySkin ? mySkin.id : null,
+      ...buildMyBoardProfileMeta(myChar, mySkin),
       cityName: dr.cityName || (liveWeatherSnapshot && liveWeatherSnapshot.cityName) || '서울',
       weatherTag: dr.weatherTag || '',
       score: dailyBest,
@@ -3714,6 +4026,54 @@
     }
   }
 
+  function renderRankPodium(board) {
+    if (!el.rankPodiumStage) return;
+    el.rankPodiumStage.classList.remove('hidden');
+    const slotsHtml = [2, 1, 3].map((posRank) => {
+      const entry = board[posRank - 1];
+      if (!entry) {
+        return `
+          <div class="podium-slot pos-${posRank} empty">
+            <div class="podium-empty-hint">${posRank}위 도전!</div>
+          </div>
+        `;
+      }
+      const avInfo = getProfileAvatarInfo(
+        {
+          avatarCharId: entry.profileCharId || entry.charId,
+          avatarSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : entry.skinId
+        },
+        entry.charId,
+        entry.skinId,
+        false
+      );
+      const nameHtml = renderNameplateHtml(entry.nickname, entry.nameFrame, entry.nameColor, 'md', 'podium-plain-name');
+      return `
+        <div class="podium-slot pos-${posRank}">
+          <div class="podium-badge-plate">
+            ${nameHtml}
+            <span class="podium-score-chip">${(entry.score || 0).toLocaleString('ko-KR')}점</span>
+          </div>
+          <div class="podium-char-wrap">
+            <span class="podium-char-aura" aria-hidden="true"></span>
+            <span class="podium-sparkle sp1" aria-hidden="true">✦</span>
+            <span class="podium-sparkle sp2" aria-hidden="true">✦</span>
+            <span class="podium-sparkle sp3" aria-hidden="true">✦</span>
+            <span class="podium-sparkle sp4" aria-hidden="true">✦</span>
+            <img src="${avInfo.src}" alt="${escapeNickHtml(entry.nickname)}" class="podium-char-img" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    el.rankPodiumStage.innerHTML = `
+      <div class="rank-podium-inner">
+        <img src="assets/ui/rank_podium.png?v=${RANK_ART_VER}" alt="명예의 시상대" class="rank-podium-img" />
+        ${slotsHtml}
+      </div>
+    `;
+  }
+
   async function renderRankingTab() {
     const seq = ++rankRenderSeq;
     const isTodayMode = rankModeTab === 'today_weather';
@@ -3741,7 +4101,7 @@
         const wTag = mods ? `${mods.snapshot.cityName} ${mods.desc.icon}${Math.round(mods.snapshot.tempC)}°C` : '기상청 실시간';
         el.rankPrizeInlineText.innerHTML = `<strong>${dayInfo.dateLabel}</strong> (${wTag}) · 매일 00:00 초기화`;
       } else {
-        el.rankPrizeInlineText.innerHTML = `${weekInfo.weekLabel} 1위 보상 <strong>${uiIcon('gem', 'xs')}500</strong>`;
+        el.rankPrizeInlineText.innerHTML = `${weekInfo.weekLabel} 1위 <strong>5,000${uiIcon('gem', 'xs')}</strong> · 2위 <strong>3,000</strong> · 3위 <strong>1,000</strong>`;
       }
     }
     if (el.rankMyTitleLabel) {
@@ -3762,8 +4122,9 @@
       el.rankGuestBanner.classList.toggle('hidden', isLinkedUser);
     }
 
-    el.rankMyAvatar.src = getSkinAvatar(myChar, mySkin);
-    el.rankMyAvatar.style.filter = getSkinFilter(mySkin);
+    const myAvInfo = getProfileAvatarInfo(ensureSaveProfile(), myChar.id, mySkin ? mySkin.id : null, true);
+    el.rankMyAvatar.src = myAvInfo.src;
+    el.rankMyAvatar.style.filter = myAvInfo.filter;
     if (isTodayMode) {
       const dr = save.dailyWeatherRank || {};
       el.rankMyScoreLine.textContent = isLinkedUser
@@ -3779,7 +4140,10 @@
     el.rankStatCombo.textContent = `${save.maxDodgeComboEver || 0}연속`;
     el.rankStatDex.textContent = `${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
 
-    if (!ONLINE) return;
+    if (!ONLINE) {
+      renderRankPodium([]);
+      return;
+    }
     let curRes = null;
     let prevRes = null;
     try {
@@ -3806,6 +4170,7 @@
         provider: myAuth.provider,
         charId: myChar.id,
         skinId: mySkin ? mySkin.id : null,
+        ...buildMyBoardProfileMeta(myChar, mySkin),
         cityName: isTodayMode ? (dr.cityName || '서울') : '',
         weatherTag: isTodayMode ? (dr.weatherTag || '') : '',
         score: myModeBest,
@@ -3844,6 +4209,8 @@
       }
     }
 
+    renderRankPodium(board);
+
     el.rankBoardList.innerHTML = '';
     if (board.length === 0) {
       const empty = document.createElement('div');
@@ -3857,18 +4224,29 @@
         : `
           <div class="rank-empty-ico">🏆</div>
           <div class="rank-empty-title">이번 주 첫 1위에 도전해 보세요!</div>
-          <div class="rank-empty-sub">주간 최고 점수 1위에게 <strong>${uiIcon('gem', 'xs')} 500 보석</strong>이 지급됩니다.</div>
+          <div class="rank-empty-sub">주간 1위 5,000${uiIcon('gem', 'xs')} · 2위 3,000${uiIcon('gem', 'xs')} · 3위 1,000${uiIcon('gem', 'xs')} + 닉네임 장식 지급!</div>
         `;
       el.rankBoardList.appendChild(empty);
       return;
     }
 
+    const rewardTable = DATA.WEEKLY_TOP_REWARDS || {
+      1: { gems: 5000 },
+      2: { gems: 3000 },
+      3: { gems: 1000 }
+    };
+
     board.forEach((entry) => {
       const rank = entry.rank;
-      const chDef = getCharDef(entry.charId);
-      const skDef = entry.skinId ? DATA.getSkinById(entry.skinId) : null;
-      const avSrc = getSkinAvatar(chDef, skDef);
-      const avFlt = getSkinFilter(skDef);
+      const avInfo = getProfileAvatarInfo(
+        {
+          avatarCharId: entry.profileCharId || entry.charId,
+          avatarSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : entry.skinId
+        },
+        entry.charId,
+        entry.skinId,
+        false
+      );
       const prov = ONLINE.getProviderMeta(entry.provider);
       const provHtml = entry.provider === 'google'
         ? `<img src="assets/ui/google_logo.png?v=${ASSET_VER}" alt="Google" class="prov-google-img" />`
@@ -3880,20 +4258,22 @@
       const subMeta = isTodayMode && entry.weatherTag
         ? `${entry.weatherTag} · ${(entry.dist || 0).toLocaleString('ko-KR')}m`
         : `${entry.year || 1}년 차 · ${(entry.dist || 0).toLocaleString('ko-KR')}m`;
-      const top1Tag = (!isTodayMode && rank === 1)
-        ? `<span class="rank-top1-prize">${uiIcon('crown', 'xs')} 500${uiIcon('gem', 'xs')}</span>`
-        : (isTodayMode && rank === 1 ? `<span class="rank-top1-prize today">🌦️ 오늘 1위</span>` : '');
+      const topRw = rewardTable[rank];
+      const topPrizeTag = (!isTodayMode && topRw)
+        ? `<span class="rank-top1-prize">${rank === 1 ? uiIcon('crown', 'xs') : ''} ${topRw.gems.toLocaleString('ko-KR')}${uiIcon('gem', 'xs')}</span>`
+        : (isTodayMode && rank <= 3 ? `<span class="rank-top1-prize today">🌦️ 오늘 ${rank}위</span>` : '');
+      const rowNameHtml = renderNameplateHtml(entry.nickname, entry.nameFrame, entry.nameColor, 'sm');
 
       row.className = `rank-row${topClass}${entry.isMe ? ' me' : ''}`;
       row.innerHTML = `
         <div class="rank-medal">${medal}</div>
-        <img src="${avSrc}" alt="" class="rank-row-avatar" style="${avFlt ? `filter:${avFlt};` : ''}" />
+        <img src="${avInfo.src}" alt="" class="rank-row-avatar" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
         <div class="rank-row-info">
           <div class="rank-row-name">
             <span class="prov-chip mini ${entry.provider || 'guest'}">${provHtml}</span>
-            <span>${entry.nickname}</span>
+            ${rowNameHtml}
             ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
-            ${top1Tag}
+            ${topPrizeTag}
           </div>
           <div class="rank-row-sub">${subMeta}</div>
         </div>
@@ -7572,14 +7952,38 @@
       switchTab('shop');
     });
     if (el.btnHeaderProfile) {
-      el.btnHeaderProfile.addEventListener('click', () => {
-        SFX.click();
-        openLoginOverlay();
-      });
+      el.btnHeaderProfile.addEventListener('click', openProfileEditModal);
     }
     if (el.btnHeaderProfileName) {
-      el.btnHeaderProfileName.addEventListener('click', () => {
+      el.btnHeaderProfileName.addEventListener('click', openProfileEditModal);
+    }
+    if (el.btnCloseProfileEdit) {
+      el.btnCloseProfileEdit.addEventListener('click', () => {
         SFX.click();
+        if (el.profileEditOverlay) el.profileEditOverlay.classList.add('hidden');
+      });
+    }
+    if (el.profileEditOverlay) {
+      el.profileEditOverlay.addEventListener('click', (e) => {
+        if (e.target === el.profileEditOverlay) el.profileEditOverlay.classList.add('hidden');
+      });
+    }
+    document.querySelectorAll('.prof-tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        SFX.click();
+        currentProfileTab = btn.dataset.proftab || 'icons';
+        renderProfileEditModal();
+      });
+    });
+    if (el.btnProfSaveNick) {
+      el.btnProfSaveNick.addEventListener('click', () => {
+        if (el.profNicknameInput) saveNicknameValue(el.profNicknameInput.value);
+      });
+    }
+    if (el.btnProfOpenAccount) {
+      el.btnProfOpenAccount.addEventListener('click', () => {
+        SFX.click();
+        if (el.profileEditOverlay) el.profileEditOverlay.classList.add('hidden');
         openLoginOverlay();
       });
     }

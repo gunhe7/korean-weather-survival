@@ -554,7 +554,28 @@ window.RUN_DATA = (function () {
     };
   }
 
-  const WEEKLY_TOP1_GEMS = 500;
+  const WEEKLY_TOP1_GEMS = 5000;
+  const WEEKLY_TOP_REWARDS = {
+    1: { rank: 1, gems: 5000, frameId: 'rank_1', frameName: '1위 닉네임 장식' },
+    2: { rank: 2, gems: 3000, frameId: 'rank_2', frameName: '2위 닉네임 장식' },
+    3: { rank: 3, gems: 1000, frameId: 'rank_3', frameName: '3위 닉네임 장식' }
+  };
+  const PROFILE_NAME_COLORS = [
+    { id: '#ffffff', name: '스노우 화이트', color: '#ffffff' },
+    { id: '#ffe24a', name: '챔피언 골드', color: '#ffe24a' },
+    { id: '#62e8ff', name: '아이스 스카이', color: '#62e8ff' },
+    { id: '#62f5a0', name: '에메랄드 민트', color: '#62f5a0' },
+    { id: '#ff82cc', name: '체리 핑크', color: '#ff82cc' },
+    { id: '#c992ff', name: '네온 퍼플', color: '#c992ff' },
+    { id: '#ff7466', name: '선셋 코랄', color: '#ff7466' },
+    { id: 'rainbow', name: '무지개 프리즘', color: 'rainbow' }
+  ];
+  const PROFILE_NAME_FRAMES = [
+    { id: 'none', name: '기본 네임바', img: '', desc: '깔끔한 기본 프로필 닉네임 바' },
+    { id: 'rank_1', name: '1위 닉네임 장식', img: 'assets/ui/rank_frame_1.png', desc: '주간 랭킹 1위 달성 보상 (황금 월계관)' },
+    { id: 'rank_2', name: '2위 닉네임 장식', img: 'assets/ui/rank_frame_2.png', desc: '주간 랭킹 2위 달성 보상 (겨울 눈꽃)' },
+    { id: 'rank_3', name: '3위 닉네임 장식', img: 'assets/ui/rank_frame_3.png', desc: '주간 랭킹 3위 달성 보상 (가을 단풍)' }
+  ];
   const SCORE_ROAD_STEP = 1000;
 
   // 브롤스타즈 트로피 로드 스타일: 1,000점 간격 최고점수 달성 보상 (무한 확장!)
@@ -621,6 +642,9 @@ window.RUN_DATA = (function () {
     YEAR_DURATION,
     MAX_CHAR_LEVEL,
     WEEKLY_TOP1_GEMS,
+    WEEKLY_TOP_REWARDS,
+    PROFILE_NAME_COLORS,
+    PROFILE_NAME_FRAMES,
     SCORE_ROAD_STEP,
     getScoreRoadMilestone,
     GOLD_PACKS,

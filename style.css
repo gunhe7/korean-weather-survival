@@ -12308,3 +12308,638 @@ input:focus-visible {
     padding: 2px 8px;
   }
 }
+
+/* =========================================================================
+   BRAWL STARS PROFILE CUSTOMIZATION, RANK NAMEPLATES & TOP 1/2/3 PODIUM
+   ========================================================================= */
+@keyframes nickRainbowShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes podiumFloat {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-5px) scale(1.03); }
+}
+
+@keyframes podiumSparkle {
+  0%, 100% { transform: scale(0.45) rotate(0deg); opacity: 0.25; }
+  50% { transform: scale(1.25) rotate(22deg); opacity: 1; }
+}
+
+.nick-rainbow {
+  background: linear-gradient(90deg, #ff7092, #ffe666, #6ef7a7, #6ee2ff, #cfa0ff, #ff7092);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none !important;
+  filter: drop-shadow(0 1.4px 0 #071022);
+  animation: nickRainbowShift 3s linear infinite;
+}
+
+/* 1위/2위/3위 Rank Nameplate Banner (centers nickname inside empty banner bar) */
+.rank-nameplate {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+  user-select: none;
+}
+
+.rank-nameplate.sm {
+  width: 158px;
+  height: 26px;
+}
+
+.rank-nameplate.md {
+  width: 146px;
+  height: 24px;
+}
+
+.rank-nameplate.lg {
+  width: 224px;
+  height: 36px;
+}
+
+.rank-nameplate .rnp-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(4, 10, 26, 0.52));
+}
+
+.rank-nameplate .rnp-txt {
+  position: absolute;
+  left: 40%;
+  right: 12%;
+  top: 17%;
+  bottom: 18%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ffffff;
+  text-shadow:
+    -1.2px -1.2px 0 #071022,
+     1.2px -1.2px 0 #071022,
+    -1.2px  1.2px 0 #071022,
+     1.2px  1.2px 0 #071022,
+     0px    1.6px 0 #071022;
+}
+
+.rank-nameplate.lg .rnp-txt {
+  font-size: 13.5px;
+}
+
+.rank-nameplate.md .rnp-txt {
+  font-size: 9.5px;
+}
+
+/* Top-Left Header Profile Strip with Equipped Rank Nameplate */
+.bs-prof-name-strip .hdr-frame-bg {
+  display: none;
+}
+
+.bs-prof-name-strip.has-rank-frame {
+  width: 194px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  filter: drop-shadow(0 2px 4px rgba(5, 12, 30, 0.6));
+}
+
+.bs-prof-name-strip.has-rank-frame:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.bs-prof-name-strip.has-rank-frame .hdr-frame-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+  pointer-events: none;
+}
+
+.bs-prof-name-strip.has-rank-frame .bs-prof-unskew {
+  transform: none;
+  position: absolute;
+  left: 40%;
+  right: 12%;
+  top: 16%;
+  bottom: 18%;
+  width: auto;
+  justify-content: center;
+  padding: 0 2px;
+}
+
+.bs-prof-name-strip.has-rank-frame .bs-prof-name {
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.bs-prof-name-strip.has-rank-frame .prov-chip {
+  display: none;
+}
+
+@media (max-height: 440px), (orientation: portrait) and (max-width: 520px) {
+  .bs-prof-name-strip.has-rank-frame {
+    width: 172px;
+    height: 28px;
+  }
+  .bs-prof-name-strip.has-rank-frame .bs-prof-name {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 740px) and (min-height: 620px) {
+  .bs-prof-name-strip.has-rank-frame {
+    width: 244px;
+    height: 40px;
+  }
+  .bs-prof-name-strip.has-rank-frame .bs-prof-name {
+    font-size: 15.5px;
+  }
+}
+
+/* Brawl Stars Profile Customization Modal */
+.bs-profile-modal {
+  max-width: 540px;
+  width: 94vw;
+  max-height: min(88dvh, 660px);
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-profile-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: calc(min(88dvh, 660px) - 52px);
+  padding: 12px 14px 14px;
+}
+
+.prof-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 2.5px solid #081328;
+  background: radial-gradient(circle at 20% 20%, rgba(72, 162, 255, 0.34), rgba(16, 35, 76, 0.94) 68%);
+  box-shadow: inset 0 2px 0 rgba(190, 232, 255, 0.25), 0 4px 0 #071022;
+}
+
+.prof-prev-avatar-box {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  border-radius: 14px;
+  border: 2.5px solid #071022;
+  background: radial-gradient(circle at 50% 28%, #7be8ff 0%, #1d76e8 66%, #0c3585 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.55), 0 3px 0 #071022;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prof-prev-avatar {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+}
+
+.prof-prev-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.prof-prev-name-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 30px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 #071022;
+}
+
+.prof-prev-stats {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #b7dcff;
+}
+
+.prof-nick-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prof-nick-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.prof-acc-btn {
+  white-space: nowrap;
+  padding: 7px 10px !important;
+  font-size: 11.5px !important;
+}
+
+.prof-custom-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.prof-tab-btn {
+  padding: 8px 6px;
+  border-radius: 11px;
+  border: 2.2px solid #081226;
+  background: linear-gradient(180deg, #24488b, #152d5c);
+  color: #cbe3ff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #081226;
+}
+
+.prof-tab-btn.active {
+  background: linear-gradient(180deg, #ffe24a, #f29d12);
+  color: #211000;
+}
+
+.prof-custom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.prof-custom-grid.colors-mode {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.prof-custom-grid.frames-mode {
+  grid-template-columns: 1fr;
+}
+
+.prof-item-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border-radius: 13px;
+  border: 2.2px solid #0b1834;
+  background: linear-gradient(180deg, #1b366b 0%, #102348 100%);
+  color: #e6f2ff;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  box-shadow: 0 3px 0 #071022;
+  transition: transform 0.1s ease;
+}
+
+.prof-item-card:active {
+  transform: translateY(2px);
+}
+
+.prof-item-card.equipped {
+  border-color: #ffe352;
+  background: linear-gradient(180deg, #2b589c 0%, #17346d 100%);
+  box-shadow: 0 0 0 2px rgba(255, 227, 82, 0.35), 0 3px 0 #071022;
+}
+
+.prof-item-card.locked {
+  opacity: 0.6;
+  filter: grayscale(0.45);
+}
+
+.prof-card-avatar {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.prof-card-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.prof-color-swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2.5px solid #071022;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.55), 0 2px 0 #071022;
+}
+
+.prof-color-swatch.rainbow {
+  background: conic-gradient(#ff6384, #ffce56, #36eb88, #36a2eb, #9966ff, #ff6384);
+}
+
+.prof-frame-card {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 9px 12px;
+  gap: 10px;
+}
+
+.prof-frame-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.prof-frame-title {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.prof-frame-desc {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #9ec8f5;
+}
+
+.prof-eq-tag {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #ffe24a;
+  color: #241200;
+}
+
+/* Ranking Tab Top 1/2/3 Sparkling Podium Showcase */
+.rank-podium-stage {
+  position: relative;
+  width: 100%;
+  margin: 4px 0 10px;
+  padding: 104px 8px 8px;
+  border-radius: 18px;
+  border: 2.5px solid #0b1b3a;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(92, 186, 255, 0.34) 0%, rgba(16, 40, 88, 0.92) 66%, rgba(9, 22, 52, 0.98) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(176, 226, 255, 0.32),
+    0 5px 0 #071022;
+  overflow: visible;
+}
+
+.rank-podium-inner {
+  position: relative;
+  width: min(100%, 420px);
+  margin: 0 auto;
+}
+
+.rank-podium-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgba(4, 10, 28, 0.6));
+}
+
+.podium-slot {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.podium-slot.pos-1 {
+  left: 50%;
+  bottom: 77%;
+  z-index: 6;
+}
+
+.podium-slot.pos-2 {
+  left: 19.5%;
+  bottom: 61%;
+}
+
+.podium-slot.pos-3 {
+  left: 80.5%;
+  bottom: 57%;
+}
+
+.podium-badge-plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.podium-plain-name {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1.8px solid #071022;
+  background: rgba(11, 25, 56, 0.88);
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 0 #071022;
+}
+
+.podium-score-chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1.5px solid #071022;
+  background: linear-gradient(180deg, #ffe75a, #f29d08);
+  color: #241000;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+.podium-char-wrap {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.podium-slot.pos-1 .podium-char-wrap {
+  width: 78px;
+  height: 78px;
+}
+
+.podium-char-aura {
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 224, 92, 0.56) 0%, rgba(255, 224, 92, 0) 72%);
+  pointer-events: none;
+}
+
+.podium-slot.pos-2 .podium-char-aura {
+  background: radial-gradient(circle, rgba(132, 222, 255, 0.52) 0%, rgba(132, 222, 255, 0) 72%);
+}
+
+.podium-slot.pos-3 .podium-char-aura {
+  background: radial-gradient(circle, rgba(255, 162, 92, 0.48) 0%, rgba(255, 162, 92, 0) 72%);
+}
+
+.podium-char-img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: podiumFloat 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 4px 5px rgba(5, 12, 32, 0.65));
+}
+
+.podium-slot.pos-2 .podium-char-img { animation-delay: 0.35s; }
+.podium-slot.pos-3 .podium-char-img { animation-delay: 0.7s; }
+
+.podium-sparkle {
+  position: absolute;
+  z-index: 5;
+  color: #fff394;
+  font-size: 13px;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(255, 232, 110, 0.95);
+  animation: podiumSparkle 1.35s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.podium-slot.pos-2 .podium-sparkle { color: #a8ecff; text-shadow: 0 0 8px rgba(132, 226, 255, 0.95); }
+.podium-slot.pos-3 .podium-sparkle { color: #ffc58f; text-shadow: 0 0 8px rgba(255, 174, 98, 0.95); }
+
+.podium-sparkle.sp1 { top: -4px; left: -6px; animation-delay: 0s; }
+.podium-sparkle.sp2 { top: 6px; right: -8px; font-size: 15px; animation-delay: 0.3s; }
+.podium-sparkle.sp3 { bottom: 12px; left: -10px; font-size: 11px; animation-delay: 0.65s; }
+.podium-sparkle.sp4 { bottom: 10px; right: -6px; font-size: 12px; animation-delay: 0.95s; }
+
+.podium-empty-hint {
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1.5px dashed rgba(176, 220, 255, 0.55);
+  background: rgba(10, 24, 54, 0.72);
+  color: #b8dcff;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.champ-frame-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.champ-frame-note {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #ffe878;
+}
+
+@media (max-height: 500px) {
+  .rank-podium-stage {
+    padding-top: 90px;
+  }
+  .rank-podium-inner {
+    width: min(100%, 340px);
+  }
+  .podium-char-wrap {
+    width: 56px;
+    height: 56px;
+  }
+  .podium-slot.pos-1 .podium-char-wrap {
+    width: 66px;
+    height: 66px;
+  }
+  .rank-nameplate.md {
+    width: 122px;
+    height: 21px;
+  }
+  .rank-nameplate.md .rnp-txt {
+    font-size: 8.5px;
+  }
+  .bs-profile-modal {
+    max-height: 94dvh;
+  }
+  .bs-profile-modal-body {
+    max-height: calc(94dvh - 48px);
+    padding: 8px 12px 10px;
+    gap: 7px;
+  }
+  .prof-preview-card {
+    padding: 7px 10px;
+  }
+}
+
+@media (min-width: 740px) and (min-height: 620px) {
+  .rank-podium-stage {
+    padding-top: 128px;
+  }
+  .rank-podium-inner {
+    width: min(100%, 480px);
+  }
+  .podium-char-wrap {
+    width: 78px;
+    height: 78px;
+  }
+  .podium-slot.pos-1 .podium-char-wrap {
+    width: 94px;
+    height: 94px;
+  }
+  .rank-nameplate.md {
+    width: 174px;
+    height: 29px;
+  }
+  .rank-nameplate.md .rnp-txt {
+    font-size: 11px;
+  }
+}
