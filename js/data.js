@@ -322,15 +322,14 @@ window.RUN_DATA = (function () {
       customAvatar: 'assets/chars/port_ice_emperor.png?v=20261121hd83',
       customUmbrella: 'ice_emperor_umbrella',
       customMask: 'ice_emperor_mask',
-      customShieldPrefix: 'ice_emperor_aura',
-      customShieldFrames: 6,
+      customShieldVfx: 'ice_emperor_shield',
       customBoosterPrefix: 'ice_emperor_booster',
       customBoosterFrames: 4,
       customAuraPrefix: 'ice_emperor_aura',
       customAuraFrames: 6,
       glow: '#62d4ff',
       trail: ['#8ef2ff', '#7a6bff', '#ffffff'],
-      desc: '시즌 1 골드 패스 80티어 최종 보상 신화 스킨! 시즌 기간에는 골드 패스로만 획득 · 시즌 종료 후 스킨 뽑기에 출시 · 전용 눈꽃 우산 & 마스크 · 6프레임 보호막 · 혜성 부스터!'
+      desc: '시즌 1 골드 패스 80티어 최종 보상 신화 스킨! 시즌 기간에는 골드 패스로만 획득 · 시즌 종료 후 스킨 뽑기에 출시 · 전용 눈꽃 우산 & 마스크 · 빙결 구체 보호막 · 혜성 부스터!'
     }
   ];
 
@@ -714,6 +713,8 @@ window.RUN_DATA = (function () {
       title: '시즌 1 : 얼음황제 패스',
       xpPerTier: 100,
       maxTier: 80,
+      bonusXpStep: 500,
+      bonusReward: { kind: 'chest', chest: 'diamond', amount: 1, label: '다이아 상자 ×1' },
       startsAt: Date.UTC(2026, 10, 20, 15, 0, 0),
       endsAt: Date.UTC(2027, 0, 31, 15, 0, 0),
       skipGemCost: 100,

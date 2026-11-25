@@ -14137,6 +14137,163 @@ input:focus-visible {
   transform: translateY(1.5px);
 }
 
+/* End-of-Pass Brawl Stars 500 XP Repeating Bonus Diamond Chest Card */
+.sp-col.tier-bonus {
+  flex: 0 0 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0 4px 0 6px;
+}
+
+.sp-bonus-card {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 9px 8px 8px;
+  border-radius: 13px;
+  border: 2.4px solid #59d8ff;
+  background: linear-gradient(180deg, #1b4f9c 0%, #0f2963 55%, #091b42 100%);
+  box-shadow: 0 0 14px rgba(82, 212, 255, 0.36), 0 3px 0 #071022;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.sp-bonus-card.ready {
+  border-color: #62ff9e;
+  box-shadow: 0 0 14px rgba(84, 245, 152, 0.58), 0 3px 0 #071022;
+}
+
+.sp-bonus-card.locked {
+  opacity: 0.88;
+  border-color: #2f5b9e;
+  box-shadow: 0 3px 0 #071022;
+}
+
+.sp-bonus-badge {
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #74e8ff, #1c9be6);
+  color: #051c38;
+  border: 1.5px solid #071022;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sp-bonus-art-wrap {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sp-bonus-art {
+  width: 62px;
+  height: 62px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 3px 8px rgba(72, 216, 255, 0.45));
+}
+
+.sp-bonus-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.sp-bonus-sub {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #9cdbff;
+  white-space: nowrap;
+}
+
+.sp-bonus-prog-track {
+  position: relative;
+  width: 100%;
+  height: 17px;
+  border-radius: 999px;
+  background: #071226;
+  border: 1.5px solid #060e20;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sp-bonus-prog-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #3be88d, #48d8ff);
+  transition: width 0.3s ease;
+}
+
+.sp-bonus-prog-txt {
+  position: relative;
+  z-index: 2;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 0 #071022;
+  white-space: nowrap;
+}
+
+.sp-bonus-count {
+  font-size: 9px;
+  font-weight: 800;
+  color: #7ee8ab;
+  white-space: nowrap;
+}
+
+@media (max-height: 520px), (max-width: 860px) {
+  .sp-col.tier-bonus {
+    flex: 0 0 118px;
+    padding: 0 3px 0 5px;
+  }
+  .sp-bonus-card {
+    padding: 6px 6px 6px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+  .sp-bonus-badge {
+    font-size: 8.5px;
+    padding: 1px 6px;
+  }
+  .sp-bonus-art {
+    width: 44px;
+    height: 44px;
+  }
+  .sp-bonus-title {
+    font-size: 10.5px;
+  }
+  .sp-bonus-sub {
+    font-size: 8.5px;
+  }
+  .sp-bonus-prog-track {
+    height: 14px;
+  }
+  .sp-bonus-prog-txt {
+    font-size: 8.5px;
+  }
+}
+
 /* Mobile Landscape Compact Brawl Pass — Zero Vertical Scroll! */
 @media (max-height: 520px), (max-width: 860px) {
   .sp-overlay {

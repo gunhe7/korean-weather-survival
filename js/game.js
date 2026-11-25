@@ -189,6 +189,7 @@
         goldUnlocked: false,
         claimedFree: {},
         claimedGold: {},
+        bonusClaimed: 0,
         dailyMissions: { date: today, progress: { runs: 0, dist: 0, coins: 0, jumps: 0, dodges: 0 }, claimed: {} }
       },
       weeklyRank: { weekKey: week, bestScore: 0, bestDist: 0, bestYear: 1, history: {}, claimedWeeks: [] },
@@ -294,6 +295,7 @@
           goldUnlocked: Boolean(sp.goldUnlocked),
           claimedFree: sp.claimedFree && typeof sp.claimedFree === 'object' ? { ...sp.claimedFree } : {},
           claimedGold: sp.claimedGold && typeof sp.claimedGold === 'object' ? { ...sp.claimedGold } : {},
+          bonusClaimed: typeof sp.bonusClaimed === 'number' && Number.isFinite(sp.bonusClaimed) ? Math.max(0, Math.floor(sp.bonusClaimed)) : 0,
           dailyMissions: {
             date: today,
             progress: { runs: 0, dist: 0, coins: 0, jumps: 0, dodges: 0, ...(spDm.progress || {}) },
@@ -2234,7 +2236,7 @@
   let currentSpTab = 'rewards';
 
   function ensureSeasonPass() {
-    const spCfg = DATA.SEASON_PASS || { seasonId: 's1', xpPerTier: 100, maxTier: 80, tiers: [] };
+    const spCfg = DATA.SEASON_PASS || { seasonId: 's1', xpPerTier: 100, maxTier: 80, bonusXpStep: 500, tiers: [] };
     const today = getTodayKey();
     if (!save.seasonPass || typeof save.seasonPass !== 'object') {
       save.seasonPass = {
@@ -2243,6 +2245,7 @@
         goldUnlocked: false,
         claimedFree: {},
         claimedGold: {},
+        bonusClaimed: 0,
         dailyMissions: { date: today, progress: { runs: 0, dist: 0, coins: 0, jumps: 0, dodges: 0 }, claimed: {} }
       };
     }
@@ -2260,6 +2263,7 @@
       if (!sp.dailyMissions.claimed || typeof sp.dailyMissions.claimed !== 'object') sp.dailyMissions.claimed = {};
     }
     sp.xp = Math.max(0, Math.floor(Number(sp.xp) || 0));
+    sp.bonusClaimed = Math.max(0, Math.floor(Number(sp.bonusClaimed) || 0));
     sp.goldUnlocked = Boolean(sp.goldUnlocked);
     return sp;
   }
@@ -2280,38 +2284,68 @@
     const claimed = (sp.dailyMissions && sp.dailyMissions.claimed) || {};
     if (claimed[mission.id]) return;
     if (Math.floor(prog[mission.metric] || 0) < mission.target) return;
+    const prevBonus = getSeasonPassProgress().bonusEarned;
     sp.dailyMissions.claimed[mission.id] = true;
     const xpGain = addSeasonPassXp(mission.xp || 100);
+    const afterProg = getSeasonPassProgress();
     SFX.reward();
     persistSave(true);
     refreshAllMenus();
-    if (xpGain > 0) {
-      showToast(`패스 미션 완료! 시즌 패스 +${xpGain} XP 획득`);
+    if (afterProg.bonusEarned > prevBonus) {
+      showToast(`패스 미션 완료! +${xpGain} XP (보너스 다이아 상자 달성!)`);
+    } else if (afterProg.isMax) {
+      showToast(`패스 미션 완료! 보너스 +${xpGain} XP (${afterProg.bonusCurXp}/${afterProg.bonusXpStep})`);
     } else {
-      showToast('이미 시즌 패스 최고 티어(Lv.80)입니다.');
+      showToast(`패스 미션 완료! 시즌 패스 +${xpGain} XP 획득`);
     }
   }
 
   function getSeasonPassProgress() {
-    const spCfg = DATA.SEASON_PASS || { xpPerTier: 100, maxTier: 80, tiers: [] };
+    const spCfg = DATA.SEASON_PASS || { xpPerTier: 100, maxTier: 80, bonusXpStep: 500, tiers: [] };
     const sp = ensureSeasonPass();
     const xpPerTier = spCfg.xpPerTier || 100;
     const maxTier = spCfg.maxTier || 80;
-    const tier = Math.min(maxTier, Math.floor(sp.xp / xpPerTier));
-    const isMax = tier >= maxTier;
-    const curXp = isMax ? xpPerTier : (sp.xp % xpPerTier);
-    const pct = isMax ? 100 : Math.min(100, (curXp / xpPerTier) * 100);
-    return { tier, maxTier, totalXp: sp.xp, curXp, xpPerTier, pct, isMax };
+    const bonusXpStep = spCfg.bonusXpStep || 500;
+    const baseMaxXp = maxTier * xpPerTier;
+    const isMax = sp.xp >= baseMaxXp;
+    const tier = isMax ? maxTier : Math.floor(sp.xp / xpPerTier);
+    const overflowXp = isMax ? (sp.xp - baseMaxXp) : 0;
+    const bonusEarned = isMax ? Math.floor(overflowXp / bonusXpStep) : 0;
+    const bonusClaimed = Math.max(0, Math.floor(Number(sp.bonusClaimed) || 0));
+    const bonusClaimable = Math.max(0, bonusEarned - bonusClaimed);
+    const bonusCurXp = isMax ? (overflowXp % bonusXpStep) : 0;
+    const curXp = isMax ? bonusCurXp : (sp.xp % xpPerTier);
+    const reqXp = isMax ? bonusXpStep : xpPerTier;
+    const pct = Math.min(100, (curXp / reqXp) * 100);
+    return {
+      tier, maxTier, totalXp: sp.xp, curXp, reqXp, xpPerTier,
+      pct, isMax, bonusXpStep, bonusEarned, bonusClaimed, bonusClaimable, bonusCurXp
+    };
   }
 
   function addSeasonPassXp(amount) {
     const add = Math.max(0, Math.floor(Number(amount) || 0));
     if (add <= 0) return 0;
-    const spCfg = DATA.SEASON_PASS || { xpPerTier: 100, maxTier: 80 };
     const sp = ensureSeasonPass();
-    const maxXp = (spCfg.maxTier || 80) * (spCfg.xpPerTier || 100);
-    sp.xp = Math.min(maxXp, sp.xp + add);
+    sp.xp += add;
     return add;
+  }
+
+  function claimSeasonPassBonusChests(silentToast = false) {
+    const sp = ensureSeasonPass();
+    const prog = getSeasonPassProgress();
+    const count = prog.bonusClaimable;
+    if (count <= 0) return 0;
+    sp.bonusClaimed = (sp.bonusClaimed || 0) + count;
+    save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
+    save.chestBag.diamond = (save.chestBag.diamond || 0) + count;
+    if (!silentToast) {
+      SFX.chestJackpot();
+      persistSave(true);
+      refreshAllMenus();
+      showToast(`시즌 패스 보너스! 다이아 상자 ${count}개 획득 (상자 보관함)`);
+    }
+    return count;
   }
 
   function getSeasonDaysLeft() {
@@ -2467,7 +2501,8 @@
 
   function claimAllSeasonPassRewards() {
     const ready = getUnclaimedSeasonPassRewards();
-    if (!ready.length) return;
+    const prog = getSeasonPassProgress();
+    if (!ready.length && prog.bonusClaimable <= 0) return;
     let gSum = 0;
     let gemSum = 0;
     let chestSum = 0;
@@ -2482,9 +2517,13 @@
       else if (rw.kind === 'ticket') tickSum += (rw.amount || 1);
       else if (rw.kind === 'skin') gotSkin = true;
     });
-    if (gotSkin) SFX.chestJackpot();
+    const bonusChests = claimSeasonPassBonusChests(true);
+    chestSum += bonusChests;
+    const totalCount = ready.length + bonusChests;
+    if (totalCount <= 0) return;
+    if (gotSkin || bonusChests > 0) SFX.chestJackpot();
     else SFX.reward();
-    persistSave();
+    persistSave(true);
     refreshAllMenus();
     const parts = [];
     if (gSum > 0) parts.push(`골드 ${gSum.toLocaleString('ko-KR')}G`);
@@ -2492,7 +2531,7 @@
     if (chestSum > 0) parts.push(`상자 ${chestSum}개`);
     if (tickSum > 0) parts.push(`뽑기권 ${tickSum}장`);
     if (gotSkin) parts.push('신화 스킨');
-    showToast(`시즌 패스 보상 ${ready.length}건 수령 (${parts.join(' · ')})`);
+    showToast(`시즌 패스 보상 ${totalCount}건 수령 (${parts.join(' · ')})`);
   }
 
   function formatSeasonPassIconHtml(rw) {
@@ -2525,11 +2564,11 @@
     const prog = getSeasonPassProgress();
     const unclaimed = getUnclaimedSeasonPassRewards();
     const readyMissions = getClaimablePassDailyMissions();
-    const totalReady = unclaimed.length + readyMissions.length;
+    const totalReady = unclaimed.length + prog.bonusClaimable + readyMissions.length;
     if (el.homePassFill) el.homePassFill.style.width = `${prog.pct.toFixed(1)}%`;
     if (el.homePassLv) {
       el.homePassLv.textContent = prog.isMax
-        ? `Lv.${prog.maxTier} MAX`
+        ? `보너스 · ${prog.bonusCurXp}/${prog.bonusXpStep}`
         : `Lv.${prog.tier} · ${prog.curXp}/${prog.xpPerTier}`;
     }
     if (el.homePassDot) {
@@ -2548,6 +2587,7 @@
     const prog = getSeasonPassProgress();
     const unclaimed = getUnclaimedSeasonPassRewards();
     const readyMissions = getClaimablePassDailyMissions();
+    const totalClaimable = unclaimed.length + prog.bonusClaimable;
     currentSpTab = currentSpTab === 'missions' ? 'missions' : 'rewards';
 
     if (el.btnSpTabRewards) {
@@ -2565,15 +2605,17 @@
       el.spMissionDot.textContent = readyMissions.length > 9 ? '9+' : String(readyMissions.length);
     }
 
-    if (el.spTierPill) el.spTierPill.textContent = `Lv.${prog.tier} / ${prog.maxTier}`;
+    if (el.spTierPill) {
+      el.spTierPill.textContent = prog.isMax ? `Lv.${prog.maxTier} MAX` : `Lv.${prog.tier} / ${prog.maxTier}`;
+    }
     if (el.btnSpClaimAll) {
-      el.btnSpClaimAll.classList.toggle('hidden', unclaimed.length === 0);
-      el.btnSpClaimAll.textContent = `모두 받기 (${unclaimed.length})`;
+      el.btnSpClaimAll.classList.toggle('hidden', totalClaimable === 0);
+      el.btnSpClaimAll.textContent = `모두 받기 (${totalClaimable})`;
     }
     if (el.spXpFill) el.spXpFill.style.width = `${prog.pct.toFixed(1)}%`;
     if (el.spXpText) {
       el.spXpText.textContent = prog.isMax
-        ? `MAX (${prog.maxTier})`
+        ? `보너스 ${prog.bonusCurXp} / ${prog.bonusXpStep} XP`
         : `${prog.curXp} / ${prog.xpPerTier} XP`;
     }
     if (el.btnSpSkipTier) {
@@ -2705,6 +2747,49 @@
       }
       el.spTrack.appendChild(col);
     });
+
+    // End-of-Pass Brawl Stars 500 XP Repeating Bonus Diamond Chest Card
+    const bonusCol = document.createElement('div');
+    bonusCol.className = 'sp-col tier-bonus';
+    const dChest = (DATA.CHESTS && DATA.CHESTS.diamond) || { icon: 'assets/chests/chest_diamond_0.png', name: '다이아 상자' };
+    const bonusPct = prog.isMax ? Math.min(100, (prog.bonusCurXp / prog.bonusXpStep) * 100) : 0;
+    const bonusCard = document.createElement('div');
+    bonusCard.className = `sp-bonus-card${prog.bonusClaimable > 0 ? ' ready' : (prog.isMax ? '' : ' locked')}`;
+    bonusCard.innerHTML = `
+      <span class="sp-bonus-badge">반복 보너스</span>
+      <div class="sp-bonus-art-wrap">
+        <img src="${dChest.icon}?v=${ASSET_VER}" alt="${dChest.name}" class="sp-bonus-art" />
+      </div>
+      <div class="sp-bonus-title">다이아 상자 ×1</div>
+      <div class="sp-bonus-sub">${prog.bonusXpStep} XP마다 지급</div>
+      <div class="sp-bonus-prog-track">
+        <div class="sp-bonus-prog-fill" style="width:${bonusPct.toFixed(1)}%"></div>
+        <span class="sp-bonus-prog-txt">${prog.isMax ? `${prog.bonusCurXp} / ${prog.bonusXpStep} XP` : '80티어 완료 후'}</span>
+      </div>
+      ${prog.bonusClaimed > 0 ? `<div class="sp-bonus-count">누적 ${prog.bonusClaimed}개 수령</div>` : ''}
+    `;
+    const bonusBtn = document.createElement('button');
+    bonusBtn.type = 'button';
+    if (prog.bonusClaimable > 0) {
+      bonusBtn.className = 'sp-claim-btn ready';
+      bonusBtn.textContent = `받기 (${prog.bonusClaimable})`;
+      bonusBtn.onclick = () => claimSeasonPassBonusChests(false);
+    } else if (prog.isMax) {
+      bonusBtn.className = 'sp-claim-btn done';
+      bonusBtn.textContent = '진행 중';
+      bonusBtn.disabled = true;
+    } else {
+      bonusBtn.className = 'sp-claim-btn skip-far';
+      bonusBtn.textContent = 'Lv.80 이후';
+      bonusBtn.disabled = true;
+    }
+    bonusCard.appendChild(bonusBtn);
+    bonusCol.appendChild(bonusCard);
+    el.spTrack.appendChild(bonusCol);
+
+    if (!focusCol && (prog.bonusClaimable > 0 || prog.isMax)) {
+      focusCol = bonusCol;
+    }
 
     if (currentSpTab === 'rewards' && focusCol && el.spTrack.scrollTo) {
       requestAnimationFrame(() => {
@@ -3452,6 +3537,7 @@
       goldUnlocked: Boolean(cSp.goldUnlocked || lSp.goldUnlocked),
       claimedFree: { ...(cSp.claimedFree || {}), ...(lSp.claimedFree || {}) },
       claimedGold: { ...(cSp.claimedGold || {}), ...(lSp.claimedGold || {}) },
+      bonusClaimed: Math.max(Number(cSp.bonusClaimed) || 0, Number(lSp.bonusClaimed) || 0),
       dailyMissions: {
         date: todayKey,
         progress: mergedSpProgress,
@@ -5602,7 +5688,7 @@
           <span class="brawl-skill-chip">${unlocked ? getCharShortSkill(ch) : `🔒 ${ch.price.toLocaleString('ko-KR')}G`}</span>
           ${selected ? '<span class="brawl-eq-chip">✓ 장착</span>' : ''}
           <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="brawl-card-img" style="${getSkinFilter(eqSkin) ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
-          <span class="brawl-skin-chip">${eqSkin ? `✨ ${eqSkin.name}` : `❤️ ${stats.maxHp}칸`}</span>
+          <span class="brawl-skin-chip">${eqSkin ? eqSkin.name : `${uiIcon('heart', 'xs')} ${stats.maxHp}칸`}</span>
         </div>
         <div class="brawl-nameplate">
           <span class="brawl-name">${ch.name}</span>
@@ -7200,14 +7286,14 @@
       }
     }
 
-    // In-run shield item expires cleanly after 10 seconds with brief grace invincibility
+    // In-run shield item expires cleanly after 4.5 seconds with brief grace invincibility
     if (run.shield && !run.shieldFromBooster) {
       run.shieldTimer = Math.max(0, (run.shieldTimer || 0) - dt);
       if (run.shieldTimer <= 0) {
         run.shield = false;
-        run.invulnTimer = Math.max(run.invulnTimer || 0, 1.8);
+        run.invulnTimer = Math.max(run.invulnTimer || 0, 0.8);
         SFX.umbrellaToggle(false);
-        Renderer.spawnFloater('🛡️ 보호막 종료 · 잠시 무적!', '#9fd9ff', run.playerX + 10, run.playerY - 42);
+        Renderer.spawnFloater('보호막 종료', '#9fd9ff', run.playerX + 10, run.playerY - 42);
       }
     }
 
@@ -7880,12 +7966,12 @@
         } else if (it.kind === 'shield_item') {
           run.shield = true;
           run.shieldFromBooster = false;
-          run.shieldTimer = 10.0;
-          run.shieldMaxTimer = 10.0;
+          run.shieldTimer = 4.5;
+          run.shieldMaxTimer = 4.5;
           run.itemPoseTimer = 0.45;
           SFX.shieldUp();
           Renderer.spawnPickupEffect(it.x, it.y, '#7ad8ff', true);
-          Renderer.spawnFloater('🛡️ 보호막 획득! (10초)', '#8ce2ff', run.playerX + 12, run.playerY - 44);
+          Renderer.spawnFloater('보호막 획득! (4.5초)', '#8ce2ff', run.playerX + 12, run.playerY - 44);
         } else if (it.kind === 'chest_wood' || it.kind === 'chest_silver' || it.kind === 'chest_gold' || it.kind === 'chest_diamond') {
           const tierId = it.kind.replace('chest_', '');
           const chestDef = DATA.CHESTS[tierId] || DATA.CHESTS.wood;
@@ -8034,14 +8120,14 @@
               run.nearMissGauge = 0;
               run.shield = true;
               run.shieldFromBooster = false;
-              run.shieldTimer = 10.0;
-              run.shieldMaxTimer = 10.0;
+              run.shieldTimer = 4.5;
+              run.shieldMaxTimer = 4.5;
               SFX.guard();
               Renderer.spawnPickupEffect(run.playerX + 12, run.playerY - 30, '#ffe27a', true);
-              Renderer.spawnFloater('🛡️ 아슬아슬 보호막 발동!', '#ffe27a', run.playerX + 12, run.playerY - 48);
+              Renderer.spawnFloater('아슬아슬 보호막 발동! (4.5초)', '#ffe27a', run.playerX + 12, run.playerY - 48);
             } else {
               SFX.coin();
-              Renderer.spawnFloater(`🛡️ 회피 게이지 ${run.nearMissGauge}/5`, '#ffe27a', run.playerX + 10, run.playerY - 44);
+              Renderer.spawnFloater(`회피 게이지 ${run.nearMissGauge}/5`, '#ffe27a', run.playerX + 10, run.playerY - 44);
             }
           }
         }
@@ -8084,12 +8170,12 @@
     triggerCameraShake(8, 0.3);
   }
 
-  function consumeShieldHit(msg = '🛡️ 보호막 방어! 잠시 무적!') {
+  function consumeShieldHit(msg = '보호막 방어! 잠시 무적') {
     if (!run || !run.shield) return false;
     run.shield = false;
     run.shieldFromBooster = false;
     run.shieldTimer = 0;
-    run.invulnTimer = Math.max(run.invulnTimer || 0, 1.8);
+    run.invulnTimer = Math.max(run.invulnTimer || 0, 1.2);
     run.hitStopTimer = 0.04;
     SFX.guard();
     haptic(18);
@@ -8448,7 +8534,7 @@
       }
       if (shdActive) {
         const shdPct = (!run.shieldFromBooster && run.shieldTimer > 0)
-          ? Math.max(0, Math.min(100, (run.shieldTimer / (run.shieldMaxTimer || 10.0)) * 100))
+          ? Math.max(0, Math.min(100, (run.shieldTimer / (run.shieldMaxTimer || 4.5)) * 100))
           : 100;
         hudWidth('orbBarShd', el.orbBarShield, `${shdPct.toFixed(1)}%`);
       }

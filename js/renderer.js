@@ -45,7 +45,7 @@ window.RunRenderer = (function () {
     'hades_booster_0', 'hades_booster_1', 'hades_booster_2', 'hades_booster_3', 'hades_booster_4', 'hades_booster_5',
     'hades_booster_6', 'hades_booster_7', 'hades_booster_8', 'hades_booster_9', 'hades_booster_10', 'hades_booster_11',
     'hades_aura_0', 'hades_aura_1', 'hades_aura_2', 'hades_aura_3', 'hades_aura_4', 'hades_aura_5',
-    'ice_emperor_umbrella', 'ice_emperor_mask',
+    'ice_emperor_umbrella', 'ice_emperor_mask', 'ice_emperor_shield',
     'ice_emperor_aura_0', 'ice_emperor_aura_1', 'ice_emperor_aura_2', 'ice_emperor_aura_3', 'ice_emperor_aura_4', 'ice_emperor_aura_5',
     'ice_emperor_booster_0', 'ice_emperor_booster_1', 'ice_emperor_booster_2', 'ice_emperor_booster_3'
   ];
@@ -101,6 +101,7 @@ window.RunRenderer = (function () {
     SPRITE_URL_MAP[`port_${sk.id}`] = `assets/chars/port_${sk.id}.png?v=${skVer}`;
   });
   CHAR_VFX_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/chars/${key}.png?v=${SPRITE_VER}`; });
+  SPRITE_URL_MAP['ice_emperor_shield'] = 'assets/chars/ice_emperor_shield.png?v=20261121hd89';
   DESIGN_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/design/${key}.png?v=${SPRITE_VER}`; });
   ATLAS_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/atlas/${key}.png?v=${SPRITE_VER}`; });
   WORLD_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${SPRITE_VER}`; });
