@@ -9,17 +9,29 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd53" />
+  <link rel="manifest" href="manifest.json?v=20261121hd74" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd73" />
+  <link rel="stylesheet" href="style.css?v=20261121hd74" />
 </head>
 <body>
   <div id="mobile-app">
+    <!-- ================= LANDSCAPE LOCK GUARD (PORTRAIT MOBILE PROMPT / ONE-TAP FULLSCREEN LOCK) ================= -->
+    <div id="rotate-overlay" role="dialog" aria-modal="true" aria-label="가로 모드 전환">
+      <div class="rotate-card">
+        <div class="rotate-phone-ico" aria-hidden="true">📱</div>
+        <h2>가로 모드 전용 게임</h2>
+        <p id="rotate-card-desc">브롤스타즈처럼 가로 화면으로 자동 전환해 쾌적하게 플레이하세요!</p>
+        <button id="btn-rotate-lock" class="cr-gold-btn rotate-fs-btn" type="button">
+          <span class="rotate-btn-txt">⛶ 가로 모드로 자동 전환</span>
+        </button>
+      </div>
+    </div>
+
     <!-- ================= YAGUN STUDIO CINEMATIC COMPANY LOGO INTRO ================= -->
     <div id="studio-splash-overlay" class="studio-splash-overlay" role="region" aria-label="YAGUN STUDIO">
       <canvas id="studio-splash-canvas" class="studio-splash-canvas"></canvas>
@@ -382,6 +394,12 @@
         </span>
       </button>
     </nav>
+
+    <!-- Apple Dynamic Bar Handle Pill (Shown when Bottom Nav tucks down on non-Home tabs!) -->
+    <button id="nav-dynamic-handle" class="nav-dynamic-handle hidden" type="button" aria-label="메뉴바 열기">
+      <span class="ndh-pill" aria-hidden="true"></span>
+      <span class="ndh-lbl">▲ 메뉴</span>
+    </button>
 
     <!-- ================= 7-DAY ATTENDANCE REWARD MODAL ================= -->
     <div id="attendance-overlay" class="modal-overlay hidden">
@@ -1056,14 +1074,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd73"></script>
-  <script src="js/ui-icons.js?v=20261121hd73"></script>
-  <script src="js/weather-live.js?v=20261121hd73"></script>
-  <script src="js/audio.js?v=20261121hd73"></script>
-  <script src="js/studio-intro.js?v=20261121hd73"></script>
-  <script src="js/online.js?v=20261121hd73"></script>
-  <script src="js/renderer.js?v=20261121hd73"></script>
-  <script src="js/game.js?v=20261121hd73"></script>
+  <script src="js/data.js?v=20261121hd74"></script>
+  <script src="js/ui-icons.js?v=20261121hd74"></script>
+  <script src="js/weather-live.js?v=20261121hd74"></script>
+  <script src="js/audio.js?v=20261121hd74"></script>
+  <script src="js/studio-intro.js?v=20261121hd74"></script>
+  <script src="js/online.js?v=20261121hd74"></script>
+  <script src="js/renderer.js?v=20261121hd74"></script>
+  <script src="js/game.js?v=20261121hd74"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

@@ -527,6 +527,12 @@ window.SFX = (function () {
       tone(1174.66, 0.075, 'square', 0.065, 0.00);
       tone(932.33, 0.075, 'square', 0.065, 0.085);
       tone(1174.66, 0.11, 'square', 0.070, 0.17);
+    } else if (weatherId === 'hail') {
+      // Crystalline falling-ice warning chime (umbrella timing alert!)
+      tone(1567.98, 0.08, 'triangle', 0.062, 0.00);
+      tone(1174.66, 0.08, 'triangle', 0.062, 0.085);
+      tone(1760.00, 0.12, 'sine', 0.068, 0.17);
+      playNoiseBurst({ bufType: 'white', dur: 0.18, delay: 0.04, filterType: 'highpass', startFreq: 3200, endFreq: 2200, gainVal: 0.06, attack: 0.02 });
     } else if (weatherId === 'clear') {
       // Gentle bright clear-sky relief chime
       tone(659.25, 0.08, 'sine', 0.040, 0.00);
@@ -673,6 +679,16 @@ window.SFX = (function () {
       // Menacing fast dash whoosh as the virus rockets toward the player!
       playNoiseBurst({ bufType: 'pink', dur: 0.32, filterType: 'bandpass', startFreq: 380, endFreq: 1450, Q: 3.0, gainVal: 0.17, attack: 0.03 });
       slideTone(520, 240, 0.24, 'sawtooth', 0.055);
+    },
+    hailDrop() {
+      slideTone(1320, 420, 0.26, 'triangle', 0.062);
+      playNoiseBurst({ bufType: 'white', dur: 0.24, filterType: 'bandpass', startFreq: 2600, endFreq: 1400, Q: 2.2, gainVal: 0.12, attack: 0.02 });
+    },
+    hailBlock() {
+      // Crisp icy clink off umbrella canopy!
+      tone(1480, 0.055, 'triangle', 0.072, 0.00);
+      tone(2093, 0.09, 'sine', 0.062, 0.035);
+      playNoiseBurst({ bufType: 'white', dur: 0.09, filterType: 'highpass', startFreq: 2800, endFreq: 4200, gainVal: 0.075, attack: 0.008 });
     },
     click() { tone(700, 0.04, 'triangle', 0.055); },
     buy() {

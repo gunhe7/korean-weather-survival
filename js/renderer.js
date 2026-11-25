@@ -1052,6 +1052,157 @@ window.RunRenderer = (function () {
     ctx.restore();
   }
 
+  function drawIceStone(ctx, x, y, r, rot) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    const pts = 7;
+    ctx.beginPath();
+    for (let i = 0; i < pts; i++) {
+      const ang = (i / pts) * Math.PI * 2;
+      const rad = r * (i % 2 === 0 ? 1.0 : 0.78);
+      const px = Math.cos(ang) * rad;
+      const py = Math.sin(ang) * rad;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    const g = ctx.createLinearGradient(-r, -r, r, r);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(0.55, '#8be4ff');
+    g.addColorStop(1, '#2b8fe0');
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = '#09152e';
+    ctx.stroke();
+
+    // Crisp specular crystal glint
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.35, -r * 0.42);
+    ctx.lineTo(r * 0.08, -r * 0.48);
+    ctx.lineTo(-r * 0.12, -r * 0.08);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHailAttack(ctx, attack, playerX, playerY, t) {
+    if (!attack) return;
+    const ax = attack.x;
+    const ay = attack.y;
+    const stones = Array.isArray(attack.stones) && attack.stones.length
+      ? attack.stones
+      : [{ dx: 0, dy: 0, r: 12, spin: 1 }, { dx: -16, dy: -12, r: 9, spin: -1.4 }, { dx: 15, dy: -10, r: 9, spin: 1.3 }];
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+
+    if (attack.phase === 'warn') {
+      const ratio = Math.max(0, Math.min(1, attack.timer / (attack.maxTimer || 1.8)));
+      const blink = Math.floor(t * 14) % 2 === 0;
+      const targetX = playerX + 4;
+      const targetY = playerY - 46;
+
+      // Dashed icy-blue vertical drop trajectory line
+      ctx.save();
+      ctx.strokeStyle = blink ? 'rgba(98, 232, 255, 0.88)' : 'rgba(255, 224, 72, 0.78)';
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([7, 5]);
+      ctx.lineDashOffset = -t * 75;
+      ctx.beginPath();
+      ctx.moveTo(ax, 34);
+      ctx.lineTo(targetX, targetY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Shrinking cyan-yellow lock ring at sky spawn point
+      const lockR = 20 + ratio * 22;
+      ctx.save();
+      ctx.strokeStyle = ratio < 0.38 ? '#ffe247' : '#58e1ff';
+      ctx.lineWidth = ratio < 0.38 ? 3.2 : 2.2;
+      ctx.globalAlpha = 0.88;
+      ctx.beginPath();
+      ctx.arc(ax, 28, lockR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Dark storm cloud puff behind hailstones
+      ctx.save();
+      ctx.fillStyle = '#1d3154';
+      ctx.beginPath();
+      ctx.arc(ax - 18, 22, 16, 0, Math.PI * 2);
+      ctx.arc(ax + 18, 22, 16, 0, Math.PI * 2);
+      ctx.arc(ax, 17, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#314b73';
+      ctx.beginPath();
+      ctx.arc(ax - 12, 19, 13, 0, Math.PI * 2);
+      ctx.arc(ax + 12, 19, 13, 0, Math.PI * 2);
+      ctx.arc(ax, 15, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Trembling 3-stone ice hail cluster
+      const jitterX = Math.sin(t * 48) * 2.2;
+      const jitterY = Math.cos(t * 42) * 1.8;
+      stones.forEach((st, idx) => {
+        drawIceStone(ctx, ax + st.dx + jitterX, 28 + st.dy + jitterY, st.r || 10, t * (st.spin || 1) * 4 + idx);
+      });
+
+      // Glossy cartoon warning pill directly below cloud
+      const minX = (curView && curView.minX !== undefined) ? curView.minX + 8 : 8;
+      const maxX = (curView && curView.maxX !== undefined) ? curView.maxX - 150 : W - 150;
+      const bw = 142;
+      const bh = 24;
+      const bx = Math.min(maxX, Math.max(minX, ax - bw / 2));
+      const by = 56;
+      const pGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
+      pGrad.addColorStop(0, blink ? '#35caff' : '#ff9814');
+      pGrad.addColorStop(1, blink ? '#136ed4' : '#d65c00');
+      drawRoundRect(ctx, bx, by, bw, bh, 12);
+      ctx.fillStyle = pGrad;
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = '#09152e';
+      ctx.stroke();
+      drawRoundRect(ctx, bx + 2, by + 2, bw - 4, bh - 4, 10);
+      ctx.lineWidth = 1.1;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
+      ctx.stroke();
+      ctx.font = '900 10.5px "Paperlogy", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 2.6;
+      ctx.strokeStyle = '#09152e';
+      ctx.strokeText('🧊 우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('🧊 우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
+    } else if (attack.phase === 'fall') {
+      stones.forEach((st, idx) => {
+        const sx = ax + st.dx;
+        const sy = ay + st.dy;
+        for (let k = 1; k <= 3; k++) {
+          ctx.save();
+          ctx.globalAlpha = 0.34 - k * 0.08;
+          ctx.fillStyle = '#8be4ff';
+          ctx.fillRect(Math.floor(sx - 2.5), Math.floor(sy - k * 14 - 12), 5, 13);
+          ctx.restore();
+        }
+        drawIceStone(ctx, sx, sy, (st.r || 11) + 1.5, t * (st.spin || 1) * 14 + idx);
+      });
+    } else if (attack.phase === 'deflected') {
+      const alpha = Math.max(0, Math.min(1, (attack.deflectTimer || 0) / 0.55));
+      ctx.globalAlpha = alpha;
+      stones.forEach((st, idx) => {
+        const spreadX = (idx === 0 ? 0 : (idx === 1 ? -14 : 18));
+        const spreadY = (idx === 0 ? 0 : -10);
+        drawIceStone(ctx, ax + st.dx + spreadX, ay + st.dy + spreadY, st.r || 10, t * 20 + idx * 2);
+      });
+    }
+    ctx.restore();
+  }
+
   // ===================== 4-FRAME ANIMATED SHIBA PUPPY COMPANION PET =====================
   function drawPuppyPet(ctx, x, y, t, customH = 30) {
     const frame = Math.floor(t * 10) % 4;
@@ -2016,8 +2167,9 @@ window.RunRenderer = (function () {
       scaleHeight: 62
     }, t);
 
-    // Corona Virus Timed Rush Attack!
+    // Corona Virus Timed Rush Attack & Sky Hailstone Drop Attack!
     drawCovidAttack(ctx, run.covidAttack, run.playerX, run.playerY, t);
+    drawHailAttack(ctx, run.hailAttack, run.playerX, run.playerY, t);
 
     // Dynamic High-Speed Wind Momentum Streaks (ramps smoothly as speed climbs past 220 px/s!)
     const speedRatio = (run.speed || 196) / 196;

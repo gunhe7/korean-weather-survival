@@ -377,6 +377,9 @@
   let previewCharIdx = Math.max(0, DATA.CHARACTERS.findIndex((c) => c.id === save.selectedChar));
   let detailCharIdx = null;
   let lastHomeHeroSrc = '';
+  let dockCollapsed = false;
+  let dockAutoHideTimer = null;
+  let lastTabScrollTop = 0;
 
   // ===================== ACTIVE RUN STATE =====================
   let run = null;
@@ -384,6 +387,13 @@
 
   // ===================== DOM REFERENCES =====================
   const el = {
+    rotateOverlay: document.getElementById('rotate-overlay'),
+    rotateCardDesc: document.getElementById('rotate-card-desc'),
+    btnRotateLock: document.getElementById('btn-rotate-lock'),
+    tabContainer: document.getElementById('tab-container'),
+    bottomNav: document.getElementById('bottom-nav'),
+    navDynamicHandle: document.getElementById('nav-dynamic-handle'),
+
     introOverlay: document.getElementById('intro-overlay'),
     introLoginBox: document.getElementById('intro-login-box'),
     btnIntroGoogle: document.getElementById('btn-intro-google'),
@@ -1773,7 +1783,8 @@
     gust:       { icon: '💨', title: '우산 접기!' },
     ice_road:   { icon: '🧊', title: '빙판!' },
     covid:      { icon: '🦠', title: '마스크!' },
-    covid_rush: { icon: '🦠', title: '마스크!' }
+    covid_rush: { icon: '🦠', title: '마스크!' },
+    hail:       { iconKey: 'umbrella', icon: '🧊', title: '우박! 우산!' }
   };
 
   function showWeatherCenterAlert(weatherId, customKeyword = null) {
@@ -1821,12 +1832,22 @@
   }
 
   let landscapeLockInFlight = false;
-  let fullscreenAttemptedOnce = false;
 
   function isAppleTouchDevice() {
     const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
     const isIPadOs = typeof navigator !== 'undefined' && navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
     return /iPhone|iPad|iPod/i.test(ua) || isIPadOs;
+  }
+
+  function syncRotateGuardCopy() {
+    if (isAppleTouchDevice()) {
+      if (el.rotateCardDesc) {
+        el.rotateCardDesc.textContent = '아이폰은 기기를 가로로 돌리면 자동으로 가로 화면으로 전환됩니다!';
+      }
+      if (el.btnRotateLock) {
+        el.btnRotateLock.classList.add('hidden');
+      }
+    }
   }
 
   async function tryAutoLockLandscape(fromUserGesture = false) {
@@ -1838,33 +1859,43 @@
       }
     } catch {}
 
-    // Never fight iOS/iPadOS Safari native orientation (prevents rotation spin/white-bar glitches!)
-    if (isAppleTouchDevice()) return;
+    // Never fight iOS/iPadOS Safari native orientation (Apple WebKit blocks JS hardware orientation lock)
+    if (isAppleTouchDevice()) {
+      syncRotateGuardCopy();
+      return;
+    }
     if (!isTouchMobileDevice()) return;
     if (landscapeLockInFlight) return;
     landscapeLockInFlight = true;
     try {
-      const docEl = document.documentElement;
-      const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
-      const canFs = Boolean(document.fullscreenEnabled || document.webkitFullscreenEnabled);
-
-      // Avoid calling requestFullscreen inside Google App / KakaoTalk / in-app WebViews where it can break touch/viewport!
-      if (fromUserGesture && !isFs && canFs && !isInAppBrowser() && !fullscreenAttemptedOnce) {
-        fullscreenAttemptedOnce = true;
-        try {
-          if (docEl.requestFullscreen) {
-            await docEl.requestFullscreen();
-          } else if (docEl.webkitRequestFullscreen) {
-            await docEl.webkitRequestFullscreen();
-          }
-        } catch {}
-      }
       if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
         try {
           await screen.orientation.lock('landscape');
         } catch {
           try { await screen.orientation.lock('landscape-primary'); } catch {}
         }
+      }
+
+      const docEl = document.documentElement;
+      const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      const canFs = Boolean(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+
+      // On any valid user gesture (outside restricted in-app WebViews), enter fullscreen and re-lock hardware landscape!
+      if (fromUserGesture && !isFs && canFs && !isInAppBrowser()) {
+        try {
+          if (docEl.requestFullscreen) {
+            await docEl.requestFullscreen({ navigationUI: 'hide' }).catch(() => docEl.requestFullscreen());
+          } else if (docEl.webkitRequestFullscreen) {
+            await docEl.webkitRequestFullscreen();
+          }
+          if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
+            try {
+              await screen.orientation.lock('landscape');
+            } catch {
+              try { await screen.orientation.lock('landscape-primary'); } catch {}
+            }
+          }
+        } catch {}
       }
     } finally {
       landscapeLockInFlight = false;
@@ -5070,20 +5101,45 @@
     }
   }
 
+  function setDynamicDockCollapsed(collapsed) {
+    const next = currentTab === 'home' ? false : Boolean(collapsed);
+    dockCollapsed = next;
+    if (el.bottomNav) el.bottomNav.classList.toggle('dock-collapsed', next);
+    if (el.navDynamicHandle) el.navDynamicHandle.classList.toggle('hidden', !next);
+  }
+
   function switchTab(tab) {
     SFX.click();
     currentTab = tab;
+    if (dockAutoHideTimer) {
+      clearTimeout(dockAutoHideTimer);
+      dockAutoHideTimer = null;
+    }
     document.querySelectorAll('.tab-view').forEach((v) => v.classList.remove('active'));
     document.getElementById(`view-${tab}`).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.tab === tab);
     });
+    if (el.tabContainer) {
+      el.tabContainer.scrollTop = 0;
+      lastTabScrollTop = 0;
+    }
+    if (tab === 'home') {
+      setDynamicDockCollapsed(false);
+    } else {
+      setDynamicDockCollapsed(false);
+      dockAutoHideTimer = setTimeout(() => {
+        dockAutoHideTimer = null;
+        if (currentTab !== 'home') setDynamicDockCollapsed(true);
+      }, 650);
+    }
     refreshAllMenus();
   }
 
   // ===================== RUNNER ENGINE (WEATHER PHYSICS + GEAR + CORONA EVENT) =====================
   const GEAR_DURATION = 10.0;
   const MASK_PARRY_WINDOW = 3.5;
+  const UMBRELLA_PARRY_WINDOW = 3.5;
   const UMBRELLA_BROKEN_CD = 5.0;
   const COVID_WALKER_PRESET = {
     id: 'covid_walker',
@@ -5146,6 +5202,10 @@
     }
 
     paused = false;
+    if (dockAutoHideTimer) {
+      clearTimeout(dockAutoHideTimer);
+      dockAutoHideTimer = null;
+    }
     releaseAllControlButtons();
     Renderer.clearFloaters();
 
@@ -5224,6 +5284,7 @@
       // Strategic Gear Toggles (Zero Cooldown · 10s Auto-Off) + Weather Exposure Timers
       umbrellaOn: false,
       umbrellaActiveTimer: 0,
+      umbrellaParryTimer: 0,
       umbrellaCooldown: 0,
       umbrellaBrokenTimer: 0,
       maskOn: false,
@@ -5263,7 +5324,7 @@
       pendingWeather: null,
       weatherPrepTimer: 0,
 
-      // Street Features, Passing Car & Corona Virus Rush Event
+      // Street Features, Passing Car & Corona Virus / Hail Attack Events
       features: [],
       featureCd: 2.2,
       convStoreCd: 13.0,
@@ -5271,6 +5332,8 @@
       passingCarCd: 5.5,
       covidAttack: null,
       covidAttackCd: 0,
+      hailAttack: null,
+      hailAttackCd: 11.5,
 
       // Obstacles & Collectibles
       obstacleCd: 1.5,
@@ -5355,10 +5418,26 @@
       return;
     }
 
-    if (run.umbrellaOn) {
+    const hailIncoming = Boolean(
+      run.hailAttack &&
+      (run.hailAttack.phase === 'warn' || run.hailAttack.phase === 'fall') &&
+      !run.hailAttack.checked
+    );
+
+    if (hailIncoming && run.weatherEvent !== 'gust') {
+      // 우박 낙하 중 우산 버튼을 누르면 실수로 접히지 않고 우박 타이밍 방어를 장전!
+      run.umbrellaOn = true;
+      run.umbrellaActiveTimer = GEAR_DURATION;
+      run.umbrellaParryTimer = UMBRELLA_PARRY_WINDOW;
+      run.rainExposeTimer = 0;
+      SFX.umbrellaToggle(true);
+      haptic(14);
+      Renderer.spawnFloater('☂️ 우박 방어 준비!', '#8ce0ff', run.playerX + 12, run.playerY - 46);
+    } else if (run.umbrellaOn) {
       const foldedForGust = run.weatherEvent === 'gust';
       run.umbrellaOn = false;
       run.umbrellaActiveTimer = 0;
+      run.umbrellaParryTimer = 0;
       run.gustExposeTimer = 0;
       run.umbrellaCooldown = 0;
       if (foldedForGust) {
@@ -5374,6 +5453,7 @@
     } else {
       run.umbrellaOn = true;
       run.umbrellaActiveTimer = GEAR_DURATION;
+      run.umbrellaParryTimer = UMBRELLA_PARRY_WINDOW;
       run.rainExposeTimer = 0;
       run.gustExposeTimer = 0;
       SFX.umbrellaToggle(true);
@@ -5391,6 +5471,7 @@
   function breakUmbrellaByGust() {
     run.umbrellaOn = false;
     run.umbrellaActiveTimer = 0;
+    run.umbrellaParryTimer = 0;
     run.umbrellaBrokenTimer = UMBRELLA_BROKEN_CD;
     run.umbrellaCooldown = 0;
     run.hitPoseTimer = 0.5;
@@ -6049,11 +6130,13 @@
     run.umbrellaCooldown = 0;
     run.maskCooldown = 0;
     if (run.maskParryTimer > 0) run.maskParryTimer = Math.max(0, run.maskParryTimer - dt);
+    if (run.umbrellaParryTimer > 0) run.umbrellaParryTimer = Math.max(0, run.umbrellaParryTimer - dt);
 
     if (run.umbrellaOn) {
       run.umbrellaActiveTimer = Math.max(0, run.umbrellaActiveTimer - dt);
       if (run.umbrellaActiveTimer <= 0) {
         run.umbrellaOn = false;
+        run.umbrellaParryTimer = 0;
         run.gustExposeTimer = 0;
         SFX.umbrellaToggle(false);
         Renderer.spawnFloater('☂️ 우산 자동 해제 (10초 경과)', '#9fd9ff', run.playerX + 10, run.playerY - 42);
@@ -6455,6 +6538,132 @@
       }
     }
 
+    // ---- SKY HAILSTONE DROP EVENT (BLOCKED BY UMBRELLA!) ----
+    if (run.hailAttack) {
+      const hAtk = run.hailAttack;
+      if (hAtk.phase === 'warn') {
+        hAtk.timer -= dt;
+        const targetX = run.playerX + 6;
+        hAtk.x += (targetX - hAtk.x) * Math.min(1, dt * 8);
+        if (hAtk.timer <= 0) {
+          hAtk.phase = 'fall';
+          hAtk.vy = 430 + run.speed * 0.28;
+          hAtk.vx = 0;
+          hAtk.checked = false;
+          SFX.hailDrop();
+        }
+      } else if (hAtk.phase === 'fall') {
+        hAtk.vy = (hAtk.vy || 430) + 420 * dt;
+        hAtk.y += hAtk.vy * dt;
+        hAtk.x += (run.playerX + 4 - hAtk.x) * Math.min(1, dt * 4.5);
+        if (!hAtk.checked && hAtk.y >= run.playerY - 44) {
+          hAtk.checked = true;
+          if (run.feverTimer > 0) {
+            hAtk.phase = 'deflected';
+            hAtk.deflectTimer = 0.55;
+            hAtk.vx = 200;
+            hAtk.vy = -250;
+            run.score += Math.round(250 * run.scoreMult);
+            SFX.hailBlock();
+            Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 42, '#ffe866', true);
+            Renderer.spawnFloater('🔥 피버! 우박 격파 +250', '#ffe866', run.playerX + 10, run.playerY - 56);
+          } else if (run.umbrellaOn && run.umbrellaParryTimer > 0) {
+            const isPerfect = run.umbrellaParryTimer >= 1.65;
+            const bonusPts = isPerfect ? 320 : 240;
+            const feverGain = isPerfect ? 14 : 10;
+            const twFevMult = (run.todayWeather && run.todayWeather.feverGainMult) ? run.todayWeather.feverGainMult : 1.0;
+            hAtk.phase = 'deflected';
+            hAtk.deflectTimer = 0.55;
+            hAtk.vx = 210;
+            hAtk.vy = -260;
+            run.score += Math.round(bonusPts * run.scoreMult);
+            run.feverCharge = Math.min(100, run.feverCharge + feverGain * twFevMult);
+            if (run.feverCharge >= 100 && run.feverTimer <= 0) {
+              run.feverTimer = 4.5;
+              run.winPoseTimer = 0.7;
+              SFX.feverStart();
+            } else {
+              SFX.hailBlock();
+            }
+            haptic(16);
+            Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 44, '#6beeff', true);
+            Renderer.spawnFloater(
+              isPerfect ? `☂️ 우박 완벽 방어! +${bonusPts}` : `☂️ 우박 차단 성공! +${bonusPts}`,
+              '#6beeff',
+              run.playerX + 10,
+              run.playerY - 56
+            );
+          } else if (run.umbrellaOn) {
+            hAtk.phase = 'deflected';
+            hAtk.deflectTimer = 0.5;
+            hAtk.vx = 180;
+            hAtk.vy = -220;
+            run.score += Math.round(120 * run.scoreMult);
+            SFX.hailBlock();
+            haptic(12);
+            Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 44, '#9beeff', false);
+            Renderer.spawnFloater('☂️ 우박 방어! +120', '#9beeff', run.playerX + 10, run.playerY - 54);
+          } else if (run.shield) {
+            consumeShieldHit('🛡️ 보호막 우박 방어! 잠시 무적!');
+            hAtk.phase = 'deflected';
+            hAtk.deflectTimer = 0.55;
+            hAtk.vx = 190;
+            hAtk.vy = -240;
+          } else {
+            run.hp = Math.max(0, run.hp - 1);
+            run.hitPoseTimer = 0.45;
+            run.hitFlashTimer = 0.3;
+            run.hitStopTimer = 0.055;
+            run.squashX = 1.24;
+            run.squashY = 0.78;
+            run.dodgeCombo = 0;
+            triggerCameraShake(7, 0.28);
+            haptic(35);
+            SFX.hit();
+            run.lastHitCause = '하늘에서 떨어진 우박을 우산으로 막지 못해 쓰러졌습니다!';
+            Renderer.spawnPickupEffect(run.playerX + 8, run.playerY - 34, '#8be4ff', false);
+            Renderer.spawnFloater('🧊 우박 적중! -1 ❤️ (우산 펴기!)', '#7ae4ff', run.playerX + 10, run.playerY - 54);
+            hAtk.phase = 'deflected';
+            hAtk.deflectTimer = 0.35;
+            hAtk.vx = -90;
+            hAtk.vy = -120;
+          }
+        }
+        if (hAtk.y > Renderer.GROUND_Y + 28) run.hailAttack = null;
+      } else if (hAtk.phase === 'deflected') {
+        hAtk.x += (hAtk.vx || 200) * dt;
+        hAtk.y += (hAtk.vy || -240) * dt;
+        hAtk.vy = (hAtk.vy || -240) + 560 * dt;
+        hAtk.deflectTimer -= dt;
+        if (hAtk.deflectTimer <= 0 || hAtk.y > Renderer.GROUND_Y + 28) {
+          run.hailAttack = null;
+        }
+      }
+    } else if (!run.isTutorial && !run.covidAttack && run.weatherEvent !== 'gust' && run.weatherEvent !== 'covid') {
+      run.hailAttackCd -= dt;
+      if (run.hailAttackCd <= 0) {
+        const warnDur = Math.max(1.55, 2.0 / Math.min(1.25, diff.weatherPaceMult));
+        run.hailAttackCd = Math.max(9.5, (14.5 + Math.random() * 4.5) / Math.min(1.35, diff.weatherPaceMult));
+        run.hailAttack = {
+          phase: 'warn',
+          timer: warnDur,
+          maxTimer: warnDur,
+          x: run.playerX + 8,
+          y: 28,
+          vx: 0,
+          vy: 0,
+          checked: false,
+          stones: [
+            { dx: 0, dy: 0, r: 12, spin: 1.0 },
+            { dx: -16, dy: -12, r: 9, spin: -1.4 },
+            { dx: 15, dy: -10, r: 9, spin: 1.3 }
+          ]
+        };
+        SFX.playWeatherCue('hail');
+        showWeatherCenterAlert('hail');
+      }
+    }
+
     // ---- SPAWN TIMERS ----
     if (!run.isTutorial) {
       run.obstacleCd -= dt;
@@ -6742,9 +6951,11 @@
     run.deathAnimTimer = 0.58;
     run.sliding = false;
     run.umbrellaOn = false;
+    run.umbrellaParryTimer = 0;
     run.maskOn = false;
     run.maskParryTimer = 0;
     run.covidAttack = null;
+    run.hailAttack = null;
     releaseAllControlButtons();
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
@@ -6949,18 +7160,25 @@
       !run.covidAttack.checked &&
       run.feverTimer <= 0
     );
+    const hailUrgent = Boolean(
+      run.hailAttack &&
+      (run.hailAttack.phase === 'warn' || run.hailAttack.phase === 'fall') &&
+      !run.hailAttack.checked &&
+      run.feverTimer <= 0
+    );
     const needCovidMask = covidUrgent && !(run.maskOn && run.maskParryTimer > 0);
+    const needHailUmb = hailUrgent && !run.umbrellaOn;
     const needFoldUmb = activeEv === 'gust' && run.umbrellaOn && run.feverTimer <= 0;
     const hudRainNow = activeEv === 'rain' || activeEv === 'flood' || Boolean(twHazHud && (twHazHud.rainActive || twHazHud.floodActive));
     const hudHeatNow = activeEv === 'heat' || Boolean(twHazHud && twHazHud.heatActive);
     const hudDustNow = activeEv === 'dust' || Boolean(twHazHud && twHazHud.dustActive);
-    const needOpenUmb = (hudRainNow || (hudHeatNow && !ch.summerImmune)) && !run.umbrellaOn && run.feverTimer <= 0;
+    const needOpenUmb = needHailUmb || ((hudRainNow || (hudHeatNow && !ch.summerImmune)) && !run.umbrellaOn && run.feverTimer <= 0);
     const needOpenMask = hudDustNow && !run.maskOn && run.feverTimer <= 0;
 
     // 1. Colored Screen-Edge Vignette (instant peripheral weather cue!)
     if (el.weatherEdgeVignette) {
-      const vigEv = covidUrgent ? 'covid_rush' : (activeEv !== 'clear' ? activeEv : '');
-      const vigUrgent = needCovidMask || needFoldUmb || needOpenUmb || needOpenMask || (activeEv === 'heat' && run.heatGauge >= 60);
+      const vigEv = covidUrgent ? 'covid_rush' : (hailUrgent ? 'hail' : (activeEv !== 'clear' ? activeEv : ''));
+      const vigUrgent = needCovidMask || needHailUmb || needFoldUmb || needOpenUmb || needOpenMask || (activeEv === 'heat' && run.heatGauge >= 60);
       const vigCls = vigEv
         ? `weather-edge-vignette ev-${vigEv}${vigUrgent ? ' urgent' : ''}`
         : 'weather-edge-vignette hidden';
@@ -6979,6 +7197,12 @@
           ? (run.covidAttack.phase === 'warn' ? `${Math.max(0, run.covidAttack.timer).toFixed(1)}s` : 'NOW!')
           : '';
         chipUrgent = needCovidMask;
+      } else if (hailUrgent) {
+        chipBadge = needHailUmb ? '🧊 우산!' : '🛡️ 우박 방어 OK';
+        chipTimer = needHailUmb
+          ? (run.hailAttack.phase === 'warn' ? `${Math.max(0, run.hailAttack.timer).toFixed(1)}s` : 'NOW!')
+          : '';
+        chipUrgent = needHailUmb;
       } else if (needFoldUmb) {
         const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
         chipBadge = '💨 우산 접기!';
@@ -7013,7 +7237,7 @@
       const barJustShown = showChip && hudCache.wBarHide !== false;
       hudToggle('wBarHide', el.runWeatherBar, 'hidden', !showChip);
       hudToggle('wBarUrg', el.runWeatherBar, 'urgent-danger', chipUrgent);
-      if (showChip && (barJustShown || doSlow || covidUrgent || needFoldUmb || hudCache.wBadge !== chipBadge)) {
+      if (showChip && (barJustShown || doSlow || covidUrgent || hailUrgent || needFoldUmb || hudCache.wBadge !== chipBadge)) {
         hudHtml('wBadge', el.weatherStatusBadge, chipBadge, uiText(chipBadge, 'sm'));
         hudToggle('fcHide', el.fcHeatPill, 'hidden', !chipTimer);
         hudToggle('fcUrg', el.fcHeatPill, 'urgent', chipUrgent);
@@ -7145,10 +7369,10 @@
 
     const isTodayWeatherRun = run.gameMode === 'today_weather';
     const prevBest = save.bestScore || 0;
-    const isOverallNewBest = finalScore > prevBest;
+    const isOverallNewBest = !isTodayWeatherRun && finalScore > prevBest;
     if (isOverallNewBest) save.bestScore = finalScore;
-    if (finalDist > (save.bestDistanceM || 0)) save.bestDistanceM = finalDist;
-    if (run.year > save.bestYear) save.bestYear = run.year;
+    if (!isTodayWeatherRun && finalDist > (save.bestDistanceM || 0)) save.bestDistanceM = finalDist;
+    if (!isTodayWeatherRun && run.year > save.bestYear) save.bestYear = run.year;
     save.totalCoinsEver = (save.totalCoinsEver || 0) + (run.coinsCollected || 0);
     if ((run.maxDodgeCombo || 0) > (save.maxDodgeComboEver || 0)) {
       save.maxDodgeComboEver = run.maxDodgeCombo;
@@ -7226,6 +7450,10 @@
     }
     run = null;
     paused = false;
+    if (dockAutoHideTimer) {
+      clearTimeout(dockAutoHideTimer);
+      dockAutoHideTimer = null;
+    }
     releaseAllControlButtons();
     clearTutorialHighlights();
     if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
@@ -7594,6 +7822,7 @@
     if (el.btnSelectModeNormal) {
       el.btnSelectModeNormal.addEventListener('click', () => {
         SFX.click();
+        try { tryAutoLockLandscape(true); } catch {}
         closeModeSelectModal();
         selectedGameMode = 'normal';
         startRun({ mode: 'normal' });
@@ -7602,6 +7831,7 @@
     if (el.btnSelectModeToday) {
       el.btnSelectModeToday.addEventListener('click', () => {
         SFX.click();
+        try { tryAutoLockLandscape(true); } catch {}
         closeModeSelectModal();
         selectedGameMode = 'today_weather';
         startRun({ mode: 'today_weather' });
@@ -7857,7 +8087,103 @@
     });
     if (el.btnLandscapeRun) el.btnLandscapeRun.addEventListener('click', toggleLandscapeFullscreen);
 
-    // Auto-pause active run + keepalive cloud save flush on leave + auto cloud pull on return!
+    // Hardware Landscape Lock Guard & Event Hooks
+    syncRotateGuardCopy();
+    if (el.btnRotateLock) {
+      el.btnRotateLock.addEventListener('click', () => {
+        SFX.click();
+        if (isAppleTouchDevice()) {
+          showToast('📱 아이폰은 기기를 가로로 돌리면 자동으로 가로 화면으로 전환됩니다!');
+          return;
+        }
+        tryAutoLockLandscape(true);
+      });
+    }
+    window.addEventListener('orientationchange', () => {
+      try { tryAutoLockLandscape(false); } catch {}
+    });
+
+    // Apple Dynamic Bar Collapsible Bottom Menu Bar (Active ONLY on non-home tabs!)
+    if (el.navDynamicHandle) {
+      el.navDynamicHandle.addEventListener('click', () => {
+        SFX.click();
+        if (dockAutoHideTimer) {
+          clearTimeout(dockAutoHideTimer);
+          dockAutoHideTimer = null;
+        }
+        setDynamicDockCollapsed(false);
+      });
+    }
+    if (el.tabContainer) {
+      let touchStartY = 0;
+      let touchTracking = false;
+
+      el.tabContainer.addEventListener('scroll', () => {
+        if (currentTab === 'home') return;
+        const st = el.tabContainer.scrollTop;
+        const delta = st - lastTabScrollTop;
+        if (delta > 7 && st > 12) {
+          if (dockAutoHideTimer) {
+            clearTimeout(dockAutoHideTimer);
+            dockAutoHideTimer = null;
+          }
+          setDynamicDockCollapsed(true);
+        } else if (delta < -7) {
+          if (dockAutoHideTimer) {
+            clearTimeout(dockAutoHideTimer);
+            dockAutoHideTimer = null;
+          }
+          setDynamicDockCollapsed(false);
+        }
+        lastTabScrollTop = st;
+      }, { passive: true });
+
+      el.tabContainer.addEventListener('touchstart', (e) => {
+        if (!e || !e.touches || !e.touches.length) return;
+        touchStartY = e.touches[0].clientY;
+        touchTracking = true;
+      }, { passive: true });
+
+      el.tabContainer.addEventListener('touchmove', (e) => {
+        if (!touchTracking || currentTab === 'home' || !e || !e.touches || !e.touches.length) return;
+        const dy = e.touches[0].clientY - touchStartY;
+        const fromBottomEdge = touchStartY >= window.innerHeight - 96;
+        if (dy > 24 || (fromBottomEdge && dy < -20)) {
+          if (dockAutoHideTimer) {
+            clearTimeout(dockAutoHideTimer);
+            dockAutoHideTimer = null;
+          }
+          setDynamicDockCollapsed(false);
+          touchTracking = false;
+        } else if (dy < -28 && !fromBottomEdge) {
+          if (dockAutoHideTimer) {
+            clearTimeout(dockAutoHideTimer);
+            dockAutoHideTimer = null;
+          }
+          setDynamicDockCollapsed(true);
+          touchTracking = false;
+        }
+      }, { passive: true });
+
+      el.tabContainer.addEventListener('wheel', (e) => {
+        if (currentTab === 'home' || !e) return;
+        if (e.deltaY > 12) {
+          if (dockAutoHideTimer) {
+            clearTimeout(dockAutoHideTimer);
+            dockAutoHideTimer = null;
+          }
+          setDynamicDockCollapsed(true);
+        } else if (e.deltaY < -12) {
+          if (dockAutoHideTimer) {
+            clearTimeout(dockAutoHideTimer);
+            dockAutoHideTimer = null;
+          }
+          setDynamicDockCollapsed(false);
+        }
+      }, { passive: true });
+    }
+
+    // Auto-pause active run + keepalive cloud save flush on leave + auto cloud pull & landscape re-lock on return!
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         releaseAllControlButtons();
@@ -7869,10 +8195,13 @@
         if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid && cloudHydratedUid === save.auth.uid) {
           try { ONLINE.saveCloudUserSave(save.auth.uid, save, true); } catch {}
         }
-      } else if (!run || !run.active) {
-        // Returning from another device/tab -> pull latest cloud progress automatically!
-        if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid) {
-          syncAccountWithCloud(save.auth, { minIntervalMs: 8000 });
+      } else {
+        try { tryAutoLockLandscape(false); } catch {}
+        if (!run || !run.active) {
+          // Returning from another device/tab -> pull latest cloud progress automatically!
+          if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid) {
+            syncAccountWithCloud(save.auth, { minIntervalMs: 8000 });
+          }
         }
       }
     });
@@ -7909,6 +8238,7 @@
 
     el.btnPlayStart.addEventListener('click', () => {
       try {
+        try { tryAutoLockLandscape(true); } catch {}
         const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
         if (!isCharUnlocked(ch.id)) {
           buyCharacter(ch, previewCharIdx);
@@ -7979,6 +8309,15 @@
         if (!run || !run.active) SFX.setBgmMode('menu');
       } catch {}
     }
+    let firstGestureLandscapeTried = false;
+    function onFirstPointerGesture() {
+      if (!firstGestureLandscapeTried) {
+        firstGestureLandscapeTried = true;
+        window.removeEventListener('pointerdown', onFirstPointerGesture);
+        try { tryAutoLockLandscape(true); } catch {}
+      }
+    }
+    window.addEventListener('pointerdown', onFirstPointerGesture, { passive: true });
     window.addEventListener('pointerdown', unlockBgmOnGesture);
 
     // Desktop Keyboard Controls (Space/↑ Jump, ↓ Slide, Q Umbrella, E Mask, Esc Pause)
