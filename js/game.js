@@ -661,11 +661,17 @@
     bsRosterCount: document.getElementById('bs-roster-count'),
     charDetailOverlay: document.getElementById('char-detail-overlay'),
     btnCloseCharDetail: document.getElementById('btn-close-char-detail'),
+    btnDetailSkins: document.getElementById('btn-detail-skins'),
     btnDetailHome: document.getElementById('btn-detail-home'),
     btnDetailPrev: document.getElementById('btn-detail-prev'),
     btnDetailNext: document.getElementById('btn-detail-next'),
     detailHeroStage: document.getElementById('detail-hero-stage'),
     detailSkinCount: document.getElementById('detail-skin-count'),
+    charSkinsOverlay: document.getElementById('char-skins-overlay'),
+    btnCloseCharSkins: document.getElementById('btn-close-char-skins'),
+    charSkinsTitle: document.getElementById('char-skins-title'),
+    charSkinsCountPill: document.getElementById('char-skins-count-pill'),
+    charSkinsBody: document.getElementById('char-skins-body'),
     detailTopGold: document.getElementById('detail-top-gold'),
     detailTopGems: document.getElementById('detail-top-gems'),
     detailRibbonIco: document.getElementById('detail-ribbon-ico'),
@@ -4826,6 +4832,7 @@
     if (el.weatherOverlay && !el.weatherOverlay.classList.contains('hidden')) renderHomeWeatherTab();
     if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) renderModeSelectModal();
     if (el.skinExchangeOverlay && !el.skinExchangeOverlay.classList.contains('hidden')) renderSkinExchangeModal();
+    if (el.charSkinsOverlay && !el.charSkinsOverlay.classList.contains('hidden')) renderCharSkinsModal();
   }
 
   function updateNavMissionDot() {
@@ -5624,7 +5631,142 @@
     SFX.click();
     detailCharIdx = null;
     lastDetailHeroSrc = '';
+    if (el.charSkinsOverlay) el.charSkinsOverlay.classList.add('hidden');
     el.charDetailOverlay.classList.add('hidden');
+  }
+
+  function openCharSkinsModal() {
+    if (detailCharIdx === null) return;
+    SFX.click();
+    renderCharSkinsModal();
+    if (el.charSkinsOverlay) el.charSkinsOverlay.classList.remove('hidden');
+  }
+
+  function closeCharSkinsModal() {
+    SFX.click();
+    if (el.charSkinsOverlay) el.charSkinsOverlay.classList.add('hidden');
+  }
+
+  function renderCharSkinsModal() {
+    if (detailCharIdx === null || !el.charSkinsBody) return;
+    const ch = DATA.CHARACTERS[detailCharIdx] || DATA.CHARACTERS[0];
+    const equippedSkin = getEquippedSkin(ch.id);
+    const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
+    const charSkins = DATA.getSkinsForChar(ch.id).slice().sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
+    const ownedCharSkins = charSkins.filter((sk) => save.unlockedSkins.includes(sk.id)).length;
+
+    if (el.charSkinsTitle) el.charSkinsTitle.textContent = `${ch.name} 스킨 선택`;
+    if (el.charSkinsCountPill) el.charSkinsCountPill.textContent = `보유 ${ownedCharSkins}/${charSkins.length}`;
+
+    el.charSkinsBody.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'bs-shop-grid skins bs-exchange-grid bs-cskin-grid';
+
+    // 1) Default Appearance Card
+    const defCard = document.createElement('div');
+    defCard.className = `bs-offer-card skin-card rar-default${!equippedSkin ? ' selected' : ''}`;
+    defCard.innerHTML = `
+      <div class="bs-offer-ribbon skin-rar-rib rar-default">기본</div>
+      <div class="bs-offer-stage">
+        <div class="bs-offer-rays"></div>
+        <img src="${getSkinAvatar(ch, null)}" alt="${ch.name} 기본 외형" class="bs-offer-img skin" />
+      </div>
+      <div class="bs-offer-name">기본 외형</div>
+      <div class="bs-offer-sub">${ch.name}</div>
+    `;
+    const defFoot = document.createElement('div');
+    defFoot.className = 'bs-offer-foot';
+    const defBtn = document.createElement('button');
+    defBtn.type = 'button';
+    defBtn.className = !equippedSkin ? 'bs-buy-btn done' : 'bs-buy-btn equip';
+    defBtn.textContent = !equippedSkin ? '장착 중' : '장착';
+    defBtn.disabled = !equippedSkin;
+    defBtn.onclick = () => {
+      SFX.click();
+      delete save.equippedSkins[ch.id];
+      persistSave();
+      refreshAllMenus();
+      showToast(`${ch.name} 기본 외형으로 변경!`);
+    };
+    defFoot.appendChild(defBtn);
+    defCard.appendChild(defFoot);
+    grid.appendChild(defCard);
+
+    // 2) Collectible Skins for this Character (Visual Cards!)
+    charSkins.forEach((sk) => {
+      const owned = save.unlockedSkins.includes(sk.id);
+      const isEq = Boolean(equippedSkin && equippedSkin.id === sk.id);
+      const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
+      const milPrice = getSkinMileagePrice(sk);
+      const isPassEx = Boolean(sk.seasonExclusive) && !DATA.isPassSkinReleased(sk);
+      const isReleasedPass = Boolean(sk.seasonExclusive) && DATA.isPassSkinReleased(sk);
+      const skAv = getSkinAvatar(ch, sk);
+      const skFlt = getSkinFilter(sk);
+
+      const card = document.createElement('div');
+      card.className = `bs-offer-card skin-card rar-${sk.rarity}${isEq ? ' selected' : ''}${owned ? '' : ' unowned'}`;
+      card.innerHTML = `
+        <div class="bs-offer-ribbon skin-rar-rib rar-${sk.rarity}">${rar.name}</div>
+        <div class="bs-offer-stage">
+          <div class="bs-offer-rays"></div>
+          <img src="${skAv}" alt="${sk.name}" class="bs-offer-img skin" style="${skFlt ? `filter:${skFlt};` : ''}" />
+        </div>
+        <div class="bs-offer-name">${sk.name}</div>
+        <div class="bs-offer-sub">${owned ? '보유 중' : (isPassEx ? '골드 패스 80티어' : (isReleasedPass ? '스킨 뽑기 획득' : `마일리지 ${milPrice}M`))}</div>
+      `;
+
+      const foot = document.createElement('div');
+      foot.className = 'bs-offer-foot';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (owned) {
+        btn.className = isEq ? 'bs-buy-btn done' : 'bs-buy-btn equip';
+        btn.textContent = isEq ? '장착 중' : '장착';
+        btn.disabled = isEq;
+        btn.onclick = () => {
+          SFX.click();
+          save.equippedSkins[ch.id] = sk.id;
+          persistSave();
+          refreshAllMenus();
+          showToast(`[${sk.name}] 스킨 장착 완료!`);
+        };
+      } else if (isPassEx) {
+        btn.className = 'bs-buy-btn gold';
+        btn.textContent = '패스 80';
+        btn.onclick = () => {
+          closeCharSkinsModal();
+          closeCharDetail();
+          openSeasonPassModal();
+          showToast(`[${sk.name}]은 시즌 기간 동안 골드 패스 80티어로만 획득할 수 있습니다!`);
+        };
+      } else if (isReleasedPass) {
+        btn.className = 'bs-buy-btn mileage';
+        btn.textContent = '뽑기 이동';
+        btn.onclick = () => {
+          closeCharSkinsModal();
+          closeCharDetail();
+          currentShopSubtab = 'gacha';
+          switchTab('shop');
+          showToast(`[${sk.name}]은 스킨 뽑기에서 획득할 수 있습니다!`);
+        };
+      } else {
+        btn.className = 'bs-buy-btn mileage';
+        btn.textContent = `${milPrice}M 교환`;
+        btn.onclick = () => {
+          closeCharSkinsModal();
+          closeCharDetail();
+          currentShopSubtab = 'gacha';
+          switchTab('shop');
+          openSkinExchangeModal();
+          showToast(`스킨 교환소에서 ${milPrice} 마일리지로 교환하거나 뽑기에서 획득하세요!`);
+        };
+      }
+      foot.appendChild(btn);
+      card.appendChild(foot);
+      grid.appendChild(card);
+    });
+
+    el.charSkinsBody.appendChild(grid);
   }
 
   function getCharPassiveSvg(charId) {
@@ -5680,69 +5822,6 @@
     el.detailPassiveIco.innerHTML = getCharPassiveSvg(ch.id);
     el.detailPassiveName.textContent = ch.passiveName;
     el.detailPassiveDesc.textContent = ch.passiveDesc;
-
-    // Render Character Skins Row (Default + Character-specific collectible skins)
-    if (el.detailSkinsRow) {
-      el.detailSkinsRow.innerHTML = '';
-      const defChip = document.createElement('button');
-      defChip.type = 'button';
-      defChip.className = `skin-chip${!equippedSkin ? ' active' : ''}`;
-      defChip.innerHTML = `<span class="skin-dot" style="background:#9eb8d8"></span><span>기본</span>`;
-      defChip.onclick = () => {
-        SFX.click();
-        delete save.equippedSkins[ch.id];
-        persistSave();
-        refreshAllMenus();
-        showToast(`${ch.name} 기본 외형으로 변경!`);
-      };
-      el.detailSkinsRow.appendChild(defChip);
-
-      charSkins.forEach((sk) => {
-        const owned = save.unlockedSkins.includes(sk.id);
-        const isEq = equippedSkin && equippedSkin.id === sk.id;
-        const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
-        const milPrice = getSkinMileagePrice(sk);
-        const isPassEx = Boolean(sk.seasonExclusive) && !DATA.isPassSkinReleased(sk);
-        const isReleasedPass = Boolean(sk.seasonExclusive) && DATA.isPassSkinReleased(sk);
-        const chip = document.createElement('button');
-        chip.type = 'button';
-        chip.className = `skin-chip rar-${sk.rarity}${isEq ? ' active' : ''}${owned ? '' : ' locked'}`;
-        const unownedTag = isPassEx ? '패스 80' : (isReleasedPass ? '뽑기' : `${milPrice}M`);
-        chip.innerHTML = `
-          <span class="skin-dot" style="background:${sk.glow || rar.color}"></span>
-          <span>${sk.name}</span>
-          <span class="skin-rar-mini" style="color:${rar.color}">${owned ? (isEq ? '장착' : rar.name) : unownedTag}</span>
-        `;
-        chip.onclick = () => {
-          if (owned) {
-            SFX.click();
-            save.equippedSkins[ch.id] = sk.id;
-            persistSave();
-            refreshAllMenus();
-            showToast(`[${sk.name}] 스킨 장착 완료!`);
-          } else if (isPassEx) {
-            SFX.click();
-            closeCharDetail();
-            openSeasonPassModal();
-            showToast(`[${sk.name}]은 시즌 기간 동안 골드 패스 80티어로만 획득할 수 있습니다!`);
-          } else if (isReleasedPass) {
-            SFX.click();
-            closeCharDetail();
-            currentShopSubtab = 'gacha';
-            switchTab('shop');
-            showToast(`[${sk.name}]은 스킨 뽑기에서 획득할 수 있습니다!`);
-          } else {
-            SFX.click();
-            closeCharDetail();
-            currentShopSubtab = 'gacha';
-            switchTab('shop');
-            openSkinExchangeModal();
-            showToast(`스킨 교환소에서 ${milPrice} 마일리지로 교환하거나 뽑기에서 획득하세요!`);
-          }
-        };
-        el.detailSkinsRow.appendChild(chip);
-      });
-    }
 
     if (unlocked) {
       if (selected) {
@@ -5810,7 +5889,7 @@
           </div>
         </div>
         <div class="bs-rcard-rail">
-          <span class="bs-rcard-lv ${unlocked ? 'max' : 'lock'}">${unlocked ? 'MAX' : '잠금'}</span>
+          <span class="bs-rcard-lv ${unlocked ? (selected ? 'eq' : 'owned') : 'lock'}">${unlocked ? (selected ? '장착' : '보유') : '잠금'}</span>
           <div class="bs-rcard-pips" aria-hidden="true">
             <span class="bs-pip p-green${unlocked ? ' on' : ''}"></span>
             <span class="bs-pip p-gold${unlocked ? ' on' : ''}"></span>
@@ -9421,6 +9500,17 @@
 
     // Brawl Stars Character Detail Modal
     el.btnCloseCharDetail.addEventListener('click', closeCharDetail);
+    if (el.btnDetailSkins) {
+      el.btnDetailSkins.addEventListener('click', openCharSkinsModal);
+    }
+    if (el.btnCloseCharSkins) {
+      el.btnCloseCharSkins.addEventListener('click', closeCharSkinsModal);
+    }
+    if (el.charSkinsOverlay) {
+      el.charSkinsOverlay.addEventListener('click', (e) => {
+        if (e.target === el.charSkinsOverlay) closeCharSkinsModal();
+      });
+    }
     if (el.btnDetailHome) {
       el.btnDetailHome.addEventListener('click', () => {
         closeCharDetail();

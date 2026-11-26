@@ -19077,3 +19077,250 @@ input:focus-visible {
 #mobile-app:has(#view-home.active) .bs-home-stage .bs-spotlight {
   opacity: 0.34;
 }
+
+/* =========================================================================
+   UNIFIED CHARACTER COLORS, NO-MAX STATS & SKIN PICKER POPUP (v20261121hd107)
+   ========================================================================= */
+/* 1. Uniform Color Across All 5 Characters (No Character Rarity Tiers) */
+.bs-rcard-main,
+.bs-rcard-main.tier-raincoat,
+.bs-rcard-main.tier-padding,
+.bs-rcard-main.tier-hanbok,
+.bs-rcard-main.tier-skier,
+.bs-rcard-main.tier-santa {
+  background: radial-gradient(circle at 50% 35%, #5ad6ff 0%, #1994f5 58%, #0e63cf 100%) !important;
+}
+
+.bs-rcard-lv.owned {
+  background: linear-gradient(180deg, #42c2ff 0%, #167ae6 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 0 #071022;
+}
+
+.bs-rcard-lv.eq {
+  background: linear-gradient(180deg, #46eb69 0%, #16ad3d 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 0 #071022;
+}
+
+.bs-char-arena,
+.bs-char-arena.tier-raincoat,
+.bs-char-arena.tier-padding,
+.bs-char-arena.tier-hanbok,
+.bs-char-arena.tier-skier,
+.bs-char-arena.tier-santa {
+  background: radial-gradient(ellipse 68% 72% at 50% 48%, #ffd859 0%, #eb7a10 42%, #852b06 80%, #360f03 100%) !important;
+}
+
+.bs-char-arena .bs-char-ribbon,
+.bs-char-arena.tier-raincoat .bs-char-ribbon,
+.bs-char-arena.tier-padding .bs-char-ribbon,
+.bs-char-arena.tier-hanbok .bs-char-ribbon,
+.bs-char-arena.tier-skier .bs-char-ribbon,
+.bs-char-arena.tier-santa .bs-char-ribbon {
+  background: linear-gradient(180deg, #48ccff 0%, #157de8 100%) !important;
+}
+
+/* 2. Clickable Top-Left Skin Wardrobe Button */
+.bs-char-hanger-pill.bs-char-skin-btn {
+  cursor: pointer;
+  background: linear-gradient(180deg, #3f62a6 0%, #1d356b 100%);
+  border-color: #071022;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
+}
+
+.bs-char-hanger-pill.bs-char-skin-btn:hover {
+  filter: brightness(1.12);
+}
+
+.bs-char-hanger-pill.bs-char-skin-btn:active {
+  transform: skewX(-8deg) translateY(2px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+/* 3. Clean Stats Card Header (No MAX / Level Bar) */
+.bs-stats-hdr.simple {
+  padding-bottom: 5px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.14);
+}
+
+.bs-stats-hdr.simple .bs-stats-title {
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+/* 4. Brawl Stars Character Skin Picker Popup (Visual Cards Like Skin Exchange) */
+#char-skins-overlay.bs-char-skins-overlay {
+  z-index: 95 !important;
+}
+
+.bs-cskin-bar {
+  background: linear-gradient(180deg, #3cbaff 0%, #1567d4 100%) !important;
+}
+
+#char-skins-overlay .bs-cskin-grid {
+  grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
+  gap: 10px;
+}
+
+#char-skins-overlay .bs-offer-card {
+  border-radius: 10px;
+  border: 3px solid #071022;
+  box-shadow: 0 6px 0 #071022, inset 0 2.5px 0 rgba(255, 255, 255, 0.36);
+  padding: 0 0 8px;
+}
+
+#char-skins-overlay .bs-offer-card.skin-card.rar-default {
+  background: radial-gradient(circle at 50% 34%, #5ed6ff 0%, #198df0 58%, #0e52b5 100%);
+}
+
+#char-skins-overlay .bs-offer-card.skin-card.rar-rare {
+  background: radial-gradient(circle at 50% 34%, #66ff7a 0%, #22d640 58%, #12992c 100%);
+}
+
+#char-skins-overlay .bs-offer-card.skin-card.rar-epic {
+  background: radial-gradient(circle at 50% 34%, #dc70ff 0%, #aa29f5 58%, #6d12ba 100%);
+}
+
+#char-skins-overlay .bs-offer-card.skin-card.rar-legendary {
+  background: radial-gradient(circle at 50% 34%, #fff263 0%, #f5b60a 58%, #c26f00 100%);
+}
+
+#char-skins-overlay .bs-offer-card.skin-card.rar-mythic {
+  background: radial-gradient(circle at 50% 34%, #ff63a8 0%, #e01b6c 58%, #7a0c4c 100%);
+}
+
+#char-skins-overlay .bs-offer-card.skin-card.selected {
+  border-color: #ffe24a;
+  box-shadow: 0 0 0 2px #fff29b, 0 6px 0 #7a4100;
+}
+
+#char-skins-overlay .bs-offer-card.skin-card.unowned .bs-offer-img {
+  opacity: 0.9;
+}
+
+#char-skins-overlay .bs-offer-ribbon {
+  padding: 4.5px 6px;
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #ffffff;
+  border-bottom: 2.5px solid #071022;
+  text-shadow: 0 1.4px 0 #071022;
+}
+
+#char-skins-overlay .bs-offer-ribbon.skin-rar-rib.rar-default {
+  background: #0d4499;
+}
+
+#char-skins-overlay .bs-offer-ribbon.skin-rar-rib.rar-rare {
+  background: #107d27;
+}
+
+#char-skins-overlay .bs-offer-ribbon.skin-rar-rib.rar-epic {
+  background: #6112ab;
+}
+
+#char-skins-overlay .bs-offer-ribbon.skin-rar-rib.rar-legendary {
+  background: #b56100;
+}
+
+#char-skins-overlay .bs-offer-ribbon.skin-rar-rib.rar-mythic {
+  background: #9c0f4d;
+}
+
+#char-skins-overlay .bs-offer-rays {
+  width: 170px;
+  height: 170px;
+  opacity: 0.34;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255, 255, 255, 0.58) 0deg 15deg,
+    transparent 15deg 30deg
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 66%);
+  mask-image: radial-gradient(circle, #000 12%, transparent 66%);
+}
+
+#char-skins-overlay .bs-offer-stage {
+  height: 76px;
+}
+
+#char-skins-overlay .bs-offer-img {
+  max-height: 66px;
+  filter: drop-shadow(0 5px 0 rgba(7, 16, 34, 0.52));
+}
+
+#char-skins-overlay .bs-offer-name {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow:
+    0 2px 0 #071022,
+    -1.2px 0 0 #071022,
+    1.2px 0 0 #071022,
+    0 -1.2px 0 #071022;
+}
+
+#char-skins-overlay .bs-offer-sub {
+  width: 100%;
+  background: rgba(7, 16, 34, 0.52);
+  color: #ffffff;
+  font-weight: 800;
+  padding: 3px 6px;
+  margin: 3px 0 6px;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#char-skins-overlay .bs-buy-btn {
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 2.5px solid #071022;
+  font-size: 12.5px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 #071022, inset 0 2.5px 0 rgba(255, 255, 255, 0.48);
+  transform: skewX(-5deg);
+  color: #ffffff;
+  text-shadow:
+    0 1.8px 0 #071022,
+    -1px 0 0 #071022,
+    1px 0 0 #071022,
+    0 -1px 0 #071022;
+}
+
+#char-skins-overlay .bs-buy-btn:active:not(:disabled) {
+  transform: skewX(-5deg) translateY(2px);
+  box-shadow: 0 2px 0 #071022;
+}
+
+#char-skins-overlay .bs-buy-btn.equip {
+  background: linear-gradient(180deg, #48ccff 0%, #1577e8 100%);
+}
+
+#char-skins-overlay .bs-buy-btn.done {
+  background: linear-gradient(180deg, #3ce664 0%, #1aa63c 100%);
+  opacity: 1;
+}
+
+#char-skins-overlay .bs-buy-btn.mileage {
+  background: linear-gradient(180deg, #d75cff 0%, #871ad9 100%);
+}
+
+#char-skins-overlay .bs-buy-btn.gold {
+  background: linear-gradient(180deg, #ffeb4d 0%, #f09508 100%);
+}
+
+@media (max-height: 460px) {
+  #char-skins-overlay .bs-cskin-grid {
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    gap: 8px;
+  }
+  #char-skins-overlay .bs-offer-stage {
+    height: 60px;
+  }
+  #char-skins-overlay .bs-offer-img {
+    max-height: 52px;
+  }
+}
