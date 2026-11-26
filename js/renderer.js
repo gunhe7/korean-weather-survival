@@ -102,6 +102,7 @@ window.RunRenderer = (function () {
   });
   CHAR_VFX_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/chars/${key}.png?v=${SPRITE_VER}`; });
   SPRITE_URL_MAP['ice_emperor_shield'] = 'assets/chars/ice_emperor_shield.png?v=20261121hd89';
+  SPRITE_URL_MAP['fx_shield_ring'] = 'assets/chars/fx_shield_ring.png?v=20261121hd108';
   for (let bf = 0; bf < 6; bf++) {
     SPRITE_URL_MAP[`fx_booster_${bf}`] = `assets/chars/fx_booster_${bf}.png?v=20261121hd105`;
   }
@@ -1453,20 +1454,21 @@ window.RunRenderer = (function () {
       ctx.restore();
     }
 
-    // Fever rainbow aura (for non-customAura skins) / Uploaded glowing Shield Ring VFX!
+    // Fever rainbow aura (for non-customAura skins) / Custom Mythic Shield VFX behind character!
+    const hasCustomShield = Boolean(skinDef && (skinDef.customShieldPrefix || skinDef.customShieldVfx));
     if (!dead && feverTimer > 0 && !(skinDef && skinDef.customAuraPrefix)) {
       ctx.strokeStyle = Math.floor(t * 14) % 2 === 0 ? '#ffe85c' : '#63e8ff';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 24 : scaleHeight * 0.56, 0, Math.PI * 2);
       ctx.stroke();
-    } else if (!dead && shield && feverTimer <= 0) {
+    } else if (!dead && shield && feverTimer <= 0 && hasCustomShield) {
       let ringSpr = null;
       if (skinDef && skinDef.customShieldPrefix) {
         const sf = Math.floor(t * 10) % (skinDef.customShieldFrames || 6);
         ringSpr = getSprite(`${skinDef.customShieldPrefix}_${sf}`) || getSprite(`${skinDef.customShieldPrefix}_0`);
       } else {
-        ringSpr = getSprite((skinDef && skinDef.customShieldVfx) || 'fx_shield_ring');
+        ringSpr = getSprite(skinDef.customShieldVfx);
       }
       if (ringSpr) {
         const pulse = 1 + Math.sin(t * 8) * 0.04;
@@ -1476,12 +1478,6 @@ window.RunRenderer = (function () {
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(ringSpr, Math.floor(cx - rSz / 2), Math.floor(cy - (isProne ? 16 : scaleHeight * 0.5) - rSz / 2), rSz, rSz);
         ctx.restore();
-      } else {
-        ctx.strokeStyle = 'rgba(110, 220, 255, 0.92)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy - (isProne ? 14 : scaleHeight * 0.48), isProne ? 23 : scaleHeight * 0.54, 0, Math.PI * 2);
-        ctx.stroke();
       }
     }
 
@@ -1698,6 +1694,29 @@ window.RunRenderer = (function () {
     } else {
       ctx.fillStyle = col.top || '#f5b82e';
       ctx.fillRect(cx - 10, cy - (isProne ? 18 : 36), 20, isProne ? 18 : 36);
+    }
+
+    // Default Iridescent Glossy Bubble Shield rendered OVER the character (crystal-clear center encloses runner!)
+    if (!dead && shield && feverTimer <= 0 && !hasCustomShield) {
+      const bubbleSpr = getSprite('fx_shield_ring');
+      const pulse = 1 + Math.sin(t * 7.5) * 0.035;
+      const rSz = Math.round((isProne ? 56 : scaleHeight * 1.28) * pulse);
+      const bCy = cy - (isProne ? 16 : scaleHeight * 0.5);
+      if (bubbleSpr) {
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(bubbleSpr, Math.floor(cx - rSz / 2), Math.floor(bCy - rSz / 2), rSz, rSz);
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(110, 220, 255, 0.92)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, bCy, isProne ? 23 : scaleHeight * 0.54, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     ctx.globalAlpha = 1;
