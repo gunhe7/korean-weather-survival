@@ -5878,7 +5878,10 @@
       card.setAttribute('aria-label', `${ch.name} 능력치 상세 보기`);
       card.innerHTML = `
         <div class="bs-rcard-main ${tierCls}">
+          <span class="bs-rcard-rays" aria-hidden="true"></span>
           ${selected ? '<span class="bs-rcard-eq">장착</span>' : ''}
+          <span class="bs-rcard-skill">${getCharShortSkill(ch)}</span>
+          <span class="bs-rcard-podium" aria-hidden="true"></span>
           <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="bs-rcard-img" style="${getSkinFilter(eqSkin) ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
           <div class="bs-rcard-foot">
             <div class="bs-rcard-meta">

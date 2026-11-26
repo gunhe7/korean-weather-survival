@@ -19324,3 +19324,445 @@ input:focus-visible {
     max-height: 52px;
   }
 }
+
+/* =========================================================================
+   RICH CHARACTER CARD STAGE & FULL-SCALE IPAD LAYOUT (v20261121hd111)
+   ========================================================================= */
+/* 1. Rich Layered Stadium Backdrop for Every Character Roster Card (Unified Theme, Zero Flat Look) */
+.bs-rcard-main,
+.bs-rcard-main.tier-raincoat,
+.bs-rcard-main.tier-padding,
+.bs-rcard-main.tier-hanbok,
+.bs-rcard-main.tier-skier,
+.bs-rcard-main.tier-santa {
+  background:
+    radial-gradient(ellipse 82% 68% at 50% 42%, #72e0ff 0%, #2496f5 46%, #0e4db5 84%, #082d73 100%) !important;
+}
+
+.bs-rcard-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 42% at 50% 100%, rgba(7, 20, 56, 0.52) 0%, transparent 72%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 44%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bs-rcard-rays {
+  position: absolute;
+  inset: -45%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.28;
+  background: repeating-conic-gradient(
+    from -8deg at 50% 48%,
+    rgba(255, 255, 255, 0.55) 0deg 14deg,
+    transparent 14deg 28deg
+  );
+  -webkit-mask-image: radial-gradient(circle at 50% 48%, #000 14%, transparent 66%);
+  mask-image: radial-gradient(circle at 50% 48%, #000 14%, transparent 66%);
+}
+
+.bs-rcard-podium {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: 58%;
+  max-width: 150px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(220, 250, 255, 0.62) 0%, rgba(86, 198, 255, 0.34) 52%, rgba(7, 20, 52, 0.38) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.52);
+  box-shadow: 0 4px 10px rgba(5, 16, 44, 0.48);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bs-rcard-skill {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  z-index: 5;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1.6px solid #071022;
+  background: rgba(8, 20, 48, 0.78);
+  color: #dff3ff;
+  font-size: 9.5px;
+  font-weight: 900;
+  line-height: 1.1;
+  box-shadow: 0 2px 0 #071022;
+  transform: skewX(-6deg);
+}
+
+.bs-rcard-img {
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+  transform: translateY(-6px) scale(1.14);
+  filter: drop-shadow(0 5px 5px rgba(5, 14, 38, 0.52));
+  position: relative;
+  z-index: 2;
+}
+
+/* Balanced Centered 3 + 2 Pyramid Grid for 5 Characters (Zero Empty Corner Hole!) */
+@media (min-width: 621px) {
+  #char-list.bs-roster-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  #char-list .bs-rcard {
+    grid-column: span 2;
+  }
+  #char-list .bs-rcard:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+  #char-list .bs-rcard:nth-child(5) {
+    grid-column: 4 / span 2;
+  }
+}
+
+/* 2. iPad / Tablet & Desktop Tall Screens: Fill Screen Generously & Eliminate Empty Space! */
+@media (min-width: 740px) and (min-height: 540px) {
+  #view-chars.active {
+    height: 100%;
+    padding: 8px 18px 82px !important;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .bs-roster-count {
+    font-size: 16px;
+    padding-left: 4px;
+  }
+
+  #char-list.bs-roster-grid {
+    gap: 14px;
+    padding-bottom: 0;
+  }
+
+  #char-list .bs-rcard {
+    height: clamp(192px, 31vh, 255px);
+    border-radius: 13px;
+    border-width: 3.5px;
+    box-shadow: 0 7px 0 #071022;
+  }
+
+  #char-list .bs-rcard.selected {
+    box-shadow: 0 0 0 2.5px #fff29b, 0 7px 0 #7a4100;
+  }
+
+  .bs-rcard-podium {
+    bottom: 34px;
+    height: 22px;
+    max-width: 190px;
+  }
+
+  .bs-rcard-eq {
+    top: 8px;
+    left: 8px;
+    padding: 3px 9px;
+    font-size: 12px;
+  }
+
+  .bs-rcard-skill {
+    top: 8px;
+    right: 9px;
+    padding: 3px 9px;
+    font-size: 11.5px;
+  }
+
+  .bs-rcard-foot {
+    padding: 10px 10px 8px 9px;
+  }
+
+  .bs-rcard-stat {
+    font-size: 13.5px;
+    gap: 4px;
+  }
+
+  .bs-rcard-stat .ui-ico {
+    width: 15px;
+    height: 15px;
+  }
+
+  .bs-rcard-bar {
+    width: 64px;
+    height: 5.5px;
+  }
+
+  .bs-rcard-name {
+    font-size: clamp(17px, 2vw, 21px);
+  }
+
+  .bs-rcard-rail {
+    width: 44px;
+    padding: 7px 3px 6px;
+    border-left-width: 3px;
+  }
+
+  .bs-rcard-lv {
+    width: 36px;
+    padding: 4px 0;
+    font-size: 10.5px;
+    border-radius: 7px;
+  }
+
+  .bs-rcard-pips {
+    gap: 7px;
+  }
+
+  .bs-pip {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+  }
+
+  .bs-rcard-skins {
+    font-size: 11px;
+  }
+
+  /* Full-Screen Character Detail Showcase on iPad: Commanding Hero & Proportional UI! */
+  .bs-char-arena {
+    padding:
+      max(14px, env(safe-area-inset-top))
+      max(22px, env(safe-area-inset-right))
+      max(18px, env(safe-area-inset-bottom))
+      max(22px, env(safe-area-inset-left));
+  }
+
+  .bs-char-arena::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      radial-gradient(ellipse 56% 52% at 50% 52%, rgba(255, 245, 195, 0.22) 0%, transparent 68%),
+      radial-gradient(ellipse 96% 92% at 50% 50%, transparent 58%, rgba(24, 6, 0, 0.36) 100%);
+  }
+
+  .bs-char-topbar {
+    margin-bottom: 10px;
+  }
+
+  .bs-char-nav-btn {
+    width: 60px;
+    height: 44px;
+    border-radius: 9px;
+    border-width: 3px;
+    box-shadow: 0 5px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .bs-char-hanger-pill.bs-char-skin-btn {
+    height: 44px;
+    padding: 0 16px;
+    font-size: 15px;
+    gap: 8px;
+    border-radius: 9px;
+    border-width: 3px;
+    box-shadow: 0 5px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .bs-char-cur-pill {
+    height: 38px;
+    padding: 0 13px 0 9px;
+    font-size: 16px;
+    gap: 7px;
+    border-width: 2.5px;
+  }
+
+  .bs-char-3col {
+    grid-template-columns: minmax(270px, 1fr) minmax(260px, 1.05fr) minmax(275px, 1fr);
+    gap: 16px;
+  }
+
+  .bs-char-col-left {
+    padding: 16px 4px 12px;
+    gap: 14px;
+  }
+
+  .bs-char-ribbon {
+    padding: 10px 26px 10px 12px;
+    gap: 12px;
+    border-width: 3.5px;
+    box-shadow: 0 6px 0 #071022, inset 0 3px 0 rgba(255, 255, 255, 0.45);
+  }
+
+  .bs-char-ribbon-ico {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    border-width: 3px;
+  }
+
+  .bs-char-ribbon-ico svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .bs-char-ribbon-name {
+    font-size: clamp(26px, 3vw, 32px);
+  }
+
+  .bs-char-ribbon-tier {
+    font-size: 14.5px;
+  }
+
+  #char-detail-overlay.bs-char-detail-screen .brawl-equipped-pill {
+    padding: 4px 13px;
+    font-size: 13.5px;
+  }
+
+  .bs-char-bio {
+    margin: 6px 0 auto;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: rgba(14, 12, 26, 0.56);
+    border: 2.5px solid rgba(7, 16, 34, 0.85);
+    box-shadow: 0 4px 0 rgba(7, 16, 34, 0.72);
+    font-size: 15.5px;
+    line-height: 1.48;
+    -webkit-line-clamp: 4;
+  }
+
+  #char-detail-overlay.bs-char-detail-screen .brawl-main-cta {
+    padding: 16px 20px;
+    font-size: 22px;
+    border-radius: 12px;
+    border-width: 3.5px;
+    box-shadow: 0 6px 0 #071022, inset 0 3.5px 0 rgba(255, 255, 255, 0.58);
+  }
+
+  #char-detail-overlay.bs-char-detail-screen .brawl-hero-burst {
+    width: clamp(260px, 46vh, 360px);
+    height: clamp(260px, 46vh, 360px);
+    opacity: 0.65;
+  }
+
+  #char-detail-overlay.bs-char-detail-screen .brawl-hero-img {
+    width: clamp(240px, 43vh, 330px);
+    height: clamp(240px, 43vh, 330px);
+    filter: drop-shadow(0 16px 18px rgba(0, 0, 0, 0.48));
+  }
+
+  #char-detail-overlay.bs-char-detail-screen .brawl-detail-podium-ring {
+    width: clamp(250px, 44vh, 340px);
+    height: 42px;
+    margin-top: -22px;
+    border-width: 3.5px;
+  }
+
+  #char-detail-overlay.bs-char-detail-screen .brawl-detail-podium-inner {
+    height: 18px;
+  }
+
+  #char-detail-overlay.bs-char-detail-screen .brawl-nav-arrow {
+    width: 44px;
+    height: 62px;
+    border-radius: 10px;
+    border-width: 3px;
+    box-shadow: 0 5px 0 #071022;
+  }
+
+  #char-detail-overlay.bs-char-detail-screen .brawl-nav-arrow svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .bs-char-col-right {
+    padding: 16px 4px 12px;
+    gap: 16px;
+  }
+
+  .bs-char-passive-zone {
+    padding: 14px 15px;
+    gap: 14px;
+    border-radius: 15px;
+    border-width: 3px;
+    box-shadow: 0 6px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.14);
+  }
+
+  .bs-char-medallion {
+    width: 62px;
+    height: 62px;
+    border-width: 3.5px;
+  }
+
+  .bs-char-medallion svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .bs-char-passive-kicker {
+    font-size: 12px;
+  }
+
+  .bs-char-passive-title {
+    font-size: 17.5px;
+  }
+
+  .bs-char-passive-desc {
+    font-size: 13.5px;
+    line-height: 1.4;
+    -webkit-line-clamp: 3;
+  }
+
+  .bs-char-stats-card {
+    padding: 15px 16px 17px;
+    gap: 11px;
+    border-radius: 16px;
+    border-width: 3.5px;
+    box-shadow: 0 6px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.14);
+  }
+
+  .bs-stats-hdr.simple {
+    padding-bottom: 8px;
+  }
+
+  .bs-stats-hdr.simple .bs-stats-title {
+    font-size: 17.5px;
+  }
+
+  .bs-stats-list {
+    gap: 9px;
+  }
+
+  .bs-stat-line {
+    padding: 8px 10px 8px 8px;
+    gap: 11px;
+    border-radius: 11px;
+  }
+
+  .bs-stat-sq {
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    border-width: 2.5px;
+  }
+
+  .bs-stat-sq img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .bs-stat-sq svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .bs-stat-lbl {
+    font-size: 13.5px;
+  }
+
+  .bs-stat-val {
+    font-size: 18px;
+  }
+
+  .bs-stat-bar {
+    height: 9px;
+    border-width: 2px;
+  }
+}
