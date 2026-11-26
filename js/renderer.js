@@ -134,6 +134,12 @@ window.RunRenderer = (function () {
     if (!url) return null;
     const img = new Image();
     img.decoding = 'async';
+    img.onload = () => {
+      if (img.decode) img.decode().catch(() => {});
+      if (key.startsWith('obs_') && !obstacleOutlineCache[key]) {
+        setTimeout(() => { getOutlinedObstacleSprite(key, img); }, 0);
+      }
+    };
     img.src = url;
     sprites[key] = img;
     return img;
@@ -197,6 +203,12 @@ window.RunRenderer = (function () {
       }
     }
     preloadSeason(seasonId);
+    const data = window.RUN_DATA;
+    if (data && Array.isArray(data.SEASONS)) {
+      const idx = data.SEASONS.findIndex((s) => s.id === seasonId);
+      const nextS = data.SEASONS[(Math.max(0, idx) + 1) % data.SEASONS.length];
+      if (nextS) preloadSeason(nextS.id);
+    }
     // Warm up common tutorial/covid sprites lightly
     requestSprite('sp_covid_walker');
     requestSprite('sp_covid_virus');
@@ -207,10 +219,16 @@ window.RunRenderer = (function () {
     for (let f = 0; f < 8; f++) requestSprite(`chest_${tierId}_${f}`);
   }
 
-  // Defer tiny core boot preload until after first paint so intro logo renders immediately!
+  // Defer tiny core boot preload until after first paint, then warm up all 32 obstacle sprites so mobile never delays spawning!
   setTimeout(() => {
     CORE_BOOT_KEYS.forEach(requestSprite);
+    preloadSeason('spring');
   }, 450);
+  setTimeout(() => {
+    preloadSeason('summer');
+    preloadSeason('autumn');
+    preloadSeason('winter');
+  }, 1300);
 
   function initParticles() {
     particles = [];
@@ -1885,6 +1903,18 @@ window.RunRenderer = (function () {
         ctx.drawImage(drawImg, x - px, y - py, dw, dh);
       }
       ctx.restore();
+    } else {
+      // Crisp visible fallback while an obstacle image is still downloading on slow mobile networks (never invisible!)
+      ctx.save();
+      drawRoundRect(ctx, x + 2, y + 2, Math.max(12, ob.w - 4), Math.max(12, ob.h - 4), 8);
+      ctx.fillStyle = ob.lane === 'air' ? 'rgba(42, 92, 185, 0.88)' : 'rgba(62, 78, 108, 0.88)';
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = '#ff2a42';
+      ctx.shadowColor = 'rgba(255, 34, 62, 0.85)';
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -2194,6 +2224,40 @@ window.RunRenderer = (function () {
     canvasSizeDirty = true;
   }
 
+  function syncViewport(canvasEl) {
+    const cssW = Math.max(240, (canvasEl && canvasEl.clientWidth) || (typeof window !== 'undefined' ? window.innerWidth : W) || W);
+    const cssH = Math.max(180, (canvasEl && canvasEl.clientHeight) || (typeof window !== 'undefined' ? window.innerHeight : H) || H);
+    cachedCssW = cssW;
+    cachedCssH = cssH;
+    canvasSizeDirty = false;
+    const aspect = cssW / cssH;
+    let camX = 0;
+    let offsetY = 0;
+    let visW = W;
+    let visH = H;
+    if (aspect >= 1.52) {
+      visW = H * aspect;
+      visH = H;
+    } else if (aspect >= 1.0) {
+      visW = 470;
+      visH = visW / aspect;
+      camX = 28;
+      offsetY = Math.round((visH - H) * 0.16);
+    } else {
+      visW = 405;
+      visH = visW / aspect;
+      camX = 44;
+      offsetY = Math.round(Math.max(40, (visH - H) * 0.28));
+    }
+    curView = {
+      minX: camX,
+      maxX: camX + visW,
+      minY: -offsetY,
+      maxY: visH - offsetY
+    };
+    return curView;
+  }
+
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', invalidateCanvasSize, { passive: true });
     window.addEventListener('orientationchange', () => {
@@ -2404,6 +2468,7 @@ window.RunRenderer = (function () {
     GROUND_Y,
     IS_MOBILE,
     getSpawnX,
+    syncViewport,
     invalidateCanvasSize,
     preloadForRun,
     preloadSeason,

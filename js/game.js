@@ -6673,8 +6673,8 @@
       hailAttackCd: 3.2,
 
       // Obstacles & Collectibles
-      obstacleCd: 1.5,
-      itemCd: 2.6,
+      obstacleCd: 0.55,
+      itemCd: 1.35,
       obstacles: [],
       items: [],
       lastHitCause: '극한 한국 날씨에 체력이 다했습니다!'
@@ -6691,7 +6691,40 @@
     el.pauseOverlay.classList.add('hidden');
     el.viewRun.classList.remove('hidden');
     applyControlLayout();
-    if (Renderer && Renderer.invalidateCanvasSize) Renderer.invalidateCanvasSize();
+    if (Renderer && Renderer.syncViewport) Renderer.syncViewport(el.runCanvas);
+    else if (Renderer && Renderer.invalidateCanvasSize) Renderer.invalidateCanvasSize();
+
+    // Seed immediate opening coins & first entering obstacle so mobile wide screens have lively objects from Frame 1!
+    if (!isTutorial) {
+      const openPool = (DATA.OBSTACLES_BY_SEASON && DATA.OBSTACLES_BY_SEASON[initSeasonId]) || [];
+      const lowPool = openPool.filter((p) => p.lane === 'low');
+      const firstPreset = (lowPool.length ? lowPool : openPool)[Math.floor(Math.random() * (lowPool.length || openPool.length || 1))];
+      const coinStartX = run.playerX + 150;
+      for (let ci = 0; ci < 4; ci++) {
+        run.items.push({ kind: 'coin', x: coinStartX + ci * 28, y: Renderer.GROUND_Y - 22 });
+      }
+      if (firstPreset) {
+        const firstX = Math.min(getSpawnRight() - 6, Math.max(run.playerX + 340, 480));
+        const firstY = firstPreset.lane === 'air'
+          ? (Renderer.GROUND_Y - 34 - firstPreset.h)
+          : (Renderer.GROUND_Y - firstPreset.h);
+        run.obstacles.push({
+          ...firstPreset,
+          x: firstX,
+          y: firstY,
+          passed: false,
+          nearMissed: false,
+          stepSeed: Math.random() * Math.PI * 2,
+          extraSpeed: 0
+        });
+        const obsCx = firstX + firstPreset.w / 2;
+        const peakY = Math.min(Renderer.GROUND_Y - firstPreset.h - 28, Renderer.GROUND_Y - 80);
+        const sideY = Math.min(Renderer.GROUND_Y - 46, peakY + 32);
+        pushSafeItem({ kind: 'coin', x: obsCx - 44, y: sideY }, 18, 16, 22);
+        pushSafeItem({ kind: 'coin', x: obsCx, y: peakY }, 18, 16, 22);
+        pushSafeItem({ kind: 'coin', x: obsCx + 44, y: sideY }, 18, 16, 22);
+      }
+    }
     resetHudCache();
     updateTutorialHudUI();
 
@@ -7136,27 +7169,32 @@
 
     // 코로나 바이러스 돌진 중엔 장애물 생성을 잠시 멈춰 마스크 타이밍에 집중할 수 있게 완화!
     if (isCovid && run.covidAttack && run.covidAttack.phase === 'charge') {
-      return 0.45;
+      return { spawned: false, retryCd: 0.35 };
     }
 
     const pool = isCovid
       ? [COVID_WALKER_PRESET]
       : DATA.OBSTACLES_BY_SEASON[run.seasonId];
-    const preset = pool[Math.floor(Math.random() * pool.length)];
+    let preset = pool[Math.floor(Math.random() * pool.length)];
 
-    // During flood, leave ground room for submerged car / box platforming!
+    // During flood, favor air/tall obstacles over low ground obstacles without stalling spawn cadence!
     if (run.weatherEvent === 'flood' && preset.lane === 'low' && Math.random() < 0.55) {
-      return 0;
+      const nonLow = pool.filter((p) => p.lane !== 'low');
+      if (nonLow.length) {
+        preset = nonLow[Math.floor(Math.random() * nonLow.length)];
+      } else {
+        return { spawned: false, retryCd: 0.22 };
+      }
     }
 
-    let startX = getSpawnRight() + (preset.warn ? 48 : 22);
+    let startX = getSpawnRight() + (preset.warn ? 44 : 18);
     // 스프링 패드 · 침수 차량 지붕 등 지형 오브젝트와 절대 겹치지 않게 회피!
     if (isRectBlockedByFeature(startX, preset.w, 38)) {
-      return 0.35;
+      return { spawned: false, retryCd: 0.24 };
     }
     // 기존 장애물과도 최소 안전 간격 유지!
-    if (isRectBlockedByObstacle(startX, preset.w, 86)) {
-      return 0.3;
+    if (isRectBlockedByObstacle(startX, preset.w, 82)) {
+      return { spawned: false, retryCd: 0.22 };
     }
 
     const AIR_SLIDE_CLEARANCE = 34;
@@ -7257,7 +7295,10 @@
       }
     }
 
-    return (comboExtraWidth / Math.max(190, run.speed || 196)) + (isCovid ? 0.35 : 0);
+    return {
+      spawned: true,
+      extraCd: (comboExtraWidth / Math.max(190, run.speed || 196)) + (isCovid ? 0.35 : 0)
+    };
   }
 
   function pickRunDropChestKind() {
@@ -8053,9 +8094,13 @@
     if (!run.isTutorial) {
       run.obstacleCd -= dt;
       if (run.obstacleCd <= 0) {
-        const comboExtraCd = spawnObstacleWave() || 0;
-        const baseInterval = (run.weatherEvent === 'covid' ? 1.85 : 1.48) / diff.spawnRateMult;
-        run.obstacleCd = Math.max(0.52, baseInterval + (Math.random() - 0.35) * 0.24) + comboExtraCd * 0.72;
+        const waveRes = spawnObstacleWave();
+        if (!waveRes || !waveRes.spawned) {
+          run.obstacleCd = (waveRes && waveRes.retryCd) || 0.22;
+        } else {
+          const baseInterval = (run.weatherEvent === 'covid' ? 1.75 : 1.34) / diff.spawnRateMult;
+          run.obstacleCd = Math.max(0.48, baseInterval + (Math.random() - 0.35) * 0.22) + (waveRes.extraCd || 0) * 0.68;
+        }
       }
 
       run.itemCd -= dt;
