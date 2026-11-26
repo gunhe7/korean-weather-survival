@@ -103,6 +103,7 @@ window.RunRenderer = (function () {
   CHAR_VFX_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/chars/${key}.png?v=${SPRITE_VER}`; });
   SPRITE_URL_MAP['ice_emperor_shield'] = 'assets/chars/ice_emperor_shield.png?v=20261121hd89';
   DESIGN_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/design/${key}.png?v=${SPRITE_VER}`; });
+  SPRITE_URL_MAP['ui_fever'] = 'assets/design/ui_fever.png?v=20261121hd103';
   ATLAS_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/atlas/${key}.png?v=${SPRITE_VER}`; });
   WORLD_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${SPRITE_VER}`; });
   const GROUND_STRIP_VER = '20261121hd100';
@@ -2035,6 +2036,46 @@ window.RunRenderer = (function () {
     drawItemBubbleFront(ctx, x, y, bubbleR, rim, t);
   }
 
+  function drawFeverSkyBanner(ctx, t, feverTimer = 4.5) {
+    if (feverTimer <= 2.5) return;
+    const spr = getSprite('ui_fever');
+    if (!spr) return;
+
+    const minX = curView.minX;
+    const maxX = curView.maxX;
+    const minY = curView.minY;
+    const maxY = curView.maxY;
+    const spanW = maxX - minX;
+    const spanH = maxY - minY;
+
+    const elapsed = Math.max(0, 4.5 - feverTimer);
+    const popIn = elapsed < 0.18
+      ? (0.62 + Math.sin((elapsed / 0.18) * Math.PI * 0.65) * 0.44)
+      : (1 + Math.sin(t * 11) * 0.035);
+    const fadeIn = Math.min(1, elapsed / 0.12);
+    const fadeOut = feverTimer < 2.95 ? Math.max(0, (feverTimer - 2.5) / 0.45) : 1;
+    const alpha = Math.min(fadeIn, fadeOut) * 0.94;
+    if (alpha <= 0.01) return;
+
+    const ratio = (spr.naturalWidth && spr.naturalHeight) ? (spr.naturalWidth / spr.naturalHeight) : 2.0;
+    const baseW = Math.min(116, Math.max(92, spanW * 0.215));
+    const dw = Math.round(baseW * popIn);
+    const dh = Math.round(dw / ratio);
+
+    // Drawn in the open sky layer BEHIND all gameplay objects & strictly BELOW top HUD/season bar!
+    const rawTopY = Math.max(minY + 90, Math.floor(minY + spanH * 0.275));
+    const clampedTopY = Math.min(rawTopY, Math.max(minY + 76, GROUND_Y - dh - 94));
+    const bobY = Math.sin(t * 7) * 1.6;
+    const dx = Math.floor(minX + (spanW - dw) / 2);
+    const dy = Math.floor(clampedTopY + bobY);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(spr, dx, dy, dw, dh);
+    ctx.restore();
+  }
+
   function drawFeverOverlay(ctx, t, feverTimer = 4.5) {
     const minX = curView.minX;
     const maxX = curView.maxX;
@@ -2043,7 +2084,7 @@ window.RunRenderer = (function () {
     const spanW = maxX - minX;
     const spanH = maxY - minY;
 
-    // Full-screen energetic speed lines!
+    // Full-screen energetic speed lines along outer edges only
     ctx.save();
     for (let i = 0; i < 8; i++) {
       const lx = minX + (((i * 80 - t * 520) % (spanW + 100) + (spanW + 100)) % (spanW + 100)) - 60;
@@ -2058,20 +2099,6 @@ window.RunRenderer = (function () {
     ctx.lineWidth = 6;
     ctx.strokeRect(minX + 3, minY + 3, spanW - 6, spanH - 6);
     ctx.restore();
-
-    if (feverTimer > 3.1) {
-      const spr = getSprite('ui_fever');
-      if (!spr) return;
-      const alpha = feverTimer < 3.5 ? Math.max(0, (feverTimer - 3.1) / 0.4) : 1;
-      const scale = 1 + Math.sin(t * 14) * 0.06;
-      const dw = Math.round(92 * scale);
-      const dh = Math.round(36 * scale);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(spr, Math.floor(minX + (spanW - dw) / 2), Math.max(76, Math.floor(minY + 76)), dw, dh);
-      ctx.restore();
-    }
   }
 
   function drawFloaters(ctx, dt) {
@@ -2189,6 +2216,11 @@ window.RunRenderer = (function () {
 
     const blend = run.seasonTransition !== undefined ? run.seasonTransition : 1;
     drawBackground(ctx, W, H, GROUND_Y, run.seasonId, run.scroll, t, run.prevSeasonId, blend, run.weatherEvent, curView);
+
+    // FEVER TIME! Sky Banner — drawn behind all gameplay objects so it never obscures coins, obstacles, or the player!
+    if (run.feverTimer > 0) {
+      drawFeverSkyBanner(ctx, t, run.feverTimer);
+    }
 
     // Interactive Korean Street Terrain (Convenience Store, Shade Zones, Flood Platforms!)
     drawStreetFeatures(ctx, run, t);
