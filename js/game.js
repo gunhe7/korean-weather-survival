@@ -658,11 +658,17 @@
     rankPodiumStage: document.getElementById('rank-podium-stage'),
     rankBoardList: document.getElementById('rank-board-list'),
 
+    bsRosterCount: document.getElementById('bs-roster-count'),
     charDetailOverlay: document.getElementById('char-detail-overlay'),
     btnCloseCharDetail: document.getElementById('btn-close-char-detail'),
+    btnDetailHome: document.getElementById('btn-detail-home'),
     btnDetailPrev: document.getElementById('btn-detail-prev'),
     btnDetailNext: document.getElementById('btn-detail-next'),
     detailHeroStage: document.getElementById('detail-hero-stage'),
+    detailSkinCount: document.getElementById('detail-skin-count'),
+    detailTopGold: document.getElementById('detail-top-gold'),
+    detailTopGems: document.getElementById('detail-top-gems'),
+    detailRibbonIco: document.getElementById('detail-ribbon-ico'),
     detailCharTier: document.getElementById('detail-char-tier'),
     detailCharName: document.getElementById('detail-char-name'),
     detailEquippedPill: document.getElementById('detail-equipped-pill'),
@@ -5641,8 +5647,15 @@
     const anim = getCharAnimSpec(ch, equippedSkin);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
     const charSprVer = getCharSpriteVer(anim.skin);
+    const charSkins = DATA.getSkinsForChar(ch.id);
+    const ownedCharSkins = charSkins.filter((sk) => save.unlockedSkins.includes(sk.id)).length;
 
-    el.detailHeroStage.className = `brawl-hero-stage ${tierCls}${unlocked ? '' : ' locked'}`;
+    el.detailHeroStage.className = `bs-char-arena ${tierCls}${unlocked ? '' : ' locked'}`;
+    if (el.detailSkinCount) el.detailSkinCount.textContent = `스킨 ${ownedCharSkins}/${charSkins.length}`;
+    if (el.detailTopGold) el.detailTopGold.textContent = (save.gold || 0).toLocaleString('ko-KR');
+    if (el.detailTopGems) el.detailTopGems.textContent = (save.gems || 0).toLocaleString('ko-KR');
+    if (el.detailRibbonIco) el.detailRibbonIco.innerHTML = getCharPassiveSvg(ch.id);
+
     el.detailCharTier.textContent = equippedSkin ? equippedSkin.name : ch.tier;
     el.detailCharName.textContent = ch.name;
     el.detailEquippedPill.classList.toggle('hidden', !selected);
@@ -5678,7 +5691,7 @@
       };
       el.detailSkinsRow.appendChild(defChip);
 
-      DATA.getSkinsForChar(ch.id).forEach((sk) => {
+      charSkins.forEach((sk) => {
         const owned = save.unlockedSkins.includes(sk.id);
         const isEq = equippedSkin && equippedSkin.id === sk.id;
         const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
@@ -5727,12 +5740,12 @@
     if (unlocked) {
       if (selected) {
         el.btnDetailMain.className = 'item-action-btn done brawl-main-cta';
-        el.btnDetailMain.textContent = '현재 장착 중';
+        el.btnDetailMain.textContent = '장착 중';
         el.btnDetailMain.disabled = true;
         el.btnDetailMain.onclick = null;
       } else {
         el.btnDetailMain.className = 'cr-gold-btn brawl-main-cta';
-        el.btnDetailMain.textContent = '선택하기';
+        el.btnDetailMain.textContent = '선택';
         el.btnDetailMain.disabled = false;
         el.btnDetailMain.onclick = () => {
           SFX.click();
@@ -5759,6 +5772,7 @@
     if (el.dexRateText) el.dexRateText.textContent = `${ownedCount} / ${totalCount} (${ratePct}%)`;
     if (el.dexBarFill) el.dexBarFill.style.width = `${ratePct}%`;
     if (el.dexBonusText) el.dexBonusText.textContent = `현재 도감 효과: 전체 점수 +${dexBonusPct}% (캐릭터 추가 해금당 +3%) · 보유 스킨 ${save.unlockedSkins.length}/${DATA.SKINS.length}`;
+    if (el.bsRosterCount) el.bsRosterCount.textContent = `캐릭터 ${ownedCount}/${totalCount}`;
 
     if (!el.charList) return;
     el.charList.innerHTML = '';
@@ -5768,21 +5782,34 @@
       const stats = getCharStats(ch);
       const eqSkin = getEquippedSkin(ch.id);
       const tierCls = `tier-${ch.auraType || 'basic'}`;
+      const charSkins = DATA.getSkinsForChar(ch.id);
+      const ownedCharSkins = charSkins.filter((sk) => save.unlockedSkins.includes(sk.id)).length;
+      const hpPct = Math.min(100, Math.round((stats.maxHp / 5) * 100));
 
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = `brawl-card${selected ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
+      card.className = `brawl-card bs-rcard${selected ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
       card.setAttribute('aria-label', `${ch.name} 능력치 상세 보기`);
       card.innerHTML = `
-        <div class="brawl-card-stage ${tierCls}">
-          <span class="brawl-skill-chip">${unlocked ? getCharShortSkill(ch) : `${ch.price.toLocaleString('ko-KR')}G`}</span>
-          ${selected ? '<span class="brawl-eq-chip">장착</span>' : ''}
-          <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="brawl-card-img" style="${getSkinFilter(eqSkin) ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
-          <span class="brawl-skin-chip">${eqSkin ? eqSkin.name : `${uiIcon('heart', 'xs')} ${stats.maxHp}칸`}</span>
+        <div class="bs-rcard-main ${tierCls}">
+          ${selected ? '<span class="bs-rcard-eq">장착</span>' : ''}
+          <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="bs-rcard-img" style="${getSkinFilter(eqSkin) ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
+          <div class="bs-rcard-foot">
+            <div class="bs-rcard-meta">
+              <span class="bs-rcard-stat">${unlocked ? `${uiIcon('heart', 'xs')} ${stats.maxHp}` : `${uiIcon('coin', 'xs')} ${ch.price.toLocaleString('ko-KR')}`}</span>
+              <span class="bs-rcard-bar"><i style="width:${unlocked ? hpPct : 0}%"></i></span>
+            </div>
+            <span class="bs-rcard-name">${ch.name}</span>
+          </div>
         </div>
-        <div class="brawl-nameplate">
-          <span class="brawl-name">${ch.name}</span>
-          <span class="brawl-tier-mini">${ch.tier}</span>
+        <div class="bs-rcard-rail">
+          <span class="bs-rcard-lv ${unlocked ? 'max' : 'lock'}">${unlocked ? 'MAX' : '잠금'}</span>
+          <div class="bs-rcard-pips" aria-hidden="true">
+            <span class="bs-pip p-green${unlocked ? ' on' : ''}"></span>
+            <span class="bs-pip p-gold${unlocked ? ' on' : ''}"></span>
+            <span class="bs-pip p-purple${ownedCharSkins > 0 ? ' on' : ''}"></span>
+          </div>
+          <span class="bs-rcard-skins">${ownedCharSkins}/${charSkins.length}</span>
         </div>
       `;
       card.onclick = () => openCharDetail(idx);
@@ -9384,6 +9411,12 @@
 
     // Brawl Stars Character Detail Modal
     el.btnCloseCharDetail.addEventListener('click', closeCharDetail);
+    if (el.btnDetailHome) {
+      el.btnDetailHome.addEventListener('click', () => {
+        closeCharDetail();
+        switchTab('home');
+      });
+    }
     el.charDetailOverlay.addEventListener('click', (e) => {
       if (e.target === el.charDetailOverlay) closeCharDetail();
     });
