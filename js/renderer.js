@@ -105,6 +105,10 @@ window.RunRenderer = (function () {
   DESIGN_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/design/${key}.png?v=${SPRITE_VER}`; });
   ATLAS_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/atlas/${key}.png?v=${SPRITE_VER}`; });
   WORLD_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${SPRITE_VER}`; });
+  const GROUND_STRIP_VER = '20261121hd100';
+  ['ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'].forEach((key) => {
+    SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${GROUND_STRIP_VER}`;
+  });
 
   function requestSprite(key) {
     if (!key) return null;
@@ -128,7 +132,8 @@ window.RunRenderer = (function () {
     'item_coin', 'item_coin_1', 'item_coin_2', 'item_coin_side', 'item_star',
     'orb_bolt', 'orb_magnet', 'orb_potion', 'spr_umbrella', 'spr_mask', 'spr_shield',
     'ui_fever', 'fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring',
-    'chest_wood_0', 'chest_silver_0', 'chest_gold_0', 'chest_diamond_0'
+    'chest_wood_0', 'chest_silver_0', 'chest_gold_0', 'chest_diamond_0',
+    'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'
   ];
   const preloadedSeasons = new Set();
 
@@ -603,22 +608,51 @@ window.RunRenderer = (function () {
     }
     ctx.restore();
 
-    // Tiled Pixel Ground strictly from uploaded sheet (sp_spring_tile / sp_metal_box / sp_ice_tile)!
-    const tileSpr = getSprite(season.tile) || getSprite('sp_spring_tile');
-    const tileW = 46;
-    const tileH = 34;
-    const tileOff = Math.floor(scroll) % tileW;
-    const tileStart = Math.floor((minX - tileW) / tileW) * tileW - tileOff;
+    // Seamless Panoramic Seasonal Ground Strip (Spring / Summer / Autumn / Winter)
+    const groundKey = season.tile || `ground_${season.id}`;
+    const prevGroundKey = prevSeason ? (prevSeason.tile || `ground_${prevSeason.id}`) : groundKey;
+    const tileSpr = getSprite(groundKey) || getSprite('ground_spring') || getSprite('sp_spring_tile');
+    const prevTileSpr = (prevGroundKey !== groundKey && f < 0.995) ? getSprite(prevGroundKey) : null;
+    const groundBottomSpan = Math.max(h, maxY) - groundY;
 
-    ctx.fillStyle = lerpHex(prevSeason.groundBase || '#57392c', season.groundBase || '#57392c', f);
-    ctx.fillRect(minX - 10, groundY, spanW + 20, Math.max(h, maxY) - groundY + 12);
+    ctx.fillStyle = lerpHex(prevSeason.groundBase || '#5b2813', season.groundBase || '#5b2813', f);
+    ctx.fillRect(minX - 10, groundY, spanW + 20, groundBottomSpan + 14);
 
-    if (tileSpr) {
-      for (let gx = tileStart; gx < maxX + tileW; gx += tileW) {
-        ctx.drawImage(tileSpr, Math.floor(gx), groundY - 3, tileW, tileH);
+    const drawGroundStrip = (spr, alpha) => {
+      if (!spr) return;
+      ctx.save();
+      if (alpha < 1) ctx.globalAlpha = alpha;
+      ctx.imageSmoothingEnabled = true;
+      if (spr.naturalWidth > spr.naturalHeight * 3) {
+        const surfSrcY = 34;
+        const bodySrcH = Math.max(40, spr.naturalHeight - surfSrcY);
+        const bodyTargetH = Math.max(60, Math.ceil(groundBottomSpan) + 4);
+        const scale = bodyTargetH / bodySrcH;
+        const drawH = Math.ceil(spr.naturalHeight * scale);
+        const drawW = Math.max(240, Math.round(spr.naturalWidth * scale));
+        const drawTop = Math.round(groundY - surfSrcY * scale);
+        const off = ((Math.floor(scroll) % drawW) + drawW) % drawW;
+        const startX = Math.floor((minX - drawW) / drawW) * drawW - off;
+        for (let gx = startX; gx < maxX + drawW; gx += drawW) {
+          ctx.drawImage(spr, Math.floor(gx), drawTop, drawW + 1, drawH);
+        }
+      } else {
+        const tileW = 46;
+        const tileH = 34;
+        const tileOff = ((Math.floor(scroll) % tileW) + tileW) % tileW;
+        const tileStart = Math.floor((minX - tileW) / tileW) * tileW - tileOff;
+        for (let gx = tileStart; gx < maxX + tileW; gx += tileW) {
+          ctx.drawImage(spr, Math.floor(gx), groundY - 3, tileW, tileH);
+        }
       }
-      ctx.fillStyle = 'rgba(18, 16, 32, 0.35)';
-      ctx.fillRect(minX - 10, groundY + tileH - 4, spanW + 20, Math.max(h, maxY) - (groundY + tileH - 4) + 12);
+      ctx.restore();
+    };
+
+    if (prevTileSpr && f < 0.995) {
+      drawGroundStrip(prevTileSpr, 1);
+      drawGroundStrip(tileSpr, f);
+    } else if (tileSpr) {
+      drawGroundStrip(tileSpr, 1);
     }
   }
 
