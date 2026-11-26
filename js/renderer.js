@@ -110,6 +110,18 @@ window.RunRenderer = (function () {
   ['ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'].forEach((key) => {
     SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${GROUND_STRIP_VER}`;
   });
+  const NEW_OBS_VER = '20261121hd104';
+  const NEW_OBS_SPRITES = [
+    'obs_air_bird', 'obs_air_maple', 'obs_air_snowball', 'obs_air_iceball',
+    'obs_air_icicle', 'obs_air_gift', 'obs_air_pinecone', 'obs_air_snowflake',
+    'obs_sp_tree', 'obs_sp_rock', 'obs_sp_fence', 'obs_sp_log', 'obs_sp_bush', 'obs_sp_lantern',
+    'obs_su_palm', 'obs_su_parasol', 'obs_su_fence', 'obs_su_surfboard', 'obs_su_coral', 'obs_su_tube',
+    'obs_au_tree', 'obs_au_rock', 'obs_au_fence', 'obs_au_log', 'obs_au_leaves', 'obs_au_lantern',
+    'obs_wi_tree', 'obs_wi_snowman', 'obs_wi_fence', 'obs_wi_crystal', 'obs_wi_rock', 'obs_wi_pond'
+  ];
+  NEW_OBS_SPRITES.forEach((key) => {
+    SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${NEW_OBS_VER}`;
+  });
 
   function requestSprite(key) {
     if (!key) return null;
@@ -1687,24 +1699,24 @@ window.RunRenderer = (function () {
     ctx.globalAlpha = 1;
   }
 
-  // ===================== CACHED CRISP RED DANGER OUTLINE FOR ALL OBSTACLES =====================
+  // ===================== CACHED THIN LUMINOUS RED DANGER RIM FOR ALL OBSTACLES =====================
   const obstacleOutlineCache = {};
 
   function getOutlinedObstacleSprite(key, spr) {
     if (!spr || !spr.complete || !spr.naturalWidth || !spr.naturalHeight) return null;
     if (obstacleOutlineCache[key]) return obstacleOutlineCache[key];
 
-    // Downscale working obstacle sprite to max 128px before generating outline (10x faster build, 12x less VRAM!)
+    // Crisp working resolution (max 160px) for razor-thin glowing red outline
     const rawW = spr.naturalWidth;
     const rawH = spr.naturalHeight;
-    const workScale = Math.min(1, 128 / Math.max(rawW, rawH));
+    const workScale = Math.min(1, 160 / Math.max(rawW, rawH));
     const sw = Math.max(16, Math.round(rawW * workScale));
     const sh = Math.max(16, Math.round(rawH * workScale));
 
-    // Consistent bold red contour (~2.2px~2.6px on screen) hugging exact sprite alpha shape!
-    const outlineR = Math.max(3, Math.round(Math.max(sw, sh) * 0.062));
-    const glowR = outlineR + Math.max(2, Math.round(outlineR * 0.45));
-    const pad = glowR + 2;
+    // Thin luminous red rim (~1.1px on screen) + soft neon crimson halo
+    const rimR = Math.max(1.6, Math.max(sw, sh) * 0.022);
+    const glowBlur = Math.max(5, Math.round(Math.max(sw, sh) * 0.068));
+    const pad = Math.ceil(rimR + glowBlur + 3);
     const cw = sw + pad * 2;
     const ch = sh + pad * 2;
 
@@ -1714,8 +1726,17 @@ window.RunRenderer = (function () {
     const sctx = sil.getContext('2d');
     sctx.drawImage(spr, 0, 0, sw, sh);
     sctx.globalCompositeOperation = 'source-in';
-    sctx.fillStyle = '#ff1e38';
+    sctx.fillStyle = '#ff243d';
     sctx.fillRect(0, 0, sw, sh);
+
+    const silLight = document.createElement('canvas');
+    silLight.width = sw;
+    silLight.height = sh;
+    const lctx = silLight.getContext('2d');
+    lctx.drawImage(spr, 0, 0, sw, sh);
+    lctx.globalCompositeOperation = 'source-in';
+    lctx.fillStyle = '#ff7a8a';
+    lctx.fillRect(0, 0, sw, sh);
 
     const out = document.createElement('canvas');
     out.width = cw;
@@ -1723,21 +1744,30 @@ window.RunRenderer = (function () {
     const octx = out.getContext('2d');
     octx.imageSmoothingEnabled = true;
 
-    // Soft outer crimson danger aura (8 crisp passes)
-    octx.globalAlpha = 0.45;
+    // 1) Soft luminous crimson outer glow hugging the exact contour
+    octx.save();
+    octx.shadowColor = 'rgba(255, 34, 62, 0.92)';
+    octx.shadowBlur = glowBlur;
+    octx.globalAlpha = 0.72;
+    octx.drawImage(sil, pad, pad);
+    octx.restore();
+
+    // 2) Thin, crisp glowing red contour line (12 smooth passes)
+    octx.globalAlpha = 0.95;
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2;
+      octx.drawImage(sil, pad + Math.cos(ang) * rimR, pad + Math.sin(ang) * rimR);
+    }
+
+    // 3) Subtle bright coral-red highlight edge so the thin line visibly glows
+    octx.globalAlpha = 0.65;
     for (let i = 0; i < 8; i++) {
       const ang = (i / 8) * Math.PI * 2;
-      octx.drawImage(sil, pad + Math.cos(ang) * glowR, pad + Math.sin(ang) * glowR);
+      octx.drawImage(silLight, pad + Math.cos(ang) * (rimR * 0.58), pad + Math.sin(ang) * (rimR * 0.58));
     }
 
-    // Crisp solid red danger outline hugging obstacle contour (10 crisp passes)
+    // 4) Original crisp comic obstacle art cleanly layered on top
     octx.globalAlpha = 1;
-    for (let i = 0; i < 10; i++) {
-      const ang = (i / 10) * Math.PI * 2;
-      octx.drawImage(sil, pad + Math.cos(ang) * outlineR, pad + Math.sin(ang) * outlineR);
-    }
-
-    // Original obstacle art cleanly layered on top
     octx.drawImage(spr, pad, pad, sw, sh);
 
     const entry = { canvas: out, padRatioX: pad / sw, padRatioY: pad / sh };
@@ -1810,10 +1840,11 @@ window.RunRenderer = (function () {
 
       ctx.save();
       ctx.imageSmoothingEnabled = true;
-      if (ob.sprite === 'sp_mace' || ob.sprite === 'sp_snowflake' || ob.sprite === 'sp_red_umbrella') {
+      if (ob.lane === 'air') {
+        // Directional flying obstacles keep speed streaks aligned with lively slight tilt
         ctx.translate(x + ob.w / 2, y + ob.h / 2);
-        const spd = ob.sprite === 'sp_mace' ? -5.5 : (ob.sprite === 'sp_snowflake' ? -3.4 : Math.sin(t * 7) * 0.35);
-        ctx.rotate(ob.sprite === 'sp_red_umbrella' ? spd : t * spd);
+        const tilt = Math.sin(t * 10 + ob.x * 0.04) * 0.055;
+        ctx.rotate(tilt);
         ctx.drawImage(drawImg, -dw / 2, -dh / 2, dw, dh);
       } else if (ob.sprite === 'sp_covid_walker') {
         // Tired infected pedestrian walking toward the player with natural step bob & sway!

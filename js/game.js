@@ -3779,8 +3779,8 @@
     const startX = getSpawnRight() + 24;
     if (stepId === 'jump') {
       const ob = {
-        id: 'tut_cone', name: '도로 라바콘', lane: 'low', w: 32, h: 34, tag: 'wind', sprite: 'sp_traffic_cone',
-        x: startX, y: Renderer.GROUND_Y - 34, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 0, isTutObs: true
+        id: 'tut_rock', name: '이끼 벚꽃 바위', lane: 'low', w: 46, h: 33, tag: 'wind', sprite: 'obs_sp_rock',
+        x: startX, y: Renderer.GROUND_Y - 33, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 0, isTutObs: true
       };
       run.obstacles.push(ob);
       const cx = startX + ob.w / 2;
@@ -3791,8 +3791,8 @@
       );
     } else if (stepId === 'double_jump') {
       const ob = {
-        id: 'tut_barricade', name: '높은 바리케이드', lane: 'tall', w: 46, h: 48, tag: 'wind', sprite: 'sp_barricade',
-        x: startX, y: Renderer.GROUND_Y - 48, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 0, isTutObs: true
+        id: 'tut_lantern', name: '벚꽃 돌등불', lane: 'tall', w: 45, h: 47, tag: 'wind', sprite: 'obs_sp_lantern',
+        x: startX, y: Renderer.GROUND_Y - 47, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 0, isTutObs: true
       };
       run.obstacles.push(ob);
       const cx = startX + ob.w / 2;
@@ -3803,7 +3803,7 @@
       );
     } else if (stepId === 'slide') {
       const ob = {
-        id: 'tut_cloud', name: '황사 모래구름', lane: 'air', w: 52, h: 36, tag: 'dust', sprite: 'sp_dust_cloud', warn: true,
+        id: 'tut_bird', name: '돌진 파랑새', lane: 'air', w: 48, h: 36, tag: 'wind', sprite: 'obs_air_bird', warn: true,
         x: startX, y: Renderer.GROUND_Y - 34 - 36, passed: false, nearMissed: false, stepSeed: 0, extraSpeed: 18, isTutObs: true
       };
       run.obstacles.push(ob);

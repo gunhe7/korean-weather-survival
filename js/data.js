@@ -479,53 +479,54 @@ window.RUN_DATA = (function () {
     winter: ['ice_road', 'gust', 'dust']
   };
 
-  // 계절별 한국 날씨 특화 장애물 (100% 업로드된 도트 시트 스프라이트만 사용!)
+  // 계절별 한국 날씨 특화 장애물 (신규 사계절·공중 코믹 장애물 시트 32종!)
   // lane: 'low' (1단 점프), 'tall' (2단 점프), 'air' (슬라이드 통과!), 'icicle' (상단 고드름 낙하)
   const OBSTACLES_BY_SEASON = {
     spring: [
-      { id: 'spring_dust_cloud', name: '황사 모래구름', lane: 'air', w: 50, h: 36, tag: 'dust', sprite: 'sp_dust_cloud', speedBonus: 36, warn: true },
-      { id: 'spring_smog_cloud', name: '미세먼지 스모그', lane: 'air', w: 48, h: 40, tag: 'dust', sprite: 'sp_smog_cloud', speedBonus: 40, warn: true },
-      { id: 'spring_gust', name: '꽃샘 강풍 돌풍', lane: 'air', w: 48, h: 32, tag: 'wind', sprite: 'sp_gust_wind', speedBonus: 54, warn: true },
-      { id: 'spring_stump', name: '새싹 그루터기', lane: 'low', w: 34, h: 36, tag: 'wind', sprite: 'sp_stump' },
-      { id: 'spring_cone', name: '도로 라바콘', lane: 'low', w: 32, h: 34, tag: 'wind', sprite: 'sp_traffic_cone' },
-      { id: 'spring_sign', name: '강풍 위험 표지판', lane: 'low', w: 36, h: 34, tag: 'dust', sprite: 'sp_warning_sign' },
-      { id: 'spring_barricade', name: '강풍 통제 바리케이드', lane: 'tall', w: 46, h: 44, tag: 'wind', sprite: 'sp_barricade' }
+      { id: 'spring_air_bird', name: '돌진 파랑새', lane: 'air', w: 48, h: 36, tag: 'wind', sprite: 'obs_air_bird', speedBonus: 48, warn: true },
+      { id: 'spring_air_pinecone', name: '날아오는 솔방울', lane: 'air', w: 42, h: 36, tag: 'wind', sprite: 'obs_air_pinecone', speedBonus: 44, warn: true },
+      { id: 'spring_air_gift', name: '강풍 선물상자', lane: 'air', w: 44, h: 36, tag: 'dust', sprite: 'obs_air_gift', speedBonus: 40, warn: true },
+      { id: 'spring_log', name: '쓰러진 벚꽃 통나무', lane: 'low', w: 50, h: 32, tag: 'wind', sprite: 'obs_sp_log' },
+      { id: 'spring_bush', name: '벚꽃 덤불', lane: 'low', w: 48, h: 33, tag: 'dust', sprite: 'obs_sp_bush' },
+      { id: 'spring_rock', name: '이끼 벚꽃 바위', lane: 'low', w: 46, h: 33, tag: 'wind', sprite: 'obs_sp_rock' },
+      { id: 'spring_fence', name: '벚꽃 나무 울타리', lane: 'low', w: 50, h: 32, tag: 'wind', sprite: 'obs_sp_fence' },
+      { id: 'spring_tree', name: '만개한 벚꽃나무', lane: 'tall', w: 47, h: 48, tag: 'wind', sprite: 'obs_sp_tree' },
+      { id: 'spring_lantern', name: '벚꽃 돌등불', lane: 'tall', w: 45, h: 47, tag: 'dust', sprite: 'obs_sp_lantern' }
     ],
     summer: [
-      { id: 'summer_heat_waves', name: '폭염 아스팔트 열기', lane: 'low', w: 36, h: 38, tag: 'heat', sprite: 'sp_heat_waves' },
-      { id: 'summer_heat_mound', name: '불타는 폭염 도로', lane: 'low', w: 46, h: 34, tag: 'heat', sprite: 'sp_heat_mound' },
-      { id: 'summer_puddle', name: '장마 빗물 웅덩이', lane: 'low', w: 42, h: 30, tag: 'rain', sprite: 'sp_puddle' },
-      { id: 'summer_flood_wave', name: '거센 침수 파도', lane: 'low', w: 46, h: 34, tag: 'rain', sprite: 'sp_flood_wave1' },
-      { id: 'summer_flood_barricade', name: '침수 도로 바리케이드', lane: 'tall', w: 48, h: 42, tag: 'rain', sprite: 'sp_flood_barricade' },
-      { id: 'summer_cactus', name: '폭염 사막 선인장', lane: 'tall', w: 40, h: 46, tag: 'heat', sprite: 'sp_cactus' },
-      { id: 'summer_barrel', name: '폭염 고압 드럼통', lane: 'low', w: 34, h: 38, tag: 'heat', sprite: 'sp_hazard_barrel' },
-      { id: 'summer_umbrella', name: '강풍에 날아오는 우산', lane: 'air', w: 44, h: 36, tag: 'wind', sprite: 'sp_red_umbrella', speedBonus: 56, warn: true },
-      { id: 'summer_thunder', name: '장마 번개구름', lane: 'air', w: 48, h: 44, tag: 'rain', sprite: 'sp_thunder_cloud', speedBonus: 44, warn: true },
-      { id: 'summer_raincloud', name: '국지성 폭우 구름', lane: 'air', w: 46, h: 42, tag: 'rain', sprite: 'sp_rain_cloud', speedBonus: 38, warn: true }
+      { id: 'summer_tube', name: '해변 튜브', lane: 'low', w: 48, h: 32, tag: 'rain', sprite: 'obs_su_tube' },
+      { id: 'summer_coral', name: '산호초 바위', lane: 'low', w: 44, h: 35, tag: 'heat', sprite: 'obs_su_coral' },
+      { id: 'summer_fence', name: '해변 구명 울타리', lane: 'low', w: 50, h: 33, tag: 'rain', sprite: 'obs_su_fence' },
+      { id: 'summer_palm', name: '해변 야자수', lane: 'tall', w: 42, h: 49, tag: 'heat', sprite: 'obs_su_palm' },
+      { id: 'summer_parasol', name: '비치 파라솔', lane: 'tall', w: 48, h: 48, tag: 'heat', sprite: 'obs_su_parasol' },
+      { id: 'summer_surfboard', name: '파도 서핑보드', lane: 'tall', w: 42, h: 49, tag: 'rain', sprite: 'obs_su_surfboard' },
+      { id: 'summer_air_bird', name: '돌진 바닷새', lane: 'air', w: 48, h: 36, tag: 'wind', sprite: 'obs_air_bird', speedBonus: 54, warn: true },
+      { id: 'summer_air_gift', name: '날아오는 선물상자', lane: 'air', w: 44, h: 36, tag: 'wind', sprite: 'obs_air_gift', speedBonus: 46, warn: true },
+      { id: 'summer_air_iceball', name: '우박 가시공', lane: 'air', w: 38, h: 42, tag: 'rain', sprite: 'obs_air_iceball', speedBonus: 56, warn: true }
     ],
     autumn: [
-      { id: 'autumn_leaf_pile', name: '붉은 낙엽 더미', lane: 'low', w: 46, h: 32, tag: 'wind', sprite: 'sp_leaf_pile' },
-      { id: 'autumn_fallen_tree', name: '쓰러진 가을 나무', lane: 'low', w: 52, h: 34, tag: 'wind', sprite: 'sp_fallen_tree' },
-      { id: 'autumn_fence', name: '강풍 나무 울타리', lane: 'low', w: 44, h: 34, tag: 'wind', sprite: 'sp_fence' },
-      { id: 'autumn_crate', name: '태풍에 날린 상자', lane: 'low', w: 38, h: 36, tag: 'wind', sprite: 'sp_crate' },
-      { id: 'autumn_road_sign', name: '기울어진 도로 표지판', lane: 'tall', w: 42, h: 46, tag: 'wind', sprite: 'sp_road_sign' },
-      { id: 'autumn_tornado', name: '가을 태풍 소용돌이', lane: 'tall', w: 46, h: 48, tag: 'wind', sprite: 'sp_tornado' },
-      { id: 'autumn_siren', name: '태풍 경보 경광등', lane: 'tall', w: 30, h: 46, tag: 'wind', sprite: 'sp_siren_post' },
-      { id: 'autumn_leaves_air', name: '날아오는 단풍 돌풍', lane: 'air', w: 44, h: 36, tag: 'wind', sprite: 'sp_falling_leaves', speedBonus: 50, warn: true },
-      { id: 'autumn_gust', name: '가을 태풍 강풍', lane: 'air', w: 48, h: 34, tag: 'wind', sprite: 'sp_gust_wind', speedBonus: 58, warn: true },
-      { id: 'autumn_mace', name: '강풍 낙하 철퇴', lane: 'air', w: 42, h: 42, tag: 'wind', sprite: 'sp_mace', speedBonus: 62, warn: true }
+      { id: 'autumn_log', name: '쓰러진 단풍 통나무', lane: 'low', w: 50, h: 33, tag: 'wind', sprite: 'obs_au_log' },
+      { id: 'autumn_leaves', name: '가을 낙엽 더미', lane: 'low', w: 48, h: 33, tag: 'wind', sprite: 'obs_au_leaves' },
+      { id: 'autumn_rock', name: '단풍 바위', lane: 'low', w: 50, h: 32, tag: 'wind', sprite: 'obs_au_rock' },
+      { id: 'autumn_fence', name: '가을 나무 울타리', lane: 'low', w: 48, h: 33, tag: 'wind', sprite: 'obs_au_fence' },
+      { id: 'autumn_tree', name: '붉은 단풍나무', lane: 'tall', w: 48, h: 48, tag: 'wind', sprite: 'obs_au_tree' },
+      { id: 'autumn_lantern', name: '가을 돌등불', lane: 'tall', w: 48, h: 47, tag: 'wind', sprite: 'obs_au_lantern' },
+      { id: 'autumn_air_maple', name: '날아오는 단풍잎', lane: 'air', w: 46, h: 36, tag: 'wind', sprite: 'obs_air_maple', speedBonus: 52, warn: true },
+      { id: 'autumn_air_pinecone', name: '돌풍 솔방울', lane: 'air', w: 42, h: 36, tag: 'wind', sprite: 'obs_air_pinecone', speedBonus: 56, warn: true },
+      { id: 'autumn_air_bird', name: '가을 강풍 철새', lane: 'air', w: 48, h: 36, tag: 'wind', sprite: 'obs_air_bird', speedBonus: 60, warn: true }
     ],
     winter: [
-      { id: 'winter_ice_spikes', name: '북극한파 얼음 가시', lane: 'low', w: 46, h: 36, tag: 'cold', sprite: 'sp_ice_spikes' },
-      { id: 'winter_snow_pile', name: '폭설 눈더미', lane: 'low', w: 48, h: 32, tag: 'cold', sprite: 'sp_snow_pile' },
-      { id: 'winter_snow_rock', name: '눈 덮인 바위', lane: 'low', w: 42, h: 34, tag: 'cold', sprite: 'sp_snow_rock' },
-      { id: 'winter_spike_strip', name: '빙판 가시 함정', lane: 'low', w: 48, h: 28, tag: 'cold', sprite: 'sp_spike_strip' },
-      { id: 'winter_spike_stump', name: '얼어붙은 가시 그루터기', lane: 'low', w: 44, h: 34, tag: 'cold', sprite: 'sp_spike_stump' },
-      { id: 'winter_snowman', name: '폭설 모자 눈사람', lane: 'tall', w: 42, h: 48, tag: 'cold', sprite: 'sp_snowman' },
-      { id: 'winter_ice_crystal', name: '거대 빙하 수정', lane: 'tall', w: 36, h: 48, tag: 'cold', sprite: 'sp_ice_crystal' },
-      { id: 'winter_icicle', name: '고드름 낙하', lane: 'icicle', w: 44, h: 38, tag: 'cold', sprite: 'sp_icicles', warn: true },
-      { id: 'winter_snowflake', name: '눈보라 거대 눈결정', lane: 'air', w: 40, h: 40, tag: 'cold', sprite: 'sp_snowflake', speedBonus: 56, warn: true },
-      { id: 'winter_snow_cloud', name: '폭설 눈구름', lane: 'air', w: 48, h: 34, tag: 'cold', sprite: 'sp_snow_cloud', speedBonus: 44, warn: true }
+      { id: 'winter_pond', name: '얼어붙은 빙판 연못', lane: 'low', w: 50, h: 34, tag: 'cold', sprite: 'obs_wi_pond' },
+      { id: 'winter_rock', name: '눈 덮인 바위', lane: 'low', w: 45, h: 35, tag: 'cold', sprite: 'obs_wi_rock' },
+      { id: 'winter_fence', name: '눈 덮인 울타리', lane: 'low', w: 47, h: 34, tag: 'cold', sprite: 'obs_wi_fence' },
+      { id: 'winter_tree', name: '눈 쌓인 전나무', lane: 'tall', w: 42, h: 49, tag: 'cold', sprite: 'obs_wi_tree' },
+      { id: 'winter_snowman', name: '겨울 눈사람', lane: 'tall', w: 42, h: 49, tag: 'cold', sprite: 'obs_wi_snowman' },
+      { id: 'winter_crystal', name: '거대 얼음 수정', lane: 'tall', w: 49, h: 44, tag: 'cold', sprite: 'obs_wi_crystal' },
+      { id: 'winter_icicle', name: '낙하 고드름', lane: 'icicle', w: 30, h: 46, tag: 'cold', sprite: 'obs_air_icicle', warn: true },
+      { id: 'winter_air_snowball', name: '날아오는 눈덩이', lane: 'air', w: 48, h: 36, tag: 'cold', sprite: 'obs_air_snowball', speedBonus: 50, warn: true },
+      { id: 'winter_air_iceball', name: '얼음 가시공', lane: 'air', w: 38, h: 42, tag: 'cold', sprite: 'obs_air_iceball', speedBonus: 58, warn: true },
+      { id: 'winter_air_snowflake', name: '눈보라 거대 눈결정', lane: 'air', w: 44, h: 37, tag: 'cold', sprite: 'obs_air_snowflake', speedBonus: 54, warn: true },
+      { id: 'winter_air_gift', name: '날아오는 산타 선물', lane: 'air', w: 44, h: 36, tag: 'cold', sprite: 'obs_air_gift', speedBonus: 48, warn: true }
     ]
   };
 
