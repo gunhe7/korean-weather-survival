@@ -918,9 +918,9 @@ window.RunRenderer = (function () {
       ctx.textAlign = 'center';
       ctx.lineWidth = 2.8;
       ctx.strokeStyle = '#09152e';
-      ctx.strokeText('💦 물벼락 주의! 점프!', bx + bw / 2, by + 17);
+      ctx.strokeText('물벼락 주의! 점프!', bx + bw / 2, by + 17);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText('💦 물벼락 주의! 점프!', bx + bw / 2, by + 17);
+      ctx.fillText('물벼락 주의! 점프!', bx + bw / 2, by + 17);
       ctx.restore();
     } else if (car.phase === 'pass') {
       const x = Math.floor(car.x);
@@ -1032,9 +1032,9 @@ window.RunRenderer = (function () {
       ctx.textAlign = 'center';
       ctx.lineWidth = 2.6;
       ctx.strokeStyle = '#09152e';
-      ctx.strokeText('🦠 돌진! 마스크 착용!', bx + bw / 2, by + 16);
+      ctx.strokeText('돌진! 마스크 착용!', bx + bw / 2, by + 16);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText('🦠 돌진! 마스크 착용!', bx + bw / 2, by + 16);
+      ctx.fillText('돌진! 마스크 착용!', bx + bw / 2, by + 16);
     } else if (attack.phase === 'charge') {
       // High-speed crimson shockwave trail behind charging virus
       for (let k = 1; k <= 3; k++) {
@@ -1207,9 +1207,9 @@ window.RunRenderer = (function () {
       ctx.textAlign = 'center';
       ctx.lineWidth = 2.6;
       ctx.strokeStyle = '#09152e';
-      ctx.strokeText('🧊 우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
+      ctx.strokeText('우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText('🧊 우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
+      ctx.fillText('우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
     } else if (attack.phase === 'fall') {
       stones.forEach((st, idx) => {
         const sx = ax + st.dx;

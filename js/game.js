@@ -1016,10 +1016,10 @@
     });
 
     const PALETTES = {
-      rare:      { main: '#4ad8ff', trail: '#1b88ff', alt: '#b3f2ff', flash: 'rgba(180, 240, 255, 0.92)', label: '✦ 희귀 스킨 소환! ✦' },
-      epic:      { main: '#d27bff', trail: '#8a35ff', alt: '#f5c7ff', flash: 'rgba(232, 196, 255, 0.94)', label: '★ 영웅 스킨 출현! ★' },
-      legendary: { main: '#ffd545', trail: '#ff9614', alt: '#fff5b3', flash: 'rgba(255, 244, 196, 0.97)', label: '★★ 전설 스킨 강림! ★★' },
-      mythic:    { main: '#ff5eb8', trail: '#a855f7', alt: '#ffe46b', flash: 'rgba(255, 224, 246, 0.98)', label: '✦ 신화 MYTHIC 스킨 강림!! ✦' }
+      rare:      { main: '#4ad8ff', trail: '#1b88ff', alt: '#b3f2ff', flash: 'rgba(180, 240, 255, 0.92)', label: '희귀 스킨 소환!' },
+      epic:      { main: '#d27bff', trail: '#8a35ff', alt: '#f5c7ff', flash: 'rgba(232, 196, 255, 0.94)', label: '영웅 스킨 출현!' },
+      legendary: { main: '#ffd545', trail: '#ff9614', alt: '#fff5b3', flash: 'rgba(255, 244, 196, 0.97)', label: '전설 스킨 강림!' },
+      mythic:    { main: '#ff5eb8', trail: '#a855f7', alt: '#ffe46b', flash: 'rgba(255, 224, 246, 0.98)', label: '신화 MYTHIC 스킨 강림!!' }
     };
     const initPal = PALETTES.rare;
     const targetPal = PALETTES[bestRarity] || PALETTES.rare;
@@ -1441,7 +1441,7 @@
     const cost = computeGachaCost(count);
     if (!cost.canAfford) {
       SFX.click();
-      showToast(`🎟️ 뽑기권(상자 보관함 교환) 또는 💎 보석(${cost.needGems.toLocaleString('ko-KR')}💎)이 부족합니다!`);
+      showToast(`뽑기권(상자 보관함 교환) 또는 보석(${cost.needGems.toLocaleString('ko-KR')}개)이 부족합니다!`);
       return;
     }
     if (el.gachaResultOverlay) el.gachaResultOverlay.classList.add('hidden');
@@ -1556,8 +1556,8 @@
         const d = h.at ? new Date(h.at) : null;
         const ts = d ? `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
         const dupLabel = h.dupMileage > 0
-          ? `중복 ✨+${h.dupMileage}M`
-          : (h.dupGold > 0 ? `중복 +${h.dupGold.toLocaleString('ko-KR')}G` : '중복 ✨+2M');
+          ? `중복+${h.dupMileage}M`
+          : (h.dupGold > 0 ? `중복 +${h.dupGold.toLocaleString('ko-KR')}G` : '중복+2M');
         return `
           <div class="gacha-hist-row">
             <span class="gacha-rc-rar" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
@@ -1667,11 +1667,11 @@
 
     if (tierId === 'gold') {
       const rem = Math.max(1, chest.pityTarget - (save.pity.gold || 0));
-      el.chestPityNote.textContent = rem === 1 ? '✨ 이번 상자 영웅 이상 스킨 확정!' : `영웅+ 천장까지 ${rem}회 남음 (${save.pity.gold || 0}/${chest.pityTarget})`;
+      el.chestPityNote.textContent = rem === 1 ? '이번 상자 영웅 이상 스킨 확정!' : `영웅+ 천장까지 ${rem}회 남음 (${save.pity.gold || 0}/${chest.pityTarget})`;
       el.chestPityNote.classList.remove('hidden');
     } else if (tierId === 'diamond') {
       const rem = Math.max(1, chest.pityTarget - (save.pity.diamond || 0));
-      el.chestPityNote.textContent = rem === 1 ? '✨ 이번 상자 전설 스킨 확정!' : `전설 천장까지 ${rem}회 남음 (${save.pity.diamond || 0}/${chest.pityTarget})`;
+      el.chestPityNote.textContent = rem === 1 ? '이번 상자 전설 스킨 확정!' : `전설 천장까지 ${rem}회 남음 (${save.pity.diamond || 0}/${chest.pityTarget})`;
       el.chestPityNote.classList.remove('hidden');
     } else {
       el.chestPityNote.classList.add('hidden');
@@ -1702,7 +1702,7 @@
     SFX.reward();
     persistSave();
     refreshAllMenus();
-    showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
+    showToast(`${chest.name}가 상자 보관함에 저장되었습니다!`);
   }
 
   function triggerChestAnimation() {
@@ -1774,11 +1774,11 @@
       el.chestRewardRarity.style.color = '#7ef6ff';
       el.chestRewardVisual.innerHTML = uiIcon('gem', 'xl', 'rw-big-emoji');
       el.chestRewardName.textContent = `+${rw.amount} 다이아`;
-      el.chestRewardSub.innerHTML = uiText('희귀 보석 재화 획득! 스킨 뽑기(200💎) · 황금/다이아 상자에 사용하세요!', 'xs');
+      el.chestRewardSub.innerHTML = uiText('희귀 보석 재화 획득! 스킨 뽑기(200보석) · 황금/다이아 상자에 사용하세요!', 'xs');
     } else if (rw.kind === 'skin') {
       const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.rare;
       const ownerChar = getCharDef(rw.skin.charId);
-      el.chestRewardRarity.textContent = `✨ ${rar.name} 스킨 획득!`;
+      el.chestRewardRarity.textContent = `${rar.name} 스킨 획득!`;
       el.chestRewardRarity.style.background = rar.bg;
       el.chestRewardRarity.style.color = rar.color;
       const skAv = getSkinAvatar(ownerChar, rw.skin);
@@ -1798,11 +1798,11 @@
         persistSave();
         closeChestModal();
         refreshAllMenus();
-        showToast(`✨ [${rw.skin.name}] 스킨 장착 완료!`);
+        showToast(`[${rw.skin.name}] 스킨 장착 완료!`);
       };
     } else if (rw.kind === 'dup_gold') {
       const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.rare;
-      el.chestRewardRarity.textContent = `🔄 ${rar.name} 스킨 전체 보유 (중복 대체)`;
+      el.chestRewardRarity.textContent = `${rar.name} 스킨 전체 보유 (중복 대체)`;
       el.chestRewardRarity.style.background = rar.bg;
       el.chestRewardRarity.style.color = rar.color;
       el.chestRewardVisual.innerHTML = `<img src="assets/design/item_coin.png?v=${ASSET_VER}" alt="중복 골드" class="rw-big-ico" />`;
@@ -1840,43 +1840,43 @@
     const gRates = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates) || { rare: 70, epic: 20, legendary: 8, mythic: 2 };
     el.probModalBody.innerHTML = `
       <div class="prob-section">
-        <h4>🎰 스킨 전용 뽑기 확률 &amp; 마일리지 교환 (4등급 체계)</h4>
+        <h4>스킨 전용 뽑기 확률 &amp; 마일리지 교환 (4등급 체계)</h4>
         <table class="prob-table">
           <thead>
             <tr><th>등급</th><th>뽑기 확률</th><th>마일리지 교환</th><th>뽑기 중복 보상</th></tr>
           </thead>
           <tbody>
-            <tr><td style="color:#47c8ff">희귀 (RARE)</td><td>${gRates.rare}%</td><td>✨ 10 마일리지</td><td>✨ +2 마일리지</td></tr>
-            <tr><td style="color:#d084ff">영웅 (EPIC)</td><td>${gRates.epic}%</td><td>✨ 30 마일리지</td><td>✨ +2 마일리지</td></tr>
-            <tr><td style="color:#ffca42">전설 (LEGENDARY)</td><td>${gRates.legendary}%</td><td>✨ 50 마일리지</td><td>✨ +2 마일리지</td></tr>
-            <tr><td style="color:#ff5ea8">신화 (MYTHIC)</td><td>${gRates.mythic}%</td><td>✨ 200 마일리지</td><td>✨ +2 마일리지</td></tr>
+            <tr><td style="color:#47c8ff">희귀 (RARE)</td><td>${gRates.rare}%</td><td>10 마일리지</td><td>+2 마일리지</td></tr>
+            <tr><td style="color:#d084ff">영웅 (EPIC)</td><td>${gRates.epic}%</td><td>30 마일리지</td><td>+2 마일리지</td></tr>
+            <tr><td style="color:#ffca42">전설 (LEGENDARY)</td><td>${gRates.legendary}%</td><td>50 마일리지</td><td>+2 마일리지</td></tr>
+            <tr><td style="color:#ff5ea8">신화 (MYTHIC)</td><td>${gRates.mythic}%</td><td>200 마일리지</td><td>+2 마일리지</td></tr>
           </tbody>
         </table>
         <ul class="prob-rules" style="margin-top:6px;">
-          <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 ${uiIcon('gem', 'xs')} 200 보석/회) · <strong>1회당 ✨ +2 마일리지 적립 + 중복 스킨 출현 시 ✨ +2 마일리지 추가 지급!</strong></li>
+          <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 ${uiIcon('gem', 'xs')} 200 보석/회) · <strong>1회당 +2 마일리지 적립 + 중복 스킨 출현 시 +2 마일리지 추가 지급!</strong></li>
           <li><strong>${ticketIconHtml('xs')} 상자 → 뽑기권 교환 (상자 보관함):</strong> 나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 뽑기권 1장</li>
           <li>미출시 중간 등급(영웅·전설)은 희귀 스킨 풀로 자동 전환되며, 신화 스킨 확률(${gRates.mythic}%)은 그대로 유지됩니다.</li>
           <li><strong>시즌 패스 전용 스킨(얼음황제):</strong> 시즌 기간 동안 골드 패스로만 획득할 수 있으며, 시즌 종료 후 신화 등급 뽑기 풀에 추가됩니다.</li>
         </ul>
       </div>
       <div class="prob-section">
-        <h4>📊 상자별 보상 확률 (합계 100%)</h4>
+        <h4>상자별 보상 확률 (합계 100%)</h4>
         <table class="prob-table">
           <thead>
-            <tr><th>보상</th><th>🪵 나무(300G)</th><th>🥈 은(700G)</th><th>${uiIcon('crown', 'xs')} 황금(40${uiIcon('gem', 'xs')})</th><th>${uiIcon('gem', 'xs')} 다이아(100${uiIcon('gem', 'xs')})</th></tr>
+            <tr><th>보상</th><th>나무(300G)</th><th>은(700G)</th><th>${uiIcon('crown', 'xs')} 황금(40${uiIcon('gem', 'xs')})</th><th>${uiIcon('gem', 'xs')} 다이아(100${uiIcon('gem', 'xs')})</th></tr>
           </thead>
           <tbody>
             <tr><td>${uiIcon('coin', 'xs')} 골드</td><td>75%</td><td>65%</td><td>50%</td><td>25%</td></tr>
             <tr><td style="color:#47c8ff">희귀 스킨</td><td>23%</td><td>30%</td><td>25%</td><td>10%</td></tr>
             <tr><td style="color:#d084ff">영웅 스킨</td><td>1.5%</td><td>3%</td><td>17%</td><td>30%</td></tr>
             <tr><td style="color:#ffca42">전설 스킨</td><td>-</td><td>-</td><td>3%</td><td>25%</td></tr>
-            <tr><td style="color:#ff5ea8">신화 스킨</td><td colspan="4">상자 미출현 (🎰 스킨 뽑기 · ✨ 마일리지 200 교환)</td></tr>
+            <tr><td style="color:#ff5ea8">신화 스킨</td><td colspan="4">상자 미출현 (스킨 뽑기 · 마일리지 200 교환)</td></tr>
             <tr><td style="color:#7ef6ff">${uiIcon('gem', 'xs')} 다이아</td><td>0.5%</td><td>2%</td><td>5%</td><td>10%</td></tr>
           </tbody>
         </table>
       </div>
       <div class="prob-section">
-        <h4>🛡️ 인게임 상자 드랍 &amp; 천장 시스템</h4>
+        <h4>인게임 상자 드랍 &amp; 천장 시스템</h4>
         <ul class="prob-rules">
           <li><strong>달리기 중 상자 등장:</strong> 나무(56%) &gt; 은(27%) &gt; 황금(13%) &gt; 다이아(4%) 비율로 등장하며 획득 시 상자 보관함에 자동 저장!</li>
           <li><strong>${uiIcon('crown', 'xs')} 황금 상자 천장 (10회):</strong> 영웅 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong>)</li>
@@ -1929,15 +1929,15 @@
   let weatherAlertTimer = null;
   let weatherAlertActive = false;
   const WEATHER_ALERT_META = {
-    rain:       { iconKey: 'umbrella', icon: '☂️', title: '우산!' },
-    flood:      { iconKey: 'umbrella', icon: '☂️', title: '우산!' },
-    dust:       { iconKey: 'mask',     icon: '😷', title: '마스크!' },
-    heat:       { icon: '☀️', title: '우산!' },
-    gust:       { icon: '💨', title: '우산 접기!' },
-    ice_road:   { icon: '🧊', title: '빙판!' },
-    covid:      { icon: '🦠', title: '마스크!' },
-    covid_rush: { icon: '🦠', title: '마스크!' },
-    hail:       { iconKey: 'umbrella', icon: '🧊', title: '우박! 우산!' }
+    rain:       { iconKey: 'umbrella', title: '우산!' },
+    flood:      { iconKey: 'umbrella', title: '우산!' },
+    dust:       { iconKey: 'mask',     title: '마스크!' },
+    heat:       { iconKey: 'umbrella', title: '우산!' },
+    gust:       { iconSvg: '<svg viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path d="M4 9h12a2.5 2.5 0 1 0-2.2-3.7M3 13.5h15.5a2.5 2.5 0 1 1-2.2 3.7M6 18h8" fill="none" stroke="#9be8ff" stroke-width="2.6" stroke-linecap="round"/></svg>', title: '우산 접기!' },
+    ice_road:   { iconSvg: '<svg viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2L3.8 16.8" fill="none" stroke="#9ee8ff" stroke-width="2.4" stroke-linecap="round"/></svg>', title: '빙판!' },
+    covid:      { iconKey: 'mask',     title: '마스크!' },
+    covid_rush: { iconKey: 'mask',     title: '마스크!' },
+    hail:       { iconKey: 'umbrella', title: '우박! 우산!' }
   };
 
   function showWeatherCenterAlert(weatherId, customKeyword = null) {
@@ -1947,7 +1947,7 @@
     weatherAlertActive = true;
     el.weatherCenterAlert.className = `weather-center-alert ev-${weatherId}`;
     if (el.weatherAlertIcon) {
-      el.weatherAlertIcon.innerHTML = meta.iconKey ? uiIcon(meta.iconKey, 'hero') : meta.icon;
+      el.weatherAlertIcon.innerHTML = meta.iconKey ? uiIcon(meta.iconKey, 'hero') : (meta.iconSvg || '');
     }
     el.weatherAlertTitle.textContent = customKeyword || meta.title;
     // Force clean animation restart on consecutive events
@@ -2166,9 +2166,9 @@
       persistSave();
       refreshAllMenus();
       if (rw.kind === 'chest') {
-        showToast(`🎁 ${milestoneScore.toLocaleString('ko-KR')}점 달성 보상! ${rw.label}이(가) 상자 보관함에 저장되었습니다!`);
+        showToast(`${milestoneScore.toLocaleString('ko-KR')}점 달성 보상! ${rw.label}이(가) 상자 보관함에 저장되었습니다!`);
       } else {
-        showToast(`🎁 ${milestoneScore.toLocaleString('ko-KR')}점 달성 보상! ${rw.label} 획득!`);
+        showToast(`${milestoneScore.toLocaleString('ko-KR')}점 달성 보상! ${rw.label} 획득!`);
       }
     }
     return rw;
@@ -2191,10 +2191,10 @@
     persistSave();
     refreshAllMenus();
     const parts = [];
-    if (totalGold > 0) parts.push(`🪙 ${totalGold.toLocaleString('ko-KR')}G`);
-    if (totalGems > 0) parts.push(`💎 ${totalGems}`);
-    if (totalChests > 0) parts.push(`📦 상자 ${totalChests}개(보관함 저장)`);
-    showToast(`🎉 최고점수 보상 ${ready.length}건 모두 수령! (${parts.join(' · ')})`);
+    if (totalGold > 0) parts.push(`${totalGold.toLocaleString('ko-KR')}G`);
+    if (totalGems > 0) parts.push(`보석 ${totalGems}`);
+    if (totalChests > 0) parts.push(`상자 ${totalChests}개(보관함 저장)`);
+    showToast(`최고점수 보상 ${ready.length}건 모두 수령! (${parts.join(' · ')})`);
   }
 
   function renderScoreRoadModal() {
@@ -2209,7 +2209,7 @@
     }
     if (el.btnScoreRoadClaimAll) {
       el.btnScoreRoadClaimAll.classList.toggle('hidden', unclaimed.length === 0);
-      el.btnScoreRoadClaimAll.textContent = `🎁 모두 받기 (${unclaimed.length})`;
+      el.btnScoreRoadClaimAll.textContent = `모두 받기 (${unclaimed.length})`;
     }
 
     const maxMilestone = Math.max(20000, (Math.floor(best / step) + 6) * step);
@@ -2242,7 +2242,7 @@
         </div>
         <div class="sr-node-rail">
           <div class="sr-node-rail-fill" style="width:${segFill.toFixed(1)}%"></div>
-          <span class="sr-node-pip">${isClaimed ? '✓' : (canClaim ? '!' : '★')}</span>
+          <span class="sr-node-pip">${isClaimed ? 'OK' : (canClaim ? '!' : 'R')}</span>
         </div>
         <div class="sr-node-art">${iconHtml}</div>
         <div class="sr-node-lbl">${rw.label}</div>
@@ -2257,11 +2257,11 @@
         if (!focusCard) focusCard = card;
       } else if (isClaimed) {
         btn.className = 'sr-claim-btn done';
-        btn.textContent = '완료 ✓';
+        btn.textContent = '완료';
         btn.disabled = true;
       } else {
         btn.className = 'sr-claim-btn locked';
-        btn.textContent = `🔒 ${(m - best).toLocaleString('ko-KR')}점 남음`;
+        btn.textContent = `${(m - best).toLocaleString('ko-KR')}점 남음`;
         btn.disabled = true;
         if (!focusCard) focusCard = card;
       }
@@ -2922,15 +2922,15 @@
     else SFX.chestOpen();
 
     if (!el.vaultBatchOverlay || !el.vaultBatchGrid) {
-      showToast(`⚡ 상자 ${plan.length}개 개봉 완료!`);
+      showToast(`상자 ${plan.length}개 개봉 완료!`);
       return;
     }
 
     const tierDef = tierOrAll !== 'all' ? DATA.CHESTS[tierOrAll] : null;
     if (el.vaultBatchTitle) {
       el.vaultBatchTitle.textContent = tierDef
-        ? `⚡ ${tierDef.name} ${plan.length}개 일괄 개봉!`
-        : `⚡ 상자 ${plan.length}개 전체 개봉!`;
+        ? `${tierDef.name} ${plan.length}개 일괄 개봉!`
+        : `상자 ${plan.length}개 전체 개봉!`;
     }
     if (el.vaultBatchSummary) {
       const pills = [`<span class="vb-pill cnt">총 ${plan.length}개 개봉</span>`];
@@ -2941,7 +2941,7 @@
         pills.push(`<span class="vb-pill gem">${uiIcon('gem', 'xs')} +${totalGems.toLocaleString('ko-KR')}</span>`);
       }
       if (newSkins.length > 0) {
-        pills.push(`<span class="vb-pill skin">✨ 신규 스킨 ${newSkins.length}종!</span>`);
+        pills.push(`<span class="vb-pill skin">신규 스킨 ${newSkins.length}종!</span>`);
       }
       el.vaultBatchSummary.innerHTML = pills.join('');
     }
@@ -3003,7 +3003,7 @@
       const bestSkinRw = sortedSkins[0] || null;
       if (bestSkinRw) {
         el.btnVaultBatchEquip.classList.remove('hidden');
-        el.btnVaultBatchEquip.textContent = `✨ [${bestSkinRw.skin.name}] 장착`;
+        el.btnVaultBatchEquip.textContent = `[${bestSkinRw.skin.name}] 장착`;
         el.btnVaultBatchEquip.onclick = () => {
           SFX.levelUp();
           save.equippedSkins[bestSkinRw.skin.charId] = bestSkinRw.skin.id;
@@ -3014,7 +3014,7 @@
           persistSave();
           el.vaultBatchOverlay.classList.add('hidden');
           refreshAllMenus();
-          showToast(`✨ [${bestSkinRw.skin.name}] 스킨 장착 완료!`);
+          showToast(`[${bestSkinRw.skin.name}] 스킨 장착 완료!`);
         };
       } else {
         el.btnVaultBatchEquip.classList.add('hidden');
@@ -3032,7 +3032,7 @@
     if (el.vaultTicketPill) el.vaultTicketPill.innerHTML = `${ticketIconHtml('sm')} 뽑기권 ${(save.gachaTickets || 0).toLocaleString('ko-KR')}장`;
     if (el.btnVaultOpenAll) {
       el.btnVaultOpenAll.classList.toggle('hidden', total < 2);
-      el.btnVaultOpenAll.textContent = `⚡ 전체 열기 (${total})`;
+      el.btnVaultOpenAll.textContent = `전체 열기 (${total})`;
     }
     el.vaultModalGrid.innerHTML = '';
 
@@ -3044,7 +3044,7 @@
         ? `영웅+ 천장 ${save.pity.gold || 0}/10회`
         : (tierId === 'diamond'
           ? `전설 천장 ${save.pity.diamond || 0}/15회`
-          : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 💎${chest.gemRange[0]}~${chest.gemRange[1]}`);
+          : `골드 ${chest.goldRange[0]}~${chest.goldRange[1]}G · 보석 ${chest.gemRange[0]}~${chest.gemRange[1]}`);
 
       const card = document.createElement('div');
       card.className = `vault-card tier-${tierId}${qty > 0 ? ' ready' : ' empty'}`;
@@ -3092,7 +3092,7 @@
         const allBtn = document.createElement('button');
         allBtn.type = 'button';
         allBtn.className = 'vault-open-multi-btn';
-        allBtn.textContent = `⚡ ${qty}개 열기`;
+        allBtn.textContent = `${qty}개 열기`;
         allBtn.onclick = () => openVaultChestsBatch(tierId);
         openRow.appendChild(allBtn);
       }
@@ -3112,7 +3112,7 @@
         save.gachaTickets = (save.gachaTickets || 0) + 1;
         persistSave();
         refreshAllMenus();
-        showToast(`🎟️ ${chest.name} ${ticketCost}개 → 스킨 뽑기권 1장 교환 완료! (보유 ${save.gachaTickets}장)`);
+        showToast(`${chest.name} ${ticketCost}개 → 스킨 뽑기권 1장 교환 완료! (보유 ${save.gachaTickets}장)`);
       };
       btnRow.appendChild(exBtn);
 
@@ -3268,7 +3268,7 @@
     const bracket = getScoreRoadBracket(save.bestScore || 0);
     const unclaimedCnt = getUnclaimedScoreRoadMilestones().length;
     if (el.hdrProfileRank) {
-      el.hdrProfileRank.textContent = `★${bracket.rank}`;
+      el.hdrProfileRank.textContent = `R${bracket.rank}`;
       el.hdrProfileRank.className = `bs-prof-rank-badge ${bracket.tierCls}`;
     }
     if (el.headerBestScore) {
@@ -3317,7 +3317,7 @@
     const syncStateTxt = !isLinked
       ? '게스트 모드 (기기 저장)'
       : (syncSt.ok === true
-        ? `${acctLabel} · ☁️ 동기화 완료`
+        ? `${acctLabel} · 동기화 완료`
         : `${acctLabel} · 자동 저장 중`);
 
     if (el.settingsAccountSub) {
@@ -3352,7 +3352,7 @@
       el.profPrevAvatar.style.filter = avInfo.filter;
     }
     if (el.profPrevRank) {
-      el.profPrevRank.textContent = `★${bracket.rank}`;
+      el.profPrevRank.textContent = `R${bracket.rank}`;
       el.profPrevRank.className = `bs-prof-rank-badge ${bracket.tierCls}`;
     }
     if (el.profPrevNameWrap) {
@@ -3361,7 +3361,7 @@
       el.profPrevNameWrap.innerHTML = `${renderNameplateHtml(nick, frameToUse, prof.nameColor, 'lg')}${expTxt ? `<span class="prof-frame-exp-mini">${expTxt}</span>` : ''}`;
     }
     if (el.profPrevStats) {
-      el.profPrevStats.textContent = `🏆 최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · 🏃 ${save.bestYear || 1}년 차 · 캐릭터 ${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
+      el.profPrevStats.textContent = `최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · ${save.bestYear || 1}년 차 · 캐릭터 ${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
     }
 
     document.querySelectorAll('.prof-tab-btn').forEach((btn) => {
@@ -3377,14 +3377,14 @@
         card.type = 'button';
         card.className = `prof-item-card${equipped ? ' equipped' : ''}${locked ? ' locked' : ''}`;
         card.innerHTML = `
-          ${equipped ? '<span class="prof-eq-tag">장착</span>' : (locked ? '<span class="prof-eq-tag">🔒</span>' : '')}
+          ${equipped ? '<span class="prof-eq-tag">장착</span>' : (locked ? '<span class="prof-eq-tag">잠금</span>' : '')}
           <img src="${src}" alt="${escapeNickHtml(label)}" class="prof-card-avatar" style="${filter ? `filter:${filter};` : ''}" />
           <span class="prof-card-label">${escapeNickHtml(label)}</span>
         `;
         card.onclick = () => {
           if (locked) {
             SFX.error();
-            showToast('🔒 캐릭터 또는 스킨을 먼저 해금해 주세요!');
+            showToast('캐릭터 또는 스킨을 먼저 해금해 주세요!');
             return;
           }
           SFX.click();
@@ -3397,7 +3397,7 @@
         prof.avatarCharId = null;
         prof.avatarSkinId = null;
         syncProfileOnlineIfLinked();
-        showToast('🎭 프로필 아이콘이 대표 캐릭터 연동으로 설정되었습니다!');
+        showToast('프로필 아이콘이 대표 캐릭터 연동으로 설정되었습니다!');
       });
 
       DATA.CHARACTERS.forEach((ch) => {
@@ -3407,7 +3407,7 @@
           prof.avatarCharId = ch.id;
           prof.avatarSkinId = null;
           syncProfileOnlineIfLinked();
-          showToast(`🎭 프로필 아이콘 [${ch.name}] 장착!`);
+          showToast(`프로필 아이콘 [${ch.name}] 장착!`);
         });
 
         DATA.getSkinsForChar(ch.id).forEach((sk) => {
@@ -3418,7 +3418,7 @@
             prof.avatarCharId = ch.id;
             prof.avatarSkinId = sk.id;
             syncProfileOnlineIfLinked();
-            showToast(`✨ 프로필 아이콘 [${sk.name}] 장착!`);
+            showToast(`프로필 아이콘 [${sk.name}] 장착!`);
           });
         });
       });
@@ -3433,7 +3433,7 @@
         const swatchStyle = col.color === 'rainbow' ? '' : `style="background:${col.color};"`;
         const badgeHtml = eq
           ? '<span class="prof-eq-tag">장착</span>'
-          : (locked ? '<span class="prof-eq-tag" style="background:#ffb830;color:#241200;">👑 패스</span>' : '');
+          : (locked ? '<span class="prof-eq-tag" style="background:#ffb830;color:#241200;">패스</span>' : '');
         card.innerHTML = `
           ${badgeHtml}
           <span class="prof-color-swatch${col.color === 'rainbow' ? ' rainbow' : ''}" ${swatchStyle}></span>
@@ -3442,13 +3442,13 @@
         card.onclick = () => {
           SFX.click();
           if (locked) {
-            showToast('👑 무지개 프리즘은 골드 패스 구매자만 장착할 수 있습니다!');
+            showToast('무지개 프리즘은 골드 패스 구매자만 장착할 수 있습니다!');
             openGoldPassPurchase();
             return;
           }
           prof.nameColor = col.color;
           syncProfileOnlineIfLinked();
-          showToast(`🎨 닉네임 색상 [${col.name}] 적용!`);
+          showToast(`닉네임 색상 [${col.name}] 적용!`);
         };
         el.profCustomGrid.appendChild(card);
       });
@@ -3463,7 +3463,7 @@
         card.className = `prof-item-card prof-frame-card${eq ? ' equipped' : ''}${!unlocked ? ' locked' : ''}`;
         card.innerHTML = `
           <div class="prof-frame-meta">
-            <span class="prof-frame-title">${fr.name} ${expBadge} ${eq ? '· 장착 중' : (!unlocked ? '· 🔒 미보유' : '')}</span>
+            <span class="prof-frame-title">${fr.name} ${expBadge} ${eq ? '· 장착 중' : (!unlocked ? '· 미보유' : '')}</span>
             <span class="prof-frame-desc">${fr.desc}</span>
           </div>
           <div class="prof-frame-preview">${renderNameplateHtml(nick, fr.id, prof.nameColor, 'md')}</div>
@@ -3471,13 +3471,13 @@
         card.onclick = () => {
           if (!unlocked) {
             SFX.error();
-            showToast(`🔒 ${fr.desc}`);
+            showToast(`${fr.desc}`);
             return;
           }
           SFX.click();
           prof.nameFrame = fr.id;
           syncProfileOnlineIfLinked();
-          showToast(`👑 [${fr.name}] 장착 완료!`);
+          showToast(`[${fr.name}] 장착 완료!`);
         };
         el.profCustomGrid.appendChild(card);
       });
@@ -3646,67 +3646,67 @@
   const PLAYABLE_TUTORIAL_STEPS = [
     {
       id: 'jump',
-      icon: '⬆️',
+      icon: '',
       title: '1. 장애물을 뛰어넘으세요!',
       sub: '왼쪽 [점프] 버튼을 터치해 장애물을 피하세요',
-      actionPrompt: '👇 지금! [점프] 버튼을 터치하세요!',
+      actionPrompt: '지금! [점프] 버튼을 터치하세요!',
       targetBtn: 'jump',
-      successMsg: '👍 나이스 점프!'
+      successMsg: '나이스 점프!'
     },
     {
       id: 'double_jump',
-      icon: '⬆️⬆️',
+      icon: '',
       title: '2. 높은 장애물은 2단 점프!',
       sub: '점프 후 공중에서 [점프] 버튼을 한 번 더 터치하세요',
-      actionPrompt: '👇 지금! [점프] 1단 점프!',
-      secondPrompt: '👇 공중에서 한 번 더! [2단 점프]!',
+      actionPrompt: '지금! [점프] 1단 점프!',
+      secondPrompt: '공중에서 한 번 더! [2단 점프]!',
       targetBtn: 'jump',
-      successMsg: '✨ 완벽한 2단 점프!'
+      successMsg: '완벽한 2단 점프!'
     },
     {
       id: 'slide',
-      icon: '⬇️',
+      icon: '',
       title: '3. 날아오는 구름은 슬라이드!',
       sub: '오른쪽 [슬라이드] 버튼을 눌러 아래로 통과하세요',
-      actionPrompt: '👇 지금! [슬라이드] 버튼을 누르세요!',
+      actionPrompt: '지금! [슬라이드] 버튼을 누르세요!',
       targetBtn: 'slide',
-      successMsg: '💨 멋진 슬라이드 통과!'
+      successMsg: '멋진 슬라이드 통과!'
     },
     {
       id: 'rain_umbrella',
-      icon: '🌧️',
+      icon: '',
       title: '4. 비가 오면 우산을 펴세요!',
       sub: '왼쪽 위 [우산] 버튼을 터치하세요 (10초 자동 해제)',
-      actionPrompt: '👇 지금! [우산] 버튼을 눌러 펴세요!',
+      actionPrompt: '지금! [우산] 버튼을 눌러 펴세요!',
       targetBtn: 'umbrella',
-      successMsg: '☂️ 빗물 완벽 방어!'
+      successMsg: '빗물 완벽 방어!'
     },
     {
       id: 'gust_fold',
-      icon: '💨',
+      icon: '',
       title: '5. 태풍 돌풍엔 우산을 접으세요!',
       sub: '제한 시간 안에 [우산] 버튼을 다시 눌러 접으세요!',
-      actionPrompt: '👇 지금! [우산] 버튼을 눌러 접으세요!',
+      actionPrompt: '지금! [우산] 버튼을 눌러 접으세요!',
       targetBtn: 'umbrella',
-      successMsg: '💨 태풍 대비! 우산 접기 성공!'
+      successMsg: '태풍 대비! 우산 접기 성공!'
     },
     {
       id: 'dust_mask',
-      icon: '😷',
+      icon: '',
       title: '6. 황사·미세먼지엔 마스크!',
       sub: '오른쪽 위 [마스크] 버튼을 터치해 황사를 막으세요',
-      actionPrompt: '👇 지금! [마스크] 버튼을 누르세요!',
+      actionPrompt: '지금! [마스크] 버튼을 누르세요!',
       targetBtn: 'mask',
-      successMsg: '😷 황사 완벽 차단!'
+      successMsg: '황사 완벽 차단!'
     },
     {
       id: 'covid_parry',
-      icon: '🦠',
+      icon: '',
       title: '7. 코로나 바이러스 돌진 차단!',
       sub: '바이러스가 돌진할 때 [마스크] 버튼을 눌러 튕겨내세요!',
-      actionPrompt: '👇 지금! [마스크]로 바이러스를 튕겨내세요!',
+      actionPrompt: '지금! [마스크]로 바이러스를 튕겨내세요!',
       targetBtn: 'mask',
-      successMsg: '🎉 완벽 차단! 모든 조작 마스터!'
+      successMsg: '완벽 차단! 모든 조작 마스터!'
     }
   ];
 
@@ -3833,7 +3833,7 @@
     if (skipped) {
       persistSave();
       exitRunToHome();
-      showToast('📖 튜토리얼을 건너뛰었습니다. 설정에서 언제든 다시 플레이할 수 있습니다!');
+      showToast('튜토리얼을 건너뛰었습니다. 설정에서 언제든 다시 플레이할 수 있습니다!');
       return;
     }
 
@@ -3854,7 +3854,7 @@
     if (el.tutCompleteReward) {
       el.tutCompleteReward.innerHTML = firstClear
         ? `${uiIcon('coin', 'sm')} 첫 튜토리얼 완료 보너스 +100G 지급!`
-        : '✨ 모든 조작 연습을 완벽하게 마쳤습니다!';
+        : '모든 조작 연습을 완벽하게 마쳤습니다!';
     }
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.remove('hidden');
   }
@@ -4196,9 +4196,9 @@
         renderProfileUI();
         if (opts.manual) {
           if (cloudRes && cloudRes.error === 'no_auth_token') {
-            showToast('⚠️ 로그인 세션이 만료되었습니다. 다시 연동해 주세요.');
+            showToast('로그인 세션이 만료되었습니다. 다시 연동해 주세요.');
           } else {
-            showToast('☁️ 현재 기기에 안전하게 저장되어 있습니다. 잠시 후 다시 시도해 주세요.');
+            showToast('현재 기기에 안전하게 저장되어 있습니다. 잠시 후 다시 시도해 주세요.');
           }
         }
         return { ok: false, status: cloudRes ? cloudRes.status : 0 };
@@ -4233,9 +4233,9 @@
         try { syncMyWeeklyScore(); } catch {}
 
         if (opts.manual) {
-          showToast('☁️ 클라우드 최신 데이터 동기화 완료!');
+          showToast('클라우드 최신 데이터 동기화 완료!');
         } else if (localChanged && !opts.silent) {
-          showToast('☁️ 다른 기기의 최신 골드 · 스킨 · 기록을 불러왔습니다!');
+          showToast('다른 기기의 최신 골드 · 스킨 · 기록을 불러왔습니다!');
         }
         return { ok: true, updated: localChanged };
       } else {
@@ -4246,8 +4246,8 @@
         renderProfileUI();
         if (opts.manual) {
           showToast(pushRes && pushRes.ok
-            ? '☁️ 클라우드 동기화 완료!'
-            : '☁️ 기기에 데이터가 안전하게 저장되었습니다.');
+            ? '클라우드 동기화 완료!'
+            : '기기에 데이터가 안전하게 저장되었습니다.');
         }
         return { ok: Boolean(pushRes && pushRes.ok), uploaded: true };
       }
@@ -4255,7 +4255,7 @@
       cloudSyncInFlight = false;
       if (el.btnLoginSync) {
         el.btnLoginSync.disabled = false;
-        el.btnLoginSync.textContent = '☁️ 동기화';
+        el.btnLoginSync.textContent = '동기화';
       }
     }
   }
@@ -4330,10 +4330,10 @@
     if (isLinked) {
       const restored = Boolean(cloudSlot);
       showToast(restored
-        ? `☁️ [${save.auth.nickname}] 데이터를 불러왔습니다!`
-        : `✅ [${save.auth.nickname}] 계정 연동 완료!`);
+        ? `[${save.auth.nickname}] 데이터를 불러왔습니다!`
+        : `[${save.auth.nickname}] 계정 연동 완료!`);
     } else {
-      showToast('👤 게스트 모드로 시작합니다.');
+      showToast('게스트 모드로 시작합니다.');
     }
   }
 
@@ -4349,11 +4349,11 @@
         await switchToAccount(res.profile, { carryGuestSave: carryGuest });
         if (fromIntro) dismissIntroToHome();
       } else if (res && res.needsSetup) {
-        showToast(`⚠️ ${res.message || '네트워크 연결을 확인해 주세요.'}`);
+        showToast(`${res.message || '네트워크 연결을 확인해 주세요.'}`);
       } else if (res && res.redirecting) {
-        showToast('🔄 로그인 페이지로 이동 중입니다...');
+        showToast('로그인 페이지로 이동 중입니다...');
       } else if (res && !res.cancelled && res.message) {
-        showToast(`⚠️ ${res.message}`);
+        showToast(`${res.message}`);
       }
     } finally {
       oauthInFlight = false;
@@ -4394,7 +4394,7 @@
     if (el.introOverlay) {
       el.introOverlay.classList.remove('hidden', 'leaving');
     }
-    showToast('👋 로그아웃되었습니다. 로고 아래에서 계정을 선택해 주세요.');
+    showToast('로그아웃되었습니다. 로고 아래에서 계정을 선택해 주세요.');
   }
 
   async function saveNicknameValue(rawVal) {
@@ -4409,7 +4409,7 @@
     if (el.loginNicknameInput) el.loginNicknameInput.value = clean;
     if (el.profNicknameInput) el.profNicknameInput.value = clean;
     await syncProfileOnlineIfLinked();
-    showToast(`🏷️ 닉네임이 [${clean}](으)로 저장되었습니다!`);
+    showToast(`닉네임이 [${clean}](으)로 저장되었습니다!`);
     return true;
   }
 
@@ -4418,7 +4418,7 @@
     await saveNicknameValue(el.loginNicknameInput.value);
   }
 
-  // ===================== IN-APP PURCHASE (REAL-MONEY GEM STORE: 100💎 = ₩1,000) =====================
+  // ===================== IN-APP PURCHASE (REAL-MONEY GEM STORE: 100보석 = ₩1,000) =====================
   let pendingGemPack = null;
 
   function openIapModal(pack) {
@@ -4491,13 +4491,13 @@
     const rankNum = reward.rank || 1;
     const nick = (save.auth && save.auth.nickname) || '날씨러너';
     const prof = ensureSaveProfile();
-    if (el.weeklyChampTitle) el.weeklyChampTitle.textContent = `🏆 주간 랭킹 ${rankNum}위 달성!`;
+    if (el.weeklyChampTitle) el.weeklyChampTitle.textContent = `주간 랭킹 ${rankNum}위 달성!`;
     if (el.weeklyChampWeek) el.weeklyChampWeek.textContent = `${reward.weekLabel} 주간 최종 ${rankNum}위!`;
     if (el.weeklyChampScore) el.weeklyChampScore.textContent = `달성 점수 ${reward.score.toLocaleString('ko-KR')}점`;
     if (el.weeklyChampGems) el.weeklyChampGems.innerHTML = `+${reward.gems.toLocaleString('ko-KR')} ${uiIcon('gem', 'sm')} 보석 지급!`;
     if (el.weeklyChampFramePreview) {
       if (reward.frameId) {
-        el.weeklyChampFramePreview.innerHTML = `${renderNameplateHtml(nick, reward.frameId, prof.nameColor, 'md')}<span class="champ-frame-note">👑 ${reward.frameName} 해금! (30일)</span>`;
+        el.weeklyChampFramePreview.innerHTML = `${renderNameplateHtml(nick, reward.frameId, prof.nameColor, 'md')}<span class="champ-frame-note">${reward.frameName} 해금! (30일)</span>`;
         el.weeklyChampFramePreview.classList.remove('hidden');
       } else {
         el.weeklyChampFramePreview.classList.add('hidden');
@@ -4535,7 +4535,7 @@
     SFX.chestJackpot();
     refreshAllMenus();
     const frameMsg = rw.frameName ? ` + ${rw.frameName}` : '';
-    showToast(`👑 ${rw.weekLabel} 주간 ${rw.rank || 1}위 보상 💎 ${rw.gems.toLocaleString('ko-KR')}${frameMsg} 수령 완료!`);
+    showToast(`${rw.weekLabel} 주간 ${rw.rank || 1}위 보상 보석 ${rw.gems.toLocaleString('ko-KR')}${frameMsg} 수령 완료!`);
   }
 
   function buildMyBoardProfileMeta(myChar, mySkin) {
@@ -4613,7 +4613,7 @@
     const mods = getActiveLiveWeatherMods();
     if (!mods) return;
     const snap = mods.snapshot;
-    if (el.homeWeatherBtnIco) el.homeWeatherBtnIco.textContent = mods.desc.icon;
+    if (el.homeWeatherBtnIco) el.homeWeatherBtnIco.innerHTML = getWeatherHeroSvg(mods);
     if (el.homeWeatherBtnTemp) el.homeWeatherBtnTemp.textContent = `${Math.round(snap.tempC)}°C`;
     if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) {
       renderModeSelectModal();
@@ -4892,10 +4892,10 @@
           </div>
           <div class="podium-char-wrap">
             <span class="podium-char-aura" aria-hidden="true"></span>
-            <span class="podium-sparkle sp1" aria-hidden="true">✦</span>
-            <span class="podium-sparkle sp2" aria-hidden="true">✦</span>
-            <span class="podium-sparkle sp3" aria-hidden="true">✦</span>
-            <span class="podium-sparkle sp4" aria-hidden="true">✦</span>
+            <span class="podium-sparkle sp1" aria-hidden="true"></span>
+            <span class="podium-sparkle sp2" aria-hidden="true"></span>
+            <span class="podium-sparkle sp3" aria-hidden="true"></span>
+            <span class="podium-sparkle sp4" aria-hidden="true"></span>
             <img src="${avInfo.src}" alt="${escapeNickHtml(entry.nickname)}" class="podium-char-img" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
           </div>
         </div>
@@ -4926,7 +4926,7 @@
       el.btnRankModeToday.setAttribute('aria-selected', String(isTodayMode));
     }
     if (el.rankScreenTitle) {
-      el.rankScreenTitle.textContent = isTodayMode ? '🌦️ 오늘의 날씨 랭킹' : '🏆 일반모드 주간 랭킹';
+      el.rankScreenTitle.textContent = isTodayMode ? '오늘의 날씨 랭킹' : '일반모드 주간 랭킹';
     }
     if (el.rankPrizeCrown) {
       el.rankPrizeCrown.classList.toggle('hidden', isTodayMode);
@@ -5041,7 +5041,7 @@
       const lastChamp = !isTodayMode && (weekInfo.prevSeasonWeekNo || 0) >= 1 && prevRes && prevRes.board && prevRes.board[0];
       el.rankLastWinner.classList.toggle('hidden', !lastChamp);
       if (lastChamp) {
-        el.rankLastWinner.innerHTML = uiText(`${weekInfo.prevWeekLabel || '지난주'} 1위 👑 ${lastChamp.nickname}`, 'xs');
+        el.rankLastWinner.innerHTML = uiText(`${weekInfo.prevWeekLabel || '지난주'} 1위 ${lastChamp.nickname}`, 'xs');
       }
     }
 
@@ -5053,12 +5053,12 @@
       empty.className = 'rank-empty-card';
       empty.innerHTML = isTodayMode
         ? `
-          <div class="rank-empty-ico">🌦️</div>
+          <div class="rank-empty-ico" aria-hidden="true">${getWeatherHeroSvg(getActiveLiveWeatherMods())}</div>
           <div class="rank-empty-title">오늘의 날씨 첫 1위에 도전해 보세요!</div>
           <div class="rank-empty-sub">실시간 기상청 날씨로 진행되며 매일 자정(00:00)에 랭킹이 초기화됩니다.</div>
         `
         : `
-          <div class="rank-empty-ico">🏆</div>
+          <div class="rank-empty-ico" aria-hidden="true">${uiIcon('crown', 'xl')}</div>
           <div class="rank-empty-title">이번 주 첫 1위에 도전해 보세요!</div>
           <div class="rank-empty-sub">주간 1위 5,000${uiIcon('gem', 'xs')} · 2위 3,000${uiIcon('gem', 'xs')} · 3위 1,000${uiIcon('gem', 'xs')} + 닉네임 장식 지급!</div>
         `;
@@ -5090,14 +5090,14 @@
 
       const row = document.createElement('div');
       const topClass = rank === 1 ? ' top1' : (rank === 2 ? ' top2' : (rank === 3 ? ' top3' : ''));
-      const medal = rank === 1 ? '🥇' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : `${rank}`));
+      const medal = String(rank);
       const subMeta = isTodayMode && entry.weatherTag
         ? `${entry.weatherTag} · ${(entry.dist || 0).toLocaleString('ko-KR')}m`
         : `${entry.year || 1}년 차 · ${(entry.dist || 0).toLocaleString('ko-KR')}m`;
       const topRw = rewardTable[rank];
       const topPrizeTag = (!isTodayMode && topRw)
         ? `<span class="rank-top1-prize">${rank === 1 ? uiIcon('crown', 'xs') : ''} ${topRw.gems.toLocaleString('ko-KR')}${uiIcon('gem', 'xs')}</span>`
-        : (isTodayMode && rank <= 3 ? `<span class="rank-top1-prize today">🌦️ 오늘 ${rank}위</span>` : '');
+        : (isTodayMode && rank <= 3 ? `<span class="rank-top1-prize today">오늘 ${rank}위</span>` : '');
       const rowNameHtml = renderNameplateHtml(entry.nickname, entry.nameFrame, entry.nameColor, 'sm');
 
       row.className = `rank-row${topClass}${entry.isMe ? ' me' : ''}`;
@@ -5159,7 +5159,7 @@
       btn.type = 'button';
       if (isClaimed) {
         btn.className = 'mission-claim-btn done';
-        btn.textContent = '수령 ✓';
+        btn.textContent = '수령';
         btn.disabled = true;
       } else if (isDone) {
         btn.className = 'mission-claim-btn ready';
@@ -5221,10 +5221,10 @@
         if (screen.orientation && screen.orientation.lock) {
           try { await screen.orientation.lock('landscape'); } catch {}
         }
-        showToast('📱 가로 전체화면 모드! 폰을 가로로 돌려 쾌적하게 즐기세요!');
+        showToast('가로 전체화면 모드! 폰을 가로로 돌려 쾌적하게 즐기세요!');
       }
     } catch {
-      showToast('📱 스마트폰을 가로로 돌리면 자동으로 가로 플레이 모드로 전환됩니다!');
+      showToast('스마트폰을 가로로 돌리면 자동으로 가로 플레이 모드로 전환됩니다!');
     }
     setTimeout(renderSettingsUI, 150);
   }
@@ -5242,7 +5242,7 @@
       const chest = rw.chest ? DATA.CHESTS[rw.chest] : null;
       cell.className = `att-day-cell${idx === 6 ? ' day7' : ''}${isClaimed ? ' claimed' : ''}${isToday ? ' today' : ''}`;
       const icoHtml = isClaimed
-        ? '<span class="att-day-ico">✅</span>'
+        ? uiIcon('check', 'md', 'att-day-ico')
         : (chest
           ? `<img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="att-chest-thumb" />`
           : uiIcon('coin', 'md', 'att-day-ico'));
@@ -5258,11 +5258,11 @@
       const rw = DATA.ATTENDANCE_REWARDS[dayIdx];
       el.attModalDesc.innerHTML = uiText(`오늘(${rw.day}일차) 출석 보상: ${rw.label}`, 'sm');
       el.btnClaimAttendance.disabled = false;
-      el.btnClaimAttendance.textContent = `🎁 ${rw.day}일차 출석 상자 열기!`;
+      el.btnClaimAttendance.textContent = `${rw.day}일차 출석 상자 열기!`;
     } else {
       el.attModalDesc.textContent = '오늘 출석 보상을 이미 받았습니다! 내일 또 방문해 주세요.';
       el.btnClaimAttendance.disabled = true;
-      el.btnClaimAttendance.textContent = '✅ 오늘 출석 완료';
+      el.btnClaimAttendance.textContent = '오늘 출석 완료';
     }
   }
 
@@ -5286,7 +5286,7 @@
     if (rw.chest) {
       openChestModal(rw.chest);
     } else {
-      showToast(`🎁 ${rw.day}일차 출석 보상 수령! (${rw.label})`);
+      showToast(`${rw.day}일차 출석 보상 수령! (${rw.label})`);
     }
   }
 
@@ -5309,7 +5309,7 @@
     grid.innerHTML = '';
 
     if (currentQuestSubtab === 'daily') {
-      if (el.questResetLabel) el.questResetLabel.textContent = '⏱️ 일일 퀘스트 · 매일 초기화 · 완료 시 황금 상자!';
+      if (el.questResetLabel) el.questResetLabel.textContent = '일일 퀘스트 · 매일 초기화 · 완료 시 황금 상자';
       const prog = save.dailyMissions.progress || {};
       const claimed = save.dailyMissions.claimed || {};
       DATA.DAILY_MISSIONS.forEach((m) => {
@@ -5321,7 +5321,7 @@
         grid.appendChild(createBrawlQuestCard({
           tierClass: 'tier-daily',
           tag: '일일 퀘스트',
-          icon: m.icon,
+          iconKey: m.iconKey || 'm_play',
           title: m.title,
           progText: `${cur.toLocaleString('ko-KR')} / ${m.target.toLocaleString('ko-KR')}${m.unit}`,
           pct,
@@ -5341,12 +5341,12 @@
             SFX.reward();
             persistSave();
             refreshAllMenus();
-            showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
+            showToast(`${chest.name}가 상자 보관함에 저장되었습니다.`);
           }
         }));
       });
     } else if (currentQuestSubtab === 'weekly') {
-      if (el.questResetLabel) el.questResetLabel.textContent = '⏱️ 주간 퀘스트 · 매주 월요일 초기화 · 완료 시 다이아 상자!';
+      if (el.questResetLabel) el.questResetLabel.textContent = '주간 퀘스트 · 매주 월요일 초기화 · 완료 시 다이아 상자';
       const prog = save.weeklyMissions.progress || {};
       const claimed = save.weeklyMissions.claimed || {};
       DATA.WEEKLY_MISSIONS.forEach((m) => {
@@ -5358,7 +5358,7 @@
         grid.appendChild(createBrawlQuestCard({
           tierClass: 'tier-weekly',
           tag: '주간 퀘스트',
-          icon: m.icon,
+          iconKey: m.iconKey || 'm_play',
           title: m.title,
           progText: `${cur.toLocaleString('ko-KR')} / ${m.target.toLocaleString('ko-KR')}${m.unit}`,
           pct,
@@ -5378,12 +5378,12 @@
             SFX.reward();
             persistSave();
             refreshAllMenus();
-            showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
+            showToast(`${chest.name}가 상자 보관함에 저장되었습니다.`);
           }
         }));
       });
     } else if (currentQuestSubtab === 'ach') {
-      if (el.questResetLabel) el.questResetLabel.textContent = '🏅 영구 업적 · 달성 시 은 / 황금 / 다이아 상자 지급!';
+      if (el.questResetLabel) el.questResetLabel.textContent = '영구 업적 · 달성 시 은 / 황금 / 다이아 상자 지급';
       DATA.ACHIEVEMENTS.forEach((a) => {
         const cur = Math.min(a.target, getAchievementMetricValue(a.metric));
         const pct = Math.min(100, (cur / a.target) * 100);
@@ -5393,7 +5393,7 @@
         grid.appendChild(createBrawlQuestCard({
           tierClass: `tier-ach chest-${a.rewardChest}`,
           tag: '영구 업적',
-          icon: a.icon,
+          iconKey: a.iconKey || 'crown',
           title: `${a.title} · ${a.desc}`,
           progText: `${cur.toLocaleString('ko-KR')} / ${a.target.toLocaleString('ko-KR')}`,
           pct,
@@ -5413,14 +5413,14 @@
             SFX.reward();
             persistSave();
             refreshAllMenus();
-            showToast(`📦 ${chest.name}가 상자 보관함에 저장되었습니다!`);
+            showToast(`${chest.name}가 상자 보관함에 저장되었습니다.`);
           }
         }));
       });
     }
   }
 
-  function createBrawlQuestCard({ tierClass, tag, icon, title, progText, pct, chest, isDone, isClaimed, onClaim, onStore }) {
+  function createBrawlQuestCard({ tierClass, tag, iconKey, title, progText, pct, chest, isDone, isClaimed, onClaim, onStore }) {
     const card = document.createElement('div');
     card.className = `bs-quest-card ${tierClass}${isClaimed ? ' claimed' : (isDone ? ' ready' : '')}`;
     card.innerHTML = `
@@ -5429,7 +5429,7 @@
           <span class="bs-qtag">${tag}</span>
           <span class="bs-qprog-num">${progText}</span>
         </div>
-        <div class="bs-qcard-title"><span class="bs-qico">${uiText(icon, 'md')}</span><span>${title}</span></div>
+        <div class="bs-qcard-title"><span class="bs-qico">${uiIcon(iconKey || 'm_play', 'sm')}</span><span>${title}</span></div>
         <div class="bs-qbar-track">
           <div class="bs-qbar-fill" style="width: ${pct.toFixed(1)}%"></div>
         </div>
@@ -5444,7 +5444,7 @@
     rwBtn.className = `bs-qreward-tile tier-${chest.id}${isClaimed ? ' done' : (isDone ? ' ready' : ' locked')}`;
     rwBtn.innerHTML = `
       <img src="${chest.icon}?v=${ASSET_VER}" alt="${chest.name}" class="bs-qchest-img" />
-      <span class="bs-qchest-lbl">${isClaimed ? '완료 ✓' : (isDone ? '열기!' : chest.name)}</span>
+      <span class="bs-qchest-lbl">${isClaimed ? '완료' : (isDone ? '열기' : chest.name)}</span>
     `;
     if (isDone && !isClaimed) {
       rwBtn.onclick = onClaim;
@@ -5468,15 +5468,16 @@
   }
 
   const CHAR_SHORT_SKILL = {
-    raincoat_boy: '💧 방수 우비',
-    long_padding: '🤖 오토 기어',
-    short_sleeve: '☀️ 쾌청 캔슬',
-    iced_americano: '❄️ 3단·스톰프',
-    fashionista: '🛡️ 회피 실드'
+    umbrella_master: '방수 우비',
+    raincoat_boy: '방수 우비',
+    long_padding: '오토 기어',
+    short_sleeve: '쾌청 캔슬',
+    iced_americano: '3단·스톰프',
+    fashionista: '회피 실드'
   };
 
   function getCharShortSkill(ch) {
-    return (ch && CHAR_SHORT_SKILL[ch.id]) || (ch ? `${ch.icon || '★'} ${ch.passiveName}` : '');
+    return (ch && CHAR_SHORT_SKILL[ch.id]) || (ch ? ch.passiveName : '');
   }
 
   function getCharSpriteVer(animSkin) {
@@ -5510,8 +5511,8 @@
     }
     el.homeCharLvBadge.textContent = unlocked ? getCharShortSkill(ch) : '잠금';
     el.homeCharTier.textContent = unlocked
-      ? (skin ? `✨ ${skin.name}` : ch.tier)
-      : `🔒 ${ch.price.toLocaleString('ko-KR')}G`;
+      ? (skin ? `${skin.name}` : ch.tier)
+      : `${ch.price.toLocaleString('ko-KR')}G`;
     el.homeCharName.textContent = ch.name;
 
     // Brawl Stars Bottom-Left Chest Vault Button (상자 보관함)
@@ -5755,10 +5756,11 @@
     const totalCount = DATA.CHARACTERS.length;
     const ratePct = Math.round((ownedCount / totalCount) * 100);
     const dexBonusPct = Math.max(0, ownedCount - 1) * 3;
-    el.dexRateText.textContent = `${ownedCount} / ${totalCount} (${ratePct}%)`;
-    el.dexBarFill.style.width = `${ratePct}%`;
-    el.dexBonusText.textContent = `현재 도감 효과: 전체 점수 +${dexBonusPct}% (캐릭터 추가 해금당 +3%) · 보유 스킨 ${save.unlockedSkins.length}/${DATA.SKINS.length}`;
+    if (el.dexRateText) el.dexRateText.textContent = `${ownedCount} / ${totalCount} (${ratePct}%)`;
+    if (el.dexBarFill) el.dexBarFill.style.width = `${ratePct}%`;
+    if (el.dexBonusText) el.dexBonusText.textContent = `현재 도감 효과: 전체 점수 +${dexBonusPct}% (캐릭터 추가 해금당 +3%) · 보유 스킨 ${save.unlockedSkins.length}/${DATA.SKINS.length}`;
 
+    if (!el.charList) return;
     el.charList.innerHTML = '';
     DATA.CHARACTERS.forEach((ch, idx) => {
       const unlocked = isCharUnlocked(ch.id);
@@ -5773,8 +5775,8 @@
       card.setAttribute('aria-label', `${ch.name} 능력치 상세 보기`);
       card.innerHTML = `
         <div class="brawl-card-stage ${tierCls}">
-          <span class="brawl-skill-chip">${unlocked ? getCharShortSkill(ch) : `🔒 ${ch.price.toLocaleString('ko-KR')}G`}</span>
-          ${selected ? '<span class="brawl-eq-chip">✓ 장착</span>' : ''}
+          <span class="brawl-skill-chip">${unlocked ? getCharShortSkill(ch) : `${ch.price.toLocaleString('ko-KR')}G`}</span>
+          ${selected ? '<span class="brawl-eq-chip">장착</span>' : ''}
           <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="brawl-card-img" style="${getSkinFilter(eqSkin) ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
           <span class="brawl-skin-chip">${eqSkin ? eqSkin.name : `${uiIcon('heart', 'xs')} ${stats.maxHp}칸`}</span>
         </div>
@@ -5801,7 +5803,7 @@
     previewCharIdx = idx;
     persistSave();
     refreshAllMenus();
-    showToast(`🎉 [${ch.name}] 해금 및 장착 완료!`);
+    showToast(`[${ch.name}] 해금 및 장착 완료!`);
   }
 
   function renderShopList() {
@@ -5832,9 +5834,9 @@
       stage.className = 'gacha-screen weather-gacha';
       stage.innerHTML = `
         <aside class="gacha-sidebar">
-          <div class="gacha-side-title">🌦️ 기상 소환</div>
+          <div class="gacha-side-title">기상 소환</div>
           <button type="button" class="gacha-banner-thumb active" data-gaction="stay">
-            <span class="gacha-pickup-tag">기상특보!</span>
+            <span class="gacha-pickup-tag">기상특보</span>
             <img src="assets/chars/port_hades.png?v=${ASSET_VER}" alt="사계절 기상 소환" class="gacha-thumb-art" />
             <div class="gacha-thumb-txt">
               <strong>사계절 스킨 뽑기</strong>
@@ -5844,7 +5846,7 @@
           <button type="button" class="gacha-banner-thumb exchange" data-gaction="exchange">
             <img src="assets/chars/port_catgirl.png?v=${ASSET_VER}" alt="마일리지 스킨 교환" class="gacha-thumb-art" />
             <div class="gacha-thumb-txt">
-              <strong>✨ 스킨 교환소</strong>
+              <strong>스킨 교환소</strong>
               <span>보유 ${(save.mileage || 0).toLocaleString('ko-KR')}M</span>
             </div>
           </button>
@@ -5860,20 +5862,12 @@
         <div class="gacha-main-stage">
           <div class="gacha-weather-clouds" aria-hidden="true"></div>
           <div class="gacha-weather-sunbeam" aria-hidden="true"></div>
-          <div class="gacha-season-motes" aria-hidden="true">
-            <span class="gm m1">🌸</span>
-            <span class="gm m2">☀️</span>
-            <span class="gm m3">💧</span>
-            <span class="gm m4">🍁</span>
-            <span class="gm m5">❄️</span>
-            <span class="gm m6">⚡</span>
-          </div>
 
           <div class="gacha-top-row">
-            <button type="button" class="gacha-pill-btn" data-gaction="history">📜 소환 내역</button>
+            <button type="button" class="gacha-pill-btn" data-gaction="history">소환 내역</button>
             <div class="gacha-cur-bar">
               <button type="button" class="gacha-cur-chip mileage" data-gaction="exchange" title="마일리지 스킨 교환">
-                <span>✨</span><strong>${(save.mileage || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
+                <span>M</span><strong>${(save.mileage || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
               </button>
               <button type="button" class="gacha-cur-chip ticket" data-gaction="vault" title="상자 보관함에서 뽑기권 교환">
                 ${ticketIconHtml('lg')}<strong>${(save.gachaTickets || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
@@ -5886,10 +5880,10 @@
 
           <div class="gacha-hero-zone">
             <div class="gacha-title-col">
-              <div class="gacha-season-kicker">🌸 봄 · ☀️ 여름 · 🍁 가을 · ❄️ 겨울</div>
+              <div class="gacha-season-kicker">봄 · 여름 · 가을 · 겨울</div>
               <div class="gacha-main-title">사계절 기상 스킨 소환</div>
               <div class="gacha-sub-strip">
-                <span>1회 소환 <strong>✨ +2M</strong> · 중복 시 <strong>✨ +2M 추가!</strong> · 전 등급 스킨 출현</span>
+                <span>1회 소환 <strong>+2M</strong> · 중복 시 <strong>+2M 추가</strong> · 전 등급 스킨 출현</span>
               </div>
               <div class="gacha-rate-chips">
                 <span class="gr-chip mythic">신화 2%</span>
@@ -5910,7 +5904,7 @@
           </div>
 
           <div class="gacha-bottom-row">
-            <button type="button" class="gacha-pill-btn prob" data-gaction="prob">📊 상세 확률</button>
+            <button type="button" class="gacha-pill-btn prob" data-gaction="prob">상세 확률</button>
             <div class="gacha-pull-group">
               <div class="gacha-pull-note">${ticketIconHtml('xs')} 뽑기권 우선 사용 · 부족 시 ${uiIcon('gem', 'xs')} 200 보석 / 1회</div>
               <div class="gacha-pull-btns">
@@ -5955,8 +5949,8 @@
       sec.className = 'bs-shop-section';
       sec.innerHTML = `
         <div class="bs-shop-sec-head chests">
-          <span class="bs-shop-sec-title">🎁 상자 상점</span>
-          <span class="bs-shop-sec-sub">${uiText('나무·은 상자는 골드, 황금(40💎)·다이아(100💎)는 보석 구매! 보관함에서 뽑기권 교환 가능', 'xs')}</span>
+          <span class="bs-shop-sec-title">상자 상점</span>
+          <span class="bs-shop-sec-sub">${uiText('나무·은 상자는 골드, 황금(40보석)·다이아(100보석)는 보석 구매! 보관함에서 뽑기권 교환 가능', 'xs')}</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -6037,10 +6031,10 @@
       topBar.className = 'mileage-exchange-bar';
       topBar.innerHTML = `
         <div class="mil-bar-left">
-          <span class="mil-bar-badge">✨ 보유 마일리지 <strong>${curMileage.toLocaleString('ko-KR')}</strong></span>
+          <span class="mil-bar-badge">보유 마일리지 <strong>${curMileage.toLocaleString('ko-KR')}</strong></span>
           <span class="mil-bar-rates">희귀 10M · 영웅 30M · 전설 50M · 신화 200M (보석 직접 구매 불가)</span>
         </div>
-        <button type="button" class="cr-gold-btn mil-go-gacha-btn">🎰 스킨 뽑기 (+2M/회)</button>
+        <button type="button" class="cr-gold-btn mil-go-gacha-btn">스킨 뽑기 (+2M/회)</button>
       `;
       topBar.querySelector('.mil-go-gacha-btn').onclick = () => {
         SFX.click();
@@ -6060,7 +6054,7 @@
         featSec.className = 'bs-shop-section';
         featSec.innerHTML = `
           <div class="bs-shop-sec-head mythic">
-            <span class="bs-shop-sec-title">🌟 신화 스페셜 스킨 (스킨 뽑기 · ✨ 200 마일리지)</span>
+            <span class="bs-shop-sec-title">신화 스페셜 스킨 (스킨 뽑기 · 200 마일리지)</span>
             <span class="bs-shop-sec-sub">스킨 뽑기에서 획득하거나 200 마일리지로 확정 교환!</span>
           </div>
         `;
@@ -6096,17 +6090,17 @@
               save.equippedSkins[sk.charId] = sk.id;
               persistSave();
               refreshAllMenus();
-              showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
+              showToast(`[${sk.name}] 스킨 장착 완료!`);
             };
           } else {
             btn.className = 'bs-buy-btn mileage big';
-            btn.textContent = `✨ ${milPrice} 마일리지`;
+            btn.textContent = `${milPrice} 마일리지`;
             btn.onclick = () => {
               if ((save.mileage || 0) < milPrice) {
                 SFX.click();
                 currentShopSubtab = 'gacha';
                 renderShopList();
-                showToast(`✨ 마일리지가 부족합니다! (보유 ${save.mileage || 0} / 필요 ${milPrice}) 스킨 뽑기 1회당 +2 마일리지!`);
+                showToast(`마일리지가 부족합니다! (보유 ${save.mileage || 0} / 필요 ${milPrice}) 스킨 뽑기 1회당 +2 마일리지!`);
                 return;
               }
               SFX.chestJackpot();
@@ -6115,7 +6109,7 @@
               save.equippedSkins[sk.charId] = sk.id;
               persistSave(true);
               refreshAllMenus();
-              showToast(`✨ [${sk.name}] 마일리지 교환 및 즉시 장착 완료!`);
+              showToast(`[${sk.name}] 마일리지 교환 및 즉시 장착 완료!`);
             };
           }
           hero.appendChild(btn);
@@ -6129,7 +6123,7 @@
       gridSec.className = 'bs-shop-section';
       gridSec.innerHTML = `
         <div class="bs-shop-sec-head skins">
-          <span class="bs-shop-sec-title">✨ 스킨 마일리지 교환소</span>
+          <span class="bs-shop-sec-title">스킨 마일리지 교환소</span>
           <span class="bs-shop-sec-sub">희귀 10M · 영웅 30M · 전설 50M · 신화 200M</span>
         </div>
       `;
@@ -6170,17 +6164,17 @@
             save.equippedSkins[sk.charId] = sk.id;
             persistSave();
             refreshAllMenus();
-            showToast(`✨ [${sk.name}] 스킨 장착 완료!`);
+            showToast(`[${sk.name}] 스킨 장착 완료!`);
           };
         } else {
           btn.className = 'bs-buy-btn mileage';
-          btn.textContent = `✨ ${milPrice}M`;
+          btn.textContent = `${milPrice}M`;
           btn.onclick = () => {
             if ((save.mileage || 0) < milPrice) {
               SFX.click();
               currentShopSubtab = 'gacha';
               renderShopList();
-              showToast(`✨ 마일리지가 부족합니다! (보유 ${save.mileage || 0}M / 필요 ${milPrice}M) 스킨 뽑기를 이용해 보세요!`);
+              showToast(`마일리지가 부족합니다! (보유 ${save.mileage || 0}M / 필요 ${milPrice}M) 스킨 뽑기를 이용해 보세요!`);
               return;
             }
             SFX.chestJackpot();
@@ -6189,7 +6183,7 @@
             save.equippedSkins[sk.charId] = sk.id;
             persistSave(true);
             refreshAllMenus();
-            showToast(`✨ [${sk.name}] 마일리지 교환 및 장착 완료!`);
+            showToast(`[${sk.name}] 마일리지 교환 및 장착 완료!`);
           };
         }
         foot.appendChild(btn);
@@ -6235,7 +6229,7 @@
             SFX.click();
             currentShopSubtab = 'gems';
             renderShopList();
-            showToast('💎 보석이 부족합니다! 보석 상점에서 충전할 수 있어요.');
+            showToast('보석이 부족합니다! 보석 상점에서 충전할 수 있어요.');
             return;
           }
           SFX.buy();
@@ -6243,7 +6237,7 @@
           save.gold += pk.gold;
           persistSave();
           refreshAllMenus();
-          showToast(`🪙 ${pk.gold.toLocaleString('ko-KR')} 골드 구매 완료!`);
+          showToast(`${pk.gold.toLocaleString('ko-KR')} 골드 구매 완료!`);
         };
         foot.appendChild(btn);
         card.appendChild(foot);
@@ -6253,13 +6247,13 @@
       sec.appendChild(grid);
       el.shopItemsList.appendChild(sec);
     } else if (currentShopSubtab === 'gems') {
-      // BRAWL STARS REAL-MONEY GEM SHOP (EXACT 100💎 = ₩1,000!)
+      // BRAWL STARS REAL-MONEY GEM SHOP (EXACT 100보석 = ₩1,000!)
       const sec = document.createElement('div');
       sec.className = 'bs-shop-section';
       sec.innerHTML = `
         <div class="bs-shop-sec-head gems">
           <span class="bs-shop-sec-title">${uiIcon('gem', 'sm')} 보석 상점</span>
-          <span class="bs-shop-sec-sub">${uiText('100💎 = ₩1,000 정가 · 스킨 뽑기(200💎) · 골드 · 황금/다이아 상자 구매에 사용!', 'xs')}</span>
+          <span class="bs-shop-sec-sub">${uiText('100보석 = ₩1,000 정가 · 스킨 뽑기(200보석) · 골드 · 황금/다이아 상자 구매에 사용!', 'xs')}</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -6407,7 +6401,7 @@
       hideWeatherCenterAlert();
     }
     if (canceledWeather) {
-      Renderer.spawnFloater('☀️ 쾌청 캔슬! 악천후 소거!', '#ffe866', run.playerX + 12, run.playerY - 56);
+      Renderer.spawnFloater('쾌청 캔슬! 악천후 소거!', '#ffe866', run.playerX + 12, run.playerY - 56);
     } else if (showBanner) {
       Renderer.spawnFloater('FEVER! 무적 질주!', '#ffe85c', run.playerX + 16, run.playerY - 48);
     }
@@ -6621,7 +6615,7 @@
         run.stageMilestonesEarned.push(`${ms.label} (+${ms.rewardGold}G)`);
         persistSave();
         SFX.reward();
-        Renderer.spawnFloater(`🏆 ${ms.label} +${ms.rewardGold}G!`, '#ffe866', run.playerX + 26, run.playerY - 62);
+        Renderer.spawnFloater(`${ms.label} +${ms.rewardGold}G!`, '#ffe866', run.playerX + 26, run.playerY - 62);
       }
     });
   }
@@ -6668,7 +6662,7 @@
       run.rainExposeTimer = 0;
       SFX.umbrellaToggle(true);
       haptic(14);
-      Renderer.spawnFloater('☂️ 우박 방어 준비!', '#8ce0ff', run.playerX + 12, run.playerY - 46);
+      Renderer.spawnFloater('우박 방어 준비!', '#8ce0ff', run.playerX + 12, run.playerY - 46);
     } else if (run.umbrellaOn) {
       const foldedForGust = run.weatherEvent === 'gust';
       run.umbrellaOn = false;
@@ -6680,11 +6674,11 @@
         run.score += Math.round(50 * run.scoreMult);
         SFX.guard();
         haptic(14);
-        Renderer.spawnFloater('💨 태풍 대비! 우산 접기 성공 +50', '#7ef6ff', run.playerX + 12, run.playerY - 44);
+        Renderer.spawnFloater('태풍 대비! 우산 접기 성공 +50', '#7ef6ff', run.playerX + 12, run.playerY - 44);
       } else {
         SFX.umbrellaToggle(false);
         haptic(10);
-        Renderer.spawnFloater('☂️ 우산 접기', '#8ce0ff', run.playerX + 10, run.playerY - 42);
+        Renderer.spawnFloater('우산 접기', '#8ce0ff', run.playerX + 10, run.playerY - 42);
       }
     } else {
       run.umbrellaOn = true;
@@ -6696,9 +6690,9 @@
       haptic(14);
       if (run.weatherEvent === 'gust') {
         run.gustExposeTimer = 0.05;
-        Renderer.spawnFloater('💨 태풍 중! 빨리 우산을 접으세요!', '#ff9b54', run.playerX + 12, run.playerY - 44);
+        Renderer.spawnFloater('태풍 중! 빨리 우산을 접으세요!', '#ff9b54', run.playerX + 12, run.playerY - 44);
       } else {
-        Renderer.spawnFloater(`☂️ 우산 ON! (${GEAR_DURATION}초 자동 해제)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
+        Renderer.spawnFloater(`우산 ON! (${GEAR_DURATION}초 자동 해제)`, '#8ce0ff', run.playerX + 10, run.playerY - 42);
       }
     }
     updateRunHud();
@@ -6755,7 +6749,7 @@
       run.dustExposeTimer = 0;
       SFX.maskToggle(true);
       haptic(14);
-      Renderer.spawnFloater('😷 마스크 타이밍 장전! 차단 준비!', '#5effbe', run.playerX + 12, run.playerY - 46);
+      Renderer.spawnFloater('마스크 타이밍 장전! 차단 준비!', '#5effbe', run.playerX + 12, run.playerY - 46);
     } else if (run.maskOn) {
       run.maskOn = false;
       run.maskActiveTimer = 0;
@@ -6763,7 +6757,7 @@
       run.maskCooldown = 0;
       SFX.maskToggle(false);
       haptic(10);
-      Renderer.spawnFloater('😷 마스크 해제', '#a6ffcf', run.playerX + 10, run.playerY - 42);
+      Renderer.spawnFloater('마스크 해제', '#a6ffcf', run.playerX + 10, run.playerY - 42);
     } else {
       run.maskOn = true;
       run.maskActiveTimer = GEAR_DURATION;
@@ -6772,7 +6766,7 @@
       run.dustExposeTimer = 0;
       SFX.maskToggle(true);
       haptic(14);
-      Renderer.spawnFloater(`😷 KF94 마스크 ON! (${GEAR_DURATION}초 자동 해제)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
+      Renderer.spawnFloater(`KF94 마스크 ON! (${GEAR_DURATION}초 자동 해제)`, '#a6ffcf', run.playerX + 10, run.playerY - 42);
     }
     updateRunHud();
   }
@@ -6809,7 +6803,7 @@
       Renderer.spawnDust(run.playerX, run.playerY - 6, true);
       SFX.doubleJump();
       haptic(12);
-      const airLabel = (ch.tripleJumpStomp && run.jumpsLeft === 0) ? '❄️ 3단 점프!' : '2단 점프!';
+      const airLabel = (ch.tripleJumpStomp && run.jumpsLeft === 0) ? '3단 점프!' : '2단 점프!';
       Renderer.spawnFloater(airLabel, ch.tripleJumpStomp && run.jumpsLeft === 0 ? '#7ceeff' : '#9be6ff', run.playerX, run.playerY - 40);
     }
   }
@@ -6875,7 +6869,7 @@
         run.squashY = 1.22;
         SFX.fastFall();
         haptic(12);
-        Renderer.spawnFloater('⬇️ 급강하 스톰프!', '#7ceeff', run.playerX + 8, run.playerY - 38);
+        Renderer.spawnFloater('급강하 스톰프!', '#7ceeff', run.playerX + 8, run.playerY - 38);
       } else {
         // Snappy Fast-Fall Dive into instant Slide!
         run.vy = Math.max(run.vy, 470);
@@ -6956,7 +6950,7 @@
       }
       showWeatherCenterAlert('covid');
     } else if (nextW === 'gust') {
-      const subTxt = run.umbrellaOn ? '⚠️ 제한 시간 안에 우산을 접으세요!' : '💨 맞바람 주의! 슬라이드로 돌파!';
+      const subTxt = run.umbrellaOn ? '제한 시간 안에 우산을 접으세요!' : '맞바람 주의! 슬라이드로 돌파!';
       showWeatherCenterAlert('gust', subTxt);
     } else if (nextW !== 'clear') {
       showWeatherCenterAlert(nextW);
@@ -7355,7 +7349,7 @@
       run.speedBoostTimer = Math.max(0, run.speedBoostTimer - dt);
       if (run.speedBoostTimer <= 0) {
         run.invulnTimer = Math.max(run.invulnTimer || 0, 1.8);
-        Renderer.spawnFloater('⚡ 광속 질주 종료 · 잠시 무적!', '#7ceeff', run.playerX + 10, run.playerY - 46);
+        Renderer.spawnFloater('광속 질주 종료 · 잠시 무적!', '#7ceeff', run.playerX + 10, run.playerY - 46);
       }
     }
     if (run.mudBlindTimer > 0) run.mudBlindTimer = Math.max(0, run.mudBlindTimer - dt);
@@ -7371,7 +7365,7 @@
       run.feverCharge = (run.feverTimer / 4.5) * 100;
       if (run.feverTimer <= 0) {
         run.invulnTimer = Math.max(run.invulnTimer || 0, 1.8);
-        Renderer.spawnFloater('✨ 무적질주 종료 · 잠시 무적!', '#ffe866', run.playerX + 10, run.playerY - 46);
+        Renderer.spawnFloater('무적질주 종료 · 잠시 무적!', '#ffe866', run.playerX + 10, run.playerY - 46);
       }
     }
 
@@ -7399,7 +7393,7 @@
         run.umbrellaParryTimer = 0;
         run.gustExposeTimer = 0;
         SFX.umbrellaToggle(false);
-        Renderer.spawnFloater('☂️ 우산 자동 해제 (10초 경과)', '#9fd9ff', run.playerX + 10, run.playerY - 42);
+        Renderer.spawnFloater('우산 자동 해제 (10초 경과)', '#9fd9ff', run.playerX + 10, run.playerY - 42);
       }
     }
 
@@ -7409,7 +7403,7 @@
         run.maskOn = false;
         run.maskParryTimer = 0;
         SFX.maskToggle(false);
-        Renderer.spawnFloater('😷 마스크 자동 해제 (10초 경과)', '#a6ffcf', run.playerX + 10, run.playerY - 42);
+        Renderer.spawnFloater('마스크 자동 해제 (10초 경과)', '#a6ffcf', run.playerX + 10, run.playerY - 42);
       }
     }
 
@@ -7562,7 +7556,7 @@
           run.umbrellaParryTimer = 0;
           run.gustExposeTimer = 0;
           SFX.umbrellaToggle(false);
-          Renderer.spawnFloater('🤖 오토 기어: 우산 자동 접힘!', '#ffcf6e', run.playerX + 8, run.playerY - 46);
+          Renderer.spawnFloater('오토 기어: 우산 자동 접힘!', '#ffcf6e', run.playerX + 8, run.playerY - 46);
         }
       } else if ((isRainingNow || hailIncoming) && !run.umbrellaOn && run.umbrellaBrokenTimer <= 0) {
         run.umbrellaOn = true;
@@ -7571,7 +7565,7 @@
         run.umbrellaCooldown = 0;
         run.rainExposeTimer = 0;
         SFX.umbrellaToggle(true);
-        Renderer.spawnFloater('🤖 오토 기어: 우산 자동 펼침!', '#8ce0ff', run.playerX + 8, run.playerY - 46);
+        Renderer.spawnFloater('오토 기어: 우산 자동 펼침!', '#8ce0ff', run.playerX + 8, run.playerY - 46);
       }
     }
 
@@ -7587,7 +7581,7 @@
           triggerCameraShake(5, 0.2);
           run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 비가 오는데 우산을 쓰지 않아 쓰러졌습니다!`;
           SFX.hit();
-          Renderer.spawnFloater('비 노출! -1 ❤️ (우산 펴기!)', '#6ec6ff', run.playerX + 8, run.playerY - 46);
+          Renderer.spawnFloater('비 노출! -1 HP (우산 펴기!)', '#6ec6ff', run.playerX + 8, run.playerY - 46);
         }
       } else {
         run.rainExposeTimer = 0;
@@ -7604,7 +7598,7 @@
           triggerCameraShake(5, 0.2);
           run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 황사가 왔는데 마스크를 쓰지 않아 쓰러졌습니다!`;
           SFX.hit();
-          Renderer.spawnFloater('황사 노출! -1 ❤️ (마스크 착용!)', '#ffd966', run.playerX + 8, run.playerY - 46);
+          Renderer.spawnFloater('황사 노출! -1 HP (마스크 착용!)', '#ffd966', run.playerX + 8, run.playerY - 46);
         }
       } else {
         run.dustExposeTimer = 0;
@@ -7625,7 +7619,7 @@
             triggerCameraShake(5, 0.2);
             run.lastHitCause = `${run.year}년 차 여름 폭염, 우산(양산)을 펴지 않아 열사병으로 쓰러졌습니다!`;
             SFX.hit();
-            Renderer.spawnFloater('폭염 열사병! -1 ❤️ (우산 펴기!)', '#ff8052', run.playerX + 8, run.playerY - 46);
+            Renderer.spawnFloater('폭염 열사병! -1 HP (우산 펴기!)', '#ff8052', run.playerX + 8, run.playerY - 46);
           }
         }
       } else {
@@ -7679,7 +7673,7 @@
             run.hitFlashTimer = 0.25;
             triggerCameraShake(5, 0.22);
             run.lastHitCause = `${run.year}년 차 장마철, 지나가는 차의 흙탕물 물벼락을 맞고 쓰러졌습니다!`;
-            Renderer.spawnFloater('물벼락 적중! -1 ❤️', '#ff9452', run.playerX + 10, run.playerY - 44);
+            Renderer.spawnFloater('물벼락 적중! -1 HP', '#ff9452', run.playerX + 10, run.playerY - 44);
           }
         }
         if (car.x < -100) run.passingCar = null;
@@ -7720,7 +7714,7 @@
             run.score += Math.round(250 * run.scoreMult);
             SFX.guard();
             Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#ffe866', true);
-            Renderer.spawnFloater('🔥 피버! 코로나 격파 +250', '#ffe866', run.playerX + 14, run.playerY - 50);
+            Renderer.spawnFloater('피버! 코로나 격파 +250', '#ffe866', run.playerX + 14, run.playerY - 50);
           } else if (run.maskOn && run.maskParryTimer > 0) {
             const isPerfect = run.maskParryTimer >= 1.65;
             const bonusPts = isPerfect ? 350 : 250;
@@ -7739,7 +7733,7 @@
             haptic(16);
             Renderer.spawnPickupEffect(run.playerX + 16, run.playerY - 30, '#5effbe', true);
             Renderer.spawnFloater(
-              isPerfect ? `😷 완벽 타이밍 차단! +${bonusPts}` : `😷 코로나 차단 성공! +${bonusPts}`,
+              isPerfect ? `완벽 타이밍 차단! +${bonusPts}` : `코로나 차단 성공! +${bonusPts}`,
               '#5effbe',
               run.playerX + 14,
               run.playerY - 50
@@ -7756,7 +7750,7 @@
             SFX.guard();
             haptic(12);
             Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#a6ffcf', false);
-            Renderer.spawnFloater('😷 마스크 방어! (돌진 시 새로 누르면 보너스!)', '#a6ffcf', run.playerX + 14, run.playerY - 48);
+            Renderer.spawnFloater('마스크 방어! (돌진 시 새로 누르면 보너스!)', '#a6ffcf', run.playerX + 14, run.playerY - 48);
           } else if (run.shield) {
             consumeShieldHit('보호막 코로나 방어! 잠시 무적!');
             atk.phase = 'deflected';
@@ -7767,7 +7761,7 @@
             run.hitPoseTimer = 0.3;
             run.hitFlashTimer = 0.2;
             SFX.hit();
-            Renderer.spawnFloater('💪 괜찮아요! 마스크 타이밍 다시 한번!', '#ffe866', run.playerX + 14, run.playerY - 48);
+            Renderer.spawnFloater('괜찮아요! 마스크 타이밍 다시 한번!', '#ffe866', run.playerX + 14, run.playerY - 48);
             run.covidAttack = null;
             if (run.tut) {
               run.tut.phase = 'intro';
@@ -7788,7 +7782,7 @@
             haptic(35);
             SFX.hit();
             run.lastHitCause = `${run.year}년 차 코로나 이벤트, 마스크를 쓰지 않아 코로나 바이러스에 감염되었습니다!`;
-            Renderer.spawnFloater('🦠 코로나 감염! -1 ❤️ (마스크 착용!)', '#ff5c7c', run.playerX + 14, run.playerY - 48);
+            Renderer.spawnFloater('코로나 감염! -1 HP (마스크 착용!)', '#ff5c7c', run.playerX + 14, run.playerY - 48);
           }
         }
         if (atk.x < -70) run.covidAttack = null;
@@ -7849,7 +7843,7 @@
             run.score += Math.round(250 * run.scoreMult);
             SFX.hailBlock();
             Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 42, '#ffe866', true);
-            Renderer.spawnFloater('🔥 피버! 우박 격파 +250', '#ffe866', run.playerX + 10, run.playerY - 56);
+            Renderer.spawnFloater('피버! 우박 격파 +250', '#ffe866', run.playerX + 10, run.playerY - 56);
           } else if (run.umbrellaOn && run.umbrellaParryTimer > 0) {
             const isPerfect = run.umbrellaParryTimer >= 1.65;
             const bonusPts = isPerfect ? 320 : 240;
@@ -7869,7 +7863,7 @@
             haptic(16);
             Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 44, '#6beeff', true);
             Renderer.spawnFloater(
-              isPerfect ? `☂️ 우박 완벽 방어! +${bonusPts}` : `☂️ 우박 차단 성공! +${bonusPts}`,
+              isPerfect ? `우박 완벽 방어! +${bonusPts}` : `우박 차단 성공! +${bonusPts}`,
               '#6beeff',
               run.playerX + 10,
               run.playerY - 56
@@ -7883,7 +7877,7 @@
             SFX.hailBlock();
             haptic(12);
             Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 44, '#9beeff', false);
-            Renderer.spawnFloater('☂️ 우박 방어! +120', '#9beeff', run.playerX + 10, run.playerY - 54);
+            Renderer.spawnFloater('우박 방어! +120', '#9beeff', run.playerX + 10, run.playerY - 54);
           } else if (run.shield) {
             consumeShieldHit('보호막 우박 방어! 잠시 무적!');
             hAtk.phase = 'deflected';
@@ -7903,7 +7897,7 @@
             SFX.hit();
             run.lastHitCause = '하늘에서 떨어진 우박을 우산으로 막지 못해 쓰러졌습니다!';
             Renderer.spawnPickupEffect(run.playerX + 8, run.playerY - 34, '#8be4ff', false);
-            Renderer.spawnFloater('🧊 우박 적중! -1 ❤️ (우산 펴기!)', '#7ae4ff', run.playerX + 10, run.playerY - 54);
+            Renderer.spawnFloater('우박 적중! -1 HP (우산 펴기!)', '#7ae4ff', run.playerX + 10, run.playerY - 54);
             hAtk.phase = 'deflected';
             hAtk.deflectTimer = 0.35;
             hAtk.vx = -90;
@@ -8051,7 +8045,7 @@
           run.score += Math.round(140 * run.scoreMult);
           SFX.speedBoost();
           Renderer.spawnPickupEffect(it.x, it.y, '#59e8ff', true);
-          Renderer.spawnFloater('⚡ 스피드 부스트! (4초 무적 질주)', '#66f2ff', run.playerX + 16, run.playerY - 46);
+          Renderer.spawnFloater('스피드 부스트! (4초 무적 질주)', '#66f2ff', run.playerX + 16, run.playerY - 46);
         } else if (it.kind === 'shield_item') {
           run.shield = true;
           run.shieldFromBooster = false;
@@ -8067,7 +8061,7 @@
           save.chestBag = save.chestBag || { wood: 0, silver: 0, gold: 0, diamond: 0 };
           save.chestBag[tierId] = (save.chestBag[tierId] || 0) + 1;
           persistSave();
-          const tierIco = tierId === 'diamond' ? '💎' : (tierId === 'gold' ? '👑' : (tierId === 'silver' ? '🥈' : '🪵'));
+          const tierIco = '';
           const burstColor = chestDef.accent || '#ffd847';
           run.score += tierId === 'diamond' ? 400 : (tierId === 'gold' ? 300 : 200);
           addFeverCharge(tierId === 'diamond' ? 12 : 8);
@@ -8280,7 +8274,7 @@
       run.hitFlashTimer = 0.2;
       run.sliding = false;
       SFX.hit();
-      Renderer.spawnFloater('💪 괜찮아요! 다시 한번 해봐요!', '#ffe866', run.playerX + 14, run.playerY - 48);
+      Renderer.spawnFloater('괜찮아요! 다시 한번 해봐요!', '#ffe866', run.playerX + 14, run.playerY - 48);
       run.obstacles = [];
       run.items = [];
       if (run.tut) {
@@ -8322,7 +8316,7 @@
     }
 
     SFX.hit();
-    Renderer.spawnFloater('-1 ❤️', '#ff5c5c', run.playerX, run.playerY - 44);
+    Renderer.spawnFloater('-1 HP', '#ff5c5c', run.playerX, run.playerY - 44);
   }
 
   // ===================== DIRTY-CHECKED & THROTTLED HUD UPDATER (ZERO 60FPS DOM THRASHING!) =====================
@@ -8727,7 +8721,7 @@
     el.gameoverOverlay.classList.remove('hidden');
 
     if (gotWoodChest) {
-      showToast(`🪵 400m 돌파! 나무 상자를 획득했습니다! (보관함 · 오늘 ${save.dailyWoodChestDrops.count}/3)`);
+      showToast(`400m 돌파! 나무 상자를 획득했습니다! (보관함 · 오늘 ${save.dailyWoodChestDrops.count}/3)`);
     }
   }
 
@@ -8797,7 +8791,7 @@
         } catch (err) {
           if (!run._renderErrShown) {
             run._renderErrShown = true;
-            showToast(`⚠️ 렌더 복구: ${(err && err.message) || '스킨 로드 중'}`);
+            showToast(`렌더 복구: ${(err && err.message) || '스킨 로드 중'}`);
           }
         }
       }
@@ -9150,7 +9144,7 @@
         if (rankModeTab === 'today_weather') await syncMyDailyWeatherScore();
         else await syncMyWeeklyScore();
         await renderRankingTab();
-        showToast('🔄 온라인 실시간 랭킹이 갱신되었습니다!');
+        showToast('온라인 실시간 랭킹이 갱신되었습니다!');
       });
     }
     if (ONLINE && ONLINE.onBoardUpdate) {
@@ -9186,7 +9180,7 @@
       el.btnWeatherRefresh.addEventListener('click', async () => {
         SFX.click();
         await refreshLiveWeatherUI(true);
-        showToast('🌤️ 기상청 실시간 날씨가 갱신되었습니다!');
+        showToast('기상청 실시간 날씨가 갱신되었습니다!');
       });
     }
     if (el.btnWeatherPlayToday) {
@@ -9635,7 +9629,7 @@
       el.btnRotateLock.addEventListener('click', () => {
         SFX.click();
         if (isAppleTouchDevice()) {
-          showToast('📱 아이폰은 기기를 가로로 돌리면 자동으로 가로 화면으로 전환됩니다!');
+          showToast('아이폰은 기기를 가로로 돌리면 자동으로 가로 화면으로 전환됩니다!');
           return;
         }
         tryAutoLockLandscape(true);
@@ -9774,7 +9768,7 @@
         persistSave();
         openModeSelectModal();
       } catch (err) {
-        showToast(`⚠️ 시작 오류: ${(err && err.message) || '다시 시도해주세요'}`);
+        showToast(`시작 오류: ${(err && err.message) || '다시 시도해주세요'}`);
       }
     });
 
@@ -9912,7 +9906,7 @@
   // ===================== GLOBAL ERROR GUARD & BOOT =====================
   window.addEventListener('error', (ev) => {
     try {
-      if (ev && ev.message) showToast(`⚠️ 오류: ${ev.message}`);
+      if (ev && ev.message) showToast(`오류: ${ev.message}`);
     } catch {}
   });
   setupEvents();

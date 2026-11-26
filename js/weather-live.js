@@ -9,10 +9,10 @@ window.LiveWeather = (function () {
   ];
 
   const SEASON_META = {
-    spring: { id: 'spring', idx: 0, name: '봄',   icon: '🌸', bonusLabel: '봄 계절 버프', bonusEffect: '피버 충전 +10%' },
-    summer: { id: 'summer', idx: 1, name: '여름', icon: '☀️', bonusLabel: '여름 계절 버프', bonusEffect: '골드 획득 +10%' },
-    autumn: { id: 'autumn', idx: 2, name: '가을', icon: '🍁', bonusLabel: '가을 계절 버프', bonusEffect: '점수 획득 +10%' },
-    winter: { id: 'winter', idx: 3, name: '겨울', icon: '❄️', bonusLabel: '겨울 계절 버프', bonusEffect: '자석 범위 +30' }
+    spring: { id: 'spring', idx: 0, name: '봄',   icon: '', bonusLabel: '봄 계절 버프', bonusEffect: '피버 충전 +10%' },
+    summer: { id: 'summer', idx: 1, name: '여름', icon: '', bonusLabel: '여름 계절 버프', bonusEffect: '골드 획득 +10%' },
+    autumn: { id: 'autumn', idx: 2, name: '가을', icon: '', bonusLabel: '가을 계절 버프', bonusEffect: '점수 획득 +10%' },
+    winter: { id: 'winter', idx: 3, name: '겨울', icon: '', bonusLabel: '겨울 계절 버프', bonusEffect: '자석 범위 +30' }
   };
 
   function getCityById() {
@@ -45,23 +45,23 @@ window.LiveWeather = (function () {
 
   function getWeatherDesc(code, precipMm = 0, snowCm = 0) {
     const c = Number(code);
-    if (snowCm >= 1.5 || c === 75 || c === 86) return { label: '폭설', icon: '❄️' };
-    if (snowCm >= 0.2 || c === 71 || c === 73 || c === 77 || c === 85) return { label: '눈', icon: '🌨️' };
-    if (c === 95 || c === 96 || c === 99) return { label: '뇌우·폭우', icon: '⛈️' };
-    if (precipMm >= 5 || c === 65 || c === 82) return { label: '폭우', icon: '⛈️' };
-    if (precipMm >= 0.2 || (c >= 61 && c <= 67) || c === 80 || c === 81) return { label: '비', icon: '🌧️' };
-    if (c >= 51 && c <= 57) return { label: '이슬비', icon: '🌦️' };
-    if (c === 45 || c === 48) return { label: '안개', icon: '🌫️' };
-    if (c === 3) return { label: '흐림', icon: '☁️' };
-    if (c === 1 || c === 2) return { label: '구름 조금', icon: '⛅' };
-    return { label: '맑음', icon: '☀️' };
+    if (snowCm >= 1.5 || c === 75 || c === 86) return { label: '폭설', icon: '' };
+    if (snowCm >= 0.2 || c === 71 || c === 73 || c === 77 || c === 85) return { label: '눈', icon: '' };
+    if (c === 95 || c === 96 || c === 99) return { label: '뇌우·폭우', icon: '' };
+    if (precipMm >= 5 || c === 65 || c === 82) return { label: '폭우', icon: '' };
+    if (precipMm >= 0.2 || (c >= 61 && c <= 67) || c === 80 || c === 81) return { label: '비', icon: '' };
+    if (c >= 51 && c <= 57) return { label: '이슬비', icon: '' };
+    if (c === 45 || c === 48) return { label: '안개', icon: '' };
+    if (c === 3) return { label: '흐림', icon: '' };
+    if (c === 1 || c === 2) return { label: '구름 조금', icon: '' };
+    return { label: '맑음', icon: '' };
   }
 
   function getAirGrade(pm10, pm25) {
-    if (pm10 >= 151 || pm25 >= 76) return { grade: '매우나쁨', level: 3, icon: '😷' };
-    if (pm10 >= 81 || pm25 >= 36) return { grade: '나쁨', level: 2, icon: '😷' };
-    if (pm10 <= 30 && pm25 <= 15) return { grade: '좋음', level: 0, icon: '🍃' };
-    return { grade: '보통', level: 1, icon: '🙂' };
+    if (pm10 >= 151 || pm25 >= 76) return { grade: '매우나쁨', level: 3, icon: '' };
+    if (pm10 >= 81 || pm25 >= 36) return { grade: '나쁨', level: 2, icon: '' };
+    if (pm10 <= 30 && pm25 <= 15) return { grade: '좋음', level: 0, icon: '' };
+    return { grade: '보통', level: 1, icon: '' };
   }
 
   function readAllCache() {
@@ -237,7 +237,7 @@ window.LiveWeather = (function () {
       scoreMult *= 1.25;
       factors.push({
         id: 'temp',
-        icon: '🔥',
+        icon: '',
         label: '기온 · 폭염',
         valueText: `${t.toFixed(1)}°C (체감 ${Number(snap.feelsLikeC || t).toFixed(0)}°C)`,
         kind: 'debuff',
@@ -250,7 +250,7 @@ window.LiveWeather = (function () {
       scoreMult *= 1.20;
       factors.push({
         id: 'temp',
-        icon: '🥶',
+        icon: '',
         label: '기온 · 한파',
         valueText: `${t.toFixed(1)}°C (체감 ${Number(snap.feelsLikeC || t).toFixed(0)}°C)`,
         kind: 'debuff',
@@ -262,7 +262,7 @@ window.LiveWeather = (function () {
       feverGainMult *= 1.20;
       factors.push({
         id: 'temp',
-        icon: '🌡️',
+        icon: '',
         label: '기온 · 쾌적',
         valueText: `${t.toFixed(1)}°C (습도 ${snap.humidity}%)`,
         kind: 'buff',
@@ -273,7 +273,7 @@ window.LiveWeather = (function () {
       goldMult *= 1.15;
       factors.push({
         id: 'temp',
-        icon: '☀️',
+        icon: '',
         label: '기온 · 따뜻함',
         valueText: `${t.toFixed(1)}°C (습도 ${snap.humidity}%)`,
         kind: 'buff',
@@ -285,7 +285,7 @@ window.LiveWeather = (function () {
       scoreMult *= 1.10;
       factors.push({
         id: 'temp',
-        icon: '🧥',
+        icon: '',
         label: '기온 · 선선함',
         valueText: `${t.toFixed(1)}°C (체감 ${Number(snap.feelsLikeC || t).toFixed(0)}°C)`,
         kind: 'buff',
@@ -309,7 +309,7 @@ window.LiveWeather = (function () {
       goldMult *= 1.20;
       factors.push({
         id: 'precip',
-        icon: '⛈️',
+        icon: '',
         label: '강수 · 폭우',
         valueText: `${precip.toFixed(1)}mm/h`,
         kind: 'debuff',
@@ -322,7 +322,7 @@ window.LiveWeather = (function () {
       goldMult *= 1.15;
       factors.push({
         id: 'precip',
-        icon: '🌧️',
+        icon: '',
         label: '강수 · 비',
         valueText: `${precip.toFixed(1)}mm/h`,
         kind: 'debuff',
@@ -336,7 +336,7 @@ window.LiveWeather = (function () {
       goldMult *= 1.15;
       factors.push({
         id: 'precip',
-        icon: '🌨️',
+        icon: '',
         label: '강수 · 눈',
         valueText: `적설 ${snow.toFixed(1)}cm`,
         kind: 'debuff',
@@ -365,7 +365,7 @@ window.LiveWeather = (function () {
       scoreMult *= 1.25;
       factors.push({
         id: 'air',
-        icon: '😷',
+        icon: '',
         label: `대기질 · ${airGrade.grade}`,
         valueText: `PM10 ${pm10} · PM2.5 ${pm25}㎍/㎥`,
         kind: 'debuff',
@@ -377,7 +377,7 @@ window.LiveWeather = (function () {
       feverGainMult *= 1.15;
       factors.push({
         id: 'air',
-        icon: '🍃',
+        icon: '',
         label: '대기질 · 좋음',
         valueText: `PM10 ${pm10} · PM2.5 ${pm25}㎍/㎥`,
         kind: 'buff',
@@ -388,7 +388,7 @@ window.LiveWeather = (function () {
       goldMult *= 1.08;
       factors.push({
         id: 'air',
-        icon: '🙂',
+        icon: '',
         label: '대기질 · 보통',
         valueText: `PM10 ${pm10} · PM2.5 ${pm25}㎍/㎥`,
         kind: 'buff',
@@ -406,7 +406,7 @@ window.LiveWeather = (function () {
       scoreMult *= 1.20;
       factors.push({
         id: 'wind',
-        icon: '💨',
+        icon: '',
         label: '바람 · 강풍',
         valueText: `${wind.toFixed(1)}m/s (돌풍 ${gust.toFixed(0)}m/s)`,
         kind: 'debuff',
@@ -418,7 +418,7 @@ window.LiveWeather = (function () {
       scoreMult *= 1.10;
       factors.push({
         id: 'wind',
-        icon: '🍃',
+        icon: '',
         label: '바람 · 산들바람',
         valueText: `${wind.toFixed(1)}m/s`,
         kind: 'buff',
@@ -430,7 +430,7 @@ window.LiveWeather = (function () {
       magnetBonus += 35;
       factors.push({
         id: 'wind',
-        icon: '✨',
+        icon: '',
         label: '바람 · 잔잔함',
         valueText: `${wind.toFixed(1)}m/s`,
         kind: 'buff',

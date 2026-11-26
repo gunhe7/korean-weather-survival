@@ -9,25 +9,27 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd98" />
+  <link rel="manifest" href="manifest.json?v=20261121hd99" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_text.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
-  <link rel="stylesheet" href="style.css?v=20261121hd98" />
+  <link rel="stylesheet" href="style.css?v=20261121hd99" />
 </head>
 <body>
   <div id="mobile-app">
     <!-- ================= LANDSCAPE LOCK GUARD (PORTRAIT MOBILE PROMPT / ONE-TAP FULLSCREEN LOCK) ================= -->
     <div id="rotate-overlay" role="dialog" aria-modal="true" aria-label="가로 모드 전환">
       <div class="rotate-card">
-        <div class="rotate-phone-ico" aria-hidden="true">📱</div>
+        <div class="rotate-phone-ico" aria-hidden="true">
+          <svg viewBox="0 0 36 36" width="38" height="38"><rect x="6" y="10" width="24" height="16" rx="3.5" fill="none" stroke="#ffe14a" stroke-width="2.6"/><circle cx="26.5" cy="18" r="1.4" fill="#ffe14a"/></svg>
+        </div>
         <h2>가로 모드 전용 게임</h2>
         <p id="rotate-card-desc">브롤스타즈처럼 가로 화면으로 자동 전환해 쾌적하게 플레이하세요!</p>
         <button id="btn-rotate-lock" class="cr-gold-btn rotate-fs-btn" type="button">
-          <span class="rotate-btn-txt">⛶ 가로 모드로 자동 전환</span>
+          <span class="rotate-btn-txt">가로 모드로 자동 전환</span>
         </button>
       </div>
     </div>
@@ -55,7 +57,9 @@
             </button>
 
             <button id="btn-intro-guest" class="login-provider-btn guest intro-auth-btn" type="button">
-              <span class="login-prov-ico" aria-hidden="true">👤</span>
+              <span class="login-prov-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="8.5" r="4" fill="#ffffff"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" fill="#ffffff"/></svg>
+              </span>
               <span class="login-prov-label">게스트 시작</span>
             </button>
           </div>
@@ -83,7 +87,9 @@
             <h1 class="login-title">계정 연동 및 관리</h1>
             <p class="login-sub">클라우드 저장 및 주간 랭킹 참여를 위해 연동하세요.</p>
           </div>
-          <button id="btn-close-login" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+          <button id="btn-close-login" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
 
         <div id="login-main-panel" class="login-panel">
@@ -94,13 +100,13 @@
               <span id="login-cur-sub">계정을 선택해 로그인하세요</span>
             </div>
             <div class="login-cur-btns">
-              <button id="btn-login-sync" class="intro-switch-btn sync hidden" type="button">☁️ 동기화</button>
+              <button id="btn-login-sync" class="intro-switch-btn sync hidden" type="button">동기화</button>
               <button id="btn-login-logout" class="intro-switch-btn logout hidden" type="button">로그아웃</button>
             </div>
           </div>
 
           <div class="login-nick-row">
-            <label for="login-nickname-input" class="login-nick-lbl">🏷️ 닉네임</label>
+            <label for="login-nickname-input" class="login-nick-lbl">닉네임</label>
             <input id="login-nickname-input" class="login-input" type="text" maxlength="12" placeholder="랭킹 표시 닉네임 (최대 12자)" autocomplete="nickname" />
             <button id="btn-save-nickname" class="login-nick-save" type="button">저장</button>
           </div>
@@ -114,7 +120,9 @@
             </button>
 
             <button id="btn-login-guest" class="login-provider-btn guest" type="button">
-              <span class="login-prov-ico" aria-hidden="true">👤</span>
+              <span class="login-prov-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="8.5" r="4" fill="#ffffff"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" fill="#ffffff"/></svg>
+              </span>
               <span class="login-prov-label">게스트 모드</span>
             </button>
           </div>
@@ -126,19 +134,21 @@
     <div id="profile-edit-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="프로필 꾸미기">
       <div class="cr-modal settings-arcade-modal bs-profile-modal">
         <div class="cr-modal-bar settings-arcade-bar">
-          <span class="settings-bar-title">✨ 프로필 꾸미기</span>
-          <button id="btn-close-profile-edit" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+          <span class="settings-bar-title">프로필 꾸미기</span>
+          <button id="btn-close-profile-edit" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
         <div class="modal-body bs-profile-modal-body">
           <!-- Live Brawl Stars Battle Card Preview -->
           <div class="prof-preview-card">
             <div class="prof-prev-avatar-box">
               <img id="prof-prev-avatar" src="assets/chars/port_yellow.png?v=20261121hd41" alt="프로필 미리보기" class="prof-prev-avatar" />
-              <span id="prof-prev-rank" class="bs-prof-rank-badge tier-blue">★1</span>
+              <span id="prof-prev-rank" class="bs-prof-rank-badge tier-blue">R1</span>
             </div>
             <div class="prof-prev-info">
               <div id="prof-prev-name-wrap" class="prof-prev-name-wrap">날씨러너</div>
-              <div id="prof-prev-stats" class="prof-prev-stats">🏆 최고 0점 · 🏃 0년 차 · 캐릭터 1/5</div>
+              <div id="prof-prev-stats" class="prof-prev-stats">최고 0점 · 0년 차 · 캐릭터 1/5</div>
             </div>
           </div>
 
@@ -146,14 +156,14 @@
           <div class="prof-nick-row">
             <input id="prof-nickname-input" class="login-input prof-nick-input" type="text" maxlength="12" placeholder="닉네임 (최대 12자)" autocomplete="nickname" />
             <button id="btn-prof-save-nick" class="login-nick-save" type="button">변경</button>
-            <button id="btn-prof-open-account" class="intro-switch-btn prof-acc-btn" type="button">☁️ 계정 관리</button>
+            <button id="btn-prof-open-account" class="intro-switch-btn prof-acc-btn" type="button">계정 관리</button>
           </div>
 
           <!-- 3 Brawl Stars Profile Tabs -->
           <div class="prof-custom-tabs" role="tablist" aria-label="프로필 꾸미기 분류">
-            <button class="prof-tab-btn active" data-proftab="icons" type="button">🎭 아이콘</button>
-            <button class="prof-tab-btn" data-proftab="colors" type="button">🎨 닉네임 색상</button>
-            <button class="prof-tab-btn" data-proftab="frames" type="button">👑 닉네임 장식</button>
+            <button class="prof-tab-btn active" data-proftab="icons" type="button">아이콘</button>
+            <button class="prof-tab-btn" data-proftab="colors" type="button">닉네임 색상</button>
+            <button class="prof-tab-btn" data-proftab="frames" type="button">닉네임 장식</button>
           </div>
 
           <div id="prof-custom-grid" class="prof-custom-grid"></div>
@@ -167,7 +177,7 @@
         <div class="bs-profile-widget">
           <button id="btn-header-profile" class="bs-prof-avatar-box" type="button" title="프로필 · 계정 정보 및 변경" aria-label="프로필 설정 열기">
             <img id="hdr-profile-avatar" class="bs-prof-avatar-img" src="assets/chars/port_yellow.png?v=20261121hd41" alt="프로필" />
-            <span id="hdr-profile-rank" class="bs-prof-rank-badge tier-blue">★1</span>
+            <span id="hdr-profile-rank" class="bs-prof-rank-badge tier-blue">R1</span>
           </button>
 
           <div class="bs-prof-body">
@@ -202,7 +212,7 @@
         </button>
 
         <button id="btn-gem-shop" class="res-pill gem-res-pill" type="button" title="보석 상점으로 이동">
-          <span class="gem-ico ui-ico-slot ui-ico-md" data-ui-icon="gem" data-ui-size="md" aria-hidden="true">💎</span>
+          <img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="보석" class="gem-ico ui-ico ui-ico-md" />
           <span id="ui-gems">0</span>
           <span class="res-plus gem">+</span>
         </button>
@@ -224,7 +234,7 @@
           <div class="bs-home-left-dock">
             <button id="btn-home-season-pass" class="bs-pass-dock-btn" type="button" aria-label="시즌 패스 열기">
               <span class="bs-pass-art-wrap">
-                <img src="assets/ui/season_pass_ticket.png?v=20261121hd98" alt="시즌 패스" class="bs-pass-ticket-img" />
+                <img src="assets/ui/season_pass_ticket.png?v=20261121hd99" alt="시즌 패스" class="bs-pass-ticket-img" />
                 <span class="bs-pass-img-title">시즌 패스</span>
                 <span id="home-pass-dot" class="bs-pass-dot hidden" aria-hidden="true">!</span>
               </span>
@@ -238,7 +248,9 @@
           <!-- Brawl Stars Right-Side Floating Weather Button (Directly below top-right Settings button!) -->
           <div class="bs-home-right-dock">
             <button id="btn-home-weather" class="bs-right-dock-btn weather-dock-btn" type="button" aria-label="실시간 날씨 정보 열기" title="실시간 기상청 날씨">
-              <span id="home-weather-btn-ico" class="bs-rd-ico" aria-hidden="true">🌤️</span>
+              <span id="home-weather-btn-ico" class="bs-rd-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="15" cy="9" r="3.8" fill="#ffe14a" stroke="#071022" stroke-width="1.5"/><path d="M6.2 18h10.4a3.3 3.3 0 0 0 .4-6.56A4.8 4.8 0 0 0 7.5 10.1a3.9 3.9 0 0 0-1.3 7.9z" fill="#ffffff" stroke="#071022" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              </span>
               <span class="bs-rd-lbl">날씨</span>
               <span id="home-weather-btn-temp" class="bs-rd-temp">--°C</span>
             </button>
@@ -251,7 +263,7 @@
             <!-- Overhead Brawl Power & Nameplate -->
             <div class="bs-overhead">
               <div class="bs-overhead-pills">
-                <span id="home-char-lv-badge" class="bs-power-tag">💧 방수우비</span>
+                <span id="home-char-lv-badge" class="bs-power-tag">방수 우비</span>
                 <span id="home-char-tier" class="bs-tier-tag">장마 특화</span>
               </div>
               <div id="home-char-name" class="bs-hero-name">우비 소년</div>
@@ -259,7 +271,9 @@
 
             <!-- Standing Hero on Glowing 3D Circular Pedestal -->
             <div class="bs-podium-row">
-              <button id="btn-prev-char" class="bs-side-arrow left" type="button" aria-label="이전 캐릭터">◀</button>
+              <button id="btn-prev-char" class="bs-side-arrow left" type="button" aria-label="이전 캐릭터">
+                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 2.5L5 8l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
 
               <button id="btn-home-char-info" class="bs-podium-btn" type="button" title="캐릭터 능력 및 스킨 보기">
                 <img id="home-hero-aura" src="" alt="" class="bs-hero-aura hidden" aria-hidden="true" />
@@ -271,7 +285,9 @@
                 </div>
               </button>
 
-              <button id="btn-next-char" class="bs-side-arrow right" type="button" aria-label="다음 캐릭터">▶</button>
+              <button id="btn-next-char" class="bs-side-arrow right" type="button" aria-label="다음 캐릭터">
+                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.5 2.5L11 8l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
             </div>
           </div>
 
@@ -302,35 +318,19 @@
       <section id="view-shop" class="tab-view bs-shop-view">
         <div class="bs-shop-topbar">
           <div class="bs-shop-tabs" role="tablist" aria-label="상점 카테고리">
-            <button class="subtab-btn bs-shop-tab gacha-tab active" data-shoptab="gacha" type="button">🌦️ 뽑기</button>
-            <button class="subtab-btn bs-shop-tab" data-shoptab="chests" type="button">🎁 상자</button>
-            <button class="subtab-btn bs-shop-tab" data-shoptab="skins" type="button">✨ 스킨 교환</button>
-            <button class="subtab-btn bs-shop-tab" data-shoptab="gold" type="button"><img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="ui-ico ui-ico-sm" data-ui-icon="coin" data-ui-size="sm" /> 골드</button>
-            <button class="subtab-btn bs-shop-tab gems-tab" data-shoptab="gems" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 보석</button>
+            <button class="subtab-btn bs-shop-tab gacha-tab active" data-shoptab="gacha" type="button">뽑기</button>
+            <button class="subtab-btn bs-shop-tab" data-shoptab="chests" type="button">상자</button>
+            <button class="subtab-btn bs-shop-tab" data-shoptab="skins" type="button">스킨 교환</button>
+            <button class="subtab-btn bs-shop-tab" data-shoptab="gold" type="button"><img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="ui-ico ui-ico-sm" /> 골드</button>
+            <button class="subtab-btn bs-shop-tab gems-tab" data-shoptab="gems" type="button"><img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="보석" class="ui-ico ui-ico-sm" /> 보석</button>
           </div>
-          <button id="btn-shop-prob" class="bs-prob-btn" type="button">📊 확률</button>
+          <button id="btn-shop-prob" class="bs-prob-btn" type="button">확률</button>
         </div>
         <div id="shop-items-list" class="bs-shop-stage"></div>
       </section>
 
-      <!-- 3. CHARACTERS & COLLECTION DEX SCREEN (BRAWL STARS STYLE GRID!) -->
+      <!-- 3. CHARACTERS SCREEN (CLEAN BRAWL STARS CHARACTER GRID ONLY!) -->
       <section id="view-chars" class="tab-view">
-        <div class="cr-panel-header">
-          <h2>캐릭터 선택 &amp; 도감</h2>
-          <p>캐릭터를 터치해 고유 능력과 스탯을 확인하고 성장시키세요.</p>
-        </div>
-
-        <div class="dex-summary-card">
-          <div class="dex-top-row">
-            <span class="dex-title">📖 캐릭터 도감 수집률</span>
-            <strong id="dex-rate-text" class="dex-rate-val">1 / 5 (20%)</strong>
-          </div>
-          <div class="dex-bar-track">
-            <div id="dex-bar-fill" class="dex-bar-fill" style="width: 20%"></div>
-          </div>
-          <div id="dex-bonus-text" class="dex-bonus-note">현재 도감 효과: 전체 점수 +0% (캐릭터 추가 해금당 +3%)</div>
-        </div>
-
         <div id="char-list" class="brawl-char-grid"></div>
       </section>
 
@@ -338,21 +338,21 @@
       <section id="view-missions" class="tab-view">
         <div class="bs-quest-header">
           <div class="bs-quest-tabs" role="tablist" aria-label="퀘스트 분류">
-            <button class="bs-qtab active daily" data-qtab="daily" type="button">☀️ 일일 <span class="qtab-sub">황금상자</span><span id="qdot-daily" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
-            <button class="bs-qtab weekly" data-qtab="weekly" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 주간 <span class="qtab-sub">다이아상자</span><span id="qdot-weekly" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
-            <button class="bs-qtab ach" data-qtab="ach" type="button">🏅 업적<span id="qdot-ach" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
+            <button class="bs-qtab active daily" data-qtab="daily" type="button">일일 <span class="qtab-sub">황금상자</span><span id="qdot-daily" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
+            <button class="bs-qtab weekly" data-qtab="weekly" type="button">주간 <span class="qtab-sub">다이아상자</span><span id="qdot-weekly" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
+            <button class="bs-qtab ach" data-qtab="ach" type="button">업적<span id="qdot-ach" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
           </div>
           <div class="bs-quest-head-actions">
-            <button id="btn-tab-open-attendance" class="bs-hdr-pill att" type="button">🎁 출석<span id="qdot-att" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
-            <button id="btn-quest-prob" class="bs-hdr-pill prob" type="button">📊 확률·천장</button>
+            <button id="btn-tab-open-attendance" class="bs-hdr-pill att" type="button">출석<span id="qdot-att" class="sub-notify-dot hidden" aria-hidden="true"></span></button>
+            <button id="btn-quest-prob" class="bs-hdr-pill prob" type="button">확률·천장</button>
           </div>
         </div>
 
         <!-- Live Pity & Reset Timer Banner -->
         <div class="bs-pity-bar">
-          <span id="quest-reset-label" class="pity-chip timer">⏱️ 매일 초기화</span>
-          <span id="pity-gold-chip" class="pity-chip gold"><span class="ui-ico-slot ui-ico-xs" data-ui-icon="crown" data-ui-size="xs" aria-hidden="true">👑</span> 황금 천장 0/10</span>
-          <span id="pity-diamond-chip" class="pity-chip diamond"><span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span> 다이아 천장 0/15</span>
+          <span id="quest-reset-label" class="pity-chip timer">매일 초기화</span>
+          <span id="pity-gold-chip" class="pity-chip gold"><img src="assets/icons/ico_crown.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-xs" /> 황금 천장 0/10</span>
+          <span id="pity-diamond-chip" class="pity-chip diamond"><img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-xs" /> 다이아 천장 0/15</span>
         </div>
 
         <!-- Brawl Stars Quest Cards Grid -->
@@ -363,26 +363,33 @@
       <section id="view-rank" class="tab-view">
         <div class="rank-live-header">
           <div class="rank-live-title-row">
-            <h2 id="rank-screen-title">🏆 주간 랭킹</h2>
+            <h2 id="rank-screen-title">주간 랭킹</h2>
             <span id="rank-live-pill" class="rank-live-pill"><span class="live-dot"></span>LIVE</span>
             <span id="rank-online-count" class="rank-online-cnt hidden"></span>
             <span id="rank-last-winner" class="rank-last-winner hidden"></span>
           </div>
-          <button id="btn-rank-refresh" class="bs-hdr-pill prob" type="button">🔄 갱신</button>
+          <button id="btn-rank-refresh" class="bs-hdr-pill prob bs-refresh-btn" type="button" aria-label="랭킹 갱신">
+            <svg class="bs-refresh-svg" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path d="M19.8 11a7.8 7.8 0 1 0 1.6 5.4" fill="none" stroke="#071022" stroke-width="5" stroke-linecap="round"/>
+              <path d="M19.8 11a7.8 7.8 0 1 0 1.6 5.4" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+              <polygon points="22.8,12.2 14.8,12.2 21.2,5.6" fill="#ffffff" stroke="#071022" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+            <span>갱신</span>
+          </button>
         </div>
 
         <!-- 2-Mode Ranking Switcher: 일반모드(주간) vs 오늘의 날씨모드(일간) -->
         <div class="rank-mode-tabs" role="tablist" aria-label="랭킹 모드 선택">
-          <button id="btn-rank-mode-normal" class="rank-mode-tab active" type="button" role="tab" aria-selected="true">🏆 일반모드 <span class="rmt-sub">주간 초기화</span></button>
-          <button id="btn-rank-mode-today" class="rank-mode-tab today" type="button" role="tab" aria-selected="false">🌦️ 오늘의 날씨 <span class="rmt-sub">매일 초기화</span></button>
+          <button id="btn-rank-mode-normal" class="rank-mode-tab active" type="button" role="tab" aria-selected="true">일반모드 <span class="rmt-sub">주간 초기화</span></button>
+          <button id="btn-rank-mode-today" class="rank-mode-tab today" type="button" role="tab" aria-selected="false">오늘의 날씨 <span class="rmt-sub">매일 초기화</span></button>
         </div>
 
         <!-- Unified 1-Line Prize / Daily Reset + Countdown + Guest Link Strip -->
         <div class="rank-prize-banner compact-strip">
           <div class="rank-prize-left">
-            <span id="rank-prize-crown" class="rank-prize-crown ui-ico-slot ui-ico-md" data-ui-icon="crown" data-ui-size="md" aria-hidden="true">👑</span>
-            <span id="rank-prize-inline-text" class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 <strong>5,000<span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span></strong> · 2위 <strong>3,000</strong> · 3위 <strong>1,000</strong></span>
-            <span class="rank-timer-chip">⏱️ <strong id="rank-week-countdown">0일 00:00:00</strong></span>
+            <img id="rank-prize-crown" src="assets/icons/ico_crown.svg?v=20261121hd99" alt="" class="rank-prize-crown ui-ico ui-ico-md" />
+            <span id="rank-prize-inline-text" class="rank-prize-inline"><span id="rank-week-label">주간</span> 1위 <strong>5,000<img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-xs" /></strong> · 2위 <strong>3,000</strong> · 3위 <strong>1,000</strong></span>
+            <span class="rank-timer-chip"><strong id="rank-week-countdown">0일 00:00:00</strong></span>
           </div>
           <div id="rank-guest-banner" class="rank-guest-inline hidden">
             <span class="rank-guest-tag">게스트 미등록</span>
@@ -454,14 +461,16 @@
     <div id="attendance-overlay" class="modal-overlay hidden">
       <div class="cr-modal">
         <div class="cr-modal-bar">
-          <span>🎁 7일 연속 출석 보상</span>
-          <button id="btn-close-attendance" class="modal-x-btn" type="button" aria-label="닫기">✕</button>
+          <span>7일 연속 출석 보상</span>
+          <button id="btn-close-attendance" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
         <div class="modal-body">
           <p class="modal-msg" id="att-modal-desc">매일 접속해 골드와 기상 아이템을 받으세요!</p>
           <div id="att-days-grid" class="att-days-grid"></div>
           <div class="modal-actions col">
-            <button id="btn-claim-attendance" class="cr-gold-btn" type="button">🎁 오늘 출석 보상 받기!</button>
+            <button id="btn-claim-attendance" class="cr-gold-btn" type="button">오늘 출석 보상 받기</button>
           </div>
         </div>
       </div>
@@ -471,8 +480,10 @@
     <div id="achievements-overlay" class="modal-overlay hidden">
       <div class="cr-modal cr-modal-tall">
         <div class="cr-modal-bar">
-          <span>🏅 K-날씨 업적 &amp; 보상</span>
-          <button id="btn-close-achievements" class="modal-x-btn" type="button" aria-label="닫기">✕</button>
+          <span>K-날씨 업적 &amp; 보상</span>
+          <button id="btn-close-achievements" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
         <div class="modal-body modal-scroll-body">
           <div class="ach-summary-strip">
@@ -653,7 +664,7 @@
             <div class="brawl-stats-panel">
               <div class="brawl-stat-row">
                 <div class="brawl-stat-top">
-                  <span class="brawl-stat-lbl"><img src="assets/icons/ico_heart.png?v=20261121hd98" alt="" class="brawl-stat-ico" aria-hidden="true" /> 체력</span>
+                  <span class="brawl-stat-lbl"><img src="assets/icons/ico_heart.png?v=20261121hd99" alt="" class="brawl-stat-ico" aria-hidden="true" /> 체력</span>
                   <strong id="detail-stat-hp" class="brawl-stat-val">5칸</strong>
                 </div>
                 <div class="brawl-stat-track"><div id="detail-fill-hp" class="brawl-stat-fill hp" style="width: 100%"></div></div>
@@ -713,7 +724,7 @@
                 <div class="fever-bar-inner">
                   <div id="run-fever-fill" class="fever-bar-fill rainbow-fill" style="width: 0%"></div>
                 </div>
-                <img src="assets/ui/gauge_fever_frame.png?v=20261121hd98" alt="" class="fever-frame-img" aria-hidden="true" />
+                <img src="assets/ui/gauge_fever_frame.png?v=20261121hd99" alt="" class="fever-frame-img" aria-hidden="true" />
                 <span id="run-fever-text" class="fever-bar-text">FEVER 0%</span>
               </div>
             </div>
@@ -747,14 +758,14 @@
                 <span>봄</span><span>여름</span><span>가을</span><span>겨울</span>
               </div>
             </div>
-            <img src="assets/ui/gauge_season_frame.png?v=20261121hd98" alt="" class="season-frame-img" aria-hidden="true" />
+            <img src="assets/ui/gauge_season_frame.png?v=20261121hd99" alt="" class="season-frame-img" aria-hidden="true" />
           </div>
           <span id="run-score-text" class="score-num bs-score-badge"><span class="bs-score-dist">0m</span><span class="bs-score-sep" aria-hidden="true"></span><span class="bs-score-pts">0점</span></span>
         </div>
 
         <!-- Compact Active Weather Timer Chip (Shown ONLY when needed, never duplicates center alert!) -->
         <div id="run-weather-bar" class="weather-status-strip hidden">
-          <span id="weather-status-badge" class="weather-status-badge"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="umbrella" data-ui-size="sm" aria-hidden="true">☂️</span> 우산!</span>
+          <span id="weather-status-badge" class="weather-status-badge"><img src="assets/icons/ico_umbrella.png?v=20261121hd65" alt="" class="ui-ico ui-ico-sm" /> 우산!</span>
           <span id="fc-heat-pill" class="fc-heat-pill hidden">2.5s</span>
         </div>
       </div>
@@ -772,7 +783,7 @@
           <div class="mud-blob b1"></div>
           <div class="mud-blob b2"></div>
           <div class="mud-blob b3"></div>
-          <div class="mud-text">💦 차량 물벼락! 시야 가림!</div>
+          <div class="mud-text">차량 물벼락! 시야 가림!</div>
         </div>
 
         <!-- Crisp HTML Banner -->
@@ -780,7 +791,7 @@
 
         <!-- Center-Screen Big Icon + Short Action Keyword Weather Alert -->
         <div id="weather-center-alert" class="weather-center-alert hidden" aria-live="polite">
-          <div id="weather-alert-icon" class="weather-alert-icon" aria-hidden="true"><span class="ui-ico-slot ui-ico-hero" data-ui-icon="umbrella" data-ui-size="hero" aria-hidden="true">☂️</span></div>
+          <div id="weather-alert-icon" class="weather-alert-icon" aria-hidden="true"><img src="assets/icons/ico_umbrella.png?v=20261121hd65" alt="" class="ui-ico ui-ico-hero" /></div>
           <div id="weather-alert-title" class="weather-alert-title">우산!</div>
         </div>
 
@@ -789,12 +800,12 @@
           <div class="tut-run-top">
             <span id="tut-run-step-pill" class="tut-run-step-pill">튜토리얼 1/7</span>
             <div class="tut-run-text">
-              <strong id="tut-run-title">⬆️ 장애물을 뛰어넘으세요!</strong>
+              <strong id="tut-run-title">장애물을 뛰어넘으세요!</strong>
               <span id="tut-run-sub">왼쪽 [점프] 버튼을 터치해 피하세요</span>
             </div>
             <button id="btn-tut-run-skip" class="tut-skip-btn" type="button">건너뛰기</button>
           </div>
-          <div id="tut-run-action-callout" class="tut-run-callout hidden">👇 지금! 점프 버튼을 누르세요!</div>
+          <div id="tut-run-action-callout" class="tut-run-callout hidden">지금! 점프 버튼을 누르세요!</div>
           <div id="tut-run-dots" class="tut-run-dots" aria-hidden="true"></div>
         </div>
       </div>
@@ -916,23 +927,23 @@
       <div id="tut-complete-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="튜토리얼 완료">
         <div class="cr-modal settings-arcade-modal tut-complete-modal">
           <div class="cr-modal-bar settings-arcade-bar">
-            <span class="settings-bar-title">🏆 생존 튜토리얼 완료!</span>
+            <span class="settings-bar-title">생존 튜토리얼 완료</span>
           </div>
           <div class="tut-complete-body">
-            <div class="tut-complete-trophy">🎉</div>
+            <div class="tut-complete-trophy" aria-hidden="true"><img src="assets/icons/ico_crown.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-xl" /></div>
             <h3 class="tut-complete-title">모든 한국 날씨 생존 조작 마스터!</h3>
-            <div id="tut-complete-reward" class="tut-complete-reward"><img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="ui-ico ui-ico-sm" data-ui-icon="coin" data-ui-size="sm" /> 첫 완료 보너스 +100G 지급!</div>
+            <div id="tut-complete-reward" class="tut-complete-reward"><img src="assets/design/item_coin.png?v=20261121hd41" alt="골드" class="ui-ico ui-ico-sm" /> 첫 완료 보너스 +100G 지급!</div>
             <div class="tut-complete-chips">
-              <span>✓ 1단·2단 점프</span>
-              <span>✓ 슬라이드</span>
-              <span>✓ 비·우산</span>
-              <span>✓ 태풍 접기</span>
-              <span>✓ 황사 마스크</span>
-              <span>✓ 코로나 차단</span>
+              <span>1단·2단 점프</span>
+              <span>슬라이드</span>
+              <span>비·우산</span>
+              <span>태풍 접기</span>
+              <span>황사 마스크</span>
+              <span>코로나 차단</span>
             </div>
             <div class="tut-complete-actions">
-              <button id="btn-tut-done-home" class="cr-blue-btn tut-done-btn" type="button">🏠 홈으로 가기</button>
-              <button id="btn-tut-done-play" class="cr-gold-btn tut-done-btn main" type="button">🏃 바로 실전 출발!</button>
+              <button id="btn-tut-done-home" class="cr-blue-btn tut-done-btn" type="button">홈으로 가기</button>
+              <button id="btn-tut-done-play" class="cr-gold-btn tut-done-btn main" type="button">바로 실전 출발</button>
             </div>
           </div>
         </div>
@@ -951,17 +962,17 @@
           <img id="chest-anim-img" src="assets/chests/chest_gold_0.png?v=20261121hd9" alt="상자" class="chest-anim-img" />
           <span id="chest-tap-hint" class="chest-tap-hint">터치해서 열기!</span>
         </button>
-        <button id="btn-chest-store" class="chest-store-btn" type="button"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="chest" data-ui-size="sm" aria-hidden="true">📦</span> 보관함에 저장하기</button>
+        <button id="btn-chest-store" class="chest-store-btn" type="button"><img src="assets/icons/ico_chest.png?v=20261121hd65" alt="" class="ui-ico ui-ico-sm" /> 보관함에 저장하기</button>
 
         <!-- Revealed Reward Card -->
         <div id="chest-reward-card" class="chest-reward-card hidden">
-          <div id="chest-reward-pity" class="chest-pity-tag hidden">✨ 천장 확정 보상!</div>
+          <div id="chest-reward-pity" class="chest-pity-tag hidden">천장 확정 보상</div>
           <div id="chest-reward-rarity" class="chest-rarity-pill">골드 보상</div>
           <div id="chest-reward-visual" class="chest-reward-visual"></div>
           <div id="chest-reward-name" class="chest-reward-name">+750 G</div>
           <div id="chest-reward-sub" class="chest-reward-sub">황금 상자 보상 획득!</div>
           <div class="chest-reward-actions">
-            <button id="btn-chest-equip" class="cr-blue-btn hidden" type="button">✨ 바로 장착</button>
+            <button id="btn-chest-equip" class="cr-blue-btn hidden" type="button">바로 장착</button>
             <button id="btn-chest-close" class="cr-gold-btn" type="button">확인</button>
           </div>
         </div>
@@ -972,8 +983,10 @@
     <div id="prob-overlay" class="modal-overlay hidden">
       <div class="cr-modal prob-modal">
         <div class="cr-modal-bar">
-          <span>📊 상자 확률 · 천장 · 중복 보상 안내</span>
-          <button id="btn-close-prob" class="modal-x-btn" type="button" aria-label="닫기">✕</button>
+          <span>상자 확률 · 천장 · 중복 보상 안내</span>
+          <button id="btn-close-prob" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
         <div id="prob-modal-body" class="modal-body modal-scroll-body prob-body"></div>
       </div>
@@ -983,17 +996,19 @@
     <div id="iap-overlay" class="modal-overlay hidden">
       <div class="cr-modal settings-arcade-modal iap-modal">
         <div class="cr-modal-bar settings-arcade-bar">
-          <span class="settings-bar-title"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 보석 스토어 결제</span>
-          <button id="btn-close-iap" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+          <span class="settings-bar-title"><img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-sm" /> 보석 스토어 결제</span>
+          <button id="btn-close-iap" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
         <div class="modal-body iap-body">
           <div class="iap-showcase">
-            <div class="iap-gem-glow"><span class="ui-ico-slot ui-ico-xl" data-ui-icon="gem" data-ui-size="xl" aria-hidden="true">💎</span></div>
+            <div class="iap-gem-glow"><img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-xl" /></div>
             <div id="iap-pack-name" class="iap-pack-name">보석 100개</div>
-            <div id="iap-pack-gems" class="iap-pack-gems">+100 <span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 즉시 지급</div>
+            <div id="iap-pack-gems" class="iap-pack-gems">+100 <img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-sm" /> 즉시 지급</div>
             <div id="iap-pack-price" class="iap-pack-price">₩1,000</div>
           </div>
-          <p id="iap-pay-note" class="iap-pay-note">Google Play / App Store 인앱 결제 (100<span class="ui-ico-slot ui-ico-xs" data-ui-icon="gem" data-ui-size="xs" aria-hidden="true">💎</span> = ₩1,000)</p>
+          <p id="iap-pay-note" class="iap-pay-note">Google Play / App Store 인앱 결제 (100 보석 = ₩1,000)</p>
           <div class="iap-actions">
             <button id="btn-iap-cancel" class="item-action-btn locked-chest" type="button">취소</button>
             <button id="btn-iap-confirm" class="cr-gold-btn iap-buy-btn" type="button">₩1,000 결제하기</button>
@@ -1006,18 +1021,18 @@
     <div id="weekly-champ-overlay" class="modal-overlay hidden">
       <div class="cr-modal settings-arcade-modal champ-modal">
         <div class="cr-modal-bar settings-arcade-bar">
-          <span id="weekly-champ-title" class="settings-bar-title">🏆 주간 랭킹 TOP 3 보상!</span>
+          <span id="weekly-champ-title" class="settings-bar-title">주간 랭킹 TOP 3 보상</span>
         </div>
         <div class="modal-body iap-body">
           <div class="iap-showcase champ-showcase">
-            <div class="iap-gem-glow"><span class="ui-ico-slot ui-ico-xl" data-ui-icon="crown" data-ui-size="xl" aria-hidden="true">👑</span></div>
+            <div class="iap-gem-glow"><img src="assets/icons/ico_crown.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-xl" /></div>
             <div id="weekly-champ-week" class="iap-pack-name">지난 주 랭킹 최종 TOP 3</div>
             <div id="weekly-champ-score" class="champ-score-txt">최고 점수 0점</div>
-            <div id="weekly-champ-gems" class="iap-pack-gems">+5,000 <span class="ui-ico-slot ui-ico-sm" data-ui-icon="gem" data-ui-size="sm" aria-hidden="true">💎</span> 보석 지급!</div>
+            <div id="weekly-champ-gems" class="iap-pack-gems">+5,000 <img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="" class="ui-ico ui-ico-sm" /> 보석 지급!</div>
             <div id="weekly-champ-frame-preview" class="champ-frame-preview hidden"></div>
           </div>
           <p class="iap-pay-note">매주 월요일 00:00(KST) 기준 주간 1·2·3위 보석 및 닉네임 장식 보상이 지급됩니다!</p>
-          <button id="btn-claim-weekly-champ" class="cr-gold-btn settings-ok-btn" type="button">🎁 보상 받기!</button>
+          <button id="btn-claim-weekly-champ" class="cr-gold-btn settings-ok-btn" type="button">보상 받기</button>
         </div>
       </div>
     </div>
@@ -1027,12 +1042,14 @@
       <div class="cr-modal score-road-modal">
         <div class="cr-modal-bar settings-arcade-bar score-road-bar">
           <div class="score-road-title-wrap">
-            <span class="settings-bar-title">⭐ 최고점수 보상 로드</span>
+            <span class="settings-bar-title">최고점수 보상 로드</span>
             <span id="score-road-best-val" class="score-road-best-pill">내 최고점수 0점</span>
           </div>
           <div class="score-road-bar-actions">
-            <button id="btn-score-road-claim-all" class="cr-gold-btn score-road-claim-all hidden" type="button">🎁 모두 받기</button>
-            <button id="btn-close-score-road" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+            <button id="btn-score-road-claim-all" class="cr-gold-btn score-road-claim-all hidden" type="button">모두 받기</button>
+            <button id="btn-close-score-road" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </button>
           </div>
         </div>
         <div class="score-road-sub">1,000점 달성할 때마다 골드 · 보석 · 상자(보관함 저장)를 드립니다! 좌우로 스크롤해 확인하세요.</div>
@@ -1045,7 +1062,7 @@
       <div class="cr-modal sp-modal">
         <div class="cr-modal-bar settings-arcade-bar sp-header-bar">
           <div class="sp-hdr-left">
-            <img src="assets/ui/season_pass_ticket.png?v=20261121hd98" alt="" class="sp-bar-ticket-ico" />
+            <img src="assets/ui/season_pass_ticket.png?v=20261121hd99" alt="" class="sp-bar-ticket-ico" />
             <span class="sp-bar-title">시즌 1 패스</span>
             <span id="sp-tier-pill" class="score-road-best-pill sp-tier-pill">Lv.0 / 80</span>
             <span id="sp-season-timer" class="sp-timer-pill">종료 D-67</span>
@@ -1071,11 +1088,11 @@
           <div class="sp-left-rail">
             <div class="sp-rail-gold-box">
               <div class="sp-rail-head">
-                <img src="assets/icons/ico_crown.svg?v=20261121hd98" alt="" class="sp-rail-ico" />
+                <img src="assets/icons/ico_crown.svg?v=20261121hd99" alt="" class="sp-rail-ico" />
                 <span class="sp-rail-label gold">골드 패스</span>
               </div>
               <div class="sp-rail-art-wrap">
-                <img src="assets/ui/pass_ticket_gold.png?v=20261121hd98" alt="골드 패스 티켓" class="sp-rail-ticket" />
+                <img src="assets/ui/pass_ticket_gold.png?v=20261121hd99" alt="골드 패스 티켓" class="sp-rail-ticket" />
               </div>
               <div class="sp-rail-sub">80티어 신화 얼음황제</div>
               <button id="btn-buy-gold-pass" class="sp-btn-gold" type="button">₩9,900 활성화</button>
@@ -1094,13 +1111,13 @@
                 <span class="sp-rail-label free">무료 패스</span>
               </div>
               <div class="sp-rail-art-wrap">
-                <img src="assets/ui/pass_ticket_free.png?v=20261121hd98" alt="무료 패스 티켓" class="sp-rail-ticket" />
+                <img src="assets/ui/pass_ticket_free.png?v=20261121hd99" alt="무료 패스 티켓" class="sp-rail-ticket" />
               </div>
               <div class="sp-rail-sub">완료 후 500 XP마다 다이아 상자</div>
               <button id="btn-sp-skip-tier" class="sp-btn-skip" type="button">
-                <img src="assets/icons/ico_skip.svg?v=20261121hd98" alt="" class="sp-btn-ico" />
+                <img src="assets/icons/ico_skip.svg?v=20261121hd99" alt="" class="sp-btn-ico" />
                 <span>1티어</span>
-                <img src="assets/icons/ico_gem.svg?v=20261121hd98" alt="" class="sp-btn-ico" />
+                <img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="" class="sp-btn-ico" />
                 <span>100</span>
               </button>
             </div>
@@ -1127,7 +1144,7 @@
         </div>
         <div class="sp-skip-body">
           <div class="sp-skip-gem-wrap">
-            <img src="assets/icons/ico_gem.svg?v=20261121hd98" alt="보석" class="sp-skip-gem-hero" />
+            <img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="보석" class="sp-skip-gem-hero" />
           </div>
           <div id="sp-skip-tier-range" class="sp-skip-tier-range">Lv.0 → Lv.1</div>
           <div id="sp-skip-desc" class="sp-skip-desc">보석 100개로 1티어를 건너뜁니다.</div>
@@ -1135,7 +1152,7 @@
           <div class="sp-skip-actions">
             <button id="btn-sp-skip-cancel" class="sp-skip-cancel-btn" type="button">취소</button>
             <button id="btn-sp-skip-confirm" class="sp-skip-confirm-btn" type="button">
-              <img src="assets/icons/ico_gem.svg?v=20261121hd98" alt="" class="sp-btn-ico" />
+              <img src="assets/icons/ico_gem.svg?v=20261121hd99" alt="" class="sp-btn-ico" />
               <span id="sp-skip-confirm-txt">100 건너뛰기</span>
             </button>
           </div>
@@ -1148,14 +1165,16 @@
       <div class="cr-modal settings-arcade-modal vault-modal">
         <div class="cr-modal-bar settings-arcade-bar">
           <div class="score-road-title-wrap">
-            <span class="settings-bar-title"><span class="ui-ico-slot ui-ico-sm" data-ui-icon="chest" data-ui-size="sm" aria-hidden="true">📦</span> 상자 보관함</span>
+            <span class="settings-bar-title"><img src="assets/icons/ico_chest.png?v=20261121hd65" alt="" class="ui-ico ui-ico-sm" /> 상자 보관함</span>
             <span id="vault-total-pill" class="score-road-best-pill">보유 0개</span>
             <span id="vault-ticket-pill" class="vault-ticket-pill"><img src="assets/ui/gacha_ticket.png?v=20261121hd56" alt="뽑기권" class="ticket-ico sm" /> 뽑기권 0장</span>
           </div>
           <div class="score-road-bar-actions">
-            <button id="btn-vault-open-all" class="cr-blue-btn vault-open-all-btn hidden" type="button">⚡ 전체 열기</button>
-            <button id="btn-vault-go-gacha" class="cr-gold-btn vault-go-gacha-btn" type="button">🌦️ 스킨 뽑기</button>
-            <button id="btn-close-vault" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+            <button id="btn-vault-open-all" class="cr-blue-btn vault-open-all-btn hidden" type="button">전체 열기</button>
+            <button id="btn-vault-go-gacha" class="cr-gold-btn vault-go-gacha-btn" type="button">스킨 뽑기</button>
+            <button id="btn-close-vault" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </button>
           </div>
         </div>
         <div id="vault-modal-grid" class="vault-modal-grid"></div>
@@ -1166,14 +1185,16 @@
     <div id="vault-batch-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="상자 일괄 개봉 결과">
       <div class="cr-modal settings-arcade-modal vault-batch-modal">
         <div class="cr-modal-bar settings-arcade-bar">
-          <span id="vault-batch-title" class="settings-bar-title">⚡ 상자 일괄 개봉 결과</span>
-          <button id="btn-vault-batch-x" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+          <span id="vault-batch-title" class="settings-bar-title">상자 일괄 개봉 결과</span>
+          <button id="btn-vault-batch-x" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
         <div class="modal-body vault-batch-body">
           <div id="vault-batch-summary" class="vault-batch-summary"></div>
           <div id="vault-batch-grid" class="vault-batch-grid"></div>
           <div class="vault-batch-actions">
-            <button id="btn-vault-batch-equip" class="cr-blue-btn hidden" type="button">✨ 신규 스킨 장착</button>
+            <button id="btn-vault-batch-equip" class="cr-blue-btn hidden" type="button">신규 스킨 장착</button>
             <button id="btn-vault-batch-close" class="cr-gold-btn" type="button">확인</button>
           </div>
         </div>
@@ -1184,8 +1205,8 @@
     <div id="gacha-wish-overlay" class="modal-overlay gacha-wish-overlay hidden" role="dialog" aria-modal="true" aria-label="스킨 뽑기 연출">
       <canvas id="gacha-wish-canvas" class="gacha-wish-canvas"></canvas>
       <div id="gacha-wish-flash" class="gacha-wish-flash" aria-hidden="true"></div>
-      <div id="gacha-wish-banner" class="gacha-wish-banner hidden" aria-live="polite">✦ 사계절 기상 소환! ✦</div>
-      <button id="btn-gacha-wish-skip" class="gacha-wish-skip-btn" type="button">건너뛰기 ⏭️</button>
+      <div id="gacha-wish-banner" class="gacha-wish-banner hidden" aria-live="polite">사계절 기상 소환</div>
+      <button id="btn-gacha-wish-skip" class="gacha-wish-skip-btn" type="button">건너뛰기</button>
     </div>
 
     <!-- ================= BRAWL STARS STYLE SKIN GACHA RESULT OVERLAY (ZERO-SCROLL 1-PULL / 10-PULL) ================= -->
@@ -1211,8 +1232,10 @@
     <div id="gacha-history-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="스킨 뽑기 내역">
       <div class="cr-modal settings-arcade-modal gacha-history-modal">
         <div class="cr-modal-bar settings-arcade-bar">
-          <span class="settings-bar-title">📜 스킨 뽑기 내역 (최근 50회)</span>
-          <button id="btn-close-gacha-history" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">✕</button>
+          <span class="settings-bar-title">스킨 뽑기 내역 (최근 50회)</span>
+          <button id="btn-close-gacha-history" class="modal-x-btn settings-x-btn" type="button" aria-label="닫기">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+          </button>
         </div>
         <div id="gacha-history-list" class="modal-body modal-scroll-body gacha-history-list"></div>
       </div>
@@ -1277,9 +1300,11 @@
             <span>서울 실시간 날씨</span>
           </span>
           <div class="score-road-bar-actions">
-            <button id="btn-weather-refresh" class="weather-refresh-btn" type="button" aria-label="날씨 갱신">
-              <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-                <path d="M20 11a8 8 0 1 0 2 5.3M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <button id="btn-weather-refresh" class="weather-refresh-btn bs-refresh-btn" type="button" aria-label="날씨 갱신">
+              <svg class="bs-refresh-svg" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                <path d="M19.8 11a7.8 7.8 0 1 0 1.6 5.4" fill="none" stroke="#071022" stroke-width="5" stroke-linecap="round"/>
+                <path d="M19.8 11a7.8 7.8 0 1 0 1.6 5.4" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+                <polygon points="22.8,12.2 14.8,12.2 21.2,5.6" fill="#ffffff" stroke="#071022" stroke-width="1.6" stroke-linejoin="round"/>
               </svg>
               <span>갱신</span>
             </button>
@@ -1324,14 +1349,14 @@
   <!-- Official Firebase Auth SDK (Google Real OAuth) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="js/data.js?v=20261121hd98"></script>
-  <script src="js/ui-icons.js?v=20261121hd98"></script>
-  <script src="js/weather-live.js?v=20261121hd98"></script>
-  <script src="js/audio.js?v=20261121hd98"></script>
-  <script src="js/studio-intro.js?v=20261121hd98"></script>
-  <script src="js/online.js?v=20261121hd98"></script>
-  <script src="js/renderer.js?v=20261121hd98"></script>
-  <script src="js/game.js?v=20261121hd98"></script>
+  <script src="js/data.js?v=20261121hd99"></script>
+  <script src="js/ui-icons.js?v=20261121hd99"></script>
+  <script src="js/weather-live.js?v=20261121hd99"></script>
+  <script src="js/audio.js?v=20261121hd99"></script>
+  <script src="js/studio-intro.js?v=20261121hd99"></script>
+  <script src="js/online.js?v=20261121hd99"></script>
+  <script src="js/renderer.js?v=20261121hd99"></script>
+  <script src="js/game.js?v=20261121hd99"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => {

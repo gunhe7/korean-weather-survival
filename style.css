@@ -17018,3 +17018,98 @@ input:focus-visible {
     justify-content: center;
   }
 }
+
+/* =========================================================================
+   SIMPLE BRAWL STARS BUTTONS + BRAWL REFRESH ICON + CLEAN CHAR TAB (v20261121hd99)
+   ========================================================================= */
+.bs-hdr-pill,
+.bs-prob-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 9px !important;
+  border: 2.4px solid #071022 !important;
+  box-shadow: 0 3.5px 0 #071022, inset 0 1.5px 0 rgba(255, 255, 255, 0.42) !important;
+  transform: skewX(-4deg);
+  letter-spacing: -0.2px;
+  text-shadow: 0 1.4px 0 #071022;
+}
+
+.bs-hdr-pill:active,
+.bs-prob-btn:active {
+  transform: skewX(-4deg) translateY(2px);
+  box-shadow: 0 1.5px 0 #071022 !important;
+}
+
+.bs-refresh-btn {
+  background: linear-gradient(180deg, #4ec6ff 0%, #1977e0 100%) !important;
+  color: #ffffff !important;
+}
+
+.bs-refresh-svg {
+  flex-shrink: 0;
+  display: block;
+  transition: transform 0.28s ease;
+}
+
+.bs-refresh-btn:active .bs-refresh-svg {
+  transform: rotate(150deg);
+}
+
+#home-weather-btn-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#home-weather-btn-ico svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+#view-chars {
+  padding-top: 6px !important;
+}
+
+.rank-empty-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.rank-row.top1 .rank-medal,
+.rank-row.top2 .rank-medal,
+.rank-row.top3 .rank-medal {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 2px solid #071022;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 2.5px 0 #071022;
+  transform: skewX(-4deg);
+}
+
+.rank-row.top1 .rank-medal {
+  background: linear-gradient(180deg, #ffe554, #ed9308);
+  color: #241000;
+  text-shadow: none;
+}
+
+.rank-row.top2 .rank-medal {
+  background: linear-gradient(180deg, #e8f1ff, #9db4d4);
+  color: #0b1b36;
+  text-shadow: none;
+}
+
+.rank-row.top3 .rank-medal {
+  background: linear-gradient(180deg, #f2aa6b, #b85c1c);
+  color: #ffffff;
+  text-shadow: 0 1.2px 0 #071022;
+}

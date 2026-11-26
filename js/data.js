@@ -7,7 +7,7 @@ window.RUN_DATA = (function () {
     {
       id: 'spring',
       name: '봄',
-      icon: '🌸',
+      icon: '',
       weatherLabel: '황사 · 미세먼지 · 꽃샘추위',
       hazards: '황사 구름 · 미세먼지 스모그 · 꽃샘 강풍 · 그루터기 · 라바콘',
       tip: '황사·미세먼지 경보 시 마스크 버튼을 눌러 착용하세요!',
@@ -25,7 +25,7 @@ window.RUN_DATA = (function () {
     {
       id: 'summer',
       name: '여름',
-      icon: '☀️',
+      icon: '',
       weatherLabel: '폭염 · 장마 폭우 · 침수',
       hazards: '폭염 열기 · 침수 파도 · 침수 바리케이드 · 날아오는 우산 · 번개구름',
       tip: '폭우엔 우산, 폭염엔 파라솔·나무 그늘, 침수엔 차 지붕을 밟으세요!',
@@ -43,7 +43,7 @@ window.RUN_DATA = (function () {
     {
       id: 'autumn',
       name: '가을',
-      icon: '🍁',
+      icon: '',
       weatherLabel: '가을 태풍 · 강풍 · 단풍',
       hazards: '태풍 소용돌이 · 쓰러진 나무 · 낙엽 더미 · 도로 표지판 · 강풍',
       tip: '강풍이 불 땐 우산을 접고 슬라이드로 맞바람을 돌파하세요!',
@@ -61,7 +61,7 @@ window.RUN_DATA = (function () {
     {
       id: 'winter',
       name: '겨울',
-      icon: '❄️',
+      icon: '',
       weatherLabel: '북극한파 · 폭설 · 빙판길',
       hazards: '얼음 가시 · 폭설 눈더미 · 눈사람 · 고드름 낙하 · 눈보라',
       tip: '빙판길에선 착지·슬라이드 미끄러짐에 주의하세요!',
@@ -84,7 +84,7 @@ window.RUN_DATA = (function () {
       id: 'umbrella_master',
       name: '우비 소년',
       tier: '장마 특화',
-      icon: '☂️',
+      icon: '',
       spriteKey: 'yellow_idle_0',
       animSkin: 'yellow',
       animFrames: 3,
@@ -108,7 +108,7 @@ window.RUN_DATA = (function () {
       id: 'long_padding',
       name: '패딩 대원',
       tier: '자동 장비 · 입문',
-      icon: '🤖',
+      icon: '',
       spriteKey: 'blue_idle_0',
       animSkin: 'blue',
       animFrames: 3,
@@ -130,7 +130,7 @@ window.RUN_DATA = (function () {
       id: 'short_sleeve',
       name: '한복 소년',
       tier: '날씨 캔슬 · 전략',
-      icon: '☀️',
+      icon: '',
       spriteKey: 'hanbok_idle_0',
       animSkin: 'hanbok',
       animFrames: 3,
@@ -152,7 +152,7 @@ window.RUN_DATA = (function () {
       id: 'iced_americano',
       name: '스키어',
       tier: '3단 점프 · 숙련',
-      icon: '❄️',
+      icon: '',
       spriteKey: 'skier_idle_0',
       animSkin: 'skier',
       animFrames: 4,
@@ -174,7 +174,7 @@ window.RUN_DATA = (function () {
       id: 'fashionista',
       name: '산타',
       tier: '니어미스 · 생존',
-      icon: '🛡️',
+      icon: '',
       spriteKey: 'santa_idle_0',
       animSkin: 'santa',
       animFrames: 4,
@@ -214,18 +214,18 @@ window.RUN_DATA = (function () {
 
   // 일일 퀘스트 (매일 초기화 · 완료 시 황금 상자 1개!)
   const DAILY_MISSIONS = [
-    { id: 'daily_dist', metric: 'dist', title: '800m 달리기', icon: '🏃', target: 800, unit: 'm', rewardChest: 'gold' },
-    { id: 'daily_jumps', metric: 'jumps', title: '점프 35회 성공', icon: '⬆️', target: 35, unit: '회', rewardChest: 'gold' },
-    { id: 'daily_dodges', metric: 'dodges', title: '장애물 18회 회피', icon: '⚡', target: 18, unit: '회', rewardChest: 'gold' },
-    { id: 'daily_coins', metric: 'coins', title: '코인 30개 획득', icon: '🪙', target: 30, unit: '개', rewardChest: 'gold' }
+    { id: 'daily_dist', metric: 'dist', title: '800m 달리기', icon: '', iconKey: 'm_dist', target: 800, unit: 'm', rewardChest: 'gold' },
+    { id: 'daily_jumps', metric: 'jumps', title: '점프 35회 성공', icon: '', iconKey: 'm_jump', target: 35, unit: '회', rewardChest: 'gold' },
+    { id: 'daily_dodges', metric: 'dodges', title: '장애물 18회 회피', icon: '', iconKey: 'm_dodge', target: 18, unit: '회', rewardChest: 'gold' },
+    { id: 'daily_coins', metric: 'coins', title: '코인 30개 획득', icon: '', iconKey: 'coin', target: 30, unit: '개', rewardChest: 'gold' }
   ];
 
   // 주간 퀘스트 (매주 월요일 초기화 · 완료 시 다이아 상자 1개!)
   const WEEKLY_MISSIONS = [
-    { id: 'weekly_dist', metric: 'dist', title: '5,000m 누적 달리기', icon: '🌍', target: 5000, unit: 'm', rewardChest: 'diamond' },
-    { id: 'weekly_runs', metric: 'runs', title: '생존 도전 6회 플레이', icon: '🎮', target: 6, unit: '회', rewardChest: 'diamond' },
-    { id: 'weekly_dodges', metric: 'dodges', title: '장애물 90회 회피', icon: '💨', target: 90, unit: '회', rewardChest: 'diamond' },
-    { id: 'weekly_year2', metric: 'year2Runs', title: '2년 차 이상 생존 3회', icon: '🔥', target: 3, unit: '회', rewardChest: 'diamond' }
+    { id: 'weekly_dist', metric: 'dist', title: '5,000m 누적 달리기', icon: '', iconKey: 'm_dist', target: 5000, unit: 'm', rewardChest: 'diamond' },
+    { id: 'weekly_runs', metric: 'runs', title: '생존 도전 6회 플레이', icon: '', iconKey: 'm_play', target: 6, unit: '회', rewardChest: 'diamond' },
+    { id: 'weekly_dodges', metric: 'dodges', title: '장애물 90회 회피', icon: '', iconKey: 'm_dodge', target: 90, unit: '회', rewardChest: 'diamond' },
+    { id: 'weekly_year2', metric: 'year2Runs', title: '2년 차 이상 생존 3회', icon: '', iconKey: 'crown', target: 3, unit: '회', rewardChest: 'diamond' }
   ];
 
   // 스킨 등급 정의 (오직 4등급: 희귀 · 영웅 · 전설 · 신화! 마일리지 교환 가격 & 중복 골드 보상)
@@ -333,7 +333,7 @@ window.RUN_DATA = (function () {
     }
   ];
 
-  // 4종 상자 정의 (나무·은: 골드 구매 | 황금 40💎 · 다이아 100💎 | 뽑기권 교환 비율 포함!)
+  // 4종 상자 정의 (나무·은: 골드 구매 | 황금 40보석 · 다이아 100보석 | 뽑기권 교환 비율 포함!)
   const CHESTS = {
     wood: {
       id: 'wood',
@@ -373,7 +373,7 @@ window.RUN_DATA = (function () {
       icon: 'assets/chests/chest_gold_0.png',
       accent: '#ffd845',
       glow: 'rgba(255, 214, 62, 0.72)',
-      source: '달리기 중 획득 · 일일 퀘스트 · 업적 · 보석 상점(40💎)',
+      source: '달리기 중 획득 · 일일 퀘스트 · 업적 · 보석 상점(40 보석)',
       shopGold: null,
       shopGems: 40,
       ticketCost: 5,
@@ -389,7 +389,7 @@ window.RUN_DATA = (function () {
       icon: 'assets/chests/chest_diamond_0.png',
       accent: '#78e6ff',
       glow: 'rgba(148, 128, 255, 0.78)',
-      source: '달리기 중 희귀 등장 · 주간 퀘스트 · 7일 출석 · 보석 상점(100💎)',
+      source: '달리기 중 희귀 등장 · 주간 퀘스트 · 7일 출석 · 보석 상점(100 보석)',
       shopGold: null,
       shopGems: 100,
       ticketCost: 2,
@@ -408,23 +408,23 @@ window.RUN_DATA = (function () {
     { day: 2, label: '은 상자', chest: 'silver', gold: 0, gems: 0, booster: null },
     { day: 3, label: '나무 상자 + 100G', chest: 'wood', gold: 100, gems: 0, booster: null },
     { day: 4, label: '황금 상자', chest: 'gold', gold: 0, gems: 0, booster: null },
-    { day: 5, label: '은 상자 + 2💎', chest: 'silver', gold: 0, gems: 2, booster: null },
-    { day: 6, label: '황금 상자 + 3💎', chest: 'gold', gold: 0, gems: 3, booster: null },
+    { day: 5, label: '은 상자 + 보석 2개', chest: 'silver', gold: 0, gems: 2, booster: null },
+    { day: 6, label: '황금 상자 + 보석 3개', chest: 'gold', gold: 0, gems: 3, booster: null },
     { day: 7, label: '다이아 상자', chest: 'diamond', gold: 0, gems: 0, booster: null }
   ];
 
   // 업적 시스템 (10종 — 난이도별 은 / 황금 / 다이아 상자 지급!)
   const ACHIEVEMENTS = [
-    { id: 'dist_500', icon: '🏃', title: '첫 걸음마', desc: '단일 주행 500m 도달', metric: 'bestDistanceM', target: 500, rewardChest: 'silver' },
-    { id: 'dist_1500', icon: '🏙️', title: '도심 마라토너', desc: '단일 주행 1,500m 도달', metric: 'bestDistanceM', target: 1500, rewardChest: 'gold' },
-    { id: 'dist_3000', icon: '🇰🇷', title: '대한민국 종주', desc: '단일 주행 3,000m 도달', metric: 'bestDistanceM', target: 3000, rewardChest: 'diamond' },
-    { id: 'coins_200', icon: '🪙', title: '코인 수집가', desc: '누적 코인 80개 획득', metric: 'totalCoinsEver', target: 80, rewardChest: 'silver' },
-    { id: 'coins_1000', icon: '💰', title: '황금 만능주의', desc: '누적 코인 300개 획득', metric: 'totalCoinsEver', target: 300, rewardChest: 'gold' },
-    { id: 'year_2', icon: '🗓️', title: '사계절 정복자', desc: '2년 차 이상 생존 돌파', metric: 'bestYear', target: 2, rewardChest: 'gold' },
-    { id: 'year_3', icon: '🔥', title: '기후 생존왕', desc: '3년 차 이상 생존 돌파', metric: 'bestYear', target: 3, rewardChest: 'diamond' },
-    { id: 'dodge_10', icon: '⚡', title: '회피의 달인', desc: '장애물 10연속 회피 성공', metric: 'maxDodgeComboEver', target: 10, rewardChest: 'gold' },
-    { id: 'chars_3', icon: '👥', title: '동료 수집가', desc: '캐릭터 3종 이상 해금', metric: 'unlockedCount', target: 3, rewardChest: 'gold' },
-    { id: 'chars_6', icon: '👑', title: 'K-날씨 올컬렉터', desc: '캐릭터 5종 전체 수집 완료', metric: 'unlockedCount', target: 5, rewardChest: 'diamond' }
+    { id: 'dist_500', icon: '', iconKey: 'm_dist', title: '첫 걸음마', desc: '단일 주행 500m 도달', metric: 'bestDistanceM', target: 500, rewardChest: 'silver' },
+    { id: 'dist_1500', icon: '', iconKey: 'm_dist', title: '도심 마라토너', desc: '단일 주행 1,500m 도달', metric: 'bestDistanceM', target: 1500, rewardChest: 'gold' },
+    { id: 'dist_3000', icon: '', iconKey: 'crown', title: '대한민국 종주', desc: '단일 주행 3,000m 도달', metric: 'bestDistanceM', target: 3000, rewardChest: 'diamond' },
+    { id: 'coins_200', icon: '', iconKey: 'coin', title: '코인 수집가', desc: '누적 코인 80개 획득', metric: 'totalCoinsEver', target: 80, rewardChest: 'silver' },
+    { id: 'coins_1000', icon: '', iconKey: 'coin', title: '황금 만능주의', desc: '누적 코인 300개 획득', metric: 'totalCoinsEver', target: 300, rewardChest: 'gold' },
+    { id: 'year_2', icon: '', iconKey: 'm_play', title: '사계절 정복자', desc: '2년 차 이상 생존 돌파', metric: 'bestYear', target: 2, rewardChest: 'gold' },
+    { id: 'year_3', icon: '', iconKey: 'crown', title: '기후 생존왕', desc: '3년 차 이상 생존 돌파', metric: 'bestYear', target: 3, rewardChest: 'diamond' },
+    { id: 'dodge_10', icon: '', iconKey: 'm_dodge', title: '회피의 달인', desc: '장애물 10연속 회피 성공', metric: 'maxDodgeComboEver', target: 10, rewardChest: 'gold' },
+    { id: 'chars_3', icon: '', iconKey: 'm_play', title: '동료 수집가', desc: '캐릭터 3종 이상 해금', metric: 'unlockedCount', target: 3, rewardChest: 'gold' },
+    { id: 'chars_6', icon: '', iconKey: 'crown', title: 'K-날씨 올컬렉터', desc: '캐릭터 5종 전체 수집 완료', metric: 'unlockedCount', target: 5, rewardChest: 'diamond' }
   ];
 
   // 스테이지(연도/계절 최초 도달) 마일스톤 보상
@@ -439,35 +439,35 @@ window.RUN_DATA = (function () {
   // 실시간 한국 기상 환경 변수 패턴 (조작감·물리·장비 연동)
   const WEATHER_EVENTS = {
     clear: {
-      id: 'clear', icon: '☀️', label: '맑음',
+      id: 'clear', icon: '', label: '맑음',
       actionTip: '쾌청한 구간', color: '#63d8ff'
     },
     dust: {
-      id: 'dust', icon: '🌫️', label: '황사 · 미세먼지',
+      id: 'dust', icon: '', label: '황사 · 미세먼지',
       actionTip: '마스크 착용 필수!', color: '#e6c24c'
     },
     gust: {
-      id: 'gust', icon: '💨', label: '태풍 · 강풍 돌풍',
+      id: 'gust', icon: '', label: '태풍 · 강풍 돌풍',
       actionTip: '우산 접기 · 슬라이드!', color: '#a6e4ff'
     },
     rain: {
-      id: 'rain', icon: '🌧️', label: '국지성 폭우',
+      id: 'rain', icon: '', label: '국지성 폭우',
       actionTip: '우산 펴기 · 물벼락 주의!', color: '#5cb3ff'
     },
     flood: {
-      id: 'flood', icon: '🌊', label: '장마 도로 침수',
+      id: 'flood', icon: '', label: '장마 도로 침수',
       actionTip: '우산 펴기 · 차 지붕 밟기!', color: '#3b82d6'
     },
     heat: {
-      id: 'heat', icon: '☀️', label: '폭염 땡볕 경보',
+      id: 'heat', icon: '', label: '폭염 땡볕 경보',
       actionTip: '우산(양산) 펴기!', color: '#ff8a3d'
     },
     ice_road: {
-      id: 'ice_road', icon: '🧊', label: '겨울 빙판길',
+      id: 'ice_road', icon: '', label: '겨울 빙판길',
       actionTip: '미끄럼 · 슬라이드 가속 주의!', color: '#8ee8ff'
     },
     covid: {
-      id: 'covid', icon: '🦠', label: '코로나 바이러스 경보',
+      id: 'covid', icon: '', label: '코로나 바이러스 경보',
       actionTip: '돌진 타이밍에 맞춰 마스크 착용!', color: '#ff3b5c'
     }
   };
