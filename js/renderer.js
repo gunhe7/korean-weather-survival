@@ -102,6 +102,9 @@ window.RunRenderer = (function () {
   });
   CHAR_VFX_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/chars/${key}.png?v=${SPRITE_VER}`; });
   SPRITE_URL_MAP['ice_emperor_shield'] = 'assets/chars/ice_emperor_shield.png?v=20261121hd89';
+  for (let bf = 0; bf < 6; bf++) {
+    SPRITE_URL_MAP[`fx_booster_${bf}`] = `assets/chars/fx_booster_${bf}.png?v=20261121hd105`;
+  }
   DESIGN_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/design/${key}.png?v=${SPRITE_VER}`; });
   SPRITE_URL_MAP['ui_fever'] = 'assets/design/ui_fever.png?v=20261121hd103';
   ATLAS_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/atlas/${key}.png?v=${SPRITE_VER}`; });
@@ -144,7 +147,7 @@ window.RunRenderer = (function () {
   const CORE_BOOT_KEYS = [
     'item_coin', 'item_coin_1', 'item_coin_2', 'item_coin_side', 'item_star',
     'orb_bolt', 'orb_magnet', 'orb_potion', 'spr_umbrella', 'spr_mask', 'spr_shield',
-    'ui_fever', 'fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring',
+    'ui_fever', 'fx_booster_0', 'fx_booster_1', 'fx_booster_2', 'fx_booster_3', 'fx_booster_4', 'fx_booster_5', 'fx_shield_ring',
     'chest_wood_0', 'chest_silver_0', 'chest_gold_0', 'chest_diamond_0',
     'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'
   ];
@@ -1394,22 +1397,23 @@ window.RunRenderer = (function () {
     ctx.fill();
     ctx.restore();
 
-    // Uploaded Golden / Blue Dash VFX streaks OR Custom Mythic Booster Jet (e.g. Hades 12-frame flipped purple flame!)
+    // Default 6-frame Flipped Blue Comic Jet Booster (all non-Mythic chars/skins + Hoodie Catgirl; same for FEVER!) OR Custom Mythic Booster Jet
     if (!dead && (feverTimer > 0 || speedBoostTimer > 0)) {
       let dashSpr = null;
-      const isCustomBooster = Boolean(skinDef && skinDef.customBoosterPrefix);
+      const isCustomBooster = Boolean(skinDef && skinDef.customBoosterPrefix && skinDef.id !== 'catgirl_hoodie');
       if (isCustomBooster) {
         const bf = Math.floor(t * 18) % (skinDef.customBoosterFrames || 12);
         dashSpr = getSprite(`${skinDef.customBoosterPrefix}_${bf}`) || getSprite(`${skinDef.customBoosterPrefix}_0`);
       } else {
-        dashSpr = getSprite(feverTimer > 0 ? 'fx_dash_gold' : 'fx_dash_blue');
+        const bf = Math.floor(t * 15) % 6;
+        dashSpr = getSprite(`fx_booster_${bf}`) || getSprite('fx_booster_0');
       }
       if (dashSpr) {
-        const pulse = 0.95 + Math.sin(t * 22) * 0.06;
-        const dh = Math.round((isCustomBooster ? (isProne ? 36 : 44) : (isProne ? 26 : 34)) * pulse);
+        const pulse = 0.96 + Math.sin(t * 20) * 0.05;
+        const dh = Math.round((isCustomBooster ? (isProne ? 36 : 44) : (isProne ? 30 : 38)) * pulse);
         const dw = Math.round(dh * (dashSpr.naturalWidth / dashSpr.naturalHeight));
         ctx.save();
-        ctx.globalAlpha = isCustomBooster ? 0.94 : 0.88;
+        ctx.globalAlpha = isCustomBooster ? 0.94 : 0.95;
         ctx.imageSmoothingEnabled = true;
         const offsetBack = isCustomBooster ? 6 : 2;
         ctx.drawImage(dashSpr, Math.floor(cx - dw - offsetBack), Math.floor(cy - (isProne ? 18 : scaleHeight * 0.48) - dh / 2), dw, dh);
