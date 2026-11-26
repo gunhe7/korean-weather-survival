@@ -23,6 +23,7 @@ window.RunRenderer = (function () {
   let dustPuffs = [];
   let floaters = [];
   let pickupBursts = [];
+  let floodLevel = 0;
 
   // ===================== SMART ON-DEMAND & TARGETED PRELOAD SPRITE MANAGER =====================
   // Stable static sprite version keeps unchanged PNGs 100% cached across code deploys!
@@ -249,6 +250,7 @@ window.RunRenderer = (function () {
     floaters = [];
     dustPuffs = [];
     pickupBursts = [];
+    floodLevel = 0;
   }
 
   function spawnFloater(text, color, x, y) {
@@ -777,23 +779,84 @@ window.RunRenderer = (function () {
     const isCovidParticles = weatherEvent === 'covid';
     const isBlizzard = seasonId === 'winter' && (weatherEvent === 'gust' || weatherEvent === 'ice_road');
 
-    // Batched Weather Particles (1~2 GPU draw calls instead of 58 individual paths/save/restores!)
+    // Batched Weather Particles (realistic layered rain texture stopping cleanly at water/ground surface!)
     const len = particles.length;
     if (heavyRain) {
-      ctx.strokeStyle = 'rgba(195, 234, 255, 0.86)';
-      ctx.lineWidth = 1.6;
+      const surfaceY = floodLevel > 0.04 ? (GROUND_Y - 19 * floodLevel + 3) : (GROUND_Y + 2);
+      const rainSpanH = Math.max(40, surfaceY - minY);
+      const isFloodRain = weatherEvent === 'flood';
+      const rainTiltX = isFloodRain ? -6.2 : -5.2;
+      const rainLenY = isFloodRain ? 15.5 : 13.0;
+
+      for (let idx = 0; idx < len; idx++) {
+        const p = particles[idx];
+        const spdMult = isFloodRain ? 1.18 : 1.0;
+        p.x -= 175 * dt * p.v * spdMult;
+        p.y += 355 * dt * p.v * spdMult;
+        if (p.y > surfaceY) {
+          p.y = minY - 8 - Math.random() * 18;
+          p.x = minX + Math.random() * (spanW + 90);
+        }
+        if (p.x < minX - 16) {
+          p.x = maxX + 12 + Math.random() * 40;
+          p.y = minY + Math.random() * rainSpanH;
+        }
+      }
+
+      ctx.save();
       ctx.lineCap = 'round';
+      // Pass 1: Soft far/mid misty rain sheet for depth
+      ctx.strokeStyle = isFloodRain ? 'rgba(182, 224, 255, 0.44)' : 'rgba(188, 228, 255, 0.36)';
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
       for (let idx = 0; idx < len; idx++) {
         const p = particles[idx];
-        p.x -= 165 * dt * p.v;
-        p.y += 315 * dt * p.v;
-        if (p.y > maxY) { p.y = minY - 6; p.x = minX + Math.random() * (spanW + 60); }
-        if (p.x < minX - 10) { p.x = maxX + 10; p.y = minY + Math.random() * spanH; }
+        if (p.s !== 1) continue;
+        const endY = Math.min(surfaceY, p.y + rainLenY * 1.15);
+        const ratio = Math.max(0, (endY - p.y) / (rainLenY * 1.15));
+        if (ratio <= 0.05) continue;
         ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x - 5.5, p.y + 12);
+        ctx.lineTo(p.x + rainTiltX * 1.15 * ratio, endY);
       }
       ctx.stroke();
+
+      // Pass 2: Crisp bright foreground rain droplets
+      ctx.strokeStyle = isFloodRain ? 'rgba(232, 249, 255, 0.86)' : 'rgba(220, 244, 255, 0.78)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let idx = 0; idx < len; idx++) {
+        const p = particles[idx];
+        if (p.s === 1) continue;
+        const endY = Math.min(surfaceY, p.y + rainLenY);
+        const ratio = Math.max(0, (endY - p.y) / rainLenY);
+        if (ratio <= 0.05) continue;
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + rainTiltX * ratio, endY);
+      }
+      ctx.stroke();
+
+      // Subtle wet rain-hit ground shimmer & micro splashes during regular rain (when not fully flooded)
+      if (floodLevel < 0.35) {
+        const sheenA = (1 - floodLevel / 0.35) * 0.24;
+        ctx.fillStyle = `rgba(140, 210, 255, ${sheenA.toFixed(3)})`;
+        ctx.fillRect(minX - 10, GROUND_Y - 2, spanW + 20, 4);
+        ctx.strokeStyle = `rgba(225, 248, 255, ${(sheenA * 2.1).toFixed(3)})`;
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        const hitCnt = IS_MOBILE ? 6 : 9;
+        for (let k = 0; k < hitCnt; k++) {
+          const cycle = (t * 2.8 + k * 0.37) % 1;
+          const sx = minX + (((k * 97 + Math.floor(t * 2.8 + k * 0.37) * 53) % Math.max(200, Math.floor(spanW))) + spanW) % spanW;
+          const sy = GROUND_Y + 0.5;
+          const spread = 2 + cycle * 4.5;
+          const lift = Math.sin(cycle * Math.PI) * 3.8;
+          ctx.moveTo(sx - spread, sy - lift);
+          ctx.lineTo(sx, sy);
+          ctx.lineTo(sx + spread, sy - lift);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
     } else if (isCovidParticles || heavyDust) {
       const col1 = isCovidParticles ? 'rgba(255, 58, 98, 0.85)' : 'rgba(235, 198, 75, 0.82)';
       const col2 = isCovidParticles ? 'rgba(255, 130, 155, 0.72)' : 'rgba(196, 152, 46, 0.74)';
@@ -882,27 +945,155 @@ window.RunRenderer = (function () {
     }
   }
 
-  // ===================== KOREAN STREET INTERACTIVE FEATURES (100% UPLOADED SPRITES!) =====================
-  function drawStreetFeatures(ctx, run, t) {
-    // 1. Rising Floodwater Waves strictly using uploaded sp_flood_wave1 / sp_flood_wave2!
-    if (run.weatherEvent === 'flood') {
-      const waveY = Math.round(Math.sin(t * 7) * 2);
-      const minX = curView.minX;
-      const maxX = curView.maxX;
-      ctx.fillStyle = 'rgba(34, 110, 198, 0.45)';
-      ctx.fillRect(minX - 10, GROUND_Y - 12 + waveY, (maxX - minX) + 20, 18);
-      const wSpr = getSprite('sp_flood_wave2') || getSprite('sp_flood_wave1');
-      if (wSpr) {
-        const wOff = Math.floor(run.scroll * 0.75) % 58;
-        const wStart = Math.floor((minX - 58) / 58) * 58 - wOff;
-        ctx.save();
-        ctx.globalAlpha = 0.85;
-        for (let wx = wStart; wx < maxX + 60; wx += 58) {
-          ctx.drawImage(wSpr, Math.floor(wx), GROUND_Y - 22 + waveY, 54, 26);
-        }
-        ctx.restore();
+  // ===================== REALISTIC TRANSLUCENT FLOODED RAINWATER (NO CARTOON WAVES!) =====================
+  function traceFloodSurface(ctx, minX, maxX, baseY, scroll, t) {
+    const step = 18;
+    const startX = minX - 16;
+    const endX = maxX + 20;
+    const phaseA = scroll * 0.032 + t * 2.6;
+    const phaseB = scroll * 0.068 - t * 4.1;
+    ctx.moveTo(startX, baseY + Math.sin(startX * 0.028 + phaseA) * 1.15 + Math.sin(startX * 0.064 + phaseB) * 0.55);
+    for (let x = startX + step; x <= endX; x += step) {
+      const wy = baseY + Math.sin(x * 0.028 + phaseA) * 1.15 + Math.sin(x * 0.064 + phaseB) * 0.55;
+      ctx.lineTo(x, wy);
+    }
+  }
+
+  function drawFloodWaterBack(ctx, run, t) {
+    if (floodLevel <= 0.01) return;
+    const minX = curView.minX;
+    const maxX = curView.maxX;
+    const depth = 19 * floodLevel;
+    const waterTopY = GROUND_Y - depth;
+    const waterBotY = GROUND_Y + 6;
+
+    ctx.save();
+    ctx.beginPath();
+    traceFloodSurface(ctx, minX, maxX, waterTopY, run.scroll, t);
+    ctx.lineTo(maxX + 20, waterBotY);
+    ctx.lineTo(minX - 16, waterBotY);
+    ctx.closePath();
+    const bgGrad = ctx.createLinearGradient(0, waterTopY, 0, waterBotY);
+    bgGrad.addColorStop(0, `rgba(92, 168, 228, ${(0.24 * floodLevel).toFixed(3)})`);
+    bgGrad.addColorStop(0.55, `rgba(28, 98, 174, ${(0.34 * floodLevel).toFixed(3)})`);
+    bgGrad.addColorStop(1, `rgba(14, 52, 112, ${(0.42 * floodLevel).toFixed(3)})`);
+    ctx.fillStyle = bgGrad;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFloodWaterFront(ctx, run, t) {
+    if (floodLevel <= 0.01) return;
+    const minX = curView.minX;
+    const maxX = curView.maxX;
+    const spanW = maxX - minX;
+    const depth = 19 * floodLevel;
+    const waterTopY = GROUND_Y - depth;
+    const waterBotY = GROUND_Y + 7;
+
+    ctx.save();
+    // 1. Translucent pooled rainwater body overlapping lower legs & obstacle bases
+    ctx.beginPath();
+    traceFloodSurface(ctx, minX, maxX, waterTopY, run.scroll, t);
+    ctx.lineTo(maxX + 20, waterBotY);
+    ctx.lineTo(minX - 16, waterBotY);
+    ctx.closePath();
+    const fgGrad = ctx.createLinearGradient(0, waterTopY, 0, waterBotY);
+    fgGrad.addColorStop(0, `rgba(168, 226, 255, ${(0.32 * floodLevel).toFixed(3)})`);
+    fgGrad.addColorStop(0.28, `rgba(54, 148, 224, ${(0.38 * floodLevel).toFixed(3)})`);
+    fgGrad.addColorStop(1, `rgba(14, 62, 132, ${(0.50 * floodLevel).toFixed(3)})`);
+    ctx.fillStyle = fgGrad;
+    ctx.fill();
+
+    // 2. Clip inside water body for scrolling underwater light shimmer & rain caustics
+    ctx.save();
+    ctx.clip();
+    const bandCnt = IS_MOBILE ? 7 : 11;
+    for (let i = 0; i < bandCnt; i++) {
+      const bx = minX + (((i * 78 - run.scroll * 0.82 - t * 24) % (spanW + 90) + (spanW + 90)) % (spanW + 90)) - 45;
+      const by = waterTopY + 3 + ((i * 7) % Math.max(5, Math.floor(depth - 2)));
+      const bw = 20 + (i % 3) * 14;
+      const shimmer = 0.14 + Math.sin(t * 5.2 + i * 1.7) * 0.08;
+      ctx.fillStyle = `rgba(218, 246, 255, ${(shimmer * floodLevel).toFixed(3)})`;
+      ctx.fillRect(Math.floor(bx), Math.floor(by), bw, 1.5);
+    }
+    ctx.restore();
+
+    // 3. Crisp glassy surface meniscus line (sky light reflection on rainwater)
+    ctx.beginPath();
+    traceFloodSurface(ctx, minX, maxX, waterTopY, run.scroll, t);
+    ctx.strokeStyle = `rgba(228, 249, 255, ${(0.82 * floodLevel).toFixed(3)})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    traceFloodSurface(ctx, minX, maxX, waterTopY + 2.2, run.scroll, t);
+    ctx.strokeStyle = `rgba(130, 214, 255, ${(0.36 * floodLevel).toFixed(3)})`;
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+
+    // 4. Organic raindrop impact ripples & micro water-crown splashes on the flooded surface
+    const rippleCnt = IS_MOBILE ? 8 : 12;
+    for (let i = 0; i < rippleCnt; i++) {
+      const rate = 1.45 + (i % 3) * 0.35;
+      const rawPhase = t * rate + i * 0.43;
+      const cycle = rawPhase % 1;
+      const seed = Math.floor(rawPhase);
+      const rxBase = minX + (((i * 89 + seed * 67) % Math.max(200, Math.floor(spanW))) + spanW) % spanW;
+      const ryBase = waterTopY + 2.5 + ((i * 5 + seed * 3) % Math.max(4, Math.floor(depth * 0.55)));
+      const fade = (1 - cycle) * floodLevel;
+      const radX = 2.5 + cycle * 12.5;
+      const radY = 0.9 + cycle * 2.6;
+
+      ctx.strokeStyle = `rgba(225, 248, 255, ${(0.68 * fade).toFixed(3)})`;
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.ellipse(rxBase, ryBase, radX, radY, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Tiny bright upward rainwater crown droplet right at impact
+      if (cycle < 0.28) {
+        const sp = cycle / 0.28;
+        const lift = Math.sin(sp * Math.PI) * 5.2;
+        const spread = 1.5 + sp * 4.2;
+        ctx.strokeStyle = `rgba(240, 252, 255, ${(0.85 * (1 - sp) * floodLevel).toFixed(3)})`;
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(rxBase - spread, ryBase - lift);
+        ctx.lineTo(rxBase, ryBase);
+        ctx.lineTo(rxBase + spread, ryBase - lift);
+        ctx.stroke();
       }
     }
+
+    // 5. Runner wading foot-splash spray when running directly through the flooded rainwater
+    if (!run.dead && !run.dying && !run.onPlatform && run.playerY >= GROUND_Y - 5 && floodLevel > 0.25) {
+      const px = run.playerX;
+      const py = waterTopY + 3;
+      ctx.fillStyle = `rgba(232, 250, 255, ${(0.82 * floodLevel).toFixed(3)})`;
+      for (let k = 0; k < 5; k++) {
+        const pCycle = (t * 5.4 + k * 0.21) % 1;
+        const sx = px - 4 - pCycle * (16 + (k % 3) * 7);
+        const sy = py - Math.sin(pCycle * Math.PI) * (7 + (k % 2) * 5);
+        const dr = Math.max(0.9, (2.2 - pCycle * 1.4));
+        ctx.beginPath();
+        ctx.arc(sx, sy, dr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.strokeStyle = `rgba(230, 250, 255, ${(0.62 * floodLevel).toFixed(3)})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(px - 2, py + 1.5, 11 + Math.sin(t * 16) * 2.5, 2.4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  // ===================== KOREAN STREET INTERACTIVE FEATURES (100% UPLOADED SPRITES!) =====================
+  function drawStreetFeatures(ctx, run, t) {
+    // 1. Back layer of translucent rising floodwater (foreground glass layer renders over feet!)
+    drawFloodWaterBack(ctx, run, t);
 
     (run.features || []).forEach((f) => {
       const x = Math.floor(f.x);
@@ -994,18 +1185,27 @@ window.RunRenderer = (function () {
     } else if (car.phase === 'pass') {
       const x = Math.floor(car.x);
       const carSpr = getSprite('sp_red_car');
-      const waveSpr = getSprite('sp_flood_wave1') || getSprite('sp_flood_wave2');
       ctx.imageSmoothingEnabled = true;
-      if (waveSpr) {
-        const ow = getOutlinedObstacleSprite('sp_flood_wave_pass', waveSpr);
-        if (ow) {
-          const px = 62 * ow.padRatioX;
-          const py = 46 * ow.padRatioY;
-          ctx.drawImage(ow.canvas, x + 16 - px, GROUND_Y - 48 - py, 62 + px * 2, 46 + py * 2);
-        } else {
-          ctx.drawImage(waveSpr, x + 16, GROUND_Y - 48, 62, 46);
-        }
+      // Translucent rainwater tire-spray plume instead of cartoon wave stamp
+      ctx.save();
+      const sprayGrad = ctx.createRadialGradient(x + 42, GROUND_Y - 16, 4, x + 46, GROUND_Y - 20, 38);
+      sprayGrad.addColorStop(0, 'rgba(225, 248, 255, 0.78)');
+      sprayGrad.addColorStop(0.55, 'rgba(110, 198, 255, 0.45)');
+      sprayGrad.addColorStop(1, 'rgba(60, 150, 230, 0)');
+      ctx.fillStyle = sprayGrad;
+      ctx.beginPath();
+      ctx.ellipse(x + 44, GROUND_Y - 16, 36, 20, -0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(235, 252, 255, 0.86)';
+      for (let s = 0; s < 8; s++) {
+        const p = (t * 9 + s * 0.19) % 1;
+        const dx = x + 26 + p * 44 + (s % 3) * 5;
+        const dy = GROUND_Y - 6 - Math.sin(p * Math.PI) * (20 + (s % 3) * 8);
+        ctx.beginPath();
+        ctx.arc(dx, dy, 2.2 * (1 - p * 0.55), 0, Math.PI * 2);
+        ctx.fill();
       }
+      ctx.restore();
       if (carSpr) {
         const oc = getOutlinedObstacleSprite('sp_red_car_pass', carSpr);
         if (oc) {
@@ -2333,6 +2533,11 @@ window.RunRenderer = (function () {
     }
 
     const blend = run.seasonTransition !== undefined ? run.seasonTransition : 1;
+    const targetFlood = run.weatherEvent === 'flood' ? 1 : 0;
+    if (dt > 0) {
+      if (floodLevel < targetFlood) floodLevel = Math.min(targetFlood, floodLevel + dt * 1.15);
+      else if (floodLevel > targetFlood) floodLevel = Math.max(targetFlood, floodLevel - dt * 1.05);
+    }
     drawBackground(ctx, W, H, GROUND_Y, run.seasonId, run.scroll, t, run.prevSeasonId, blend, run.weatherEvent, curView);
 
     // FEVER TIME! Sky Banner — drawn behind all gameplay objects so it never obscures coins, obstacles, or the player!
@@ -2394,6 +2599,11 @@ window.RunRenderer = (function () {
       squashY: run.squashY !== undefined ? run.squashY : 1,
       scaleHeight: 62
     }, t);
+
+    // Foreground Translucent Flooded Rainwater (submerges lower legs & obstacle bases with ripples & splashes!)
+    if (floodLevel > 0.01) {
+      drawFloodWaterFront(ctx, run, t);
+    }
 
     // Corona Virus Timed Rush Attack & Sky Hailstone Drop Attack!
     drawCovidAttack(ctx, run.covidAttack, run.playerX, run.playerY, t);
