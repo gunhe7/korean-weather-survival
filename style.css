@@ -19055,3 +19055,25 @@ input:focus-visible {
     gap: 8px;
   }
 }
+
+/* =========================================================================
+   SEOUL FOUR-SEASONS PIXEL HOME LOBBY BACKGROUND (v20261121hd106)
+   ========================================================================= */
+#mobile-app.is-home-bg,
+#mobile-app:has(#view-home.active) {
+  background-color: #1b6fe8;
+  background-image: url('assets/home_bg.jpg?v=20261121hd106');
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+#mobile-app.is-home-bg #app-header,
+#mobile-app:has(#view-home.active) #app-header {
+  background: linear-gradient(180deg, rgba(7, 18, 42, 0.36) 0%, rgba(7, 18, 42, 0) 100%);
+}
+
+#mobile-app.is-home-bg .bs-home-stage .bs-spotlight,
+#mobile-app:has(#view-home.active) .bs-home-stage .bs-spotlight {
+  opacity: 0.34;
+}

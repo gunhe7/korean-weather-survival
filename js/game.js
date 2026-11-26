@@ -6333,6 +6333,8 @@
     }
     document.querySelectorAll('.tab-view').forEach((v) => v.classList.remove('active'));
     document.getElementById(`view-${tab}`).classList.add('active');
+    const appShell = document.getElementById('mobile-app');
+    if (appShell) appShell.classList.toggle('is-home-bg', tab === 'home');
     document.querySelectorAll('.nav-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.tab === tab);
     });
