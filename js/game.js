@@ -850,6 +850,11 @@
     btnCloseGachaHistory: document.getElementById('btn-close-gacha-history'),
     gachaHistoryList: document.getElementById('gacha-history-list'),
 
+    skinExchangeOverlay: document.getElementById('skin-exchange-overlay'),
+    btnCloseSkinExchange: document.getElementById('btn-close-skin-exchange'),
+    exchangeMileageVal: document.getElementById('exchange-mileage-val'),
+    skinExchangeBody: document.getElementById('skin-exchange-body'),
+
     tutRunHud: document.getElementById('tut-run-hud'),
     tutRunStepPill: document.getElementById('tut-run-step-pill'),
     tutRunTitle: document.getElementById('tut-run-title'),
@@ -4820,6 +4825,7 @@
     if (el.vaultOverlay && !el.vaultOverlay.classList.contains('hidden')) renderVaultModal();
     if (el.weatherOverlay && !el.weatherOverlay.classList.contains('hidden')) renderHomeWeatherTab();
     if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) renderModeSelectModal();
+    if (el.skinExchangeOverlay && !el.skinExchangeOverlay.classList.contains('hidden')) renderSkinExchangeModal();
   }
 
   function updateNavMissionDot() {
@@ -5728,9 +5734,10 @@
           } else {
             SFX.click();
             closeCharDetail();
-            currentShopSubtab = 'skins';
+            currentShopSubtab = 'gacha';
             switchTab('shop');
-            showToast(`상점 [스킨 교환]에서 ${milPrice} 마일리지로 교환하거나 [뽑기]에서 획득하세요!`);
+            openSkinExchangeModal();
+            showToast(`스킨 교환소에서 ${milPrice} 마일리지로 교환하거나 뽑기에서 획득하세요!`);
           }
         };
         el.detailSkinsRow.appendChild(chip);
@@ -5833,8 +5840,174 @@
     showToast(`[${ch.name}] 해금 및 장착 완료!`);
   }
 
+  function openSkinExchangeModal() {
+    SFX.click();
+    renderSkinExchangeModal();
+    if (el.skinExchangeOverlay) el.skinExchangeOverlay.classList.remove('hidden');
+  }
+
+  function closeSkinExchangeModal() {
+    SFX.click();
+    if (el.skinExchangeOverlay) el.skinExchangeOverlay.classList.add('hidden');
+  }
+
+  function renderSkinExchangeModal() {
+    if (!el.skinExchangeBody) return;
+    const curMileage = save.mileage || 0;
+    if (el.exchangeMileageVal) el.exchangeMileageVal.textContent = curMileage.toLocaleString('ko-KR');
+
+    el.skinExchangeBody.innerHTML = '';
+
+    const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
+    const sortedSkins = DATA.SKINS.filter((s) => !s.seasonExclusive).sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
+    const mythicSkins = sortedSkins.filter((s) => s.rarity === 'mythic');
+    const otherSkins = sortedSkins.filter((s) => s.rarity !== 'mythic');
+
+    // Featured Mythic Skin Banner (200M Exchange)
+    if (mythicSkins.length > 0) {
+      const featSec = document.createElement('div');
+      featSec.className = 'bs-shop-section';
+      featSec.innerHTML = `
+        <div class="bs-shop-sec-head mythic">
+          <span class="bs-shop-sec-title">신화 스페셜 스킨</span>
+          <span class="bs-shop-sec-sub">스킨 뽑기 획득 또는 200M 확정 교환</span>
+        </div>
+      `;
+      mythicSkins.forEach((sk) => {
+        const owned = save.unlockedSkins.includes(sk.id);
+        const ownerChar = getCharDef(sk.charId);
+        const milPrice = getSkinMileagePrice(sk);
+        const isEq = save.equippedSkins[sk.charId] === sk.id;
+        const hero = document.createElement('div');
+        hero.className = 'bs-mythic-hero-banner';
+        hero.innerHTML = `
+          <div class="bs-mythic-rays"></div>
+          <div class="bs-mythic-art-wrap">
+            <img src="${getSkinAvatar(ownerChar, sk)}" alt="${sk.name}" class="bs-mythic-art" />
+          </div>
+          <div class="bs-mythic-info">
+            <div class="bs-mythic-badges">
+              <span class="skin-rar-pill" style="background:#b0165e;color:#fff">신화 MYTHIC</span>
+              <span class="bs-mythic-exclusive">뽑기 · 마일리지 교환</span>
+            </div>
+            <div class="bs-mythic-name">${sk.name}</div>
+            <div class="bs-mythic-desc">${ownerChar.name} · ${sk.desc || '전용 애니메이션 & 이펙트'}</div>
+          </div>
+        `;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        if (owned) {
+          btn.className = isEq ? 'bs-buy-btn done' : 'bs-buy-btn equip';
+          btn.textContent = isEq ? '장착 중' : '장착';
+          btn.disabled = isEq;
+          btn.onclick = () => {
+            SFX.click();
+            save.equippedSkins[sk.charId] = sk.id;
+            persistSave();
+            refreshAllMenus();
+            showToast(`[${sk.name}] 스킨 장착 완료!`);
+          };
+        } else {
+          btn.className = 'bs-buy-btn mileage big';
+          btn.textContent = `${milPrice}M 교환`;
+          btn.onclick = () => {
+            if ((save.mileage || 0) < milPrice) {
+              closeSkinExchangeModal();
+              showToast(`마일리지가 부족합니다! (보유 ${save.mileage || 0}M / 필요 ${milPrice}M) 스킨 뽑기 1회당 +2M!`);
+              return;
+            }
+            SFX.chestJackpot();
+            save.mileage -= milPrice;
+            save.unlockedSkins.push(sk.id);
+            save.equippedSkins[sk.charId] = sk.id;
+            persistSave(true);
+            refreshAllMenus();
+            showToast(`[${sk.name}] 마일리지 교환 및 즉시 장착 완료!`);
+          };
+        }
+        hero.appendChild(btn);
+        featSec.appendChild(hero);
+      });
+      el.skinExchangeBody.appendChild(featSec);
+    }
+
+    // Standard Skin Exchange Grid (Rare 10M · Epic 30M · Legendary 50M)
+    const gridSec = document.createElement('div');
+    gridSec.className = 'bs-shop-section';
+    gridSec.innerHTML = `
+      <div class="bs-shop-sec-head skins">
+        <span class="bs-shop-sec-title">마일리지 교환 목록</span>
+        <span class="bs-shop-sec-sub">뽑기 1회 +2M · 중복 +2M 추가</span>
+      </div>
+    `;
+    const grid = document.createElement('div');
+    grid.className = 'bs-shop-grid skins bs-exchange-grid';
+
+    otherSkins.forEach((sk) => {
+      const owned = save.unlockedSkins.includes(sk.id);
+      const ownerChar = getCharDef(sk.charId);
+      const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
+      const milPrice = getSkinMileagePrice(sk);
+      const isEq = save.equippedSkins[sk.charId] === sk.id;
+      const skAv = getSkinAvatar(ownerChar, sk);
+      const skFlt = getSkinFilter(sk);
+
+      const card = document.createElement('div');
+      card.className = `bs-offer-card skin-card rar-${sk.rarity}${isEq ? ' selected' : ''}`;
+      card.innerHTML = `
+        <div class="bs-offer-ribbon skin-rar-rib rar-${sk.rarity}">${rar.name}</div>
+        <div class="bs-offer-stage">
+          <div class="bs-offer-rays"></div>
+          <img src="${skAv}" alt="${sk.name}" class="bs-offer-img skin" style="${skFlt ? `filter:${skFlt};` : ''}" />
+        </div>
+        <div class="bs-offer-name">${sk.name}</div>
+        <div class="bs-offer-sub">${ownerChar.name}</div>
+      `;
+
+      const foot = document.createElement('div');
+      foot.className = 'bs-offer-foot';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (owned) {
+        btn.className = isEq ? 'bs-buy-btn done' : 'bs-buy-btn equip';
+        btn.textContent = isEq ? '장착 중' : '장착';
+        btn.disabled = isEq;
+        btn.onclick = () => {
+          SFX.click();
+          save.equippedSkins[sk.charId] = sk.id;
+          persistSave();
+          refreshAllMenus();
+          showToast(`[${sk.name}] 스킨 장착 완료!`);
+        };
+      } else {
+        btn.className = 'bs-buy-btn mileage';
+        btn.textContent = `${milPrice}M`;
+        btn.onclick = () => {
+          if ((save.mileage || 0) < milPrice) {
+            closeSkinExchangeModal();
+            showToast(`마일리지가 부족합니다! (보유 ${save.mileage || 0}M / 필요 ${milPrice}M) 스킨 뽑기를 이용해 보세요!`);
+            return;
+          }
+          SFX.chestJackpot();
+          save.mileage -= milPrice;
+          save.unlockedSkins.push(sk.id);
+          save.equippedSkins[sk.charId] = sk.id;
+          persistSave(true);
+          refreshAllMenus();
+          showToast(`[${sk.name}] 마일리지 교환 및 장착 완료!`);
+        };
+      }
+      foot.appendChild(btn);
+      card.appendChild(foot);
+      grid.appendChild(card);
+    });
+
+    gridSec.appendChild(grid);
+    el.skinExchangeBody.appendChild(gridSec);
+  }
+
   function renderShopList() {
-    if (!['gacha', 'chests', 'skins', 'gold', 'gems'].includes(currentShopSubtab)) {
+    if (!['gacha', 'chests', 'gold', 'gems'].includes(currentShopSubtab)) {
       currentShopSubtab = 'gacha';
     }
     document.querySelectorAll('.subtab-btn').forEach((b) => {
@@ -5844,7 +6017,7 @@
     el.shopItemsList.innerHTML = '';
 
     if (currentShopSubtab === 'gacha') {
-      // K-WEATHER FOUR-SEASONS SKY OBSERVATORY SKIN GACHA SCREEN (1-PULL / 10-PULL · SKINS ONLY · ALL RARITIES!)
+      // BRAWL STARS STYLE FOUR-SEASONS SKIN GACHA SCREEN (1-PULL / 10-PULL + POPUP SKIN EXCHANGE!)
       const cost1 = computeGachaCost(1);
       const cost10 = computeGachaCost(10);
       const fmtCostHtml = (c) => {
@@ -5858,7 +6031,7 @@
       };
 
       const stage = document.createElement('div');
-      stage.className = 'gacha-screen weather-gacha';
+      stage.className = 'gacha-screen weather-gacha bs-gacha-screen';
       stage.innerHTML = `
         <aside class="gacha-sidebar">
           <div class="gacha-side-title">기상 소환</div>
@@ -5893,8 +6066,8 @@
           <div class="gacha-top-row">
             <button type="button" class="gacha-pill-btn" data-gaction="history">소환 내역</button>
             <div class="gacha-cur-bar">
-              <button type="button" class="gacha-cur-chip mileage" data-gaction="exchange" title="마일리지 스킨 교환">
-                <span>M</span><strong>${(save.mileage || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
+              <button type="button" class="gacha-cur-chip mileage" data-gaction="exchange" title="스킨 교환소 열기">
+                <span class="gc-m-tag">M</span><strong>${(save.mileage || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
               </button>
               <button type="button" class="gacha-cur-chip ticket" data-gaction="vault" title="상자 보관함에서 뽑기권 교환">
                 ${ticketIconHtml('lg')}<strong>${(save.gachaTickets || 0).toLocaleString('ko-KR')}</strong><em class="gc-plus">+</em>
@@ -5956,13 +6129,9 @@
           else if (act === 'pull10') performSkinGacha(10);
           else if (act === 'history') openGachaHistoryModal();
           else if (act === 'prob') openProbModal();
-          else if (act === 'exchange') {
-            SFX.click();
-            currentShopSubtab = 'skins';
-            renderShopList();
-          } else if (act === 'vault') {
-            openVaultModal();
-          } else if (act === 'gems') {
+          else if (act === 'exchange') openSkinExchangeModal();
+          else if (act === 'vault') openVaultModal();
+          else if (act === 'gems') {
             SFX.click();
             currentShopSubtab = 'gems';
             renderShopList();
@@ -5977,7 +6146,7 @@
       sec.innerHTML = `
         <div class="bs-shop-sec-head chests">
           <span class="bs-shop-sec-title">상자 상점</span>
-          <span class="bs-shop-sec-sub">${uiText('나무·은 상자는 골드, 황금(40보석)·다이아(100보석)는 보석 구매! 보관함에서 뽑기권 교환 가능', 'xs')}</span>
+          <span class="bs-shop-sec-sub">${uiText('나무·은 상자는 골드, 황금(40보석)·다이아(100보석)는 보석 구매 · 보관함에서 뽑기권 교환 가능', 'xs')}</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -6051,175 +6220,6 @@
 
       sec.appendChild(grid);
       el.shopItemsList.appendChild(sec);
-    } else if (currentShopSubtab === 'skins') {
-      // MILEAGE SKIN EXCHANGE TAB (NO GEM DIRECT PURCHASE! 희귀 10M · 영웅 30M · 전설 50M · 신화 200M)
-      const curMileage = save.mileage || 0;
-      const topBar = document.createElement('div');
-      topBar.className = 'mileage-exchange-bar';
-      topBar.innerHTML = `
-        <div class="mil-bar-left">
-          <span class="mil-bar-badge">보유 마일리지 <strong>${curMileage.toLocaleString('ko-KR')}</strong></span>
-          <span class="mil-bar-rates">희귀 10M · 영웅 30M · 전설 50M · 신화 200M (보석 직접 구매 불가)</span>
-        </div>
-        <button type="button" class="cr-gold-btn mil-go-gacha-btn">스킨 뽑기 (+2M/회)</button>
-      `;
-      topBar.querySelector('.mil-go-gacha-btn').onclick = () => {
-        SFX.click();
-        currentShopSubtab = 'gacha';
-        renderShopList();
-      };
-      el.shopItemsList.appendChild(topBar);
-
-      const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
-      const sortedSkins = DATA.SKINS.filter((s) => !s.seasonExclusive).sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
-      const mythicSkins = sortedSkins.filter((s) => s.rarity === 'mythic');
-      const otherSkins = sortedSkins.filter((s) => s.rarity !== 'mythic');
-
-      // Featured Mythic Showcase Banner (Mileage 200 Exchange!)
-      if (mythicSkins.length > 0) {
-        const featSec = document.createElement('div');
-        featSec.className = 'bs-shop-section';
-        featSec.innerHTML = `
-          <div class="bs-shop-sec-head mythic">
-            <span class="bs-shop-sec-title">신화 스페셜 스킨 (스킨 뽑기 · 200 마일리지)</span>
-            <span class="bs-shop-sec-sub">스킨 뽑기에서 획득하거나 200 마일리지로 확정 교환!</span>
-          </div>
-        `;
-        mythicSkins.forEach((sk) => {
-          const owned = save.unlockedSkins.includes(sk.id);
-          const ownerChar = getCharDef(sk.charId);
-          const milPrice = getSkinMileagePrice(sk);
-          const isEq = save.equippedSkins[sk.charId] === sk.id;
-          const hero = document.createElement('div');
-          hero.className = 'bs-mythic-hero-banner';
-          hero.innerHTML = `
-            <div class="bs-mythic-rays"></div>
-            <div class="bs-mythic-art-wrap">
-              <img src="${getSkinAvatar(ownerChar, sk)}" alt="${sk.name}" class="bs-mythic-art" />
-            </div>
-            <div class="bs-mythic-info">
-              <div class="bs-mythic-badges">
-                <span class="skin-rar-pill" style="background:#8a144d;color:#ff80c2">신화 MYTHIC</span>
-                <span class="bs-mythic-exclusive">뽑기 · 마일리지 교환</span>
-              </div>
-              <div class="bs-mythic-name">${sk.name}</div>
-              <div class="bs-mythic-desc">${ownerChar.name} · ${sk.desc || '전용 애니메이션 & 이펙트'}</div>
-            </div>
-          `;
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          if (owned) {
-            btn.className = isEq ? 'bs-buy-btn done' : 'bs-buy-btn equip';
-            btn.textContent = isEq ? '장착 중' : '장착하기';
-            btn.disabled = isEq;
-            btn.onclick = () => {
-              SFX.click();
-              save.equippedSkins[sk.charId] = sk.id;
-              persistSave();
-              refreshAllMenus();
-              showToast(`[${sk.name}] 스킨 장착 완료!`);
-            };
-          } else {
-            btn.className = 'bs-buy-btn mileage big';
-            btn.textContent = `${milPrice} 마일리지`;
-            btn.onclick = () => {
-              if ((save.mileage || 0) < milPrice) {
-                SFX.click();
-                currentShopSubtab = 'gacha';
-                renderShopList();
-                showToast(`마일리지가 부족합니다! (보유 ${save.mileage || 0} / 필요 ${milPrice}) 스킨 뽑기 1회당 +2 마일리지!`);
-                return;
-              }
-              SFX.chestJackpot();
-              save.mileage -= milPrice;
-              save.unlockedSkins.push(sk.id);
-              save.equippedSkins[sk.charId] = sk.id;
-              persistSave(true);
-              refreshAllMenus();
-              showToast(`[${sk.name}] 마일리지 교환 및 즉시 장착 완료!`);
-            };
-          }
-          hero.appendChild(btn);
-          featSec.appendChild(hero);
-        });
-        el.shopItemsList.appendChild(featSec);
-      }
-
-      // Skin Exchange Grid (Rare 10M · Epic 30M · Legendary 50M)
-      const gridSec = document.createElement('div');
-      gridSec.className = 'bs-shop-section';
-      gridSec.innerHTML = `
-        <div class="bs-shop-sec-head skins">
-          <span class="bs-shop-sec-title">스킨 마일리지 교환소</span>
-          <span class="bs-shop-sec-sub">희귀 10M · 영웅 30M · 전설 50M · 신화 200M</span>
-        </div>
-      `;
-      const grid = document.createElement('div');
-      grid.className = 'bs-shop-grid skins';
-
-      otherSkins.forEach((sk) => {
-        const owned = save.unlockedSkins.includes(sk.id);
-        const ownerChar = getCharDef(sk.charId);
-        const rar = DATA.SKIN_RARITIES[sk.rarity] || DATA.SKIN_RARITIES.rare;
-        const milPrice = getSkinMileagePrice(sk);
-        const isEq = save.equippedSkins[sk.charId] === sk.id;
-        const skAv = getSkinAvatar(ownerChar, sk);
-        const skFlt = getSkinFilter(sk);
-
-        const card = document.createElement('div');
-        card.className = `bs-offer-card skin-card rar-${sk.rarity}${isEq ? ' selected' : ''}`;
-        card.innerHTML = `
-          <div class="bs-offer-ribbon" style="background:${rar.bg};color:${rar.color}">${rar.name}</div>
-          <div class="bs-offer-stage">
-            <div class="bs-offer-rays"></div>
-            <img src="${skAv}" alt="${sk.name}" class="bs-offer-img skin" style="${skFlt ? `filter:${skFlt};` : ''}" />
-          </div>
-          <div class="bs-offer-name">${sk.name}</div>
-          <div class="bs-offer-sub">${ownerChar.name}</div>
-        `;
-
-        const foot = document.createElement('div');
-        foot.className = 'bs-offer-foot';
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        if (owned) {
-          btn.className = isEq ? 'bs-buy-btn done' : 'bs-buy-btn equip';
-          btn.textContent = isEq ? '장착 중' : '장착';
-          btn.disabled = isEq;
-          btn.onclick = () => {
-            SFX.click();
-            save.equippedSkins[sk.charId] = sk.id;
-            persistSave();
-            refreshAllMenus();
-            showToast(`[${sk.name}] 스킨 장착 완료!`);
-          };
-        } else {
-          btn.className = 'bs-buy-btn mileage';
-          btn.textContent = `${milPrice}M`;
-          btn.onclick = () => {
-            if ((save.mileage || 0) < milPrice) {
-              SFX.click();
-              currentShopSubtab = 'gacha';
-              renderShopList();
-              showToast(`마일리지가 부족합니다! (보유 ${save.mileage || 0}M / 필요 ${milPrice}M) 스킨 뽑기를 이용해 보세요!`);
-              return;
-            }
-            SFX.chestJackpot();
-            save.mileage -= milPrice;
-            save.unlockedSkins.push(sk.id);
-            save.equippedSkins[sk.charId] = sk.id;
-            persistSave(true);
-            refreshAllMenus();
-            showToast(`[${sk.name}] 마일리지 교환 및 장착 완료!`);
-          };
-        }
-        foot.appendChild(btn);
-        card.appendChild(foot);
-        grid.appendChild(card);
-      });
-
-      gridSec.appendChild(grid);
-      el.shopItemsList.appendChild(gridSec);
     } else if (currentShopSubtab === 'gold') {
       // BRAWL STARS GOLD PACKS (BOUGHT WITH GEMS!)
       const sec = document.createElement('div');
@@ -9341,6 +9341,14 @@
           SFX.click();
           el.gachaHistoryOverlay.classList.add('hidden');
         }
+      });
+    }
+    if (el.btnCloseSkinExchange) {
+      el.btnCloseSkinExchange.addEventListener('click', closeSkinExchangeModal);
+    }
+    if (el.skinExchangeOverlay) {
+      el.skinExchangeOverlay.addEventListener('click', (e) => {
+        if (e.target === el.skinExchangeOverlay) closeSkinExchangeModal();
       });
     }
 

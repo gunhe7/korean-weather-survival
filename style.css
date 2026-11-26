@@ -18305,3 +18305,753 @@ input:focus-visible {
     display: none;
   }
 }
+
+/* =========================================================================
+   BRAWL STARS FULL SHOP REDESIGN & SKIN EXCHANGE POPUP (v20261121hd102)
+   ========================================================================= */
+#view-shop.bs-shop-view {
+  padding: 6px 10px 10px !important;
+}
+
+#view-shop .bs-shop-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+#view-shop .bs-shop-tabs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 3px 5px;
+  flex: 1;
+}
+
+#view-shop .bs-shop-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+#view-shop .bs-shop-tab {
+  flex: 0 0 auto;
+  padding: 7px 14px !important;
+  border-radius: 7px !important;
+  border: 3px solid #071022 !important;
+  background: linear-gradient(180deg, #355187 0%, #1c2f59 100%) !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  transform: skewX(-8deg);
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.28) !important;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  white-space: nowrap;
+}
+
+#view-shop .bs-shop-tab:active {
+  transform: skewX(-8deg) translateY(2px);
+  box-shadow: 0 2px 0 #071022 !important;
+}
+
+#view-shop .bs-shop-tab .bs-stab-in,
+#view-shop #btn-shop-prob .bs-stab-in {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transform: skewX(8deg);
+  text-shadow:
+    0 1.8px 0 #071022,
+    -1px 0 0 #071022,
+    1px 0 0 #071022,
+    0 -1px 0 #071022;
+}
+
+#view-shop .bs-shop-tab.gacha-tab.active,
+#view-shop .bs-shop-tab.gold-tab.active {
+  background: linear-gradient(180deg, #ffec54 0%, #ffc414 58%, #eb9000 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 0 #071022, inset 0 2.5px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+#view-shop .bs-shop-tab.chests-tab.active {
+  background: linear-gradient(180deg, #52d5ff 0%, #1882f2 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 0 #071022, inset 0 2.5px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+#view-shop .bs-shop-tab.gems-tab.active {
+  background: linear-gradient(180deg, #56f784 0%, #14ad4b 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 0 #071022, inset 0 2.5px 0 rgba(255, 255, 255, 0.52) !important;
+}
+
+#view-shop #btn-shop-prob.bs-prob-btn {
+  flex-shrink: 0;
+  padding: 7px 13px !important;
+  border-radius: 7px !important;
+  border: 3px solid #071022 !important;
+  background: linear-gradient(180deg, #3c5482 0%, #203154 100%) !important;
+  color: #ffe55c !important;
+  font-size: 12.5px !important;
+  font-weight: 900 !important;
+  transform: skewX(-8deg);
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+#view-shop #btn-shop-prob.bs-prob-btn:active {
+  transform: skewX(-8deg) translateY(2px);
+  box-shadow: 0 2px 0 #071022 !important;
+}
+
+/* ================= BRAWL STARS GACHA SHOWCASE ================= */
+#view-shop .bs-gacha-screen.gacha-screen {
+  border-radius: 12px;
+  border: 3.5px solid #071022;
+  background: #081533;
+  box-shadow: 0 6px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-sidebar {
+  background: linear-gradient(180deg, #152f66 0%, #0b193d 100%);
+  border-right: 3px solid #071022;
+  padding: 9px 8px;
+  gap: 8px;
+}
+
+#view-shop .bs-gacha-screen .gacha-side-title {
+  background: linear-gradient(180deg, #24407a 0%, #13254f 100%);
+  border: 2.5px solid #071022;
+  border-radius: 7px;
+  padding: 5px 8px;
+  text-align: center;
+  font-size: 13px;
+  color: #ffe757;
+  box-shadow: 0 3px 0 #071022;
+  transform: skewX(-4deg);
+  text-shadow: 0 2px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-banner-thumb {
+  border: 2.5px solid #071022;
+  border-radius: 9px;
+  padding: 7px 8px;
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.32);
+  background: linear-gradient(180deg, #2865c7 0%, #143980 100%);
+}
+
+#view-shop .bs-gacha-screen .gacha-banner-thumb:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-banner-thumb.active {
+  border-color: #ffe54d;
+  background: linear-gradient(180deg, #3bc2ff 0%, #166ae0 100%);
+  box-shadow: 0 0 0 2px #fff29b, 0 4px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.45);
+}
+
+#view-shop .bs-gacha-screen .gacha-banner-thumb.exchange {
+  background: linear-gradient(180deg, #c94eff 0%, #7d1bd4 100%);
+}
+
+#view-shop .bs-gacha-screen .gacha-banner-thumb.vault {
+  background: linear-gradient(180deg, #2be39c 0%, #118c64 100%);
+}
+
+#view-shop .bs-gacha-screen .gacha-pickup-tag {
+  background: linear-gradient(180deg, #ff546b 0%, #d91430 100%);
+  border-right: 2px solid #071022;
+  border-bottom: 2px solid #071022;
+  border-radius: 0 0 6px 0;
+  padding: 1.5px 6px;
+  text-shadow: 0 1px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-thumb-txt strong {
+  text-shadow: 0 1.6px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-thumb-txt span {
+  color: #fff6c9;
+  text-shadow: 0 1px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-main-stage {
+  background: radial-gradient(ellipse 68% 72% at 68% 48%, #4acdff 0%, #1872e0 44%, #0d327d 82%, #071740 100%);
+}
+
+#view-shop .bs-gacha-screen .gacha-weather-clouds {
+  opacity: 0.35;
+}
+
+#view-shop .bs-gacha-screen .gacha-weather-sunbeam {
+  inset: -35%;
+  width: auto;
+  height: auto;
+  right: auto;
+  top: auto;
+  opacity: 0.24;
+  background: repeating-conic-gradient(
+    from -8deg at 72% 48%,
+    rgba(255, 255, 255, 0.48) 0deg 12deg,
+    transparent 12deg 24deg
+  );
+  -webkit-mask-image: radial-gradient(circle at 72% 48%, #000 10%, transparent 68%);
+  mask-image: radial-gradient(circle at 72% 48%, #000 10%, transparent 68%);
+}
+
+#view-shop .bs-gacha-screen .gacha-pill-btn {
+  border: 2.5px solid #071022;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #395487 0%, #1d2f57 100%);
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 3.5px 0 #071022, inset 0 1.5px 0 rgba(255, 255, 255, 0.24);
+  transform: skewX(-7deg);
+  text-shadow: 0 1.5px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-pill-btn:active {
+  transform: skewX(-7deg) translateY(2px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-cur-chip {
+  border: 2.5px solid #071022;
+  border-radius: 8px;
+  background: rgba(7, 13, 28, 0.86);
+  box-shadow: 0 3px 0 #071022;
+  padding: 3px 5px 3px 7px;
+}
+
+#view-shop .bs-gacha-screen .gc-m-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 5px;
+  border: 1.8px solid #071022;
+  background: linear-gradient(180deg, #dc63ff 0%, #921ee0 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  text-shadow: 0 1px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gc-plus {
+  border-radius: 5px;
+  border: 1.8px solid #071022;
+  background: linear-gradient(180deg, #52f578 0%, #16ad3e 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-season-kicker {
+  display: inline-block;
+  border: 2px solid #071022;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffeb57 0%, #f59c08 100%);
+  color: #241000;
+  font-weight: 900;
+  box-shadow: 0 2.5px 0 #071022;
+  transform: skewX(-7deg);
+}
+
+#view-shop .bs-gacha-screen .gacha-main-title {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow:
+    0 3px 0 #071022,
+    -1.6px 0 0 #071022,
+    1.6px 0 0 #071022,
+    0 -1.6px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-sub-strip {
+  border: 2px solid #071022;
+  border-radius: 7px;
+  background: rgba(7, 15, 34, 0.8);
+  box-shadow: 0 2.5px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gr-chip {
+  border: 2px solid #071022;
+  border-radius: 6px;
+  box-shadow: 0 2.5px 0 #071022;
+  transform: skewX(-7deg);
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 1.4px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gr-chip.mythic {
+  background: linear-gradient(180deg, #ff456e 0%, #c70f3d 100%);
+}
+
+#view-shop .bs-gacha-screen .gr-chip.leg {
+  background: linear-gradient(180deg, #ffe747 0%, #eb9900 100%);
+}
+
+#view-shop .bs-gacha-screen .gr-chip.epic {
+  background: linear-gradient(180deg, #cc4dff 0%, #861cd9 100%);
+}
+
+#view-shop .bs-gacha-screen .gr-chip.rare {
+  background: linear-gradient(180deg, #3be85b 0%, #15ad34 100%);
+}
+
+#view-shop .bs-gacha-screen .gacha-pull-note {
+  border: 2px solid #071022;
+  border-radius: 6px;
+  background: rgba(7, 15, 34, 0.84);
+  box-shadow: 0 2px 0 #071022;
+}
+
+#view-shop .bs-gacha-screen .gacha-green-btn {
+  border: 3px solid #071022 !important;
+  border-radius: 9px !important;
+  background: linear-gradient(180deg, #54f76f 0%, #1ec740 60%, #129c2d 100%) !important;
+  box-shadow: 0 5px 0 #071022, inset 0 3px 0 rgba(255, 255, 255, 0.52) !important;
+  transform: skewX(-6deg);
+}
+
+#view-shop .bs-gacha-screen .gacha-green-btn.pull-10 {
+  background: linear-gradient(180deg, #ffec54 0%, #ffc414 58%, #eb9000 100%) !important;
+  box-shadow: 0 5px 0 #071022, inset 0 3px 0 rgba(255, 255, 255, 0.58) !important;
+}
+
+#view-shop .bs-gacha-screen .gacha-green-btn:active {
+  transform: skewX(-6deg) translateY(3px);
+  box-shadow: 0 2px 0 #071022 !important;
+}
+
+#view-shop .bs-gacha-screen .gacha-green-btn .gc-cost-line,
+#view-shop .bs-gacha-screen .gacha-green-btn .gc-pull-lbl {
+  transform: skewX(6deg);
+  color: #ffffff;
+  text-shadow:
+    0 2px 0 #071022,
+    -1.2px 0 0 #071022,
+    1.2px 0 0 #071022,
+    0 -1px 0 #071022;
+}
+
+/* ================= BRAWL STARS SHOP SHELVES (CHESTS / GOLD / GEMS) ================= */
+#view-shop .bs-shop-sec-head,
+#skin-exchange-overlay .bs-shop-sec-head {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 3px solid #071022;
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.34);
+  transform: skewX(-4deg);
+  background: linear-gradient(90deg, #2799ff 0%, #1454c4 100%);
+}
+
+#view-shop .bs-shop-sec-head.gold,
+#skin-exchange-overlay .bs-shop-sec-head.gold {
+  background: linear-gradient(90deg, #ffb81c 0%, #c96c04 100%);
+}
+
+#view-shop .bs-shop-sec-head.gems,
+#skin-exchange-overlay .bs-shop-sec-head.gems {
+  background: linear-gradient(90deg, #2be378 0%, #0e8a52 100%);
+}
+
+#view-shop .bs-shop-sec-head.mythic,
+#skin-exchange-overlay .bs-shop-sec-head.mythic {
+  background: linear-gradient(90deg, #f22e7c 0%, #7d157d 100%);
+}
+
+#view-shop .bs-shop-sec-head.skins,
+#skin-exchange-overlay .bs-shop-sec-head.skins {
+  background: linear-gradient(90deg, #9b36ff 0%, #4b1eb8 100%);
+}
+
+#view-shop .bs-shop-sec-title,
+#skin-exchange-overlay .bs-shop-sec-title {
+  transform: skewX(4deg);
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow:
+    0 2px 0 #071022,
+    -1.2px 0 0 #071022,
+    1.2px 0 0 #071022,
+    0 -1px 0 #071022;
+}
+
+#view-shop .bs-shop-sec-sub,
+#skin-exchange-overlay .bs-shop-sec-sub {
+  transform: skewX(4deg);
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(7, 16, 34, 0.56);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+#view-shop .bs-offer-card,
+#skin-exchange-overlay .bs-offer-card {
+  border-radius: 10px;
+  border: 3px solid #071022;
+  box-shadow: 0 6px 0 #071022, inset 0 2.5px 0 rgba(255, 255, 255, 0.36);
+  padding: 0 0 8px;
+  background: linear-gradient(180deg, #329eff 0%, #1454bd 100%);
+}
+
+#view-shop .bs-offer-card.tier-wood {
+  background: radial-gradient(circle at 50% 34%, #d68d45 0%, #8c521c 64%, #572e0d 100%);
+}
+
+#view-shop .bs-offer-card.tier-silver {
+  background: radial-gradient(circle at 50% 34%, #5ec9ff 0%, #1d7ae0 64%, #0d4299 100%);
+}
+
+#view-shop .bs-offer-card.tier-gold,
+#view-shop .bs-offer-card.gold-pack {
+  background: radial-gradient(circle at 50% 34%, #fff066 0%, #f5b30a 58%, #b86200 100%);
+}
+
+#view-shop .bs-offer-card.tier-diamond {
+  background: radial-gradient(circle at 50% 34%, #6ee4ff 0%, #3d6eff 52%, #591ec2 100%);
+}
+
+#view-shop .bs-offer-card.gem-pack {
+  background: radial-gradient(circle at 50% 34%, #52f79c 0%, #17b568 58%, #0a6345 100%);
+}
+
+#view-shop .bs-offer-card.gem-pack.tier-lg {
+  background: radial-gradient(circle at 50% 34%, #c96eff 0%, #7d2ae8 58%, #3c1087 100%);
+}
+
+#view-shop .bs-offer-card.gem-pack.tier-xl {
+  background: radial-gradient(circle at 50% 34%, #ff63a8 0%, #d91c77 58%, #700c52 100%);
+}
+
+#skin-exchange-overlay .bs-offer-card.skin-card.rar-rare {
+  background: radial-gradient(circle at 50% 34%, #66ff7a 0%, #22d640 58%, #12992c 100%);
+}
+
+#skin-exchange-overlay .bs-offer-card.skin-card.rar-epic {
+  background: radial-gradient(circle at 50% 34%, #dc70ff 0%, #aa29f5 58%, #6d12ba 100%);
+}
+
+#skin-exchange-overlay .bs-offer-card.skin-card.rar-legendary {
+  background: radial-gradient(circle at 50% 34%, #fff263 0%, #f5b60a 58%, #c26f00 100%);
+}
+
+#skin-exchange-overlay .bs-offer-card.skin-card.selected {
+  border-color: #ffe24a;
+  box-shadow: 0 0 0 2px #fff29b, 0 6px 0 #7a4100;
+}
+
+#view-shop .bs-offer-ribbon,
+#skin-exchange-overlay .bs-offer-ribbon {
+  padding: 4.5px 6px;
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #ffffff;
+  background: #0d1d40;
+  border-bottom: 2.5px solid #071022;
+  text-shadow: 0 1.4px 0 #071022;
+}
+
+#view-shop .bs-offer-ribbon.bonus {
+  background: linear-gradient(180deg, #ff546b 0%, #d91430 100%);
+  color: #ffffff;
+}
+
+#skin-exchange-overlay .bs-offer-ribbon.skin-rar-rib.rar-rare {
+  background: #107d27;
+}
+
+#skin-exchange-overlay .bs-offer-ribbon.skin-rar-rib.rar-epic {
+  background: #6112ab;
+}
+
+#skin-exchange-overlay .bs-offer-ribbon.skin-rar-rib.rar-legendary {
+  background: #b56100;
+}
+
+#view-shop .bs-offer-rays,
+#skin-exchange-overlay .bs-offer-rays {
+  width: 170px;
+  height: 170px;
+  opacity: 0.34;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255, 255, 255, 0.58) 0deg 15deg,
+    transparent 15deg 30deg
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 66%);
+  mask-image: radial-gradient(circle, #000 12%, transparent 66%);
+}
+
+#view-shop .bs-offer-img,
+#skin-exchange-overlay .bs-offer-img {
+  filter: drop-shadow(0 5px 0 rgba(7, 16, 34, 0.52));
+}
+
+#view-shop .bs-offer-name,
+#skin-exchange-overlay .bs-offer-name {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow:
+    0 2px 0 #071022,
+    -1.2px 0 0 #071022,
+    1.2px 0 0 #071022,
+    0 -1.2px 0 #071022;
+}
+
+#view-shop .bs-offer-bigval {
+  font-size: 17px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow:
+    0 2.5px 0 #071022,
+    -1.4px 0 0 #071022,
+    1.4px 0 0 #071022,
+    0 -1.4px 0 #071022;
+}
+
+#view-shop .bs-offer-bigval.gold {
+  color: #fff278;
+}
+
+#view-shop .bs-offer-bigval.gem {
+  color: #a3fff0;
+}
+
+#view-shop .bs-offer-sub,
+#skin-exchange-overlay .bs-offer-sub {
+  width: 100%;
+  background: rgba(7, 16, 34, 0.52);
+  color: #ffffff;
+  font-weight: 800;
+  padding: 3px 6px;
+  margin: 3px 0 6px;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+#view-shop .bs-buy-btn,
+#skin-exchange-overlay .bs-buy-btn {
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 2.5px solid #071022;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 #071022, inset 0 2.5px 0 rgba(255, 255, 255, 0.48);
+  transform: skewX(-5deg);
+  color: #ffffff;
+  text-shadow:
+    0 1.8px 0 #071022,
+    -1px 0 0 #071022,
+    1px 0 0 #071022,
+    0 -1px 0 #071022;
+}
+
+#view-shop .bs-buy-btn:active:not(:disabled),
+#skin-exchange-overlay .bs-buy-btn:active:not(:disabled) {
+  transform: skewX(-5deg) translateY(2px);
+  box-shadow: 0 2px 0 #071022;
+}
+
+#view-shop .bs-buy-btn.gold,
+#skin-exchange-overlay .bs-buy-btn.gold {
+  background: linear-gradient(180deg, #ffeb4d 0%, #f09508 100%);
+}
+
+#view-shop .bs-buy-btn.gem,
+#skin-exchange-overlay .bs-buy-btn.gem {
+  background: linear-gradient(180deg, #4ef57c 0%, #14ad4b 100%);
+}
+
+#view-shop .bs-buy-btn.cash {
+  background: linear-gradient(180deg, #4df57a 0%, #139e46 100%);
+  font-size: 13.5px;
+}
+
+#skin-exchange-overlay .bs-buy-btn.mileage {
+  background: linear-gradient(180deg, #d75cff 0%, #871ad9 100%);
+}
+
+#skin-exchange-overlay .bs-buy-btn.equip {
+  background: linear-gradient(180deg, #48ccff 0%, #1577e8 100%);
+}
+
+#skin-exchange-overlay .bs-buy-btn.done {
+  background: linear-gradient(180deg, #3ce664 0%, #1aa63c 100%);
+  opacity: 1;
+}
+
+/* ================= BRAWL STARS SKIN EXCHANGE POPUP MODAL ================= */
+#skin-exchange-overlay.bs-exchange-overlay {
+  padding:
+    max(10px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+}
+
+.bs-exchange-modal {
+  width: min(860px, 95vw);
+  max-height: 90dvh;
+  border-radius: 14px;
+  border: 3.5px solid #071022;
+  background: #0c1d42;
+  box-shadow: 0 8px 0 #071022, 0 24px 54px rgba(0, 0, 0, 0.82);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bs-exchange-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  background: linear-gradient(180deg, #a63dff 0%, #5b1bc7 100%);
+  border-bottom: 3px solid #071022;
+  flex-shrink: 0;
+}
+
+.bs-ex-bar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bs-ex-title {
+  font-size: 16.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow:
+    0 2.5px 0 #071022,
+    -1.2px 0 0 #071022,
+    1.2px 0 0 #071022,
+    0 -1.2px 0 #071022;
+}
+
+.bs-ex-mil-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 4px;
+  border-radius: 7px;
+  border: 2px solid #071022;
+  background: rgba(7, 13, 28, 0.84);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 2.5px 0 #071022;
+}
+
+.bs-ex-m-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1.5px solid #071022;
+  background: linear-gradient(180deg, #ffeb54 0%, #f59a08 100%);
+  color: #241000;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.bs-ex-rate-tag {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(7, 16, 34, 0.55);
+  color: #eef5ff;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.bs-exchange-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: radial-gradient(circle at 50% 0%, #1c4da3 0%, #0d2252 74%, #081638 100%);
+}
+
+#skin-exchange-overlay .bs-mythic-hero-banner {
+  border: 3px solid #071022;
+  border-radius: 12px;
+  background: radial-gradient(circle at 20% 50%, #ff4599 0%, #8f1666 48%, #361059 100%);
+  box-shadow: 0 0 0 2px #ff8fd0, 0 6px 0 #071022;
+}
+
+#skin-exchange-overlay .bs-exchange-grid {
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 10px;
+}
+
+@media (max-height: 460px) {
+  #view-shop .bs-shop-topbar {
+    margin-bottom: 5px;
+  }
+  #view-shop .bs-shop-tab {
+    padding: 5px 11px !important;
+    font-size: 11.5px !important;
+  }
+  #view-shop #btn-shop-prob.bs-prob-btn {
+    padding: 5px 10px !important;
+    font-size: 11.5px !important;
+  }
+  #view-shop .bs-offer-stage {
+    height: 54px;
+  }
+  #view-shop .bs-offer-img {
+    max-height: 46px;
+  }
+  #view-shop .bs-offer-bigval {
+    font-size: 14.5px;
+  }
+  #view-shop .bs-offer-sub {
+    font-size: 9.5px;
+    padding: 2px 4px;
+    margin: 2px 0 4px;
+    min-height: 18px;
+  }
+  #view-shop .bs-buy-btn {
+    padding: 5px 7px;
+    font-size: 11.5px;
+  }
+  .bs-exchange-bar {
+    padding: 6px 10px;
+  }
+  .bs-ex-title {
+    font-size: 14.5px;
+  }
+  .bs-ex-rate-tag {
+    display: none;
+  }
+  .bs-exchange-body {
+    padding: 9px;
+    gap: 9px;
+  }
+  #skin-exchange-overlay .bs-exchange-grid {
+    grid-template-columns: repeat(auto-fill, minmax(106px, 1fr));
+    gap: 8px;
+  }
+}
