@@ -16720,3 +16720,301 @@ input:focus-visible {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* =========================================================================
+   SEASON PASS NOTCH SAFE-AREA + BRAWL SKIP NODE + ZERO-SCROLL GACHA RESULT (v20261121hd98)
+   ========================================================================= */
+#season-pass-overlay.sp-overlay {
+  padding:
+    max(6px, env(safe-area-inset-top), var(--safe-top, 0px))
+    max(14px, env(safe-area-inset-right), var(--safe-right, 0px))
+    max(6px, env(safe-area-inset-bottom), var(--safe-bottom, 0px))
+    max(14px, env(safe-area-inset-left), var(--safe-left, 0px)) !important;
+  box-sizing: border-box;
+}
+
+#season-pass-overlay .sp-modal {
+  width: min(1040px, 100%) !important;
+  max-width: 100% !important;
+  height: min(500px, 100%) !important;
+  max-height: 100% !important;
+}
+
+@media (max-height: 520px), (max-width: 860px) {
+  #season-pass-overlay.sp-overlay {
+    padding:
+      max(4px, env(safe-area-inset-top), var(--safe-top, 0px))
+      max(14px, env(safe-area-inset-right), var(--safe-right, 0px))
+      max(4px, env(safe-area-inset-bottom), var(--safe-bottom, 0px))
+      max(14px, env(safe-area-inset-left), var(--safe-left, 0px)) !important;
+  }
+  #season-pass-overlay .sp-modal {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+  }
+}
+
+/* Brawl Stars Style Next-Tier Skip Pill on Track Rail + Clean Locked Cards */
+.sp-tier-node.next-skip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  min-width: 70px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #5be3ff 0%, #1686e0 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 900;
+  text-shadow: 0 1.2px 0 #071022;
+  box-shadow: 0 2.5px 0 #071022, 0 0 10px rgba(82, 222, 255, 0.55);
+  cursor: pointer;
+}
+
+.sp-tier-node.next-skip-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 1px 0 #071022;
+}
+
+.sp-tier-node.next-skip-btn .sp-node-num {
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ffe354;
+  color: #241000;
+  text-shadow: none;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.sp-claim-btn.locked-clean {
+  background: rgba(8, 20, 48, 0.65);
+  border: 1.5px solid rgba(126, 174, 240, 0.25);
+  color: #8fb4e0;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.sp-claim-btn.locked-clean:hover {
+  border-color: rgba(126, 212, 255, 0.6);
+  color: #d6efff;
+}
+
+@media (max-height: 520px), (max-width: 860px) {
+  .sp-tier-node.next-skip-btn {
+    min-width: 62px;
+    height: 21px;
+    padding: 0 6px;
+    font-size: 9.5px;
+    gap: 3px;
+  }
+  .sp-tier-node.next-skip-btn .sp-node-num {
+    font-size: 9px;
+    line-height: 14px;
+    padding: 0 4px;
+  }
+}
+
+/* Zero-Scroll Smartphone & iPad Skin Gacha Result Modal */
+#gacha-result-overlay.gacha-result-overlay {
+  padding:
+    max(6px, env(safe-area-inset-top), var(--safe-top, 0px))
+    max(12px, env(safe-area-inset-right), var(--safe-right, 0px))
+    max(6px, env(safe-area-inset-bottom), var(--safe-bottom, 0px))
+    max(12px, env(safe-area-inset-left), var(--safe-left, 0px)) !important;
+  box-sizing: border-box;
+}
+
+#gacha-result-overlay .gacha-res-stage {
+  width: min(760px, 100%) !important;
+  height: min(460px, 100%) !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  padding: 8px 12px !important;
+  gap: 6px !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  border: 3px solid #071022;
+  box-shadow: 0 16px 46px rgba(0, 0, 0, 0.78), 0 0 0 2px rgba(130, 198, 255, 0.45);
+}
+
+#gacha-result-overlay .gacha-res-head {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+#gacha-result-overlay .gacha-res-title {
+  font-size: clamp(14px, 3.2vh, 20px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#gacha-result-overlay .gacha-res-mileage-pill {
+  padding: 3px 10px;
+  font-size: clamp(10px, 2.2vh, 11.5px);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#gacha-result-overlay .gacha-res-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden !important;
+  padding: 2px 0 !important;
+  gap: 6px !important;
+}
+
+#gacha-result-overlay .gacha-res-grid.multi {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+}
+
+#gacha-result-overlay .gacha-res-grid.single {
+  grid-template-columns: minmax(150px, 220px) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-content: center;
+}
+
+#gacha-result-overlay .gacha-res-card {
+  min-height: 0;
+  height: 100%;
+  justify-content: space-between;
+  padding: 4px 5px 5px !important;
+  gap: 2px !important;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+#gacha-result-overlay .gacha-rc-top {
+  flex-shrink: 0;
+}
+
+#gacha-result-overlay .gacha-rc-rar {
+  padding: 1px 5px;
+  font-size: clamp(8.5px, 2vh, 9.5px);
+}
+
+#gacha-result-overlay .gacha-rc-new,
+#gacha-result-overlay .gacha-rc-dup {
+  font-size: clamp(8px, 1.9vh, 9px);
+}
+
+#gacha-result-overlay .gacha-rc-art {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+  max-height: clamp(30px, 12.5vh, 58px);
+}
+
+#gacha-result-overlay .gacha-res-grid.single .gacha-rc-art {
+  max-height: clamp(72px, 24vh, 118px);
+}
+
+#gacha-result-overlay .gacha-rc-name {
+  font-size: clamp(9.5px, 2.3vh, 11.5px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+#gacha-result-overlay .gacha-rc-sub {
+  font-size: clamp(8.5px, 2vh, 10px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.gacha-res-footer {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+#gacha-result-overlay .gacha-res-summary {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: clamp(10px, 2.3vh, 11.5px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#gacha-result-overlay .gacha-res-actions {
+  width: auto;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+#gacha-result-overlay .gacha-res-actions .gacha-green-btn,
+#gacha-result-overlay .gacha-res-actions .cr-gold-btn,
+#gacha-result-overlay .gacha-res-actions .cr-blue-btn {
+  min-width: 0;
+  width: auto;
+  padding: 7px 14px;
+  font-size: clamp(11px, 2.6vh, 13px);
+  white-space: nowrap;
+  border-radius: 10px;
+}
+
+#gacha-result-overlay .gacha-res-actions .cr-gold-btn {
+  min-width: 78px;
+}
+
+@media (max-height: 440px) {
+  #gacha-result-overlay .gacha-res-stage {
+    padding: 6px 10px !important;
+    gap: 4px !important;
+    border-radius: 14px;
+  }
+  #gacha-result-overlay .gacha-res-grid {
+    gap: 4px !important;
+  }
+  #gacha-result-overlay .gacha-res-card {
+    padding: 3px 4px 4px !important;
+  }
+  #gacha-result-overlay .gacha-res-actions .gacha-green-btn,
+  #gacha-result-overlay .gacha-res-actions .cr-gold-btn,
+  #gacha-result-overlay .gacha-res-actions .cr-blue-btn {
+    padding: 5px 11px;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 739px) {
+  #gacha-result-overlay .gacha-res-grid.multi {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(5, minmax(0, 1fr)) !important;
+  }
+  .gacha-res-footer {
+    flex-direction: column;
+    gap: 5px;
+  }
+  #gacha-result-overlay .gacha-res-summary {
+    text-align: center;
+    width: 100%;
+  }
+  #gacha-result-overlay .gacha-res-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}

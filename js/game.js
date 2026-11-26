@@ -1469,10 +1469,10 @@
     const bestNew = newSkins.slice().sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0))[0] || null;
 
     if (el.gachaResTitle) {
-      el.gachaResTitle.textContent = count > 1 ? `🌟 스킨 ${count}회 연속 뽑기 결과!` : '🌟 스킨 1회 뽑기 결과!';
+      el.gachaResTitle.textContent = count > 1 ? `스킨 ${count}회 뽑기 결과` : '스킨 1회 뽑기 결과';
     }
     if (el.gachaResMileage) {
-      el.gachaResMileage.textContent = `✨ +${totalMileage} 마일리지 적립 (보유 ${(save.mileage || 0).toLocaleString('ko-KR')})`;
+      el.gachaResMileage.textContent = `+${totalMileage} 마일리지 (보유 ${(save.mileage || 0).toLocaleString('ko-KR')})`;
     }
 
     el.gachaResGrid.className = `gacha-res-grid ${count === 1 ? 'single' : 'multi'}`;
@@ -1491,29 +1491,29 @@
       card.innerHTML = `
         <div class="gacha-rc-top">
           <span class="gacha-rc-rar" style="background:${rar.bg};color:${rar.color}">${rar.name}</span>
-          ${item.isNew ? '<span class="gacha-rc-new">NEW!</span>' : '<span class="gacha-rc-dup">중복</span>'}
+          ${item.isNew ? '<span class="gacha-rc-new">NEW</span>' : '<span class="gacha-rc-dup">중복</span>'}
         </div>
         <div class="gacha-rc-art">
           <img src="${skAv}" alt="${sk.name}" style="${skFlt ? `filter:${skFlt};` : ''}" />
         </div>
         <div class="gacha-rc-name">${sk.name}</div>
-        <div class="gacha-rc-sub">${item.isNew ? ownerChar.name : `✨ 중복 +${item.dupMileage || 2}M`}</div>
+        <div class="gacha-rc-sub">${item.isNew ? ownerChar.name : `중복 +${item.dupMileage || 2}M`}</div>
       `;
       el.gachaResGrid.appendChild(card);
     });
 
     if (el.gachaResSummary) {
       const parts = [];
-      if (newSkins.length > 0) parts.push(`✨ 신규 스킨 ${newSkins.length}종 획득!`);
-      if (dupMileageTotal > 0) parts.push(`🔄 중복 보너스 +${dupMileageTotal} 마일리지`);
-      parts.push(`✨ 총 마일리지 +${totalMileage} (뽑기 +${baseMileage}${dupMileageTotal > 0 ? ` · 중복 +${dupMileageTotal}` : ''})`);
+      if (newSkins.length > 0) parts.push(`신규 ${newSkins.length}종`);
+      if (dupMileageTotal > 0) parts.push(`중복 +${dupMileageTotal}M`);
+      parts.push(`총 +${totalMileage} 마일리지`);
       el.gachaResSummary.textContent = parts.join(' · ');
     }
 
     if (el.btnGachaResEquip) {
       if (bestNew) {
         el.btnGachaResEquip.classList.remove('hidden');
-        el.btnGachaResEquip.textContent = `✨ [${bestNew.skin.name}] 장착`;
+        el.btnGachaResEquip.textContent = `[${bestNew.skin.name}] 장착`;
         el.btnGachaResEquip.onclick = () => {
           SFX.levelUp();
           save.equippedSkins[bestNew.skin.charId] = bestNew.skin.id;
@@ -1524,7 +1524,7 @@
           persistSave();
           el.gachaResultOverlay.classList.add('hidden');
           refreshAllMenus();
-          showToast(`✨ [${bestNew.skin.name}] 스킨 장착 완료!`);
+          showToast(`[${bestNew.skin.name}] 스킨 장착 완료`);
         };
       } else {
         el.btnGachaResEquip.classList.add('hidden');
@@ -1537,7 +1537,7 @@
       const costHtml = nextCost.useTickets > 0 && nextCost.needGems > 0
         ? `${ticketIconHtml('btn')} ${nextCost.useTickets} + ${uiIcon('gem', 'btn')} ${nextCost.needGems.toLocaleString('ko-KR')}`
         : (nextCost.useTickets > 0 ? `${ticketIconHtml('btn')} ${nextCost.useTickets}` : `${uiIcon('gem', 'btn')} ${nextCost.needGems.toLocaleString('ko-KR')}`);
-      el.btnGachaResAgain.innerHTML = `<span class="gc-again-inline">🎰 ${count}회 다시 뽑기 (${costHtml})</span>`;
+      el.btnGachaResAgain.innerHTML = `<span class="gc-again-inline">${count}회 다시 뽑기 (${costHtml})</span>`;
       el.btnGachaResAgain.onclick = () => performSkinGacha(count);
     }
 
@@ -2766,18 +2766,16 @@
         btn.innerHTML = `${uiIcon('crown', 'xs', 'sp-btn-ico')}<span>골드 필요</span>`;
         btn.onclick = () => openGoldPassPurchase();
       } else {
-        const tiersNeeded = Math.max(1, tierNum - prog.tier);
-        const skipUnit = spCfg.skipGemCost || 100;
-        const totalSkipCost = tiersNeeded * skipUnit;
-        btn.className = tiersNeeded === 1 ? 'sp-claim-btn skip' : 'sp-claim-btn skip-far';
-        btn.innerHTML = `${uiIcon('gem', 'xs', 'sp-btn-ico')}<span>${totalSkipCost.toLocaleString('ko-KR')}</span>`;
-        btn.title = `${tiersNeeded}티어 건너뛰기 (보석 ${totalSkipCost.toLocaleString('ko-KR')}개)`;
+        btn.className = 'sp-claim-btn locked-clean';
+        btn.innerHTML = `<svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Lv.${tierNum}</span>`;
+        btn.title = `Lv.${tierNum}까지 건너뛰기`;
         btn.onclick = () => skipSeasonPassTier(tierNum);
       }
       card.appendChild(btn);
       return card;
     };
 
+    const skipUnitCost = spCfg.skipGemCost || 100;
     (spCfg.tiers || []).forEach((row) => {
       const reached = prog.tier >= row.tier;
       const isNext = !reached && row.tier === prog.tier + 1;
@@ -2787,10 +2785,20 @@
 
       const tierCell = document.createElement('div');
       tierCell.className = `sp-tier-cell${reached ? ' reached' : (isNext ? ' next-tier' : '')}`;
-      const node = document.createElement('div');
-      node.className = `sp-tier-node${reached ? ' reached' : (isNext ? ' next-tier' : '')}`;
-      node.textContent = String(row.tier);
-      tierCell.appendChild(node);
+      if (isNext) {
+        const skipNode = document.createElement('button');
+        skipNode.type = 'button';
+        skipNode.className = 'sp-tier-node next-tier next-skip-btn';
+        skipNode.title = `1티어 건너뛰기 (보석 ${skipUnitCost.toLocaleString('ko-KR')}개)`;
+        skipNode.innerHTML = `<span class="sp-node-num">${row.tier}</span>${uiIcon('gem', 'xs', 'sp-btn-ico')}<span>${skipUnitCost.toLocaleString('ko-KR')}</span>`;
+        skipNode.onclick = () => skipSeasonPassTier(row.tier);
+        tierCell.appendChild(skipNode);
+      } else {
+        const node = document.createElement('div');
+        node.className = `sp-tier-node${reached ? ' reached' : ''}`;
+        node.textContent = String(row.tier);
+        tierCell.appendChild(node);
+      }
       col.appendChild(tierCell);
 
       col.appendChild(buildCard(row.tier, 'free', row.free, reached));
