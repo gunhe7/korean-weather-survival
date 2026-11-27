@@ -132,6 +132,10 @@ window.RunRenderer = (function () {
   NEW_OBS_SPRITES.forEach((key) => {
     SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${NEW_OBS_VER}`;
   });
+  const HAIL_VER = '20261121hd152';
+  for (let hf = 0; hf < 8; hf++) {
+    SPRITE_URL_MAP[`sp_hail_${hf}`] = `assets/world/sp_hail_${hf}.png?v=${HAIL_VER}`;
+  }
   const SEASON_BG_VER = '20261121hd116';
   const SEASON_SKY_SPRITES = ['bg_sky_spring', 'bg_sky_summer', 'bg_sky_autumn', 'bg_sky_winter'];
   SEASON_SKY_SPRITES.forEach((key) => {
@@ -191,6 +195,7 @@ window.RunRenderer = (function () {
     'orb_bolt', 'orb_magnet', 'orb_potion', 'spr_umbrella', 'spr_mask', 'spr_shield',
     'ui_fever', 'fx_booster_0', 'fx_booster_1', 'fx_booster_2', 'fx_booster_3', 'fx_booster_4', 'fx_booster_5', 'fx_shield_ring',
     'chest_wood_0', 'chest_silver_0', 'chest_gold_0', 'chest_diamond_0',
+    'sp_hail_0', 'sp_hail_1', 'sp_hail_2', 'sp_hail_3', 'sp_hail_4', 'sp_hail_5', 'sp_hail_6', 'sp_hail_7',
     'bg_sky_spring', 'bg_sky_summer', 'bg_sky_autumn', 'bg_sky_winter',
     'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter',
     'sp_red_car', 'sp_crate', 'sp_metal_box'
@@ -2154,9 +2159,24 @@ window.RunRenderer = (function () {
     if (!attack) return;
     const ax = attack.x;
     const ay = attack.y;
-    const stones = Array.isArray(attack.stones) && attack.stones.length
-      ? attack.stones
-      : [{ dx: 0, dy: 0, r: 12, spin: 1 }, { dx: -16, dy: -12, r: 9, spin: -1.4 }, { dx: 15, dy: -10, r: 9, spin: 1.3 }];
+    const ANCHOR_X = 74 / 192;
+    const ANCHOR_Y = 134 / 192;
+
+    const drawHailSprite = (frameIdx, x, y, sz, rot = 0) => {
+      const f = Math.max(0, Math.min(7, Math.floor(frameIdx)));
+      const spr = getSprite(`sp_hail_${f}`) || getSprite('sp_hail_0');
+      if (spr) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.translate(x, y);
+        if (rot !== 0) ctx.rotate(rot);
+        ctx.drawImage(spr, Math.round(-sz * ANCHOR_X), Math.round(-sz * ANCHOR_Y), sz, sz);
+        ctx.restore();
+        return true;
+      }
+      drawIceStone(ctx, x, y, Math.round(sz * 0.16), rot || t * 8);
+      return false;
+    };
 
     ctx.save();
     ctx.imageSmoothingEnabled = true;
@@ -2164,62 +2184,71 @@ window.RunRenderer = (function () {
     if (attack.phase === 'warn') {
       const ratio = Math.max(0, Math.min(1, attack.timer / (attack.maxTimer || 1.8)));
       const blink = Math.floor(t * 14) % 2 === 0;
-      const targetX = playerX + 4;
-      const targetY = playerY - 46;
+      const targetX = attack.targetX !== undefined ? attack.targetX : (playerX + 18);
+      const targetY = attack.targetY !== undefined ? attack.targetY : (playerY - 40);
 
-      // Dashed icy-blue vertical drop trajectory line
+      // Dashed icy-cyan/gold DIAGONAL trajectory line (upper-right sky -> down-left to player)
       ctx.save();
-      ctx.strokeStyle = blink ? 'rgba(98, 232, 255, 0.88)' : 'rgba(255, 224, 72, 0.78)';
-      ctx.lineWidth = 2.4;
-      ctx.setLineDash([7, 5]);
-      ctx.lineDashOffset = -t * 75;
+      ctx.strokeStyle = blink ? 'rgba(98, 232, 255, 0.90)' : 'rgba(255, 224, 72, 0.82)';
+      ctx.lineWidth = 2.6;
+      ctx.setLineDash([8, 6]);
+      ctx.lineDashOffset = -t * 90;
       ctx.beginPath();
-      ctx.moveTo(ax, 34);
+      ctx.moveTo(ax, ay);
       ctx.lineTo(targetX, targetY);
       ctx.stroke();
       ctx.restore();
 
-      // Shrinking cyan-yellow lock ring at sky spawn point
-      const lockR = 20 + ratio * 22;
+      // Target reticle near player's upper-right guard zone
       ctx.save();
-      ctx.strokeStyle = ratio < 0.38 ? '#ffe247' : '#58e1ff';
-      ctx.lineWidth = ratio < 0.38 ? 3.2 : 2.2;
-      ctx.globalAlpha = 0.88;
+      ctx.strokeStyle = ratio < 0.38 ? '#ffe247' : '#63e8ff';
+      ctx.lineWidth = 2.2;
+      ctx.globalAlpha = 0.72;
       ctx.beginPath();
-      ctx.arc(ax, 28, lockR, 0, Math.PI * 2);
+      ctx.arc(targetX, targetY, 10 + ratio * 12, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
 
-      // Dark storm cloud puff behind hailstones
+      // Shrinking lock-on ring at upper-right sky spawn point
+      const lockR = 20 + ratio * 24;
+      ctx.save();
+      ctx.strokeStyle = ratio < 0.38 ? '#ffe247' : '#58e1ff';
+      ctx.lineWidth = ratio < 0.38 ? 3.2 : 2.2;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.arc(ax, ay, lockR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Dark winter storm cloud puff behind upper-right hailstone
       ctx.save();
       ctx.fillStyle = '#1d3154';
       ctx.beginPath();
-      ctx.arc(ax - 18, 22, 16, 0, Math.PI * 2);
-      ctx.arc(ax + 18, 22, 16, 0, Math.PI * 2);
-      ctx.arc(ax, 17, 20, 0, Math.PI * 2);
+      ctx.arc(ax - 18, ay - 6, 16, 0, Math.PI * 2);
+      ctx.arc(ax + 18, ay - 6, 16, 0, Math.PI * 2);
+      ctx.arc(ax, ay - 11, 20, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#314b73';
       ctx.beginPath();
-      ctx.arc(ax - 12, 19, 13, 0, Math.PI * 2);
-      ctx.arc(ax + 12, 19, 13, 0, Math.PI * 2);
-      ctx.arc(ax, 15, 16, 0, Math.PI * 2);
+      ctx.arc(ax - 12, ay - 9, 13, 0, Math.PI * 2);
+      ctx.arc(ax + 12, ay - 9, 13, 0, Math.PI * 2);
+      ctx.arc(ax, ay - 13, 16, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
-      // Trembling 3-stone ice hail cluster
-      const jitterX = Math.sin(t * 48) * 2.2;
-      const jitterY = Math.cos(t * 42) * 1.8;
-      stones.forEach((st, idx) => {
-        drawIceStone(ctx, ax + st.dx + jitterX, 28 + st.dy + jitterY, st.r || 10, t * (st.spin || 1) * 4 + idx);
-      });
+      // Trembling uploaded hailstone sprite ready to plunge down-left!
+      const jitterX = Math.sin(t * 50) * 2.2;
+      const jitterY = Math.cos(t * 44) * 1.8;
+      const warnFrame = Math.floor(t * 10) % 2;
+      drawHailSprite(warnFrame, ax + jitterX, ay + 4 + jitterY, 76);
 
-      // Glossy cartoon warning pill directly below cloud
+      // Glossy cartoon warning pill directly below upper-right hailstone
       const minX = (curView && curView.minX !== undefined) ? curView.minX + 8 : 8;
-      const maxX = (curView && curView.maxX !== undefined) ? curView.maxX - 150 : W - 150;
-      const bw = 142;
+      const maxX = (curView && curView.maxX !== undefined) ? curView.maxX - 154 : W - 154;
+      const bw = 146;
       const bh = 24;
       const bx = Math.min(maxX, Math.max(minX, ax - bw / 2));
-      const by = 56;
+      const by = ay + 28;
       const pGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
       pGrad.addColorStop(0, blink ? '#35caff' : '#ff9814');
       pGrad.addColorStop(1, blink ? '#136ed4' : '#d65c00');
@@ -2241,26 +2270,43 @@ window.RunRenderer = (function () {
       ctx.fillStyle = '#ffffff';
       ctx.fillText('우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
     } else if (attack.phase === 'fall') {
-      stones.forEach((st, idx) => {
-        const sx = ax + st.dx;
-        const sy = ay + st.dy;
-        for (let k = 1; k <= 3; k++) {
-          ctx.save();
-          ctx.globalAlpha = 0.34 - k * 0.08;
-          ctx.fillStyle = '#8be4ff';
-          ctx.fillRect(Math.floor(sx - 2.5), Math.floor(sy - k * 14 - 12), 5, 13);
-          ctx.restore();
-        }
-        drawIceStone(ctx, sx, sy, (st.r || 11) + 1.5, t * (st.spin || 1) * 14 + idx);
-      });
+      // Animate smoothly across uploaded frames 0..6 as the hailstone plunges down-left!
+      const prog = Math.max(0, Math.min(1, Number(attack.progress) || 0));
+      const fallFrame = Math.min(6, Math.floor(prog * 6.99));
+      // Subtle cyan atmospheric glow behind falling hailstone
+      ctx.save();
+      const glow = ctx.createRadialGradient(ax, ay, 4, ax, ay, 34);
+      glow.addColorStop(0, 'rgba(130, 236, 255, 0.45)');
+      glow.addColorStop(1, 'rgba(130, 236, 255, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(ax, ay, 34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      drawHailSprite(fallFrame, ax, ay, 92);
     } else if (attack.phase === 'deflected') {
+      // Crisp frame-7 ice splash burst at the exact umbrella contact point
+      if ((attack.impactTimer || 0) > 0 && attack.impactX !== undefined) {
+        const spAlpha = Math.max(0, Math.min(1, attack.impactTimer / 0.18));
+        ctx.save();
+        ctx.globalAlpha = spAlpha;
+        drawHailSprite(7, attack.impactX, attack.impactY, 96 + (1 - spAlpha) * 18);
+        ctx.restore();
+      }
+      // Bounced/deflected ice stone spinning up-right away from the tilted umbrella
       const alpha = Math.max(0, Math.min(1, (attack.deflectTimer || 0) / 0.55));
+      ctx.save();
       ctx.globalAlpha = alpha;
-      stones.forEach((st, idx) => {
-        const spreadX = (idx === 0 ? 0 : (idx === 1 ? -14 : 18));
-        const spreadY = (idx === 0 ? 0 : -10);
-        drawIceStone(ctx, ax + st.dx + spreadX, ay + st.dy + spreadY, st.r || 10, t * 20 + idx * 2);
-      });
+      drawHailSprite(0, ax, ay, 72, t * 14);
+      ctx.restore();
+    } else if (attack.phase === 'impact') {
+      // Direct-hit ice shatter splash (frame 7)
+      const spAlpha = Math.max(0, Math.min(1, (attack.deflectTimer || 0) / 0.36));
+      ctx.save();
+      ctx.globalAlpha = spAlpha;
+      drawHailSprite(7, attack.impactX !== undefined ? attack.impactX : ax, attack.impactY !== undefined ? attack.impactY : ay, 102 + (1 - spAlpha) * 20);
+      ctx.restore();
     }
     ctx.restore();
   }
@@ -2588,8 +2634,11 @@ window.RunRenderer = (function () {
     const {
       sliding, inAir, gliding, invulnTimer, shield, feverTimer, running,
       dead = false, speedBoostTimer = 0, skinDef = null,
-      umbrellaOn = false, maskOn = false, maskParryTimer = 0, umbrellaBrokenTimer = 0,
+      umbrellaOn = false, maskOn = false, maskParryTimer = 0, umbrellaParryTimer = 0, umbrellaBrokenTimer = 0,
       gustWarning = false,
+      hailAimActive = false,
+      hailAimAngle = 0.74,
+      hailBlockRecoil = 0,
       scaleHeight = 52,
       ghostAlpha = 1,
       teamOutlineColor = ''
@@ -2710,7 +2759,7 @@ window.RunRenderer = (function () {
     }
 
     // Uploaded Sky-Blue & White Umbrella OR Mythic Skin Custom Umbrella (e.g. Hades Skull Flame Umbrella!)
-    const showUmbrella = !dead && ((col.umbrella && gliding) || umbrellaOn);
+    const showUmbrella = !dead && ((col.umbrella && gliding) || umbrellaOn || (hailAimActive && hailBlockRecoil > 0.01));
     const customUmb = skinDef && skinDef.customUmbrella ? getSprite(skinDef.customUmbrella) : null;
     const umbSpr = customUmb || getSprite('spr_umbrella');
     if (showUmbrella && umbSpr) {
@@ -2726,7 +2775,26 @@ window.RunRenderer = (function () {
         ctx.translate(cx + 8 + jitterX, uy - 2);
         ctx.rotate(tilt);
         ctx.drawImage(umbSpr, Math.floor(-uw / 2), Math.floor(-uh * 0.52), uw, uh);
+      } else if (hailAimActive) {
+        // ONLY when blocking winter hail: tilt umbrella toward the upper-right incoming diagonal hailstone!
+        const pivotX = cx + 11;
+        const pivotY = cy - (isProne ? 20 : Math.round(scaleHeight * 0.62));
+        const recoilKick = Math.sin(Math.min(1, hailBlockRecoil) * Math.PI) * 5;
+        ctx.translate(pivotX, pivotY);
+        ctx.rotate(hailAimAngle);
+        if (umbrellaParryTimer > 0 || hailBlockRecoil > 0.05) {
+          ctx.save();
+          ctx.strokeStyle = hailBlockRecoil > 0.05 ? '#b8f7ff' : 'rgba(104, 236, 255, 0.85)';
+          ctx.lineWidth = hailBlockRecoil > 0.05 ? 3.5 : 2.5;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.arc(0, -uh * 0.44 + recoilKick, uw * 0.56, -Math.PI * 0.86, -Math.PI * 0.14);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.drawImage(umbSpr, Math.floor(-uw / 2), Math.floor(-uh * 0.92 + recoilKick), uw, uh);
       } else {
+        // Normal rain / flood / heat / glide: standard upright overhead umbrella
         ctx.drawImage(umbSpr, Math.floor(cx - uw / 2 + 8), Math.floor(uy - 24), uw, uh);
       }
       ctx.restore();
@@ -2743,6 +2811,27 @@ window.RunRenderer = (function () {
       ctx.rotate(-0.5 - prog * 2.4);
       ctx.scale(1, -0.82);
       ctx.drawImage(umbSpr, Math.floor(-uw / 2), Math.floor(-uh / 2), uw, uh);
+      ctx.restore();
+    }
+
+    // Glowing cyan Timing Seal Ring while fresh umbrella hail-parry window is active!
+    if (!dead && hailAimActive && umbrellaOn && umbrellaParryTimer > 0) {
+      const uRatio = Math.max(0, Math.min(1, umbrellaParryTimer / 3.5));
+      const uR = isProne ? 25 : Math.round(scaleHeight * 0.56);
+      const uCy = cy - (isProne ? 14 : scaleHeight * 0.48);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(92, 224, 255, 0.28)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, uCy, uR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#6beeff';
+      ctx.lineWidth = 2.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, uCy, uR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * uRatio);
+      ctx.stroke();
       ctx.restore();
     }
 
@@ -3744,8 +3833,24 @@ window.RunRenderer = (function () {
         umbrellaOn: run.umbrellaOn,
         maskOn: run.maskOn,
         maskParryTimer: run.maskParryTimer || 0,
+        umbrellaParryTimer: run.umbrellaParryTimer || 0,
         umbrellaBrokenTimer: run.umbrellaBrokenTimer || 0,
         gustWarning: Boolean(run.weatherEvent === 'gust' && run.umbrellaOn && run.feverTimer <= 0),
+        hailAimActive: Boolean(
+          (run.umbrellaOn && run.hailAttack && (run.hailAttack.phase === 'warn' || run.hailAttack.phase === 'fall') && !run.hailAttack.checked) ||
+          (run.umbrellaHailBlockTimer || 0) > 0
+        ),
+        hailAimAngle: (() => {
+          if (run.hailAttack && (run.hailAttack.phase === 'warn' || run.hailAttack.phase === 'fall')) {
+            const pivotX = run.playerX + 11;
+            const pivotY = run.playerY - (run.sliding ? 20 : 38);
+            const dx = Math.max(20, run.hailAttack.x - pivotX);
+            const dy = Math.min(-20, run.hailAttack.y - pivotY);
+            return Math.max(0.46, Math.min(0.96, Math.atan2(dy, dx) + Math.PI / 2));
+          }
+          return run.umbrellaHailAimAngle || 0.74;
+        })(),
+        hailBlockRecoil: Math.max(0, Math.min(1, (run.umbrellaHailBlockTimer || 0) / 0.28)),
         hitPoseTimer: run.hitPoseTimer || 0,
         itemPoseTimer: run.itemPoseTimer || 0,
         winPoseTimer: run.winPoseTimer || 0,

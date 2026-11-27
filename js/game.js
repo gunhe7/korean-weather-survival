@@ -9307,6 +9307,7 @@
     run.maskOn = false;
     run.covidAttack = null;
     run.hailAttack = null;
+    run.umbrellaHailBlockTimer = 0;
     run.passingCar = null;
     run.feverTimer = 0;
     run.mudBlindTimer = 0;
@@ -11412,6 +11413,7 @@
       run.weatherEventTimer = 6.5;
       run.clearSkyTimer = 6.5;
       run.hailAttack = null;
+    run.umbrellaHailBlockTimer = 0;
       run.covidAttack = null;
       run.heatGauge = 0;
       run.mudBlindTimer = 0;
@@ -11589,7 +11591,9 @@
       covidAttack: null,
       covidAttackCd: 0,
       hailAttack: null,
-      hailAttackCd: 3.2,
+      hailAttackCd: 2.6,
+      umbrellaHailBlockTimer: 0,
+      umbrellaHailAimAngle: 0.74,
 
       // Obstacles & Collectibles
       obstacleCd: 0.55,
@@ -12831,7 +12835,7 @@
           SFX.umbrellaToggle(false);
           Renderer.spawnFloater('오토 기어: 우산 자동 접힘!', '#ffcf6e', run.playerX + 8, run.playerY - 46);
         }
-      } else if ((isRainingNow || hailIncoming) && !run.umbrellaOn && run.umbrellaBrokenTimer <= 0) {
+      } else if ((isRainingNow || hailIncoming) && (!run.umbrellaOn || (hailIncoming && run.umbrellaParryTimer <= 0)) && run.umbrellaBrokenTimer <= 0) {
         run.umbrellaOn = true;
         run.umbrellaActiveTimer = GEAR_DURATION;
         run.umbrellaParryTimer = UMBRELLA_PARRY_WINDOW;
@@ -13121,44 +13125,88 @@
       }
     }
 
-    // ---- SKY HAILSTONE DROP EVENT (BLOCKED BY UMBRELLA!) ----
+    // ---- WINTER DIAGONAL HAILSTONE EVENT (WINTER ONLY · CORONA-STYLE TIMED UMBRELLA PARRY!) ----
+    if (run.umbrellaHailBlockTimer > 0) {
+      run.umbrellaHailBlockTimer = Math.max(0, run.umbrellaHailBlockTimer - dt);
+    }
     if (run.hailAttack) {
       const hAtk = run.hailAttack;
+      hAtk.animT = (hAtk.animT || 0) + dt;
+      if (hAtk.impactTimer > 0) hAtk.impactTimer = Math.max(0, hAtk.impactTimer - dt);
+      const guardX = run.playerX + 18;
+      const guardY = Math.max(76, Math.min(Renderer.GROUND_Y - 26, run.playerY - 40));
+
       if (hAtk.phase === 'warn') {
         hAtk.timer -= dt;
-        const targetX = run.playerX + 6;
-        hAtk.x += (targetX - hAtk.x) * Math.min(1, dt * 8);
+        hAtk.targetX = guardX;
+        hAtk.targetY = guardY;
+        const desiredSpawnX = Math.min(getSpawnRight() - 38, Math.max(run.playerX + 150, guardX + 168));
+        hAtk.x += (desiredSpawnX - hAtk.x) * Math.min(1, dt * 6);
         if (hAtk.timer <= 0) {
           hAtk.phase = 'fall';
-          hAtk.vy = 430 + run.speed * 0.28;
-          hAtk.vx = 0;
+          hAtk.startX = hAtk.x;
+          hAtk.startY = hAtk.y;
+          const dx = hAtk.targetX - hAtk.x;
+          const dy = hAtk.targetY - hAtk.y;
+          const dist = Math.max(1, Math.hypot(dx, dy));
+          const spd = 395 + run.speed * 0.24;
+          hAtk.vx = (dx / dist) * spd;
+          hAtk.vy = (dy / dist) * spd;
+          hAtk.totalDist = dist;
+          hAtk.progress = 0;
           hAtk.checked = false;
           SFX.hailDrop();
         }
       } else if (hAtk.phase === 'fall') {
-        hAtk.vy = (hAtk.vy || 430) + 420 * dt;
+        // Accelerate smoothly along down-left diagonal toward player's umbrella guard zone
+        const accel = 1 + dt * 0.42;
+        hAtk.vx *= accel;
+        hAtk.vy *= accel;
+        hAtk.x += hAtk.vx * dt;
         hAtk.y += hAtk.vy * dt;
-        hAtk.x += (run.playerX + 4 - hAtk.x) * Math.min(1, dt * 4.5);
-        if (!hAtk.checked && hAtk.y >= run.playerY - 44) {
+        // Gentle tracking toward moving/jumping player so trajectory stays fair like Corona rush
+        const toY = guardY - hAtk.y;
+        if (hAtk.x > guardX + 18) {
+          hAtk.y += toY * Math.min(1, dt * 2.4);
+        }
+        const remDist = Math.hypot(guardX - hAtk.x, guardY - hAtk.y);
+        hAtk.progress = Math.max(0, Math.min(1, 1 - remDist / Math.max(40, hAtk.totalDist || 240)));
+
+        if (!hAtk.checked && (remDist <= 30 || hAtk.x <= run.playerX + 20 || hAtk.y >= run.playerY - 22)) {
           hAtk.checked = true;
+          const hitX = run.playerX + 18;
+          const hitY = Math.max(70, run.playerY - 40);
+          // Compute exact clockwise umbrella tilt angle pointing up-right toward incoming hailstone
+          const aimDx = Math.max(24, (hAtk.startX || (hitX + 160)) - (run.playerX + 10));
+          const aimDy = Math.min(-24, (hAtk.startY || 34) - hitY);
+          const aimTilt = Math.max(0.46, Math.min(0.96, Math.atan2(aimDy, aimDx) + Math.PI / 2));
+
           if (run.feverTimer > 0) {
             hAtk.phase = 'deflected';
             hAtk.deflectTimer = 0.55;
-            hAtk.vx = 200;
-            hAtk.vy = -250;
+            hAtk.impactTimer = 0.16;
+            hAtk.impactX = hitX;
+            hAtk.impactY = hitY;
+            hAtk.vx = 250;
+            hAtk.vy = -260;
             run.score += Math.round(250 * run.scoreMult);
             SFX.hailBlock();
-            Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 42, '#ffe866', true);
-            Renderer.spawnFloater('피버! 우박 격파 +250', '#ffe866', run.playerX + 10, run.playerY - 56);
+            Renderer.spawnPickupEffect(hitX, hitY, '#ffe866', true);
+            Renderer.spawnFloater('피버! 우박 격파 +250', '#ffe866', hitX, hitY - 16);
           } else if (run.umbrellaOn && run.umbrellaParryTimer > 0) {
             const isPerfect = run.umbrellaParryTimer >= 1.65;
-            const bonusPts = isPerfect ? 320 : 240;
-            const feverGain = isPerfect ? 14 : 10;
+            const bonusPts = isPerfect ? 350 : 250;
+            const feverGain = isPerfect ? 14 : 12;
             const twFevMult = (run.todayWeather && run.todayWeather.feverGainMult) ? run.todayWeather.feverGainMult : 1.0;
+            run.umbrellaHailBlockTimer = 0.58;
+            run.umbrellaHailAimAngle = aimTilt;
             hAtk.phase = 'deflected';
             hAtk.deflectTimer = 0.55;
-            hAtk.vx = 210;
-            hAtk.vy = -260;
+            hAtk.impactTimer = 0.18;
+            hAtk.impactX = hitX + 4;
+            hAtk.impactY = hitY - 4;
+            hAtk.vx = 270;
+            hAtk.vy = -275;
             run.score += Math.round(bonusPts * run.scoreMult);
             run.feverCharge = Math.min(100, run.feverCharge + feverGain * twFevMult);
             if (run.feverCharge >= 100 && run.feverTimer <= 0) {
@@ -13167,29 +13215,40 @@
               SFX.hailBlock();
             }
             haptic(16);
-            Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 44, '#6beeff', true);
+            Renderer.spawnPickupEffect(hitX + 4, hitY - 4, '#6beeff', true);
             Renderer.spawnFloater(
-              isPerfect ? `우박 완벽 방어! +${bonusPts}` : `우박 차단 성공! +${bonusPts}`,
+              isPerfect ? `완벽 우박 방어! +${bonusPts}` : `우박 차단 성공! +${bonusPts}`,
               '#6beeff',
-              run.playerX + 10,
-              run.playerY - 56
+              hitX,
+              hitY - 18
             );
           } else if (run.umbrellaOn) {
+            // 미리 펴둔 오래된 우산은 코로나 구마스크와 동일하게 체력 피해 대신 우산이 접히며 방어!
+            run.umbrellaOn = false;
+            run.umbrellaActiveTimer = 0;
+            run.umbrellaParryTimer = 0;
+            run.umbrellaHailBlockTimer = 0.32;
+            run.umbrellaHailAimAngle = aimTilt;
             hAtk.phase = 'deflected';
             hAtk.deflectTimer = 0.5;
-            hAtk.vx = 180;
-            hAtk.vy = -220;
-            run.score += Math.round(120 * run.scoreMult);
+            hAtk.impactTimer = 0.16;
+            hAtk.impactX = hitX;
+            hAtk.impactY = hitY - 2;
+            hAtk.vx = 225;
+            hAtk.vy = -235;
             SFX.hailBlock();
             haptic(12);
-            Renderer.spawnPickupEffect(run.playerX + 10, run.playerY - 44, '#9beeff', false);
-            Renderer.spawnFloater('우박 방어! +120', '#9beeff', run.playerX + 10, run.playerY - 54);
+            Renderer.spawnPickupEffect(hitX, hitY - 2, '#9beeff', false);
+            Renderer.spawnFloater('우산 방어! (낙하 시 새로 펼치면 보너스!)', '#9beeff', hitX, hitY - 16);
           } else if (run.shield) {
             consumeShieldHit('보호막 우박 방어! 잠시 무적!');
             hAtk.phase = 'deflected';
             hAtk.deflectTimer = 0.55;
-            hAtk.vx = 190;
-            hAtk.vy = -240;
+            hAtk.impactTimer = 0.16;
+            hAtk.impactX = hitX;
+            hAtk.impactY = hitY;
+            hAtk.vx = 240;
+            hAtk.vy = -250;
           } else {
             run.hp = Math.max(0, run.hp - 1);
             run.hitPoseTimer = 0.45;
@@ -13201,50 +13260,63 @@
             triggerCameraShake(7, 0.28);
             haptic(35);
             SFX.hit();
-            run.lastHitCause = '하늘에서 떨어진 우박을 우산으로 막지 못해 쓰러졌습니다!';
+            run.lastHitCause = '겨울 하늘에서 떨어진 우박을 우산으로 막지 못해 쓰러졌습니다!';
             Renderer.spawnPickupEffect(run.playerX + 8, run.playerY - 34, '#8be4ff', false);
             Renderer.spawnFloater('우박 적중! -1 HP (우산 펴기!)', '#7ae4ff', run.playerX + 10, run.playerY - 54);
-            hAtk.phase = 'deflected';
-            hAtk.deflectTimer = 0.35;
-            hAtk.vx = -90;
-            hAtk.vy = -120;
+            hAtk.phase = 'impact';
+            hAtk.deflectTimer = 0.36;
+            hAtk.impactTimer = 0.36;
+            hAtk.impactX = run.playerX + 8;
+            hAtk.impactY = run.playerY - 30;
           }
         }
-        if (hAtk.y > Renderer.GROUND_Y + 28) run.hailAttack = null;
+        if (hAtk.y > Renderer.GROUND_Y + 28 || hAtk.x < -70) run.hailAttack = null;
       } else if (hAtk.phase === 'deflected') {
-        hAtk.x += (hAtk.vx || 200) * dt;
-        hAtk.y += (hAtk.vy || -240) * dt;
-        hAtk.vy = (hAtk.vy || -240) + 560 * dt;
+        hAtk.x += (hAtk.vx || 240) * dt;
+        hAtk.y += (hAtk.vy || -250) * dt;
+        hAtk.vy = (hAtk.vy || -250) + 560 * dt;
         hAtk.deflectTimer -= dt;
-        if (hAtk.deflectTimer <= 0 || hAtk.y > Renderer.GROUND_Y + 28) {
+        if (hAtk.deflectTimer <= 0 || hAtk.y > Renderer.GROUND_Y + 34 || hAtk.x > getSpawnRight() + 80) {
           run.hailAttack = null;
+    run.umbrellaHailBlockTimer = 0;
+        }
+      } else if (hAtk.phase === 'impact') {
+        hAtk.deflectTimer -= dt;
+        if (hAtk.deflectTimer <= 0) {
+          run.hailAttack = null;
+    run.umbrellaHailBlockTimer = 0;
         }
       }
-    } else if (!run.isTutorial && run.seasonId === 'winter' && (run.year || 1) >= 3 && !run.covidAttack && run.weatherEvent !== 'gust' && run.weatherEvent !== 'covid') {
+    } else if (!run.isTutorial && run.seasonId === 'winter' && !run.covidAttack && run.weatherEvent !== 'gust' && run.weatherEvent !== 'covid') {
       run.hailAttackCd -= dt;
       if (run.hailAttackCd <= 0) {
-        const warnDur = Math.max(1.55, 2.0 / Math.min(1.25, diff.weatherPaceMult));
-        run.hailAttackCd = Math.max(5.5, (7.5 + Math.random() * 2.5) / Math.min(1.3, diff.weatherPaceMult));
+        const warnDur = Math.max(1.65, 2.0 / Math.min(1.25, diff.weatherPaceMult));
+        run.hailAttackCd = Math.max(5.2, (6.8 + Math.random() * 2.2) / Math.min(1.3, diff.weatherPaceMult));
+        const guardX = run.playerX + 18;
+        const guardY = Math.max(76, Math.min(Renderer.GROUND_Y - 26, run.playerY - 40));
+        const spawnX = Math.min(getSpawnRight() - 38, Math.max(run.playerX + 150, guardX + 168));
         run.hailAttack = {
           phase: 'warn',
           timer: warnDur,
           maxTimer: warnDur,
-          x: run.playerX + 8,
-          y: 28,
+          x: spawnX,
+          y: 34,
+          startX: spawnX,
+          startY: 34,
+          targetX: guardX,
+          targetY: guardY,
           vx: 0,
           vy: 0,
-          checked: false,
-          stones: [
-            { dx: 0, dy: 0, r: 12, spin: 1.0 },
-            { dx: -16, dy: -12, r: 9, spin: -1.4 },
-            { dx: 15, dy: -10, r: 9, spin: 1.3 }
-          ]
+          progress: 0,
+          animT: 0,
+          impactTimer: 0,
+          checked: false
         };
         SFX.playWeatherCue('hail');
         showWeatherCenterAlert('hail');
       }
     } else {
-      run.hailAttackCd = Math.min(run.hailAttackCd, 3.2);
+      run.hailAttackCd = Math.min(run.hailAttackCd, 2.6);
     }
 
     // ---- SPAWN TIMERS ----
@@ -13550,6 +13622,7 @@
     run.maskParryTimer = 0;
     run.covidAttack = null;
     run.hailAttack = null;
+    run.umbrellaHailBlockTimer = 0;
     releaseAllControlButtons();
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
@@ -13768,7 +13841,7 @@
       run.feverTimer <= 0
     );
     const needCovidMask = covidUrgent && !(run.maskOn && run.maskParryTimer > 0);
-    const needHailUmb = hailUrgent && !run.umbrellaOn;
+    const needHailUmb = hailUrgent && !(run.umbrellaOn && run.umbrellaParryTimer > 0);
     const needFoldUmb = activeEv === 'gust' && run.umbrellaOn && run.feverTimer <= 0;
     const hudRainNow = activeEv === 'rain' || activeEv === 'flood' || Boolean(twHazHud && (twHazHud.rainActive || twHazHud.floodActive));
     const hudHeatNow = activeEv === 'heat' || Boolean(twHazHud && twHazHud.heatActive);
@@ -13872,12 +13945,13 @@
 
     // Umbrella & Mask Toggle Buttons
     const umbBroken = run.umbrellaBrokenTimer > 0;
+    const umbParryReady = hailUrgent && run.umbrellaOn && run.umbrellaParryTimer > 0;
     hudToggle('umbOn', el.btnToggleUmbrella, 'on', run.umbrellaOn);
     hudToggle('umbBrk', el.btnToggleUmbrella, 'broken', umbBroken);
-    hudToggle('umbFold', el.btnToggleUmbrella, 'urgent-fold', needFoldUmb);
-    hudToggle('umbOpen', el.btnToggleUmbrella, 'urgent-open', needOpenUmb && !umbBroken);
-    if (doSlow || hudCache._umbStateSig !== `${umbBroken}|${needFoldUmb}|${run.umbrellaOn}|${needOpenUmb}`) {
-      hudCache._umbStateSig = `${umbBroken}|${needFoldUmb}|${run.umbrellaOn}|${needOpenUmb}`;
+    hudToggle('umbFold', el.btnToggleUmbrella, 'urgent-fold', needFoldUmb || (needHailUmb && !umbBroken));
+    hudToggle('umbOpen', el.btnToggleUmbrella, 'urgent-open', !needFoldUmb && !needHailUmb && needOpenUmb && !umbBroken);
+    if (doSlow || hudCache._umbStateSig !== `${umbBroken}|${needFoldUmb}|${needHailUmb}|${umbParryReady}|${run.umbrellaOn}|${needOpenUmb}`) {
+      hudCache._umbStateSig = `${umbBroken}|${needFoldUmb}|${needHailUmb}|${umbParryReady}|${run.umbrellaOn}|${needOpenUmb}`;
       if (umbBroken) {
         const umbBrkRatio = run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD;
         hudText('umbSt', el.gearUmbrellaState, `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`);
@@ -13886,6 +13960,13 @@
         const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
         hudText('umbSt', el.gearUmbrellaState, `접기! ${rem.toFixed(1)}s`);
         hudWidth('umbBar', el.gearUmbrellaBar, `${Math.min(100, ((run.gustExposeTimer || 0) / gustLimit) * 100).toFixed(1)}%`);
+      } else if (needHailUmb) {
+        hudText('umbSt', el.gearUmbrellaState, '타이밍!');
+        hudWidth('umbBar', el.gearUmbrellaBar, '100%');
+      } else if (umbParryReady) {
+        const ratio = run.umbrellaActiveTimer / GEAR_DURATION;
+        hudText('umbSt', el.gearUmbrellaState, '방어 ON');
+        hudWidth('umbBar', el.gearUmbrellaBar, `${(ratio * 100).toFixed(1)}%`);
       } else if (run.umbrellaOn) {
         const ratio = run.umbrellaActiveTimer / GEAR_DURATION;
         hudText('umbSt', el.gearUmbrellaState, `${run.umbrellaActiveTimer.toFixed(1)}s`);
