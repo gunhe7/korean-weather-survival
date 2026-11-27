@@ -23297,3 +23297,512 @@ input:focus-visible {
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   v20261121hd130 — OVERWATCH-STYLE LARGE TIER LOGO & PROGRESS BAR PANEL
+   + LARGER IPAD / TABLET CHARACTER STAGE
+   ========================================================================== */
+
+/* Right Panel: Overwatch-Style Giant Tier Emblem + Segmented Trophy Progress Bar */
+.comp-ow-panel {
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 10px 14px 12px;
+  gap: 8px;
+  background:
+    radial-gradient(ellipse 80% 58% at 50% 42%, rgba(44, 108, 224, 0.42) 0%, transparent 72%),
+    linear-gradient(180deg, rgba(22, 54, 120, 0.94) 0%, rgba(9, 23, 58, 0.98) 100%);
+}
+
+.comp-ow-showcase {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.14s ease;
+}
+
+.comp-ow-showcase:hover .comp-ow-emblem-img {
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.65)) brightness(1.08);
+}
+
+.comp-ow-showcase:active {
+  transform: scale(0.97);
+}
+
+.comp-ow-emblem-stage {
+  width: clamp(148px, 31vh, 232px);
+  height: clamp(148px, 31vh, 232px);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.comp-ow-diamond-frame {
+  position: absolute;
+  width: 72%;
+  height: 72%;
+  border-radius: 18px;
+  transform: rotate(45deg);
+  border: 3px solid var(--tier-color, #d98c54);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, rgba(6, 16, 40, 0.45) 75%);
+  box-shadow: 0 0 28px rgba(0, 0, 0, 0.42), inset 0 0 18px rgba(255, 255, 255, 0.16);
+  opacity: 0.62;
+  pointer-events: none;
+}
+
+.comp-ow-emblem-glow {
+  inset: -6px;
+  opacity: 0.54;
+  filter: blur(18px);
+}
+
+.comp-ow-emblem-img {
+  width: 96% !important;
+  height: 96% !important;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.68));
+}
+
+.comp-ow-tier-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.comp-ow-tier-name {
+  font-size: clamp(22px, 3.6vh, 32px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #ffe566;
+  text-shadow: 0 3px 0 #071022, -1.5px 0 0 #071022, 1.5px 0 0 #071022, 0 0 16px rgba(255, 214, 72, 0.35);
+  line-height: 1.08;
+}
+
+.comp-ow-trophy-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(6, 15, 36, 0.78);
+  border: 2px solid #071022;
+  box-shadow: 0 2.5px 0 #071022;
+}
+
+.comp-ow-trophy-total strong {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-ow-trophy-total span {
+  font-size: 11px;
+  font-weight: 800;
+  color: #9ec8f8;
+}
+
+/* Overwatch-Style Segmented Trophy Progress Bar Section */
+.comp-ow-bar-box {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(6, 15, 36, 0.82);
+  border: 2.5px solid #071022;
+  box-shadow: inset 0 1.5px 0 rgba(162, 224, 255, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.comp-ow-bar-ends {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.comp-ow-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #e6f4ff;
+  text-shadow: 0 1.5px 0 #071022;
+}
+
+.comp-ow-mini-ico {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.6));
+}
+
+.comp-ow-pct {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffe866;
+  text-shadow: 0 2px 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-ow-bar-track {
+  position: relative;
+  width: 100%;
+  height: 26px;
+  border-radius: 8px;
+  background: #040b1c;
+  border: 2.5px solid #02060f;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  transform: skewX(-8deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-ow-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 5px;
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 14px rgba(255, 218, 72, 0.55);
+}
+
+.comp-ow-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 0 10px #ffffff;
+}
+
+.comp-ow-bar-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(10% - 1.5px),
+    rgba(4, 11, 28, 0.42) calc(10% - 1.5px) 10%
+  );
+}
+
+.comp-ow-bar-val {
+  position: relative;
+  z-index: 2;
+  transform: skewX(8deg);
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.8px 0 #071022, -1px 0 0 #071022, 1px 0 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-ow-bar-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.comp-ow-remain-txt {
+  font-size: 11px;
+  font-weight: 800;
+  color: #9ce6ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-ow-detail-btn {
+  padding: 3px 9px;
+  border-radius: 7px;
+  border: 1.8px solid #071022;
+  background: linear-gradient(180deg, #2b64c7 0%, #163a82 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 0 #071022;
+}
+
+.comp-ow-detail-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 #071022;
+}
+
+/* iPad / Tablet / Desktop Tall Screens: Heroic Larger Running Character & Proportions! */
+@media (min-width: 740px) and (min-height: 540px) {
+  .comp-ob-main {
+    grid-template-columns: minmax(0, 1.24fr) minmax(300px, 0.96fr);
+    gap: 16px;
+  }
+
+  .comp-ob-left {
+    grid-template-columns: minmax(0, 1.5fr) minmax(136px, 0.58fr);
+    gap: 12px;
+  }
+
+  .comp-ob-overhead {
+    gap: 5px;
+    padding-top: 4px;
+  }
+
+  .comp-ob-overhead .comp-hero-perk-pill {
+    font-size: 13px;
+    padding: 4px 14px;
+  }
+
+  .comp-ob-overhead .comp-hero-char-name {
+    font-size: 22px;
+  }
+
+  .comp-ob-runner-btn {
+    justify-content: center;
+    padding-bottom: 4px;
+  }
+
+  .comp-ob-runner-btn .comp-hero-img {
+    width: clamp(240px, 44vh, 360px) !important;
+    height: clamp(240px, 44vh, 360px) !important;
+    margin-bottom: -18px;
+  }
+
+  .comp-ob-runner-btn .comp-hero-aura {
+    width: clamp(280px, 51vh, 415px) !important;
+    height: clamp(280px, 51vh, 415px) !important;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-54%);
+  }
+
+  .comp-ob-runner-btn .bs-run-dust {
+    bottom: calc(50% - 122px) !important;
+    left: calc(50% - 76px) !important;
+    width: 15px !important;
+    height: 11px !important;
+  }
+
+  .comp-ob-runner-btn .bs-run-dust.d2 {
+    bottom: calc(50% - 128px) !important;
+    left: calc(50% - 58px) !important;
+    width: 12px !important;
+    height: 9px !important;
+  }
+
+  .comp-ob-track-floor {
+    width: 90%;
+    max-width: 340px;
+    height: 22px;
+  }
+
+  .comp-ob-slots-row {
+    max-width: 350px;
+    gap: 9px;
+    margin-top: 6px;
+  }
+
+  .comp-ob-slot {
+    padding: 8px 6px;
+    border-radius: 13px;
+  }
+
+  .comp-ob-slot-lbl {
+    font-size: 11px;
+  }
+
+  .comp-ob-slot strong {
+    font-size: 15px;
+  }
+
+  .comp-ob-mid-stack {
+    gap: 10px;
+  }
+
+  .comp-ob-clock-chip {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .comp-ob-stack-btn {
+    padding: 11px 12px;
+    font-size: 14px;
+    border-radius: 13px;
+  }
+
+  .comp-ow-emblem-stage {
+    width: clamp(178px, 34vh, 256px);
+    height: clamp(178px, 34vh, 256px);
+  }
+
+  .comp-ow-tier-name {
+    font-size: clamp(26px, 4vh, 34px);
+  }
+
+  .comp-ow-trophy-total strong {
+    font-size: 18px;
+  }
+
+  .comp-ow-bar-box {
+    padding: 13px 15px;
+    gap: 9px;
+  }
+
+  .comp-ow-bar-track {
+    height: 30px;
+  }
+
+  .comp-ow-bar-val {
+    font-size: 14px;
+  }
+
+  .comp-ob-chest-btn {
+    width: 76px;
+    height: 66px;
+  }
+
+  .comp-ob-chest-img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .comp-ob-chest-btn span {
+    font-size: 12px;
+  }
+
+  .comp-ob-status-card {
+    height: 66px;
+    padding: 8px 15px;
+    min-width: 210px;
+  }
+
+  .comp-ob-st-tier-ico {
+    width: 42px;
+    height: 42px;
+  }
+
+  .comp-ob-st-copy strong {
+    font-size: 14px;
+  }
+
+  .comp-ob-st-copy span {
+    font-size: 12px;
+  }
+
+  .comp-ob-play-btn {
+    min-width: 236px;
+    height: 66px;
+  }
+
+  .comp-ob-play-main {
+    font-size: 28px;
+  }
+
+  .comp-ob-play-sub {
+    font-size: 12px;
+  }
+}
+
+/* Compact Smartphone Landscape Adjustment for Overwatch Panel */
+@media (max-height: 460px), (max-width: 720px) {
+  .comp-ow-panel {
+    padding: 6px 9px 7px;
+    gap: 4px;
+  }
+
+  .comp-ow-showcase {
+    gap: 3px;
+    padding: 0;
+  }
+
+  .comp-ow-emblem-stage {
+    width: clamp(86px, 27vh, 122px);
+    height: clamp(86px, 27vh, 122px);
+  }
+
+  .comp-ow-diamond-frame {
+    border-radius: 12px;
+    border-width: 2px;
+  }
+
+  .comp-ow-tier-name {
+    font-size: 16px;
+  }
+
+  .comp-ow-trophy-total {
+    padding: 1.5px 8px;
+  }
+
+  .comp-ow-trophy-total strong {
+    font-size: 12px;
+  }
+
+  .comp-ow-trophy-total span {
+    font-size: 9px;
+  }
+
+  .comp-ow-bar-box {
+    padding: 6px 8px;
+    gap: 4px;
+    border-radius: 10px;
+  }
+
+  .comp-ow-end {
+    font-size: 9.5px;
+    gap: 3px;
+  }
+
+  .comp-ow-mini-ico {
+    width: 16px;
+    height: 16px;
+  }
+
+  .comp-ow-pct {
+    font-size: 11px;
+  }
+
+  .comp-ow-bar-track {
+    height: 19px;
+    border-radius: 6px;
+  }
+
+  .comp-ow-bar-val {
+    font-size: 10px;
+  }
+
+  .comp-ow-remain-txt {
+    font-size: 9px;
+  }
+
+  .comp-ow-detail-btn {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+}

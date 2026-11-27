@@ -724,16 +724,18 @@
     compLobbyStartSub: document.getElementById('comp-lobby-start-sub'),
     compLobbySeasonTimer: document.getElementById('comp-lobby-season-timer'),
     compLobbySettleTimer: document.getElementById('comp-lobby-settle-timer'),
-    compLobbyAiBadge: document.getElementById('comp-lobby-ai-badge'),
-    compLobbyAiText: document.getElementById('comp-lobby-ai-text'),
+    compOwTrophyBig: document.getElementById('comp-ow-trophy-big'),
+    compOwCurIco: document.getElementById('comp-ow-cur-ico'),
+    compOwCurLabel: document.getElementById('comp-ow-cur-label'),
+    compOwPct: document.getElementById('comp-ow-pct'),
+    compOwNextLabel: document.getElementById('comp-ow-next-label'),
+    compOwNextIco: document.getElementById('comp-ow-next-ico'),
+    compOwRemainTxt: document.getElementById('comp-ow-remain-txt'),
     btnCompTierEmblem: document.getElementById('btn-comp-tier-emblem'),
     btnCompPayoutPreview: document.getElementById('btn-comp-payout-preview'),
     btnCompLobbyRewards: document.getElementById('btn-comp-lobby-rewards'),
     btnCompStatusCard: document.getElementById('btn-comp-status-card'),
     compStatusTierImg: document.getElementById('comp-status-tier-img'),
-    compLobbyLockLabel: document.getElementById('comp-lobby-lock-label'),
-    compLobbyLockFill: document.getElementById('comp-lobby-lock-fill'),
-    compLobbyLockVal: document.getElementById('comp-lobby-lock-val'),
     compRewardsOverlay: document.getElementById('comp-rewards-overlay'),
     btnCloseCompRewards: document.getElementById('btn-close-comp-rewards'),
     compMatchRuleNote: document.getElementById('comp-match-rule-note'),
@@ -5253,8 +5255,6 @@
     const tier = DATA.getCompTier(myTrophies);
     const ch = getCharDef(save.selectedChar);
     const skin = getEquippedSkin(ch.id);
-    const aiMaxTrophies = DATA.COMP_AI_MAX_TROPHIES ?? 699;
-    const allowAiFallback = myTrophies <= aiMaxTrophies;
 
     if (el.compLobbyTitle) el.compLobbyTitle.textContent = `트로피 경기: ${tier.name}`;
     if (el.compLobbyGems) el.compLobbyGems.textContent = (save.gems || 0).toLocaleString('ko-KR');
@@ -5272,21 +5272,40 @@
       el.compLobbyTierName.textContent = tier.name;
       el.compLobbyTierName.style.color = tier.color;
     }
+    if (el.compOwTrophyBig) {
+      el.compOwTrophyBig.textContent = myTrophies.toLocaleString('ko-KR');
+    }
+    if (el.compOwCurIco) {
+      el.compOwCurIco.src = getTierImgUrl(tier);
+      el.compOwCurIco.alt = tier.name;
+    }
+    if (el.compOwCurLabel) el.compOwCurLabel.textContent = tier.name;
+    const pctNum = Math.max(0, Math.min(100, Math.round(tier.progressPct || 0)));
+    if (el.compOwPct) {
+      el.compOwPct.textContent = tier.next ? `${pctNum}%` : 'MAX';
+      el.compOwPct.style.color = tier.color;
+    }
+    if (el.compOwNextLabel) {
+      el.compOwNextLabel.textContent = tier.next ? tier.next.name : '챔피언';
+    }
+    if (el.compOwNextIco) {
+      const nextT = tier.next || tier;
+      el.compOwNextIco.src = getTierImgUrl(nextT);
+      el.compOwNextIco.alt = nextT.name;
+    }
     if (el.compLobbyTrophyVal) {
       el.compLobbyTrophyVal.textContent = tier.next
         ? `${myTrophies.toLocaleString('ko-KR')} / ${tier.next.minTrophies.toLocaleString('ko-KR')}`
         : `${myTrophies.toLocaleString('ko-KR')} MAX`;
     }
     if (el.compLobbyProgFill) {
-      el.compLobbyProgFill.style.width = `${tier.progressPct}%`;
+      el.compLobbyProgFill.style.width = `${tier.next ? pctNum : 100}%`;
       el.compLobbyProgFill.style.background = `linear-gradient(90deg, ${tier.color}, #ffe866)`;
     }
-    if (el.compLobbyAiBadge) {
-      el.compLobbyAiBadge.classList.toggle('ok', allowAiFallback);
-      el.compLobbyAiBadge.classList.toggle('strict', !allowAiFallback);
-    }
-    if (el.compLobbyAiText) {
-      el.compLobbyAiText.textContent = allowAiFallback ? '1분 후 AI 보충' : '골드+ 실제 매칭';
+    if (el.compOwRemainTxt) {
+      el.compOwRemainTxt.textContent = tier.next
+        ? `${tier.next.name} 승급까지 ${Math.max(0, tier.next.minTrophies - myTrophies).toLocaleString('ko-KR')} 트로피 남음`
+        : '최고 티어 챔피언 달성!';
     }
 
     // 8-Tier Emblem Roadmap (Bronze ~ Champion inside #comp-rewards-overlay)
