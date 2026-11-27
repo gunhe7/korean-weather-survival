@@ -5211,11 +5211,12 @@
       const unlocked = isCharUnlocked(ch.id);
       const selected = save.selectedChar === ch.id;
       const eqSkin = getEquippedSkin(ch.id);
+      const skinRarCls = eqSkin && eqSkin.rarity ? `skin-rar-${eqSkin.rarity}` : 'skin-rar-default';
       const card = document.createElement('button');
       card.type = 'button';
       card.className = `comp-pick-card${selected ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
       card.innerHTML = `
-        <div class="comp-pick-av-box">
+        <div class="comp-pick-av-box ${skinRarCls}">
           <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="comp-pick-av" style="${getSkinFilter(eqSkin) && getSkinFilter(eqSkin) !== 'none' ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
           ${selected ? '<span class="comp-pick-badge on">출전</span>' : (!unlocked ? '<span class="comp-pick-badge lock">잠금</span>' : '')}
         </div>
@@ -5244,7 +5245,7 @@
       const curCh = getCharDef(save.selectedChar);
       const curEqSkin = getEquippedSkin(curCh.id);
       const allSkins = DATA.getSkinsForChar ? DATA.getSkinsForChar(curCh.id) : [];
-      const ownedSkins = allSkins.filter((s) => Array.isArray(save.ownedSkins) && save.ownedSkins.includes(s.id));
+      const ownedSkins = allSkins.filter((s) => Array.isArray(save.unlockedSkins) && save.unlockedSkins.includes(s.id));
       if (el.compSkinsLabel) el.compSkinsLabel.textContent = `${curCh.name} 스킨`;
       if (el.compSkinsCount) el.compSkinsCount.textContent = `보유 ${ownedSkins.length}/${allSkins.length}`;
       el.compCharSkinRow.innerHTML = '';
@@ -7120,11 +7121,12 @@
     const equippedSkin = getEquippedSkin(ch.id);
     const anim = getCharAnimSpec(ch, equippedSkin);
     const tierCls = `tier-${ch.auraType || 'basic'}`;
+    const skinRarCls = equippedSkin && equippedSkin.rarity ? `skin-rar-${equippedSkin.rarity}` : 'skin-rar-default';
     const charSprVer = getCharSpriteVer(anim.skin);
     const charSkins = DATA.getSkinsForChar(ch.id);
     const ownedCharSkins = charSkins.filter((sk) => save.unlockedSkins.includes(sk.id)).length;
 
-    el.detailHeroStage.className = `bs-char-arena ${tierCls}${unlocked ? '' : ' locked'}`;
+    el.detailHeroStage.className = `bs-char-arena ${tierCls} ${skinRarCls}${unlocked ? '' : ' locked'}`;
     if (el.detailSkinCount) el.detailSkinCount.textContent = `스킨 ${ownedCharSkins}/${charSkins.length}`;
     if (el.detailTopGold) el.detailTopGold.textContent = (save.gold || 0).toLocaleString('ko-KR');
     if (el.detailTopGems) el.detailTopGems.textContent = (save.gems || 0).toLocaleString('ko-KR');
@@ -7228,6 +7230,7 @@
       const stats = getCharStats(ch);
       const eqSkin = getEquippedSkin(ch.id);
       const tierCls = `tier-${ch.auraType || 'basic'}`;
+      const skinRarCls = eqSkin && eqSkin.rarity ? `skin-rar-${eqSkin.rarity}` : 'skin-rar-default';
       const charSkins = DATA.getSkinsForChar(ch.id);
       const ownedCharSkins = charSkins.filter((sk) => save.unlockedSkins.includes(sk.id)).length;
       const hpPct = Math.min(100, Math.round((stats.maxHp / 5) * 100));
@@ -7245,7 +7248,7 @@
       card.className = `brawl-card bs-rcard${selected ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
       card.setAttribute('aria-label', `${ch.name} 능력치 상세 보기`);
       card.innerHTML = `
-        <div class="bs-rcard-main ${tierCls}">
+        <div class="bs-rcard-main ${tierCls} ${skinRarCls}">
           <span class="bs-rcard-rays" aria-hidden="true"></span>
           ${selected ? '<span class="bs-rcard-eq">장착</span>' : ''}
           <span class="bs-rcard-skill">${getCharShortSkill(ch)}</span>

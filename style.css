@@ -22112,43 +22112,194 @@ input:focus-visible {
 }
 
 /* ==========================================================================
-   v20261121hd126 — ANIMATED RUNNING CHARACTERS IN CHARACTERS ROSTER TAB
+   v20261121hd126 & hd127 — ANIMATED RUNNING CHARACTERS, SKIN RARITY BACKDROPS
+   & IN-CARD SPRITE FIT (CHARACTERS TAB, DETAIL ARENA & COMP PICKER)
    ========================================================================== */
-.bs-rcard-img.running-roster {
+
+/* 1. Equipped Skin Rarity Card Backdrops (Matches #char-skins-overlay Brawl Stars Tiers) */
+#char-list .bs-rcard-main.skin-rar-default {
+  background:
+    radial-gradient(ellipse 82% 68% at 50% 42%, #72e0ff 0%, #2496f5 46%, #0e4db5 84%, #082d73 100%) !important;
+}
+
+#char-list .bs-rcard-main.skin-rar-rare {
+  background:
+    radial-gradient(ellipse 82% 68% at 50% 42%, #7dff8e 0%, #24d946 46%, #118c2a 84%, #084d17 100%) !important;
+}
+
+#char-list .bs-rcard-main.skin-rar-epic {
+  background:
+    radial-gradient(ellipse 82% 68% at 50% 42%, #e68cff 0%, #ad2eff 46%, #6a13b8 84%, #380769 100%) !important;
+}
+
+#char-list .bs-rcard-main.skin-rar-legendary {
+  background:
+    radial-gradient(ellipse 82% 68% at 50% 42%, #fff57a 0%, #f7b811 46%, #c26d00 84%, #6e3700 100%) !important;
+}
+
+#char-list .bs-rcard-main.skin-rar-mythic {
+  background:
+    radial-gradient(ellipse 82% 68% at 50% 42%, #ff7ab8 0%, #e61c72 46%, #8f0b4d 84%, #4a0428 100%) !important;
+}
+
+/* Harmonized Podium Ring Glow Per Equipped Skin Rarity */
+#char-list .bs-rcard-main.skin-rar-rare .bs-rcard-podium {
+  background: radial-gradient(ellipse at center, rgba(220, 255, 226, 0.64) 0%, rgba(72, 232, 108, 0.36) 52%, rgba(7, 44, 16, 0.42) 100%);
+}
+
+#char-list .bs-rcard-main.skin-rar-epic .bs-rcard-podium {
+  background: radial-gradient(ellipse at center, rgba(244, 220, 255, 0.64) 0%, rgba(190, 92, 255, 0.38) 52%, rgba(36, 8, 66, 0.45) 100%);
+}
+
+#char-list .bs-rcard-main.skin-rar-legendary .bs-rcard-podium {
+  background: radial-gradient(ellipse at center, rgba(255, 250, 206, 0.68) 0%, rgba(255, 198, 52, 0.4) 52%, rgba(72, 34, 4, 0.44) 100%);
+}
+
+#char-list .bs-rcard-main.skin-rar-mythic .bs-rcard-podium {
+  background: radial-gradient(ellipse at center, rgba(255, 222, 240, 0.68) 0%, rgba(255, 78, 158, 0.42) 52%, rgba(62, 6, 36, 0.48) 100%);
+}
+
+/* Character Detail Showcase Arena & Top Ribbon Matched to Equipped Skin Rarity */
+#detail-hero-stage.bs-char-arena.skin-rar-rare {
+  background: radial-gradient(ellipse 68% 72% at 50% 48%, #7dff8e 0%, #24d946 42%, #118c2a 78%, #074013 100%) !important;
+}
+#detail-hero-stage.bs-char-arena.skin-rar-rare .bs-char-ribbon {
+  background: linear-gradient(180deg, #4df26c 0%, #169c31 100%) !important;
+}
+
+#detail-hero-stage.bs-char-arena.skin-rar-epic {
+  background: radial-gradient(ellipse 68% 72% at 50% 48%, #e68cff 0%, #ad2eff 42%, #6a13b8 78%, #2e0657 100%) !important;
+}
+#detail-hero-stage.bs-char-arena.skin-rar-epic .bs-char-ribbon {
+  background: linear-gradient(180deg, #cf70ff 0%, #7d19d4 100%) !important;
+}
+
+#detail-hero-stage.bs-char-arena.skin-rar-legendary {
+  background: radial-gradient(ellipse 68% 72% at 50% 48%, #fff57a 0%, #f7b811 42%, #c26d00 78%, #592b00 100%) !important;
+}
+#detail-hero-stage.bs-char-arena.skin-rar-legendary .bs-char-ribbon {
+  background: linear-gradient(180deg, #ffdf4a 0%, #cf7900 100%) !important;
+}
+
+#detail-hero-stage.bs-char-arena.skin-rar-mythic {
+  background: radial-gradient(ellipse 68% 72% at 50% 48%, #ff7ab8 0%, #e61c72 42%, #8f0b4d 78%, #3d0321 100%) !important;
+}
+#detail-hero-stage.bs-char-arena.skin-rar-mythic .bs-char-ribbon {
+  background: linear-gradient(180deg, #ff5ea8 0%, #ad0e56 100%) !important;
+}
+
+/* Competitive Quick-Picker Avatar Box Skin Rarity Backdrops */
+.comp-pick-av-box.skin-rar-default {
+  background: radial-gradient(circle at 50% 36%, #5ed6ff 0%, #198df0 58%, #0e4db5 100%);
+  border-color: rgba(132, 220, 255, 0.55);
+}
+.comp-pick-av-box.skin-rar-rare {
+  background: radial-gradient(circle at 50% 36%, #7dff8e 0%, #22d640 58%, #118c2a 100%);
+  border-color: rgba(136, 255, 152, 0.68);
+}
+.comp-pick-av-box.skin-rar-epic {
+  background: radial-gradient(circle at 50% 36%, #e68cff 0%, #aa29f5 58%, #6a13b8 100%);
+  border-color: rgba(230, 146, 255, 0.72);
+}
+.comp-pick-av-box.skin-rar-legendary {
+  background: radial-gradient(circle at 50% 36%, #fff263 0%, #f5b60a 58%, #c26f00 100%);
+  border-color: rgba(255, 228, 102, 0.82);
+}
+.comp-pick-av-box.skin-rar-mythic {
+  background: radial-gradient(circle at 50% 36%, #ff7ab8 0%, #e01b6c 58%, #7a0c4c 100%);
+  border-color: rgba(255, 134, 194, 0.85);
+}
+
+/* 2. Fit Running Roster Sprites & Auras Cleanly Inside Card Bounds (Zero Top/Side Clipping) */
+#char-list .bs-rcard-img {
+  width: 66% !important;
+  height: 66% !important;
+  max-height: 68% !important;
+  object-fit: contain;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: center bottom;
+}
+
+#char-list .bs-rcard-img.running-roster {
   animation: rosterRunBounce 0.34s ease-in-out infinite;
   transform-origin: center bottom;
 }
 
 @keyframes rosterRunBounce {
   0%, 100% {
-    transform: translateY(-6px) rotate(1.2deg) scale(1.14);
+    transform: translateY(-3px) rotate(0.9deg) scale(0.98);
   }
   50% {
-    transform: translateY(-11px) rotate(2.8deg) scale(1.16);
+    transform: translateY(-7px) rotate(2.1deg) scale(1);
   }
 }
 
-.bs-rcard-aura {
+#char-list .bs-rcard-aura {
   position: absolute;
-  width: 96%;
-  height: 96%;
+  width: 74% !important;
+  height: 74% !important;
   object-fit: contain;
   pointer-events: none;
   z-index: 1;
-  transform: translateY(-6px) scale(1.06);
-  opacity: 0.92;
+  transform: translateY(-4px) scale(0.98);
+  opacity: 0.9;
 }
 
-.bs-rcard-dust {
-  bottom: 24px !important;
-  left: calc(50% - 34px) !important;
-  width: 11px !important;
-  height: 8px !important;
-}
-
-.bs-rcard-dust.d2 {
-  bottom: 20px !important;
+#char-list .bs-rcard-dust {
+  bottom: 22px !important;
   left: calc(50% - 26px) !important;
   width: 9px !important;
   height: 6px !important;
+}
+
+#char-list .bs-rcard-dust.d2 {
+  bottom: 18px !important;
+  left: calc(50% - 19px) !important;
+  width: 7px !important;
+  height: 5px !important;
+}
+
+@media (min-width: 740px) and (min-height: 540px) {
+  #char-list .bs-rcard-dust {
+    bottom: 32px !important;
+    left: calc(50% - 34px) !important;
+    width: 11px !important;
+    height: 8px !important;
+  }
+  #char-list .bs-rcard-dust.d2 {
+    bottom: 28px !important;
+    left: calc(50% - 26px) !important;
+    width: 9px !important;
+    height: 6px !important;
+  }
+}
+
+@media (max-height: 460px) {
+  #char-list .bs-rcard-img {
+    width: 62% !important;
+    height: 62% !important;
+    max-height: 64% !important;
+  }
+  #char-list .bs-rcard-aura {
+    width: 70% !important;
+    height: 70% !important;
+    transform: translateY(-3px) scale(0.96);
+  }
+  #char-list .bs-rcard-podium {
+    bottom: 18px;
+    height: 12px;
+    width: 52%;
+  }
+  #char-list .bs-rcard-dust {
+    bottom: 17px !important;
+    left: calc(50% - 22px) !important;
+    width: 8px !important;
+    height: 5px !important;
+  }
+  #char-list .bs-rcard-dust.d2 {
+    bottom: 14px !important;
+    left: calc(50% - 16px) !important;
+    width: 6px !important;
+    height: 4px !important;
+  }
 }
