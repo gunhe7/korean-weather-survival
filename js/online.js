@@ -950,6 +950,183 @@ window.OnlineService = (function () {
     };
   }
 
+  // ===================== 8-PLAYER COMPETITIVE TROPHY BOARD & REALTIME ROOMS =====================
+  const TROPHY_BOARD_STORE_KEY = 'kr_weather_trophy_board_v1';
+  const RTDB_TROPHY_PATH = `${RTDB_BOARD_ROOT}/trophy_season_v1`;
+  const RTDB_COMP_ROOMS_PATH = `${RTDB_BOARD_ROOT}/comp_rooms`;
+
+  function readLocalTrophyBoard() {
+    try {
+      const raw = localStorage.getItem(TROPHY_BOARD_STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeLocalTrophyBoard(obj) {
+    try {
+      localStorage.setItem(TROPHY_BOARD_STORE_KEY, JSON.stringify(obj || {}));
+    } catch {}
+  }
+
+  async function submitTrophyProfile(entry) {
+    if (!entry || !entry.uid) return null;
+    const clean = {
+      uid: String(entry.uid),
+      nickname: sanitizeNickname(entry.nickname, '날씨러너'),
+      provider: entry.provider || 'guest',
+      charId: entry.charId || 'umbrella_master',
+      skinId: entry.skinId || null,
+      profileCharId: entry.profileCharId || entry.charId || 'umbrella_master',
+      profileSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : (entry.skinId || null),
+      nameColor: typeof entry.nameColor === 'string' ? entry.nameColor.slice(0, 24) : '#ffffff',
+      nameFrame: typeof entry.nameFrame === 'string' ? entry.nameFrame.slice(0, 16) : 'none',
+      trophies: Math.max(0, Math.floor(Number(entry.trophies) || 0)),
+      wins: Math.max(0, Math.floor(Number(entry.wins) || 0)),
+      matches: Math.max(0, Math.floor(Number(entry.matches) || 0)),
+      bestCompScore: Math.max(0, Math.floor(Number(entry.bestCompScore) || 0)),
+      updatedAt: Date.now()
+    };
+
+    const local = readLocalTrophyBoard();
+    local[clean.uid] = clean;
+    writeLocalTrophyBoard(local);
+
+    if (hasRemoteDb() && isRankedProvider(clean.provider) && !isLegacyUnverifiedUid(clean.uid)) {
+      try {
+        const path = `${RTDB_TROPHY_PATH}/${encodeURIComponent(clean.uid)}.json`;
+        const { url } = await buildAuthedUrl(path, false, true);
+        await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(clean)
+        });
+      } catch {}
+    }
+    return clean;
+  }
+
+  async function fetchTrophyBoard(myUid = null) {
+    let remoteEntries = [];
+    let syncedOnline = false;
+    if (hasRemoteDb()) {
+      try {
+        const res = await fetch(`${getDbUrl()}${RTDB_TROPHY_PATH}.json`, { cache: 'no-store' });
+        if (res && res.ok) {
+          syncedOnline = true;
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            remoteEntries = Object.values(data).filter(
+              (x) => x && x.uid && typeof x.trophies === 'number'
+            );
+          }
+        }
+      } catch {}
+    }
+
+    const localEntries = Object.values(readLocalTrophyBoard()).filter(
+      (x) => x && x.uid && typeof x.trophies === 'number'
+    );
+    const map = new Map();
+    localEntries.forEach((e) => map.set(e.uid, e));
+    remoteEntries.forEach((e) => {
+      const prev = map.get(e.uid);
+      if (!prev || (e.updatedAt || 0) >= (prev.updatedAt || 0)) map.set(e.uid, e);
+    });
+
+    const sorted = Array.from(map.values()).sort(
+      (a, b) => (b.trophies - a.trophies) || ((b.wins || 0) - (a.wins || 0)) || ((b.bestCompScore || 0) - (a.bestCompScore || 0))
+    );
+    const board = sorted.slice(0, 100).map((e, i) => ({
+      ...e,
+      rank: i + 1,
+      isMe: Boolean(myUid && e.uid === myUid)
+    }));
+    return { board, syncedOnline, totalParticipants: sorted.length, fetchedAt: Date.now() };
+  }
+
+  async function joinCompMatchRoom(playerInfo) {
+    if (!playerInfo || !playerInfo.uid) return { roomId: `local_${Date.now()}`, players: [], online: false };
+    const now = Date.now();
+    // 10-second global matchmaking bucket so real players queueing together land in the same live room!
+    const bucket = Math.floor(now / 10000);
+    const tierBand = Math.floor(Math.max(0, Number(playerInfo.trophies) || 0) / 500);
+    const roomId = `r_${tierBand}_${bucket}`;
+    const safeUid = String(playerInfo.uid).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const entry = {
+      uid: safeUid,
+      nickname: sanitizeNickname(playerInfo.nickname, '날씨러너'),
+      charId: playerInfo.charId || 'umbrella_master',
+      skinId: playerInfo.skinId || null,
+      trophies: Math.max(0, Math.floor(Number(playerInfo.trophies) || 0)),
+      score: 0,
+      finished: false,
+      joinedAt: now,
+      updatedAt: now
+    };
+
+    let online = false;
+    let players = [entry];
+    if (hasRemoteDb()) {
+      try {
+        const putPath = `${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}/${encodeURIComponent(safeUid)}.json`;
+        const { url } = await buildAuthedUrl(putPath, false, false);
+        const putRes = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entry)
+        });
+        if (putRes && putRes.ok) {
+          online = true;
+          const listRes = await fetch(`${getDbUrl()}${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}.json`, { cache: 'no-store' });
+          if (listRes && listRes.ok) {
+            const data = await listRes.json();
+            if (data && typeof data === 'object') {
+              players = Object.values(data).filter((p) => p && p.uid && (now - (p.joinedAt || 0)) < 90000).slice(0, 8);
+            }
+          }
+        }
+      } catch {}
+    }
+    return { roomId, safeUid, players, online };
+  }
+
+  async function pollCompMatchRoom(roomId) {
+    if (!roomId || roomId.startsWith('local_') || !hasRemoteDb()) return null;
+    try {
+      const res = await fetch(`${getDbUrl()}${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}.json`, { cache: 'no-store' });
+      if (!res || !res.ok) return null;
+      const data = await res.json();
+      if (!data || typeof data !== 'object') return [];
+      const now = Date.now();
+      return Object.values(data).filter((p) => p && p.uid && (now - (p.joinedAt || 0)) < 180000).slice(0, 8);
+    } catch {
+      return null;
+    }
+  }
+
+  async function pushCompLiveScore(roomId, safeUid, score, finished = false) {
+    if (!roomId || roomId.startsWith('local_') || !safeUid || !hasRemoteDb()) return false;
+    try {
+      const path = `${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}/${encodeURIComponent(safeUid)}.json`;
+      const { url } = await buildAuthedUrl(path, false, false);
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          score: Math.max(0, Math.floor(Number(score) || 0)),
+          finished: Boolean(finished),
+          updatedAt: Date.now()
+        })
+      });
+      return Boolean(res && res.ok);
+    } catch {
+      return false;
+    }
+  }
+
   // ===================== WEEKLY TOP 1/2/3 CHAMPION REWARD PAYOUT (LINKED USERS ONLY) =====================
   async function checkWeeklyChampionPayout(save) {
     if (!save || !save.auth || !save.auth.uid) return null;
@@ -1017,6 +1194,11 @@ window.OnlineService = (function () {
     fetchWeeklyBoard,
     submitDailyWeatherScore,
     fetchDailyWeatherBoard,
+    submitTrophyProfile,
+    fetchTrophyBoard,
+    joinCompMatchRoom,
+    pollCompMatchRoom,
+    pushCompLiveScore,
     checkWeeklyChampionPayout,
     onBoardUpdate
   };

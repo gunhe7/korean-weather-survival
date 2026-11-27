@@ -599,6 +599,34 @@ window.RUN_DATA = (function () {
     2: { rank: 2, gems: 3000, frameId: 'rank_2', frameName: '2위 닉네임 장식' },
     3: { rank: 3, gems: 1000, frameId: 'rank_3', frameName: '3위 닉네임 장식' }
   };
+
+  // ===================== 8-PLAYER COMPETITIVE TROPHY RACE (COOKIE RUN STYLE) =====================
+  const COMP_MATCH_PLAYERS = 8;
+  const COMP_MATCH_DURATION = 60; // 60-second full 4-season competitive sprint!
+  const COMP_TROPHY_DELTAS = [40, 28, 18, 10, 2, -8, -16, -24];
+  const COMP_GOLD_REWARDS = [360, 260, 190, 140, 100, 80, 60, 50];
+  const COMP_TIERS = [
+    { id: 'bronze',      name: '브론즈',       minTrophies: 0,    color: '#d18e58' },
+    { id: 'silver',      name: '실버',         minTrophies: 300,  color: '#a8bacf' },
+    { id: 'gold',        name: '골드',         minTrophies: 700,  color: '#f2bb42' },
+    { id: 'platinum',    name: '플래티넘',     minTrophies: 1200, color: '#4dd6e6' },
+    { id: 'diamond',     name: '다이아',       minTrophies: 1800, color: '#5fa8ff' },
+    { id: 'master',      name: '마스터',       minTrophies: 2600, color: '#b47aff' },
+    { id: 'grandmaster', name: '그랜드마스터', minTrophies: 3600, color: '#ff5d7d' }
+  ];
+
+  function getCompTier(trophies = 0) {
+    const t = Math.max(0, Math.floor(Number(trophies) || 0));
+    let idx = 0;
+    for (let i = 0; i < COMP_TIERS.length; i++) {
+      if (t >= COMP_TIERS[i].minTrophies) idx = i;
+    }
+    const cur = COMP_TIERS[idx];
+    const next = COMP_TIERS[idx + 1] || null;
+    const span = next ? Math.max(1, next.minTrophies - cur.minTrophies) : 1;
+    const pct = next ? Math.max(0, Math.min(100, Math.round(((t - cur.minTrophies) / span) * 100))) : 100;
+    return { ...cur, index: idx, next, progressPct: pct, trophies: t };
+  }
   const PROFILE_NAME_COLORS = [
     { id: '#ffffff', name: '스노우 화이트', color: '#ffffff' },
     { id: '#ffe24a', name: '챔피언 골드', color: '#ffe24a' },
@@ -763,6 +791,12 @@ window.RUN_DATA = (function () {
     MAX_CHAR_LEVEL,
     WEEKLY_TOP1_GEMS,
     WEEKLY_TOP_REWARDS,
+    COMP_MATCH_PLAYERS,
+    COMP_MATCH_DURATION,
+    COMP_TROPHY_DELTAS,
+    COMP_GOLD_REWARDS,
+    COMP_TIERS,
+    getCompTier,
     PROFILE_NAME_COLORS,
     PROFILE_NAME_FRAMES,
     SCORE_ROAD_STEP,

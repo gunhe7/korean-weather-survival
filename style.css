@@ -9167,68 +9167,10 @@ input:focus-visible {
   }
 }
 
-/* Circular Ring Gauge Around Umbrella & Mask Buttons */
+/* Gear Button Image Wrapper */
 .img-ctrl-btn.gear-img-btn .ctrl-img-wrap {
   position: relative;
   overflow: visible;
-}
-
-.gear-ring-svg {
-  position: absolute;
-  inset: -6px;
-  width: calc(100% + 12px);
-  height: calc(100% + 12px);
-  transform: rotate(-90deg);
-  pointer-events: none;
-  z-index: 4;
-  opacity: 0;
-  transition: opacity 0.14s ease;
-  overflow: visible;
-}
-
-.img-ctrl-btn.gear-img-btn.has-ring .gear-ring-svg {
-  opacity: 1;
-}
-
-.gear-ring-bg {
-  fill: none;
-  stroke: rgba(7, 16, 34, 0.82);
-  stroke-width: 10.5;
-}
-
-.gear-ring-track {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.2);
-  stroke-width: 5.4;
-}
-
-.gear-ring-fill {
-  fill: none;
-  stroke-width: 6.4;
-  stroke-linecap: round;
-  stroke-dasharray: 276.46;
-  stroke-dashoffset: 276.46;
-  transition: stroke-dashoffset 0.08s linear, stroke 0.16s ease;
-}
-
-.gear-ring-fill.umbrella {
-  stroke: #4be3ff;
-  filter: drop-shadow(0 0 4px rgba(75, 227, 255, 0.9));
-}
-
-.gear-ring-fill.mask {
-  stroke: #48f5a3;
-  filter: drop-shadow(0 0 4px rgba(72, 245, 163, 0.9));
-}
-
-.gear-ring-fill.warn {
-  stroke: #ffae2b;
-  filter: drop-shadow(0 0 5px rgba(255, 174, 43, 0.95));
-}
-
-.gear-ring-fill.danger {
-  stroke: #ff3b5c;
-  filter: drop-shadow(0 0 6px rgba(255, 59, 92, 0.98));
 }
 
 /* Urgent Gear Button Action Rings (Open Umbrella/Mask OR Fold Umbrella During Typhoon!) */
@@ -20170,5 +20112,1663 @@ input:focus-visible {
 
   .bs-preload-pack-desc {
     font-size: 10.2px;
+  }
+}
+
+/* ==========================================================================
+   v20261121hd120 — BOTTOM BAR GEAR GAUGES + 8-PLAYER COMPETITIVE TROPHY RACE
+                   + SIMPLE, MODERN & REFINED MATTE SLATE UI OVERHAUL
+   ========================================================================== */
+
+:root {
+  --ui-bg: #0c1018;
+  --ui-surface: #141b27;
+  --ui-surface-2: #1b2434;
+  --ui-surface-well: #0f141e;
+  --ui-border: rgba(255, 255, 255, 0.09);
+  --ui-border-strong: rgba(255, 255, 255, 0.18);
+  --ui-text: #f3f6fb;
+  --ui-text-sub: #9aa7bd;
+  --ui-text-muted: #6c7a92;
+  --ui-gold: #f0b429;
+  --ui-gold-deep: #cf8c12;
+  --ui-sky: #38bdf8;
+  --ui-blue: #3b82f6;
+  --ui-emerald: #22c55e;
+  --ui-crimson: #ef4444;
+  --ui-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.28);
+  --ui-shadow-md: 0 10px 28px rgba(0, 0, 0, 0.42);
+  --ui-shadow-lg: 0 20px 52px rgba(0, 0, 0, 0.56);
+}
+
+/* ---------- 1. BOTTOM HORIZONTAL GEAR BAR GAUGES (UMBRELLA & MASK) ---------- */
+.ctrl-center-orbs {
+  bottom: calc(max(10px, var(--safe-bottom)) + 44px) !important;
+  background: rgba(12, 16, 24, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.36) !important;
+  backdrop-filter: blur(8px);
+}
+
+.gear-bottom-bars {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(8px, var(--safe-bottom)) + 6px);
+  transform: translateX(-50%);
+  z-index: 16;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  max-width: calc(100% - 210px);
+}
+
+.gear-bottom-bars.hidden {
+  display: none !important;
+}
+
+.gear-hbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 152px;
+  max-width: 210px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(12, 16, 24, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.gear-hbar.hidden {
+  display: none !important;
+}
+
+.gear-hbar.umbrella {
+  border-color: rgba(56, 189, 248, 0.42);
+}
+
+.gear-hbar.mask {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.gear-hbar.warn {
+  border-color: rgba(245, 158, 11, 0.62);
+}
+
+.gear-hbar.danger {
+  border-color: rgba(239, 68, 68, 0.78);
+  background: rgba(38, 12, 18, 0.88);
+}
+
+.gear-hbar-lbl {
+  font-size: 11px;
+  font-weight: 800;
+  color: #e2e8f0;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gear-hbar-track {
+  flex: 1;
+  min-width: 56px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.gear-hbar-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.08s linear, background-color 0.16s ease;
+}
+
+.gear-hbar-fill.umbrella {
+  background: #38bdf8;
+}
+
+.gear-hbar-fill.mask {
+  background: #22c55e;
+}
+
+.gear-hbar-fill.warn {
+  background: #f59e0b;
+}
+
+.gear-hbar-fill.danger {
+  background: #ef4444;
+}
+
+.gear-hbar-val {
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #f8fafc;
+  white-space: nowrap;
+  min-width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ---------- 2. 8-PLAYER COMPETITIVE TROPHY RACE UI ---------- */
+.rank-mode-tabs.three-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 4px !important;
+  border-radius: 14px !important;
+  background: var(--ui-surface-well) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: none !important;
+}
+
+.rank-mode-tabs.three-tabs .rank-mode-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 7px 6px !important;
+  border-radius: 10px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--ui-text-sub) !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.rank-mode-tabs.three-tabs .rank-mode-tab .rmt-sub {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--ui-text-muted) !important;
+  opacity: 0.9;
+}
+
+.rank-mode-tabs.three-tabs .rank-mode-tab.active {
+  background: var(--ui-surface-2) !important;
+  border-color: var(--ui-border-strong) !important;
+  color: var(--ui-text) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+.rank-mode-tabs.three-tabs .rank-mode-tab.comp.active {
+  border-color: rgba(240, 180, 41, 0.45) !important;
+  background: linear-gradient(180deg, rgba(240, 180, 41, 0.16), rgba(240, 180, 41, 0.06)) !important;
+  color: #fde68a !important;
+}
+
+.rank-mode-tabs.three-tabs .rank-mode-tab.active .rmt-sub {
+  color: #cbd5e1 !important;
+}
+
+.comp-hero-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 15px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #192232 0%, #131a27 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.comp-hero-card.hidden {
+  display: none !important;
+}
+
+.comp-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.comp-tier-emblem {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid #d18e58;
+  color: #d18e58;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.comp-hero-meta {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.comp-hero-top-line {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.comp-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.comp-trophy-val {
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--ui-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.comp-trophy-unit {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ui-text-sub);
+}
+
+.comp-tier-prog-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comp-tier-track {
+  flex: 1;
+  max-width: 190px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.comp-tier-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.comp-tier-next {
+  font-size: 10.8px;
+  font-weight: 700;
+  color: var(--ui-text-sub);
+  white-space: nowrap;
+}
+
+.comp-record-line {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-match-cta {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 11px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 232, 165, 0.35);
+  background: linear-gradient(180deg, #f3be3b 0%, #d89618 100%);
+  color: #1c1204;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(216, 150, 24, 0.28);
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.comp-match-cta span {
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.comp-match-cta small {
+  font-size: 10px;
+  font-weight: 800;
+  opacity: 0.78;
+}
+
+.comp-match-cta:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.comp-match-cta:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.comp-row-tier {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.comp-trophy-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-trophy-score span {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ui-text-sub);
+  margin-top: 2px;
+}
+
+/* Matchmaking & Result Modals */
+.comp-modal {
+  width: min(560px, 94vw) !important;
+  max-height: 92dvh !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.comp-modal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px !important;
+}
+
+.comp-bar-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--ui-text);
+}
+
+.comp-count-pill,
+.comp-res-rank-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #7dd3fc;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-res-rank-pill.top1 {
+  background: rgba(240, 180, 41, 0.18);
+  border-color: rgba(240, 180, 41, 0.5);
+  color: #fde68a;
+}
+
+.comp-res-rank-pill.top2 {
+  background: rgba(148, 163, 184, 0.18);
+  border-color: rgba(203, 213, 225, 0.45);
+  color: #e2e8f0;
+}
+
+.comp-res-rank-pill.top3 {
+  background: rgba(209, 142, 88, 0.18);
+  border-color: rgba(209, 142, 88, 0.48);
+  color: #fdba74;
+}
+
+.comp-modal-body {
+  padding: 14px 16px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.comp-match-status {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #cbd5e1;
+  text-align: center;
+}
+
+.comp-match-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.comp-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 7px;
+  border-radius: 12px;
+  background: var(--ui-surface-well);
+  border: 1px solid var(--ui-border);
+  text-align: center;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.comp-slot.ready {
+  background: var(--ui-surface-2);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.comp-slot.ready.me {
+  border-color: rgba(240, 180, 41, 0.55);
+  background: rgba(240, 180, 41, 0.08);
+}
+
+.comp-slot-av,
+.comp-slot-av-empty {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.comp-slot-av-empty {
+  border-style: dashed;
+  opacity: 0.45;
+}
+
+.comp-slot-meta {
+  width: 100%;
+  min-width: 0;
+}
+
+.comp-slot-name {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--ui-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-slot.waiting .comp-slot-name {
+  color: var(--ui-text-muted);
+}
+
+.comp-slot-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ui-text-muted);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-me-tag {
+  display: inline-block;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(240, 180, 41, 0.2);
+  color: #fde68a;
+  font-size: 9.5px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.comp-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.comp-rule-note {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ui-text-sub);
+}
+
+.comp-res-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 13px;
+  background: var(--ui-surface-well);
+  border: 1px solid var(--ui-border);
+}
+
+.comp-res-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.comp-res-trophies {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.comp-res-trophies strong {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--ui-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-res-delta {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-res-delta.up {
+  background: rgba(34, 197, 94, 0.16);
+  color: #4ade80;
+}
+
+.comp-res-delta.down {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+}
+
+.comp-res-delta.flat {
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+}
+
+.comp-res-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.comp-res-gold {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fbbf24;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-res-my-score {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ui-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-res-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 215px;
+  overflow-y: auto;
+}
+
+.comp-res-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.comp-res-row.me {
+  background: rgba(240, 180, 41, 0.1);
+  border-color: rgba(240, 180, 41, 0.42);
+}
+
+.comp-res-rk {
+  width: 20px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ui-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-res-row.top1 .comp-res-rk { color: #fbbf24; }
+.comp-res-row.top2 .comp-res-rk { color: #e2e8f0; }
+.comp-res-row.top3 .comp-res-rk { color: #d99b66; }
+
+.comp-res-av {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.comp-res-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ui-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-res-sc {
+  font-size: 12px;
+  font-weight: 800;
+  color: #cbd5e1;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-res-dt {
+  min-width: 36px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-res-dt.up { color: #4ade80; }
+.comp-res-dt.down { color: #f87171; }
+.comp-res-dt.flat { color: #94a3b8; }
+
+/* Live In-Run 8-Player Competitive Race Ticker */
+.comp-run-hud {
+  position: absolute;
+  top: 84px;
+  right: 12px;
+  z-index: 18;
+  width: 158px;
+  padding: 7px 9px;
+  border-radius: 12px;
+  background: rgba(12, 16, 24, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.comp-run-hud.hidden {
+  display: none !important;
+}
+
+.comp-run-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.comp-run-rank {
+  font-size: 12px;
+  font-weight: 900;
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-run-rank.top1 { color: #fbbf24; }
+.comp-run-rank.top2 { color: #e2e8f0; }
+.comp-run-rank.top3 { color: #fdba74; }
+
+.comp-run-timer {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #7dd3fc;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-run-timer.urgent {
+  color: #f87171;
+}
+
+.comp-run-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.comp-run-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 5px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.comp-run-row.me {
+  background: rgba(240, 180, 41, 0.18);
+  color: #fef08a;
+  font-weight: 800;
+}
+
+.comp-run-row .cr-rk {
+  width: 14px;
+  font-weight: 900;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-run-row.me .cr-rk { color: #fbbf24; }
+
+.comp-run-row .cr-nm {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-run-row .cr-sc {
+  font-variant-numeric: tabular-nums;
+}
+
+.portrait-yr-badge.yr-comp {
+  background: #f0b429 !important;
+  color: #1c1204 !important;
+  border-color: rgba(12, 16, 24, 0.85) !important;
+}
+
+/* ---------- 3. SIMPLE, MODERN & REFINED UI OVERHAUL (DE-POWERPOINT LAYER) ---------- */
+
+/* Base App Shell & Clean Matte Backgrounds for Non-Home Tabs */
+body,
+#mobile-app {
+  background-color: var(--ui-bg) !important;
+  color: var(--ui-text);
+}
+
+#mobile-app:not(.is-home-bg) {
+  background: radial-gradient(circle at 50% -10%, #1a2335 0%, #0e131e 52%, #0a0e16 100%) !important;
+}
+
+#mobile-app:not(.is-home-bg)::before,
+#mobile-app:not(.is-home-bg)::after {
+  opacity: 0.08 !important;
+}
+
+/* Top Header Bar — Frosted Dark Slate, Zero Skew, Crisp Hairline Borders */
+#app-header {
+  background: linear-gradient(180deg, rgba(12, 16, 24, 0.84) 0%, rgba(12, 16, 24, 0.42) 72%, rgba(12, 16, 24, 0) 100%) !important;
+  box-shadow: none !important;
+}
+
+.bs-prof-avatar-box {
+  border-radius: 12px !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  transform: none !important;
+}
+
+.bs-prof-rank-badge {
+  border: 1.5px solid #0c1018 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  text-shadow: none !important;
+}
+
+.bs-prof-name-strip,
+.bs-prof-score-btn {
+  transform: none !important;
+  border-radius: 9px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(18, 25, 38, 0.86) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: blur(8px);
+}
+
+.bs-prof-unskew {
+  transform: none !important;
+}
+
+.bs-prof-name,
+.bs-prof-score-tag,
+.bs-prof-trophy-val {
+  text-shadow: none !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.bs-prof-trophy-track {
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(8, 12, 20, 0.78) !important;
+  box-shadow: none !important;
+}
+
+.bs-prof-trophy-fill {
+  background: linear-gradient(90deg, #e5a524 0%, #f5cb5c 100%) !important;
+  box-shadow: none !important;
+}
+
+.res-pill {
+  transform: none !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  background: rgba(18, 25, 38, 0.88) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  backdrop-filter: blur(8px);
+  font-variant-numeric: tabular-nums;
+}
+
+.res-pill span {
+  text-shadow: none !important;
+}
+
+.res-plus {
+  border-radius: 6px !important;
+  border: none !important;
+  background: rgba(240, 180, 41, 0.2) !important;
+  color: #fde68a !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.res-plus.gem {
+  background: rgba(56, 189, 248, 0.2) !important;
+  color: #7dd3fc !important;
+}
+
+.hdr-preload-btn,
+.hdr-gear-btn {
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(18, 25, 38, 0.88) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  backdrop-filter: blur(8px);
+}
+
+.hdr-preload-btn.is-done {
+  border-color: rgba(34, 197, 94, 0.45) !important;
+  background: rgba(18, 42, 34, 0.9) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+}
+
+.hdr-preload-dot {
+  border-color: #0c1018 !important;
+  background: #f0b429 !important;
+  box-shadow: none !important;
+}
+
+/* Home Lobby — Clean Frosted Controls & Sleek Matte Gold Play CTA */
+.bs-pass-dock-btn,
+.bs-right-dock-btn,
+.bs-brawler-btn,
+.bs-side-arrow {
+  transform: none !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: rgba(15, 21, 32, 0.82) !important;
+  box-shadow: var(--ui-shadow-md) !important;
+  backdrop-filter: blur(10px);
+}
+
+.bs-pass-dock-btn .bs-pass-meta-bar {
+  background: rgba(9, 13, 22, 0.72) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.bs-pass-prog-fill {
+  background: linear-gradient(90deg, #e5a524, #f5cb5c) !important;
+}
+
+.bs-btn-inner {
+  transform: none !important;
+}
+
+.bs-play-btn {
+  transform: none !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 232, 165, 0.45) !important;
+  background: linear-gradient(180deg, #f3be3b 0%, #d89515 100%) !important;
+  box-shadow: 0 10px 26px rgba(216, 149, 21, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+}
+
+.bs-play-btn:active {
+  transform: translateY(1px) scale(0.985) !important;
+}
+
+.bs-play-main {
+  color: #1c1204 !important;
+  text-shadow: none !important;
+  letter-spacing: -0.02em;
+}
+
+.bs-play-sub {
+  color: rgba(28, 18, 4, 0.74) !important;
+  text-shadow: none !important;
+}
+
+.bs-brawler-lbl,
+.bs-brawler-cnt,
+.bs-rd-lbl,
+.bs-rd-temp,
+.bs-pass-img-title,
+.bs-pass-lv {
+  text-shadow: none !important;
+}
+
+.bs-power-tag,
+.bs-tier-tag {
+  transform: none !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background: rgba(15, 21, 32, 0.78) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  text-shadow: none !important;
+  backdrop-filter: blur(8px);
+}
+
+.bs-hero-name {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65) !important;
+}
+
+.bs-podium-ring {
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.22) 0%, rgba(56, 189, 248, 0.12) 45%, rgba(0, 0, 0, 0) 74%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.38) !important;
+}
+
+.bs-podium-inner {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Bottom Navigation Bar — Sleek Matte Frosted Dock */
+#bottom-nav.pixel-nav-bar {
+  border-radius: 16px !important;
+  background: rgba(14, 19, 30, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: var(--ui-shadow-md) !important;
+  backdrop-filter: blur(12px);
+}
+
+/* Unified Refined Modals (Settings, Preload, Account, Profile, Chests, Mode Select, Pause, Game Over) */
+.modal-overlay,
+.login-overlay {
+  background: rgba(6, 9, 15, 0.76) !important;
+  backdrop-filter: blur(6px);
+}
+
+.cr-modal,
+.login-card,
+.rotate-card {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow-lg) !important;
+  overflow: hidden;
+}
+
+.cr-modal-bar,
+.settings-arcade-bar,
+.bs-settings-bar,
+.bs-preload-bar,
+.bs-exchange-bar,
+.bs-cskin-bar {
+  background: #1a2333 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.cr-modal-bar *,
+.settings-bar-title,
+.bs-ex-title {
+  text-shadow: none !important;
+}
+
+.modal-body,
+.bs-settings-body,
+.bs-preload-body,
+.bs-profile-modal-body,
+.bs-exchange-body,
+.bs-cskin-body {
+  background: var(--ui-surface) !important;
+}
+
+.modal-x-btn,
+.settings-x-btn {
+  border-radius: 9px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #cbd5e1 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.modal-x-btn:hover,
+.settings-x-btn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  color: #fca5a5 !important;
+}
+
+/* Preload & Settings Cards Inside Modals — Clean Matte Slate Instead of PowerPoint Blue! */
+.bs-preload-summary,
+.bs-preload-pack,
+.bs-set-card,
+.bs-set-row,
+.prof-preview-card,
+.login-cur-bar,
+.weather-factor-card {
+  border-radius: 12px !important;
+  border: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface-well) !important;
+  box-shadow: none !important;
+}
+
+.bs-preload-pack.done {
+  border-color: rgba(34, 197, 94, 0.34) !important;
+  background: rgba(16, 36, 30, 0.78) !important;
+}
+
+.bs-preload-pack-name,
+.bs-preload-status,
+.bs-preload-pack-meta {
+  text-shadow: none !important;
+}
+
+.bs-preload-pack-desc {
+  color: var(--ui-text-sub) !important;
+}
+
+.bs-preload-pack-meta {
+  color: #7dd3fc !important;
+}
+
+.bs-preload-track {
+  height: 8px !important;
+  border: none !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.bs-preload-fill {
+  background: linear-gradient(90deg, #38bdf8 0%, #22c55e 100%) !important;
+  box-shadow: none !important;
+}
+
+.bs-preload-badge {
+  border: none !important;
+  border-radius: 5px !important;
+  background: rgba(240, 180, 41, 0.18) !important;
+  color: #fde68a !important;
+}
+
+.bs-preload-badge.sub {
+  background: rgba(56, 189, 248, 0.16) !important;
+  color: #7dd3fc !important;
+}
+
+.bs-preload-badge.ok {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #4ade80 !important;
+}
+
+/* Unified Action Buttons — Crisp Flat/Subtle-Gradient, Zero Skew, Zero Cartoon Outlines */
+.bs-set-action-btn,
+.cr-gold-btn,
+.bs-buy-btn,
+.mission-claim-btn,
+.vault-open-btn,
+.vault-open-multi-btn,
+.vault-ticket-ex-btn,
+.sp-claim-btn,
+.sr-claim-btn,
+.login-nick-save,
+.bs-hdr-pill,
+.bs-prob-btn {
+  transform: none !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22) !important;
+  text-shadow: none !important;
+}
+
+.bs-set-action-btn:disabled {
+  transform: none !important;
+}
+
+.bs-set-action-btn.gold,
+.cr-gold-btn,
+.bs-buy-btn.gold,
+.mission-claim-btn.ready,
+.vault-open-btn.ready,
+.sp-claim-btn.ready,
+.sr-claim-btn.ready {
+  background: linear-gradient(180deg, #f3be3b 0%, #d89618 100%) !important;
+  border-color: rgba(255, 232, 165, 0.38) !important;
+  color: #1c1204 !important;
+  box-shadow: 0 4px 14px rgba(216, 150, 24, 0.24) !important;
+}
+
+.bs-set-action-btn.slate,
+.bs-set-action-btn.navy,
+.bs-hdr-pill,
+.bs-prob-btn,
+.mission-claim-btn.pending,
+.bs-buy-btn.done {
+  background: #232d40 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+.bs-set-action-btn.emerald,
+.bs-preload-pack-btn.done,
+.bs-buy-btn.equip {
+  background: rgba(34, 197, 94, 0.18) !important;
+  border-color: rgba(34, 197, 94, 0.42) !important;
+  color: #4ade80 !important;
+}
+
+.bs-buy-btn.gem {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%) !important;
+  border-color: rgba(186, 230, 253, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.bs-buy-btn.mileage,
+.bs-buy-btn.cash {
+  background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%) !important;
+  border-color: rgba(221, 214, 254, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.bs-stab-in {
+  transform: none !important;
+  text-shadow: none !important;
+}
+
+/* Shop, Quests, Roster & Ranking Sub-Tabs and Cards */
+.bs-shop-tabs,
+.bs-quest-tabs,
+.prof-custom-tabs {
+  background: var(--ui-surface-well) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 13px !important;
+  padding: 4px !important;
+  box-shadow: none !important;
+}
+
+.bs-shop-tab,
+.bs-qtab,
+.prof-tab-btn {
+  transform: none !important;
+  border-radius: 9px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--ui-text-sub) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.bs-shop-tab.active,
+.bs-qtab.active,
+.prof-tab-btn.active {
+  background: var(--ui-surface-2) !important;
+  border-color: var(--ui-border-strong) !important;
+  color: var(--ui-text) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24) !important;
+}
+
+.bs-offer-card,
+.bs-quest-card,
+.ach-card,
+.brawl-card.bs-rcard,
+.rank-my-card,
+.rank-row,
+.rank-empty-card,
+.rank-prize-banner,
+.bs-pity-bar,
+.vault-card,
+.sp-mission-card,
+.sp-card,
+.sr-node,
+.prof-item-card,
+.gacha-res-card {
+  border-radius: 14px !important;
+  border: 1px solid var(--ui-border) !important;
+  background: linear-gradient(180deg, #182030 0%, #121824 100%) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  transform: none !important;
+}
+
+.brawl-card.bs-rcard.selected,
+.bs-offer-card.selected,
+.prof-item-card.equipped,
+.rank-row.me {
+  border-color: rgba(240, 180, 41, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(240, 180, 41, 0.25), var(--ui-shadow-sm) !important;
+}
+
+.bs-quest-card.ready,
+.ach-card.ready {
+  border-color: rgba(34, 197, 94, 0.45) !important;
+}
+
+.rank-row.top1 {
+  border-color: rgba(240, 180, 41, 0.42) !important;
+  background: linear-gradient(90deg, rgba(240, 180, 41, 0.1) 0%, #141b27 42%) !important;
+}
+
+.rank-row.top2 {
+  border-color: rgba(203, 213, 225, 0.3) !important;
+}
+
+.rank-row.top3 {
+  border-color: rgba(209, 142, 88, 0.34) !important;
+}
+
+.rank-medal {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: var(--ui-surface-well) !important;
+  color: var(--ui-text-sub) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-row.top1 .rank-medal { background: rgba(240, 180, 41, 0.18) !important; border-color: rgba(240, 180, 41, 0.48) !important; color: #fde68a !important; }
+.rank-row.top2 .rank-medal { background: rgba(203, 213, 225, 0.16) !important; border-color: rgba(203, 213, 225, 0.4) !important; color: #f1f5f9 !important; }
+.rank-row.top3 .rank-medal { background: rgba(209, 142, 88, 0.18) !important; border-color: rgba(209, 142, 88, 0.44) !important; color: #fdba74 !important; }
+
+.rank-live-title-row h2,
+.rank-my-title,
+.rank-my-sub,
+.rank-row-score,
+.bs-roster-count {
+  text-shadow: none !important;
+}
+
+.rank-stat-pill,
+.pity-chip {
+  border-radius: 9px !important;
+  border: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface-well) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Character Detail Showcase — Calm Dark Studio Backdrop, Zero Sunburst Clutter */
+#char-detail-overlay.bs-char-detail-screen .bs-char-arena {
+  background: radial-gradient(circle at 50% 44%, #1e2a3f 0%, #101624 58%, #090d16 100%) !important;
+}
+
+#char-detail-overlay.bs-char-detail-screen .bs-char-arena-rays,
+#char-detail-overlay.bs-char-detail-screen .brawl-hero-burst {
+  opacity: 0.14 !important;
+  animation: none !important;
+}
+
+#char-detail-overlay.bs-char-detail-screen .bs-char-nav-btn,
+#char-detail-overlay.bs-char-detail-screen .bs-char-skin-btn,
+#char-detail-overlay.bs-char-detail-screen .bs-char-cur-pill,
+#char-detail-overlay.bs-char-detail-screen .brawl-nav-arrow {
+  transform: none !important;
+  border-radius: 11px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(18, 25, 38, 0.86) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  text-shadow: none !important;
+}
+
+#char-detail-overlay.bs-char-detail-screen .bs-char-ribbon,
+#char-detail-overlay.bs-char-detail-screen .bs-char-bio,
+#char-detail-overlay.bs-char-detail-screen .bs-char-passive-zone,
+#char-detail-overlay.bs-char-detail-screen .bs-char-stats-card {
+  transform: none !important;
+  border-radius: 15px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(20, 27, 40, 0.88) !important;
+  box-shadow: var(--ui-shadow-md) !important;
+}
+
+#char-detail-overlay.bs-char-detail-screen .bs-stat-line {
+  border-radius: 10px !important;
+  background: rgba(11, 16, 26, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+#char-detail-overlay.bs-char-detail-screen .bs-char-ribbon-name,
+#char-detail-overlay.bs-char-detail-screen .bs-char-passive-title,
+#char-detail-overlay.bs-char-detail-screen .bs-stats-title,
+#char-detail-overlay.bs-char-detail-screen .bs-stat-val {
+  text-shadow: none !important;
+}
+
+/* In-Game Run HUD — Clean Translucent Matte Dark-Slate Pills */
+.run-portrait-box,
+.run-gold-mini,
+.pause-square-btn,
+.season-pill,
+.bs-score-badge {
+  transform: none !important;
+  border-radius: 11px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: rgba(12, 16, 24, 0.76) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.34) !important;
+  backdrop-filter: blur(8px);
+}
+
+.season-pill,
+.bs-score-badge,
+.run-gold-mini {
+  text-shadow: none !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.bs-score-pts {
+  color: #fde68a !important;
+  text-shadow: none !important;
+}
+
+.bs-score-dist {
+  color: #cbd5e1 !important;
+  text-shadow: none !important;
+}
+
+.gear-mini-pill {
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background: rgba(12, 16, 24, 0.84) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.36) !important;
+}
+
+.gear-mini-pill .gear-state {
+  text-shadow: none !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Extended Modal & Screen Consistency (Pause, Mode Select, Weather, Gacha, Season Pass, Vault, Toast) */
+.bs-pause-card {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow-lg) !important;
+}
+
+.bs-pause-ribbon {
+  transform: none !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--ui-border) !important;
+  background: #1c2536 !important;
+  box-shadow: none !important;
+}
+
+.bs-pause-title {
+  text-shadow: none !important;
+}
+
+.bs-pause-action {
+  transform: none !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  text-shadow: none !important;
+}
+
+.bs-pause-action.resume {
+  background: linear-gradient(180deg, #f3be3b 0%, #d89618 100%) !important;
+  border-color: rgba(255, 232, 165, 0.38) !important;
+  color: #1c1204 !important;
+}
+
+.bs-pause-action.settings {
+  background: #232d40 !important;
+  color: #e2e8f0 !important;
+}
+
+.bs-pause-action.quit {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #fca5a5 !important;
+}
+
+.bs-event-card.simple {
+  border-radius: 15px !important;
+  border: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface-well) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+}
+
+.bs-ev-simple-head {
+  background: #1b2435 !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+  box-shadow: none !important;
+}
+
+.bs-ev-simple-head.today {
+  background: linear-gradient(90deg, #17273c 0%, #1b2435 100%) !important;
+}
+
+.bs-ev-simple-title,
+.bs-ev-simple-tag,
+.bs-ev-simple-play,
+.bs-ev-simple-foot {
+  text-shadow: none !important;
+}
+
+.bs-ev-simple-play.normal {
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 232, 165, 0.36) !important;
+  background: linear-gradient(180deg, #f3be3b 0%, #d89618 100%) !important;
+  color: #1c1204 !important;
+  box-shadow: none !important;
+}
+
+.bs-ev-simple-play.today {
+  border-radius: 10px !important;
+  border: 1px solid rgba(125, 211, 252, 0.36) !important;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.bs-ev-simple-foot {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-top: 1px solid var(--ui-border) !important;
+  color: var(--ui-text-sub) !important;
+}
+
+.bs-weather-modal-body,
+.bs-mode-body,
+.sp-rewards-pane,
+.sp-missions-pane,
+.vault-modal-grid,
+.score-road-track,
+.gacha-res-stage,
+.bs-gacha-screen {
+  background: var(--ui-surface) !important;
+}
+
+.weather-live-hero,
+.bs-mythic-hero-banner,
+.sp-rail-gold-box,
+.sp-rail-free-box,
+.iap-showcase,
+.vault-batch-summary,
+.sp-missions-banner,
+.score-road-sub {
+  border-radius: 13px !important;
+  border: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface-well) !important;
+  box-shadow: none !important;
+}
+
+.sp-subtabs {
+  background: var(--ui-surface-well) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 10px !important;
+  padding: 3px !important;
+}
+
+.sp-subtab {
+  transform: none !important;
+  border-radius: 7px !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.sp-subtab.active {
+  background: var(--ui-surface-2) !important;
+  color: var(--ui-text) !important;
+}
+
+.cr-blue-btn,
+.gacha-green-btn,
+.sp-btn-gold,
+.sp-btn-skip,
+.sp-btn-claim-all,
+.sp-skip-confirm-btn,
+.sp-skip-cancel-btn,
+.weather-refresh-btn {
+  transform: none !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  text-shadow: none !important;
+}
+
+.cr-blue-btn {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+}
+
+.gacha-green-btn {
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #052e16 !important;
+}
+
+.sp-btn-gold,
+.sp-btn-claim-all {
+  background: linear-gradient(180deg, #f3be3b 0%, #d89618 100%) !important;
+  color: #1c1204 !important;
+}
+
+.sp-btn-skip,
+.sp-skip-cancel-btn,
+.weather-refresh-btn {
+  background: #232d40 !important;
+  color: #e2e8f0 !important;
+}
+
+.global-toast {
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background: rgba(15, 21, 32, 0.94) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-shadow-md) !important;
+  text-shadow: none !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Mobile Landscape Compact Adjustments */
+@media (max-height: 440px), (max-width: 560px) {
+  .comp-match-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .comp-slot {
+    padding: 6px 4px;
+    gap: 4px;
+  }
+
+  .comp-slot-av,
+  .comp-slot-av-empty {
+    width: 30px;
+    height: 30px;
+  }
+
+  .comp-hero-card {
+    padding: 9px 11px;
+    gap: 10px;
+  }
+
+  .comp-tier-emblem {
+    width: 38px;
+    height: 38px;
+  }
+
+  .comp-trophy-val {
+    font-size: 17px;
+  }
+
+  .comp-match-cta {
+    padding: 8px 13px;
+  }
+
+  .comp-run-hud {
+    top: 66px;
+    right: 8px;
+    width: 138px;
+    padding: 5px 7px;
+  }
+
+  .gear-bottom-bars {
+    bottom: calc(max(6px, var(--safe-bottom)) + 4px);
+    gap: 6px;
+    max-width: calc(100% - 172px);
+  }
+
+  .gear-hbar {
+    min-width: 126px;
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .gear-hbar-lbl,
+  .gear-hbar-val {
+    font-size: 10px;
+  }
+
+  .ctrl-center-orbs {
+    bottom: calc(max(6px, var(--safe-bottom)) + 38px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .comp-match-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
