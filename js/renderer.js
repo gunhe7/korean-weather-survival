@@ -115,7 +115,7 @@ window.RunRenderer = (function () {
   ['ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'].forEach((key) => {
     SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${GROUND_STRIP_VER}`;
   });
-  const NEW_OBS_VER = '20261121hd104';
+  const NEW_OBS_VER = '20261121hd115';
   const NEW_OBS_SPRITES = [
     'obs_air_bird', 'obs_air_maple', 'obs_air_snowball', 'obs_air_iceball',
     'obs_air_icicle', 'obs_air_gift', 'obs_air_pinecone', 'obs_air_snowflake',
@@ -130,19 +130,33 @@ window.RunRenderer = (function () {
 
   function requestSprite(key) {
     if (!key) return null;
-    if (sprites[key]) return sprites[key];
+    const prev = sprites[key];
+    if (prev) {
+      if (prev.naturalWidth > 0) return prev;
+      if (!prev.complete) return prev;
+      // Auto-retry a failed image once every 2.5s (e.g. transient mobile blip) instead of staying dead forever!
+      const now = Date.now();
+      if (now - (prev._retryAt || 0) < 2500) return prev;
+      prev._retryAt = now;
+    }
     const url = SPRITE_URL_MAP[key];
     if (!url) return null;
     const absUrl = toAbsUrl(url);
     const img = new Image();
-    img.decoding = 'async';
-    img.onload = () => {
-      if (img.decode) img.decode().catch(() => {});
-      if (key.startsWith('obs_') && !obstacleOutlineCache[key]) {
-        setTimeout(() => { getOutlinedObstacleSprite(key, img); }, 0);
-      }
+    img.decoding = 'sync';
+    img._retryAt = Date.now();
+    img.onerror = () => {
+      if (img._triedIdb) return;
+      img._triedIdb = true;
+      idbGetBlob(absUrl).then((blob) => {
+        if (blob && typeof URL !== 'undefined' && URL.createObjectURL) {
+          const bUrl = deviceBlobUrlMap[absUrl] || URL.createObjectURL(blob);
+          deviceBlobUrlMap[absUrl] = bUrl;
+          img.src = bUrl;
+        }
+      }).catch(() => {});
     };
-    img.src = deviceBlobUrlMap[absUrl] || url;
+    img.src = url;
     sprites[key] = img;
     return img;
   }
@@ -512,57 +526,36 @@ window.RunRenderer = (function () {
     return new Promise((resolve) => {
       const url = SPRITE_URL_MAP[key];
       if (!url) { resolve(null); return; }
-      const absUrl = toAbsUrl(url);
-      const existing = sprites[key];
-      const finishImg = (img) => {
-        if (img.decode) {
-          img.decode().catch(() => {}).finally(() => resolve(img));
+      const img = requestSprite(key);
+      if (!img) { resolve(null); return; }
+      const finishImg = (target) => {
+        if (target && target.decode) {
+          target.decode().catch(() => {}).finally(() => resolve(target));
         } else {
-          resolve(img);
+          resolve(target);
         }
       };
-      if (existing && existing.complete && existing.naturalWidth > 0) {
-        finishImg(existing);
+      if (img.complete && img.naturalWidth > 0) {
+        finishImg(img);
         return;
       }
-
-      const startWithSrc = (srcToUse) => {
-        const img = existing || new Image();
-        img.decoding = 'async';
-        sprites[key] = img;
-        let settled = false;
-        const done = (val) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          img.removeEventListener('load', onLoad);
-          img.removeEventListener('error', onErr);
-          resolve(val);
-        };
-        const onLoad = () => {
-          if (img.decode) img.decode().catch(() => {}).finally(() => done(img));
-          else done(img);
-        };
-        const onErr = () => done(null);
-        const timer = setTimeout(() => done(null), 8000);
-        img.addEventListener('load', onLoad, { once: true });
-        img.addEventListener('error', onErr, { once: true });
-        if (!existing || img.src !== srcToUse) img.src = srcToUse;
+      let settled = false;
+      const done = (val) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onErr);
+        resolve(val);
       };
-
-      if (deviceBlobUrlMap[absUrl]) {
-        startWithSrc(deviceBlobUrlMap[absUrl]);
-        return;
-      }
-      idbGetBlob(absUrl).then((blob) => {
-        if (blob && typeof URL !== 'undefined' && URL.createObjectURL) {
-          const bUrl = URL.createObjectURL(blob);
-          deviceBlobUrlMap[absUrl] = bUrl;
-          startWithSrc(bUrl);
-        } else {
-          startWithSrc(url);
-        }
-      }).catch(() => startWithSrc(url));
+      const onLoad = () => finishImg(img);
+      const onErr = () => {
+        // Allow onerror IndexedDB fallback a brief moment if triggered
+        setTimeout(() => done(img.complete && img.naturalWidth > 0 ? img : null), 250);
+      };
+      const timer = setTimeout(() => done(img.complete && img.naturalWidth > 0 ? img : null), 8000);
+      img.addEventListener('load', onLoad, { once: true });
+      img.addEventListener('error', onErr, { once: true });
     });
   }
 
@@ -746,21 +739,16 @@ window.RunRenderer = (function () {
       return { cancelled: true, done, total, failed, bytesDownloaded };
     }
 
-    // Phase 2: Decode & pre-bake all 32 obstacle red-outline canvases so first spawn has ZERO frame hitch!
+    // Phase 2: Decode all 32 rim-baked obstacle PNGs & ground strips into RAM so first spawn has ZERO hitch!
     if (wantedIds.has('gameplay')) {
-      const bakeKeys = [...NEW_OBS_SPRITES, 'sp_red_car', 'sp_covid_virus'];
+      const bakeKeys = [...NEW_OBS_SPRITES, 'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'];
       const bakeTotal = bakeKeys.length;
       for (let i = 0; i < bakeTotal; i++) {
         if (signal && signal.aborted) {
           if (onProgress) onProgress({ phase: 'cancelled', done, total, failed, bytesDownloaded, packName: '' });
           return { cancelled: true, done, total, failed, bytesDownloaded };
         }
-        const k = bakeKeys[i];
-        const img = await loadAndDecodeImageKey(k);
-        if (img && img.naturalWidth > 0) {
-          const cacheKey = k === 'sp_red_car' ? 'sp_red_car_pass' : (k === 'sp_covid_virus' ? 'sp_covid_virus_rush' : k);
-          getOutlinedObstacleSprite(cacheKey, img);
-        }
+        await loadAndDecodeImageKey(bakeKeys[i]);
         if (onProgress) {
           onProgress({
             phase: 'bake',
@@ -770,12 +758,11 @@ window.RunRenderer = (function () {
             bakeTotal,
             failed,
             bytesDownloaded,
-            packName: '장애물 테두리 사전 최적화'
+            packName: '장애물 이미지 사전 최적화'
           });
         }
-        if (i % 2 === 1) await nextFrameTick();
+        if (i % 4 === 3) await nextFrameTick();
       }
-      ['ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'].forEach(requestSprite);
     }
 
     // Optional Phase 2b: Pre-warm equipped rare skin outfit recolor canvases for zero-hitch first run
@@ -2200,6 +2187,7 @@ window.RunRenderer = (function () {
       }
     }
 
+    let nonEmptyAlpha = 0;
     for (let y = 0; y < ch; y++) {
       let rMin = cw, rMax = -1;
       if (mode === 'padding' && skinCount > 10) {
@@ -2217,6 +2205,7 @@ window.RunRenderer = (function () {
       for (let x = 0; x < cw; x++) {
         const i = rowOff + x * 4;
         if (d[i + 3] < 20) continue;
+        nonEmptyAlpha++;
         const pr = d[i], pg = d[i + 1], pb = d[i + 2];
         const hsl = rgbToHsl(pr, pg, pb);
         const hue = hsl[0], sat = hsl[1], lum = hsl[2];
@@ -2270,6 +2259,7 @@ window.RunRenderer = (function () {
         }
       }
     }
+    if (nonEmptyAlpha < 8) return false;
     octx.putImageData(imgData, 0, 0);
     return true;
   }
@@ -2294,6 +2284,8 @@ window.RunRenderer = (function () {
     if (hasOutfit) {
       octx.drawImage(spr, 0, 0, cw, ch);
       if (!applyOutfitColorRecolor(octx, cw, ch, skinDef.outfitColor)) {
+        off.width = 0;
+        off.height = 0;
         return spr;
       }
     } else {
@@ -2743,7 +2735,24 @@ window.RunRenderer = (function () {
     sil.width = sw;
     sil.height = sh;
     const sctx = sil.getContext('2d');
+    if (!sctx) { sil.width = 0; sil.height = 0; return null; }
     sctx.drawImage(spr, 0, 0, sw, sh);
+
+    // Guard against undecoded / blank mobile frames so a transparent canvas is NEVER cached!
+    try {
+      const sample = sctx.getImageData(0, 0, sw, sh).data;
+      let hasSolid = false;
+      const step = Math.max(4, Math.floor(sample.length / 256) * 4);
+      for (let i = 3; i < sample.length; i += step) {
+        if (sample[i] > 20) { hasSolid = true; break; }
+      }
+      if (!hasSolid) {
+        sil.width = 0;
+        sil.height = 0;
+        return null;
+      }
+    } catch (_) {}
+
     sctx.globalCompositeOperation = 'source-in';
     sctx.fillStyle = '#ff243d';
     sctx.fillRect(0, 0, sw, sh);
@@ -2752,6 +2761,7 @@ window.RunRenderer = (function () {
     silLight.width = sw;
     silLight.height = sh;
     const lctx = silLight.getContext('2d');
+    if (!lctx) { sil.width = 0; sil.height = 0; silLight.width = 0; silLight.height = 0; return null; }
     lctx.drawImage(spr, 0, 0, sw, sh);
     lctx.globalCompositeOperation = 'source-in';
     lctx.fillStyle = '#ff7a8a';
@@ -2761,6 +2771,7 @@ window.RunRenderer = (function () {
     out.width = cw;
     out.height = ch;
     const octx = out.getContext('2d');
+    if (!octx) { sil.width = 0; sil.height = 0; silLight.width = 0; silLight.height = 0; out.width = 0; out.height = 0; return null; }
     octx.imageSmoothingEnabled = true;
 
     // 1) Soft luminous crimson outer glow hugging the exact contour
@@ -2788,6 +2799,12 @@ window.RunRenderer = (function () {
     // 4) Original crisp comic obstacle art cleanly layered on top
     octx.globalAlpha = 1;
     octx.drawImage(spr, pad, pad, sw, sh);
+
+    // Immediately release temporary GPU surfaces on mobile!
+    sil.width = 0;
+    sil.height = 0;
+    silLight.width = 0;
+    silLight.height = 0;
 
     const entry = { canvas: out, padRatioX: pad / sw, padRatioY: pad / sh };
     obstacleOutlineCache[key] = entry;
@@ -2850,10 +2867,23 @@ window.RunRenderer = (function () {
 
     const spr = getSprite(ob.sprite);
     if (spr) {
-      const outlined = getOutlinedObstacleSprite(ob.sprite, spr);
-      const drawImg = outlined ? outlined.canvas : spr;
-      const px = outlined ? ob.w * outlined.padRatioX : 0;
-      const py = outlined ? ob.h * outlined.padRatioY : 0;
+      // All 32 obs_* PNGs already include the crisp thin luminous red rim directly in the image (9% padding each side),
+      // so mobile draws ctx.drawImage(spr) directly with ZERO offscreen canvas risk or GPU memory spikes!
+      const isBakedRim = typeof ob.sprite === 'string' && ob.sprite.startsWith('obs_');
+      let drawImg = spr;
+      let px = 0;
+      let py = 0;
+      if (isBakedRim) {
+        px = ob.w * 0.09;
+        py = ob.h * 0.09;
+      } else {
+        const outlined = getOutlinedObstacleSprite(ob.sprite, spr);
+        if (outlined && outlined.canvas && outlined.canvas.width > 0) {
+          drawImg = outlined.canvas;
+          px = ob.w * outlined.padRatioX;
+          py = ob.h * outlined.padRatioY;
+        }
+      }
       const dw = ob.w + px * 2;
       const dh = ob.h + py * 2;
 
