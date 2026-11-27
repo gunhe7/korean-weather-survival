@@ -249,6 +249,21 @@ window.RunRenderer = (function () {
     requestSprite('sp_covid_virus');
   }
 
+  function preloadGhostChar(charDef, skinDef) {
+    if (!charDef) return;
+    const customSkin = skinDef && skinDef.customAnimSkin ? skinDef : null;
+    const animId = customSkin ? customSkin.customAnimSkin : (charDef.animSkin || 'yellow');
+    const sheetSpec = CHAR_SHEET_SKINS.find((s) => s.id === animId) || { id: animId, frames: 3, runFrames: 4 };
+    CHAR_ANIM_STATES.forEach((st) => {
+      const cnt = (st === 'run' && sheetSpec.runFrames) ? sheetSpec.runFrames : sheetSpec.frames;
+      for (let f = 0; f < cnt; f++) requestSprite(`${animId}_${st}_${f}`);
+    });
+    if (skinDef) {
+      if (skinDef.customUmbrella) requestSprite(skinDef.customUmbrella);
+      if (skinDef.customMask) requestSprite(skinDef.customMask);
+    }
+  }
+
   function preloadChestAnim(tierId) {
     if (!tierId) return;
     for (let f = 0; f < 8; f++) requestSprite(`chest_${tierId}_${f}`);
@@ -2509,17 +2524,80 @@ window.RunRenderer = (function () {
     return getSprite(`${skin}_idle_${idleFrame}`) || getSprite(`${skin}_idle_0`);
   }
 
+  const ghostCharOutlineCache = {};
+
+  function getOutlinedGhostCharSprite(drawSpr, cacheKey, outlineColor) {
+    if (!drawSpr || !outlineColor) return null;
+    if (ghostCharOutlineCache[cacheKey]) return ghostCharOutlineCache[cacheKey];
+    const rawW = drawSpr.naturalWidth || drawSpr.width || 0;
+    const rawH = drawSpr.naturalHeight || drawSpr.height || 0;
+    if (!rawW || !rawH) return null;
+
+    const workScale = Math.min(1, 150 / Math.max(rawW, rawH));
+    const sw = Math.max(16, Math.round(rawW * workScale));
+    const sh = Math.max(16, Math.round(rawH * workScale));
+    const rimR = Math.max(2.6, Math.max(sw, sh) * 0.032);
+    const glowBlur = Math.max(4, Math.round(Math.max(sw, sh) * 0.055));
+    const pad = Math.ceil(rimR + glowBlur + 3);
+    const cw = sw + pad * 2;
+    const ch = sh + pad * 2;
+
+    const sil = document.createElement('canvas');
+    sil.width = sw;
+    sil.height = sh;
+    const sctx = sil.getContext('2d');
+    if (!sctx) return null;
+    sctx.drawImage(drawSpr, 0, 0, sw, sh);
+    sctx.globalCompositeOperation = 'source-in';
+    sctx.fillStyle = outlineColor;
+    sctx.fillRect(0, 0, sw, sh);
+
+    const out = document.createElement('canvas');
+    out.width = cw;
+    out.height = ch;
+    const octx = out.getContext('2d');
+    if (!octx) return null;
+    octx.imageSmoothingEnabled = true;
+
+    // 1) Soft luminous team-colored halo
+    octx.save();
+    octx.shadowColor = outlineColor;
+    octx.shadowBlur = glowBlur;
+    octx.globalAlpha = 0.82;
+    octx.drawImage(sil, pad, pad);
+    octx.restore();
+
+    // 2) Bold crisp 12-pass silhouette outline (green for ally / red for opponent)
+    octx.globalAlpha = 1;
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2;
+      octx.drawImage(sil, pad + Math.cos(ang) * rimR, pad + Math.sin(ang) * rimR);
+    }
+
+    // 3) Crisp character art layered cleanly inside the contour
+    octx.drawImage(drawSpr, pad, pad, sw, sh);
+
+    const entry = { canvas: out, padRatioX: pad / sw, padRatioY: pad / sh, scaleX: cw / sw, scaleY: ch / sh };
+    ghostCharOutlineCache[cacheKey] = entry;
+    return entry;
+  }
+
   function drawCharacter(ctx, charDef, x, y, opts, t) {
     const {
       sliding, inAir, gliding, invulnTimer, shield, feverTimer, running,
       dead = false, speedBoostTimer = 0, skinDef = null,
       umbrellaOn = false, maskOn = false, maskParryTimer = 0, umbrellaBrokenTimer = 0,
       gustWarning = false,
-      scaleHeight = 52
+      scaleHeight = 52,
+      ghostAlpha = 1,
+      teamOutlineColor = ''
     } = opts;
+    const isGhost = ghostAlpha < 0.99;
 
     if (!dead && invulnTimer > 0 && Math.floor(t * 20) % 2 === 0) {
-      ctx.globalAlpha = 0.45;
+      ctx.globalAlpha = 0.45 * ghostAlpha;
+    } else if (isGhost) {
+      ctx.globalAlpha = ghostAlpha;
     }
 
     const col = charDef.colors || {};
@@ -2535,7 +2613,7 @@ window.RunRenderer = (function () {
     const shadowRx = (isProne ? 24 : 18) * shadowScale;
     const shadowRy = (isProne ? 4.3 : 4.8) * shadowScale;
     ctx.save();
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = ghostAlpha;
     ctx.fillStyle = `rgba(8, 16, 36, ${(shadowAlpha * 0.42).toFixed(2)})`;
     ctx.beginPath();
     ctx.ellipse(cx, Math.floor(shadowY) + 1.5, shadowRx * 1.24, shadowRy * 1.32, 0, 0, Math.PI * 2);
@@ -2700,7 +2778,7 @@ window.RunRenderer = (function () {
     }
 
     // Character-Specific Unique Animated Aura + Equipped Skin Radiant Trail!
-    if (running && !dead && skinDef && skinDef.trail) {
+    if (!isGhost && running && !dead && skinDef && skinDef.trail) {
       const tr = skinDef.trail;
       const isHigh = skinDef.rarity === 'legendary' || skinDef.rarity === 'mythic' || skinDef.rarity === 'epic';
       if (skinDef.customAuraPrefix) {
@@ -2748,7 +2826,7 @@ window.RunRenderer = (function () {
           }
         }
       }
-    } else if (running && !dead && charDef.auraType) {
+    } else if (!isGhost && running && !dead && charDef.auraType) {
       const aura = charDef.auraType;
       if (aura === 'skier') {
         for (let k = 0; k < 3; k++) {
@@ -2800,12 +2878,24 @@ window.RunRenderer = (function () {
       const sy = opts.squashY !== undefined ? opts.squashY : 1;
 
       ctx.save();
+      if (isGhost) ctx.globalAlpha = ghostAlpha;
       ctx.translate(cx, Math.floor(cy - bob));
       if (sx !== 1 || sy !== 1) ctx.scale(sx, sy);
       const drawSpr = (skinDef && (skinDef.outfitColor || (skinDef.filter && skinDef.filter !== 'none')))
         ? getFilteredCharSprite(spr, skinDef)
         : spr;
-      ctx.drawImage(drawSpr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
+      const outlined = teamOutlineColor
+        ? getOutlinedGhostCharSprite(drawSpr, `${spr.src}|${skinDef ? skinDef.id : 'base'}|${teamOutlineColor}`, teamOutlineColor)
+        : null;
+      if (outlined) {
+        const ow = Math.round(drawW * outlined.scaleX);
+        const oh = Math.round(drawH * outlined.scaleY);
+        const ox = Math.floor(-drawW / 2 - drawW * outlined.padRatioX);
+        const oy = Math.floor(-drawH - drawH * outlined.padRatioY);
+        ctx.drawImage(outlined.canvas, ox, oy, ow, oh);
+      } else {
+        ctx.drawImage(drawSpr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
+      }
 
       // Uploaded KF94 Mask Sprite OR Mythic Custom Mask (e.g. Hades Purple Mask!)
       if (maskOn && !dead) {
@@ -3540,6 +3630,73 @@ window.RunRenderer = (function () {
     // Obstacles
     run.obstacles.forEach((ob) => drawObstacle(ctx, ob, t));
 
+    // Competitive 1v1 / 2v2 Live Translucent Ghosts (Teammate Green Outline / Opponent Red Outline in 2v2!)
+    if (Array.isArray(run.compGhosts) && run.compGhosts.length > 0 && window.RUN_DATA) {
+      const chars = window.RUN_DATA.CHARACTERS || [];
+      run.compGhosts.forEach((g) => {
+        if (!g || g.hidden) return;
+        const gChar = chars.find((c) => c.id === g.charId) || chars[0];
+        if (!gChar) return;
+        const gSkin = g.skinId && window.RUN_DATA.getSkinById ? window.RUN_DATA.getSkinById(g.skinId) : null;
+        const gx = g.x;
+        const gy = g.y;
+        const gFloorY = g.floorY !== undefined ? g.floorY : GROUND_Y;
+        const isDead = Boolean(g.dead);
+        drawCharacter(ctx, gChar, gx, gy, {
+          sliding: Boolean(g.sliding && !isDead),
+          inAir: !isDead && gy < gFloorY - 1,
+          floorY: gFloorY,
+          vy: g.vy || 0,
+          gliding: false,
+          invulnTimer: 0,
+          shield: false,
+          feverTimer: g.fever ? 1 : 0,
+          speedBoostTimer: 0,
+          dead: isDead,
+          deathProgress: 1,
+          umbrellaOn: Boolean(g.umbrellaOn && !isDead),
+          maskOn: Boolean(g.maskOn && !isDead),
+          maskParryTimer: 0,
+          umbrellaBrokenTimer: 0,
+          gustWarning: false,
+          hitPoseTimer: g.hitPoseTimer || 0,
+          itemPoseTimer: 0,
+          winPoseTimer: 0,
+          running: !isDead,
+          skinDef: gSkin || null,
+          scaleHeight: 60,
+          ghostAlpha: g.alpha !== undefined ? g.alpha : 0.56,
+          teamOutlineColor: g.outlineColor || ''
+        }, t + (g.phaseOffset || 0));
+
+        // Clean mini floating tag above each ghost player so teammate (green) vs opponent (red) is unmistakable!
+        if (g.label) {
+          ctx.save();
+          ctx.globalAlpha = 0.86;
+          ctx.font = '900 8.5px "Noto Sans KR", sans-serif';
+          const txt = g.label;
+          const tw = Math.ceil(ctx.measureText(txt).width);
+          const pw = tw + 10;
+          const ph = 13;
+          const px = Math.floor(gx - pw / 2);
+          const py = Math.floor(gy - (g.sliding || isDead ? 44 : 74));
+          drawRoundRect(ctx, px, py, pw, ph, 6);
+          ctx.fillStyle = g.isAlly
+            ? 'rgba(8, 56, 28, 0.86)'
+            : (g.outlineColor ? 'rgba(72, 12, 22, 0.86)' : 'rgba(12, 24, 52, 0.84)');
+          ctx.fill();
+          ctx.lineWidth = 1.4;
+          ctx.strokeStyle = g.isAlly ? '#35f57b' : (g.outlineColor ? '#ff465c' : '#8fd4ff');
+          ctx.stroke();
+          ctx.fillStyle = g.isAlly ? '#b8ffd0' : (g.outlineColor ? '#ffd0d6' : '#ffffff');
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(txt, px + pw / 2, py + ph / 2 + 0.5);
+          ctx.restore();
+        }
+      });
+    }
+
     // Runner Character (Full 7-State Animation: Idle, Run, Jump, Fall, Slide, Hurt, Die!)
     drawCharacter(ctx, charDef, run.playerX, run.playerY, {
       sliding: run.sliding,
@@ -3667,6 +3824,7 @@ window.RunRenderer = (function () {
     syncViewport,
     invalidateCanvasSize,
     preloadForRun,
+    preloadGhostChar,
     preloadSeason,
     preloadChestAnim,
     inspectPreloadCacheStatus,

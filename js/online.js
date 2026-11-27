@@ -1235,8 +1235,11 @@ window.OnlineService = (function () {
     const tr = Math.max(0, Math.floor(Number(playerInfo.trophies) || 0));
     const tierBand = getCompTierBand(tr);
     const nick = sanitizeNickname(playerInfo.nickname, '날씨러너');
+    const compMode = playerInfo.compMode === '2v2' ? '2v2' : '1v1';
+    const partyId = compMode === '2v2' ? String(playerInfo.partyId || '') : '';
+    const partnerUid = compMode === '2v2' ? String(playerInfo.partnerUid || '') : '';
 
-    const writeRes = await writeCompBoardNode(RTDB_COMP_QUEUE_BUCKET, uid, () => ({
+    const buildPayload = (queuedAtVal) => ({
       provider: playerInfo.provider,
       nickname: nick,
       charId: playerInfo.charId || 'umbrella_master',
@@ -1245,36 +1248,24 @@ window.OnlineService = (function () {
       profileSkinId: playerInfo.profileSkinId !== undefined ? playerInfo.profileSkinId : (playerInfo.skinId || null),
       trophies: tr,
       tierBand,
+      compMode,
+      partyId,
+      partnerUid,
       platform: plat.id,
       platformLabel: plat.label,
       state: 'searching',
-      queuedAt: 0,
+      queuedAt: queuedAtVal,
       matchRoomId: '',
       rosterUids: [],
+      teamMap: {},
       launchAt: 0
-    }));
+    });
 
+    const writeRes = await writeCompBoardNode(RTDB_COMP_QUEUE_BUCKET, uid, () => buildPayload(0));
     const serverNow = (writeRes && writeRes.data && Number(writeRes.data.updatedAt)) || getCompServerNow();
     const queuedAt = serverNow;
-    // Stamp server-synchronized queuedAt on second quick update only if needed? Even cleaner: write queuedAt = serverNow immediately if calibrated, or update on first heartbeat!
     if (writeRes && writeRes.ok) {
-      await writeCompBoardNode(RTDB_COMP_QUEUE_BUCKET, uid, () => ({
-        provider: playerInfo.provider,
-        nickname: nick,
-        charId: playerInfo.charId || 'umbrella_master',
-        skinId: playerInfo.skinId || null,
-        profileCharId: playerInfo.profileCharId || playerInfo.charId || 'umbrella_master',
-        profileSkinId: playerInfo.profileSkinId !== undefined ? playerInfo.profileSkinId : (playerInfo.skinId || null),
-        trophies: tr,
-        tierBand,
-        platform: plat.id,
-        platformLabel: plat.label,
-        state: 'searching',
-        queuedAt,
-        matchRoomId: '',
-        rosterUids: [],
-        launchAt: 0
-      }));
+      await writeCompBoardNode(RTDB_COMP_QUEUE_BUCKET, uid, () => buildPayload(queuedAt));
     }
 
     const polled = await pollCompQueue();
@@ -1282,6 +1273,9 @@ window.OnlineService = (function () {
       rejected: null,
       online: Boolean(writeRes && writeRes.ok),
       uid,
+      compMode,
+      partyId,
+      partnerUid,
       tierBand,
       platform: plat,
       queuedAt,
@@ -1299,6 +1293,9 @@ window.OnlineService = (function () {
     const tr = Math.max(0, Math.floor(Number(playerInfo.trophies) || 0));
     const tierBand = playerInfo.tierBand || getCompTierBand(tr);
     const nick = sanitizeNickname(playerInfo.nickname, '날씨러너');
+    const compMode = (statePatch.compMode || playerInfo.compMode) === '2v2' ? '2v2' : '1v1';
+    const partyId = compMode === '2v2' ? String(statePatch.partyId !== undefined ? statePatch.partyId : (playerInfo.partyId || '')) : '';
+    const partnerUid = compMode === '2v2' ? String(statePatch.partnerUid !== undefined ? statePatch.partnerUid : (playerInfo.partnerUid || '')) : '';
 
     return writeCompBoardNode(RTDB_COMP_QUEUE_BUCKET, uid, () => ({
       provider: playerInfo.provider,
@@ -1309,12 +1306,16 @@ window.OnlineService = (function () {
       profileSkinId: playerInfo.profileSkinId !== undefined ? playerInfo.profileSkinId : (playerInfo.skinId || null),
       trophies: tr,
       tierBand,
+      compMode,
+      partyId,
+      partnerUid,
       platform: plat.id || 'pc',
       platformLabel: plat.label || 'PC',
       state: statePatch.state || 'searching',
       queuedAt: Number(playerInfo.queuedAt) || getCompServerNow(),
       matchRoomId: statePatch.matchRoomId || '',
       rosterUids: Array.isArray(statePatch.rosterUids) ? statePatch.rosterUids : [],
+      teamMap: (statePatch.teamMap && typeof statePatch.teamMap === 'object') ? statePatch.teamMap : {},
       launchAt: Number(statePatch.launchAt) || 0
     }), { keepalive: Boolean(statePatch.keepalive) });
   }
@@ -1325,6 +1326,76 @@ window.OnlineService = (function () {
     }
     const res = await heartbeatCompQueue(playerInfo, { state: 'cancelled', keepalive: true });
     return Boolean(res && res.ok);
+  }
+
+  // ===================== 2v2 FRIEND DUO PARTY SYNC (/weekly_boards/comp_duo_v1/{uid}.json) =====================
+  const RTDB_COMP_DUO_BUCKET = 'comp_duo_v1';
+
+  function makeCompDuoPartyId(uidA, uidB) {
+    const pair = [String(uidA || ''), String(uidB || '')].sort();
+    return `duo_${pair[0].slice(0, 8)}_${pair[1].slice(0, 8)}`;
+  }
+
+  async function publishCompDuoState(playerInfo, duoPatch = {}) {
+    if (!playerInfo || !playerInfo.uid || !isRankedProvider(playerInfo.provider) || isLegacyUnverifiedUid(playerInfo.uid)) {
+      return { ok: false };
+    }
+    const uid = String(playerInfo.uid);
+    const plat = playerInfo.platform || detectClientPlatform();
+    const nick = sanitizeNickname(playerInfo.nickname, '날씨러너');
+    return writeCompBoardNode(RTDB_COMP_DUO_BUCKET, uid, () => ({
+      provider: playerInfo.provider,
+      nickname: nick,
+      charId: playerInfo.charId || 'umbrella_master',
+      skinId: playerInfo.skinId || null,
+      profileCharId: playerInfo.profileCharId || playerInfo.charId || 'umbrella_master',
+      profileSkinId: playerInfo.profileSkinId !== undefined ? playerInfo.profileSkinId : (playerInfo.skinId || null),
+      trophies: Math.max(0, Math.floor(Number(playerInfo.trophies) || 0)),
+      platform: plat.id || 'pc',
+      platformLabel: plat.label || 'PC',
+      status: duoPatch.status || 'idle', // 'idle' | 'inviting' | 'ready' | 'queueing' | 'declined'
+      targetUid: String(duoPatch.targetUid || ''),
+      partyId: String(duoPatch.partyId || ''),
+      updatedClientAt: Date.now()
+    }), { keepalive: Boolean(duoPatch.keepalive) });
+  }
+
+  async function pollCompDuoDirectory() {
+    if (!hasRemoteDb()) return { online: false, serverNow: getCompServerNow(), byUid: {}, entries: [] };
+    const roots = [RTDB_BOARD_ROOT, '/weekly_boards_v2'];
+    let online = false;
+    const byUid = {};
+    for (const root of roots) {
+      try {
+        const res = await fetch(`${getDbUrl()}${root}/${RTDB_COMP_DUO_BUCKET}.json`, { cache: 'no-store' });
+        if (res && res.ok) {
+          online = true;
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            Object.values(data).forEach((p) => {
+              if (!p || !p.uid || !isRankedProvider(p.provider) || isLegacyUnverifiedUid(p.uid)) return;
+              const prev = byUid[p.uid];
+              if (!prev || (Number(p.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
+                byUid[p.uid] = p;
+              }
+            });
+          }
+          break;
+        }
+      } catch {}
+    }
+    const serverNow = getCompServerNow();
+    const freshByUid = {};
+    const entries = Object.values(byUid).filter((p) => {
+      if (!p || !p.status || p.status === 'idle') return false;
+      const ts = Number(p.updatedAt) || 0;
+      if (!ts) return false;
+      const age = serverNow - ts;
+      const ok = age <= 90000 && age >= -30000;
+      if (ok) freshByUid[p.uid] = p;
+      return ok;
+    });
+    return { online, serverNow, byUid: freshByUid, entries };
   }
 
   async function joinCompActiveRoom(roomId, playerInfo) {
@@ -1341,13 +1412,15 @@ window.OnlineService = (function () {
       skinId: playerInfo.skinId || null,
       trophies: Math.max(0, Math.floor(Number(playerInfo.trophies) || 0)),
       platform: plat.id || 'pc',
-      platformLabel: plat.label || 'PC'
+      platformLabel: plat.label || 'PC',
+      team: Number(playerInfo.team) === 1 ? 1 : 0
     };
     COMP_ROOM_META_CACHE[`${roomId}:${uid}`] = meta;
     const res = await writeCompBoardNode(roomId, uid, () => ({
       ...meta,
       realScore: 0,
-      finished: false
+      finished: false,
+      pose: { y: 258, vy: 0, sl: 0, um: 0, mk: 0, ht: 0, dd: 0, fv: 0, distM: 0 }
     }), { exactMinScore: 1 });
     return Boolean(res && res.ok);
   }
@@ -1367,15 +1440,16 @@ window.OnlineService = (function () {
             ...p,
             score: typeof p.realScore === 'number'
               ? Math.max(0, Math.floor(p.realScore))
-              : Math.max(0, Math.floor(Number(p.score) || 0))
+              : Math.max(0, Math.floor(Number(p.score) || 0)),
+            pose: (p.pose && typeof p.pose === 'object') ? p.pose : null
           }))
-          .slice(0, 8);
+          .slice(0, 4);
       } catch {}
     }
     return null;
   }
 
-  async function pushCompLiveScore(roomId, uid, score, finished = false, playerMeta = null) {
+  async function pushCompLiveScore(roomId, uid, score, finished = false, playerMeta = null, livePose = null) {
     if (!roomId || roomId.startsWith('local_') || !uid || !hasRemoteDb()) return false;
     const cleanUid = String(uid);
     const cached = COMP_ROOM_META_CACHE[`${roomId}:${cleanUid}`] || {};
@@ -1386,14 +1460,27 @@ window.OnlineService = (function () {
       skinId: (playerMeta && playerMeta.skinId !== undefined) ? playerMeta.skinId : (cached.skinId || null),
       trophies: Math.max(0, Math.floor(Number((playerMeta && playerMeta.trophies) ?? cached.trophies) || 0)),
       platform: (playerMeta && playerMeta.platform) || cached.platform || detectClientPlatform().id,
-      platformLabel: (playerMeta && playerMeta.platformLabel) || cached.platformLabel || detectClientPlatform().label
+      platformLabel: (playerMeta && playerMeta.platformLabel) || cached.platformLabel || detectClientPlatform().label,
+      team: (playerMeta && playerMeta.team !== undefined) ? (Number(playerMeta.team) === 1 ? 1 : 0) : (cached.team || 0)
     };
     COMP_ROOM_META_CACHE[`${roomId}:${cleanUid}`] = { uid: cleanUid, ...meta };
     const cleanScore = Math.max(0, Math.floor(Number(score) || 0));
+    const cleanPose = livePose && typeof livePose === 'object' ? {
+      y: Math.round(Number(livePose.y) || 258),
+      vy: Math.round(Number(livePose.vy) || 0),
+      sl: livePose.sl ? 1 : 0,
+      um: livePose.um ? 1 : 0,
+      mk: livePose.mk ? 1 : 0,
+      ht: livePose.ht ? 1 : 0,
+      dd: livePose.dd ? 1 : 0,
+      fv: livePose.fv ? 1 : 0,
+      distM: Math.max(0, Math.floor(Number(livePose.distM) || 0))
+    } : null;
     const res = await writeCompBoardNode(roomId, cleanUid, () => ({
       ...meta,
       realScore: cleanScore,
-      finished: Boolean(finished)
+      finished: Boolean(finished),
+      ...(cleanPose ? { pose: cleanPose } : {})
     }), {
       exactMinScore: Math.max(1, Math.min(4999990, cleanScore)),
       keepalive: Boolean(finished)
@@ -1861,6 +1948,9 @@ window.OnlineService = (function () {
     heartbeatCompQueue,
     pollCompQueue,
     leaveCompQueue,
+    makeCompDuoPartyId,
+    publishCompDuoState,
+    pollCompDuoDirectory,
     joinCompActiveRoom,
     joinCompMatchRoom,
     pollCompMatchRoom,

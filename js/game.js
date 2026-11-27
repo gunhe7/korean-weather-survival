@@ -713,11 +713,26 @@
     compRecordLine: document.getElementById('comp-record-line'),
     btnStartCompMatch: document.getElementById('btn-start-comp-match'),
     compMatchOverlay: document.getElementById('comp-match-overlay'),
+    compMatchTitle: document.getElementById('comp-match-title'),
     compMatchCountPill: document.getElementById('comp-match-count-pill'),
     compMatchStatus: document.getElementById('comp-match-status'),
     compMatchGrid: document.getElementById('comp-match-grid'),
     btnCompMatchMinimize: document.getElementById('btn-comp-match-minimize'),
     btnCompMatchCancel: document.getElementById('btn-comp-match-cancel'),
+    btnCompMode1v1: document.getElementById('btn-comp-mode-1v1'),
+    btnCompMode2v2: document.getElementById('btn-comp-mode-2v2'),
+    compDuoPanel: document.getElementById('comp-duo-panel'),
+    compDuoPartnerName: document.getElementById('comp-duo-partner-name'),
+    btnCompDuoInvite: document.getElementById('btn-comp-duo-invite'),
+    btnCompDuoLeave: document.getElementById('btn-comp-duo-leave'),
+    compDuoInviteOverlay: document.getElementById('comp-duo-invite-overlay'),
+    btnDuoRefresh: document.getElementById('btn-duo-refresh'),
+    btnCloseDuoInvite: document.getElementById('btn-close-duo-invite'),
+    compDuoFriendList: document.getElementById('comp-duo-friend-list'),
+    compDuoReqBanner: document.getElementById('comp-duo-req-banner'),
+    compDuoReqMsg: document.getElementById('comp-duo-req-msg'),
+    btnDuoReqAccept: document.getElementById('btn-duo-req-accept'),
+    btnDuoReqDecline: document.getElementById('btn-duo-req-decline'),
     compOwQueueBar: document.getElementById('comp-ow-queue-bar'),
     btnOwQueueOpen: document.getElementById('btn-ow-queue-open'),
     owQueueTitle: document.getElementById('ow-queue-title'),
@@ -729,6 +744,7 @@
     compResOutcomePill: document.getElementById('comp-res-outcome-pill'),
     compResModifiers: document.getElementById('comp-res-modifiers'),
     compResBoardPanel: document.getElementById('comp-res-board-panel'),
+    compResBoardTitle: document.getElementById('comp-res-board-title'),
     btnCompResToggleBoard: document.getElementById('btn-comp-res-toggle-board'),
     compResOwCard: document.getElementById('comp-res-ow-card'),
     compResFxCanvas: document.getElementById('comp-res-fx-canvas'),
@@ -4545,6 +4561,7 @@
     // 1. Flush previous different account locally only (Firebase Auth currentUser may already be the newly signed-in account!)
     if (save && save.auth && save.auth.loggedIn && save.auth.uid && save.auth.uid !== profile.uid) {
       cancelCompetitiveMatchmaking(true);
+      leaveCompDuoParty(true);
       persistSave(false, { localOnly: true });
     }
 
@@ -4608,6 +4625,7 @@
       try { checkAndAwardWeeklyChampion(); } catch {}
       try { await syncMyFriendProfile({ silent: true, pullBeforeWrite: true }); } catch {}
       try { await refreshFriendsDirectory({ silent: true }); } catch {}
+      try { pollCompDuoUpdates(); } catch {}
     } else {
       updateHomeFriendsButton();
     }
@@ -5978,7 +5996,8 @@
 
     if (compQueueState && !compQueueState.cancelled) {
       const qCnt = (compQueueState.players || []).length || 1;
-      const qTotal = DATA.COMP_MATCH_PLAYERS || 8;
+      const qTotal = compQueueState.totalSlots || (compQueueState.compMode === '2v2' ? 4 : 2);
+      const qModeLbl = compQueueState.compMode === '2v2' ? '2대2' : '1대1';
       const qMm = String(Math.floor((compQueueState.waitSec || 0) / 60)).padStart(2, '0');
       const qSs = String((compQueueState.waitSec || 0) % 60).padStart(2, '0');
       if (el.btnCompLobbyStart) {
@@ -5986,7 +6005,7 @@
         el.btnCompLobbyStart.classList.add('is-queueing');
       }
       if (el.compLobbyStartMain) {
-        el.compLobbyStartMain.textContent = compQueueState.launching ? '매칭 완료!' : `매칭 중 (${qCnt}/${qTotal})`;
+        el.compLobbyStartMain.textContent = compQueueState.launching ? '매칭 완료!' : `${qModeLbl} 매칭 (${qCnt}/${qTotal})`;
       }
       if (el.compLobbyStartSub) {
         el.compLobbyStartSub.textContent = compQueueState.launching
@@ -5999,9 +6018,14 @@
     if (el.btnCompLobbyStart) {
       el.btnCompLobbyStart.classList.remove('is-locked', 'is-result-ready', 'is-queueing');
     }
+    const modeLabel = selectedCompMode === '2v2' ? '2대2' : '1대1';
     if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = 'PLAY!';
     if (el.compLobbyStartSub) {
-      el.compLobbyStartSub.textContent = isGoogleLinked ? '8인 크로스 플레이 매칭' : '계정 연동 전용';
+      el.compLobbyStartSub.textContent = isGoogleLinked
+        ? (selectedCompMode === '2v2' && compDuoState.status === 'ready'
+          ? `2대2 듀오 매칭 (${compDuoState.partnerNick})`
+          : `${modeLabel} 크로스 플레이 · 트로피 공유`)
+        : '계정 연동 전용';
     }
     if (el.compLobbyLockLabel) {
       el.compLobbyLockLabel.textContent = isGoogleLinked ? '1경기씩 매칭 가능' : 'Google 계정 연동 필요';
@@ -6087,6 +6111,8 @@
     const isReached = idx <= myTier.index;
     const rw = t.seasonReward || { gems: 0, diamondChests: 5 };
     const deltas = t.trophyDeltas || DATA.COMP_TROPHY_DELTAS;
+    const winDelta = Number.isFinite(t.winDelta) ? t.winDelta : (deltas[0] || 30);
+    const lossDelta = Number.isFinite(t.lossDelta) ? t.lossDelta : (deltas[deltas.length - 1] || -26);
     const divSpan = DATA.COMP_DIV_STEP || 300;
     const majorSpan = divSpan * (DATA.COMP_DIVS_PER_TIER || 5);
     const rangeEnd = idx < tiers.length - 1 ? (t.minTrophies + majorSpan - 1) : null;
@@ -6136,8 +6162,8 @@
           </div>
           <div class="comp-sr-range">${rangeTxt} · 세부티어당 ${divSpan}</div>
           <div class="comp-sr-deltas">
-            <span class="up">1~4위 +${deltas[0]} / +${deltas[1]} / +${deltas[2]} / +${deltas[3]}</span>
-            <span class="dn">5~8위 ${deltas[4]} / ${deltas[5]} / ${deltas[6]} / ${deltas[7]}</span>
+            <span class="up">1대1·2대2 승리 +${winDelta}</span>
+            <span class="dn">패배 ${lossDelta} · 무승부 0</span>
           </div>
         </div>
       </div>
@@ -6241,6 +6267,7 @@
 
     // 8-Tier Emblem Roadmap (Bronze ~ Champion inside #comp-rewards-overlay, all clickable!)
     renderCompTierRoadmap();
+    renderCompModeAndDuoUI();
 
     // Scenic Running Character Showcase
     if (el.compLobbyCharPerk) el.compLobbyCharPerk.textContent = ch.perkLabel || ch.tierLabel || '특화 러너';
@@ -6527,7 +6554,311 @@
     '은하수', '노을빛', '햇살가득', '청명하늘', '안개꽃', '무지개다리',
     '빗방울', '여우비', '찬바람', '따뜻한차'
   ];
+  let selectedCompMode = '1v1'; // '1v1' | '2v2' (트로피·티어 완전 공유!)
+  let compDuoState = {
+    status: 'idle', // 'idle' | 'inviting' | 'ready'
+    partnerUid: '',
+    partnerNick: '',
+    partyId: '',
+    incomingInvite: null // { uid, nickname, trophies, partyId }
+  };
   let compQueueState = null;
+
+  function buildMyCompBasicMeta() {
+    const myAuth = save.auth || { provider: 'guest', uid: '', nickname: '게스트' };
+    const myChar = getCharDef(save.selectedChar);
+    const mySkin = getEquippedSkin(myChar.id);
+    const myProfMeta = buildMyBoardProfileMeta(myChar, mySkin);
+    const myPlat = (ONLINE && ONLINE.detectClientPlatform) ? ONLINE.detectClientPlatform() : { id: 'pc', label: 'PC' };
+    return {
+      uid: String(myAuth.uid || ''),
+      provider: myAuth.provider || 'guest',
+      nickname: myAuth.nickname || `나 (${myChar.name})`,
+      charId: myChar.id,
+      skinId: mySkin ? mySkin.id : null,
+      profileCharId: myProfMeta.profileCharId,
+      profileSkinId: myProfMeta.profileSkinId,
+      trophies: Math.max(0, Math.floor(save.trophies || 0)),
+      platform: myPlat
+    };
+  }
+
+  function setCompMode(mode) {
+    const next = mode === '2v2' ? '2v2' : '1v1';
+    if (compQueueState && !compQueueState.cancelled) {
+      SFX.error();
+      showToast('매칭 중에는 모드를 바꿀 수 없습니다. 먼저 매칭을 취소해 주세요.');
+      return;
+    }
+    selectedCompMode = next;
+    if (next === '1v1' && compDuoState.status !== 'idle') {
+      leaveCompDuoParty(true);
+    }
+    renderCompModeAndDuoUI();
+    updateCompLobbyMatchStateUI();
+  }
+
+  function renderCompModeAndDuoUI() {
+    const is2v2 = selectedCompMode === '2v2';
+    if (el.btnCompMode1v1) {
+      el.btnCompMode1v1.classList.toggle('active', !is2v2);
+      el.btnCompMode1v1.setAttribute('aria-selected', String(!is2v2));
+    }
+    if (el.btnCompMode2v2) {
+      el.btnCompMode2v2.classList.toggle('active', is2v2);
+      el.btnCompMode2v2.setAttribute('aria-selected', String(is2v2));
+    }
+    if (el.compDuoPanel) {
+      el.compDuoPanel.classList.toggle('hidden', !is2v2);
+    }
+    if (el.compDuoPartnerName) {
+      if (compDuoState.status === 'ready' && compDuoState.partnerNick) {
+        el.compDuoPartnerName.textContent = `팀원: ${compDuoState.partnerNick}`;
+      } else if (compDuoState.status === 'inviting' && compDuoState.partnerNick) {
+        el.compDuoPartnerName.textContent = `초대 대기: ${compDuoState.partnerNick}`;
+      } else {
+        el.compDuoPartnerName.textContent = '솔로 대기';
+      }
+    }
+    if (el.btnCompDuoInvite) {
+      el.btnCompDuoInvite.classList.toggle('hidden', compDuoState.status === 'ready');
+      el.btnCompDuoInvite.textContent = compDuoState.status === 'inviting' ? '다시 초대' : '친구 초대';
+    }
+    if (el.btnCompDuoLeave) {
+      el.btnCompDuoLeave.classList.toggle('hidden', compDuoState.status === 'idle');
+    }
+    if (el.compDuoReqBanner) {
+      const inc = compDuoState.incomingInvite;
+      const showReq = Boolean(inc && (!run || !run.active));
+      el.compDuoReqBanner.classList.toggle('hidden', !showReq);
+      if (showReq && el.compDuoReqMsg) {
+        el.compDuoReqMsg.textContent = `[${inc.nickname}] 님이 2대2 팀으로 초대했습니다!`;
+      }
+    }
+  }
+
+  async function leaveCompDuoParty(silent = false) {
+    const had = compDuoState.status !== 'idle';
+    compDuoState.status = 'idle';
+    compDuoState.partnerUid = '';
+    compDuoState.partnerNick = '';
+    compDuoState.partyId = '';
+    if (had && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
+      ONLINE.publishCompDuoState(buildMyCompBasicMeta(), { status: 'idle', targetUid: '', partyId: '', keepalive: silent }).catch(() => {});
+    }
+    renderCompModeAndDuoUI();
+    updateCompLobbyMatchStateUI();
+    if (!silent && had) {
+      SFX.click();
+      showToast('2대2 팀 파티를 해제했습니다.');
+    }
+  }
+
+  async function inviteFriendToDuo(friendUser) {
+    if (!friendUser || !friendUser.uid) return;
+    if (!isMyAccountLinkedForFriends()) {
+      SFX.error();
+      showToast('Google 또는 Apple 로그인 후 친구와 2대2 팀을 맺을 수 있습니다.');
+      return;
+    }
+    const meta = buildMyCompBasicMeta();
+    const partyId = ONLINE.makeCompDuoPartyId(meta.uid, friendUser.uid);
+    selectedCompMode = '2v2';
+    compDuoState.status = 'inviting';
+    compDuoState.partnerUid = String(friendUser.uid);
+    compDuoState.partnerNick = friendUser.nickname || '친구';
+    compDuoState.partyId = partyId;
+    closeCompDuoInviteModal();
+    renderCompModeAndDuoUI();
+    updateCompLobbyMatchStateUI();
+    SFX.click();
+    await ONLINE.publishCompDuoState(meta, { status: 'inviting', targetUid: compDuoState.partnerUid, partyId });
+    showToast(`[${compDuoState.partnerNick}] 님에게 2대2 팀 초대를 보냈습니다!`);
+  }
+
+  async function acceptIncomingDuoInvite() {
+    const inc = compDuoState.incomingInvite;
+    if (!inc || !inc.uid) return;
+    if (compQueueState && !compQueueState.cancelled) cancelCompetitiveMatchmaking(true);
+    selectedCompMode = '2v2';
+    compDuoState.status = 'ready';
+    compDuoState.partnerUid = String(inc.uid);
+    compDuoState.partnerNick = inc.nickname || '친구';
+    compDuoState.partyId = inc.partyId || ONLINE.makeCompDuoPartyId(getMyFriendUid(), inc.uid);
+    compDuoState.incomingInvite = null;
+    SFX.chestJackpot();
+    await ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+      status: 'ready',
+      targetUid: compDuoState.partnerUid,
+      partyId: compDuoState.partyId
+    });
+    switchTab('comp');
+    renderCompModeAndDuoUI();
+    updateCompLobbyMatchStateUI();
+    showToast(`[${compDuoState.partnerNick}] 님과 2대2 팀이 결성되었습니다!`);
+  }
+
+  async function declineIncomingDuoInvite() {
+    const inc = compDuoState.incomingInvite;
+    compDuoState.incomingInvite = null;
+    SFX.click();
+    renderCompModeAndDuoUI();
+    if (inc && inc.uid && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
+      ONLINE.publishCompDuoState(buildMyCompBasicMeta(), { status: 'declined', targetUid: inc.uid, partyId: inc.partyId || '' }).catch(() => {});
+    }
+  }
+
+  function renderCompDuoFriendList() {
+    if (!el.compDuoFriendList) return;
+    recomputeFriendsSummary();
+    const list = friendsSummaryCache.friends || [];
+    el.compDuoFriendList.innerHTML = '';
+    if (!list.length) {
+      el.compDuoFriendList.innerHTML = `
+        <div class="bs-friend-empty">
+          <strong>등록된 친구가 없습니다</strong>
+          <span>홈 화면 우측 [친구] 버튼에서 배틀태그나 공유 링크로 친구를 먼저 추가해 주세요!</span>
+        </div>
+      `;
+      return;
+    }
+    const nowMs = Date.now();
+    list.forEach((u) => {
+      const avInfo = getProfileAvatarInfo(
+        { avatarCharId: u.profileCharId || u.charId, avatarSkinId: u.profileSkinId !== undefined ? u.profileSkinId : u.skinId },
+        u.charId,
+        u.skinId,
+        false
+      );
+      const tInfo = DATA.getCompTier(u.trophies || 0);
+      const isOnline = (nowMs - (u.updatedAt || 0)) < 10 * 60 * 1000;
+      const isInvitingThis = compDuoState.status === 'inviting' && compDuoState.partnerUid === u.uid;
+      const row = document.createElement('div');
+      row.className = 'bs-friend-row';
+      row.innerHTML = `
+        <div class="bs-friend-row-left">
+          <div class="bs-fr-avatar-wrap">
+            <img src="${avInfo.src}" alt="" class="bs-fr-avatar-img" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
+            <span class="bs-fr-online-dot${isOnline ? ' online' : ''}" aria-hidden="true"></span>
+          </div>
+          <div class="bs-fr-meta">
+            <div class="bs-fr-name-line">
+              <img src="${getTierImgUrl(tInfo)}" alt="${tInfo.name}" class="bs-fr-tier-ico" />
+              ${renderNameplateHtml(u.nickname, u.nameFrame, u.nameColor, 'sm')}
+              <span class="bs-fr-tag-chip">#${escapeNickHtml(u.friendKey)}</span>
+            </div>
+            <div class="bs-fr-stats-line">
+              <span class="bs-fr-stat-trophy">${tInfo.name} · ${(u.trophies || 0).toLocaleString('ko-KR')} 트로피</span>
+            </div>
+          </div>
+        </div>
+        <div class="bs-friend-row-actions">
+          <button type="button" class="bs-fr-act-btn ${isInvitingThis ? 'neutral' : 'accept'}">${isInvitingThis ? '대기 중' : '팀 초대'}</button>
+        </div>
+      `;
+      row.querySelector('.bs-fr-act-btn').onclick = () => inviteFriendToDuo(u);
+      el.compDuoFriendList.appendChild(row);
+    });
+  }
+
+  async function openCompDuoInviteModal() {
+    SFX.click();
+    if (!isMyAccountLinkedForFriends()) {
+      showToast('Google 또는 Apple 로그인 후 친구 초대를 이용할 수 있습니다.');
+      openLoginOverlay();
+      return;
+    }
+    renderCompDuoFriendList();
+    if (el.compDuoInviteOverlay) el.compDuoInviteOverlay.classList.remove('hidden');
+    await refreshFriendsDirectory({ silent: true });
+    renderCompDuoFriendList();
+  }
+
+  function closeCompDuoInviteModal() {
+    if (el.compDuoInviteOverlay) el.compDuoInviteOverlay.classList.add('hidden');
+  }
+
+  async function pollCompDuoUpdates() {
+    if (!ONLINE || !ONLINE.pollCompDuoDirectory || !isMyAccountLinkedForFriends()) return;
+    if (run && run.active) return;
+    try {
+      const res = await ONLINE.pollCompDuoDirectory();
+      if (!res || !res.byUid) return;
+      const myUid = getMyFriendUid();
+
+      // 1. If we invited someone or are in a ready duo party, check partner state!
+      if (compDuoState.status !== 'idle' && compDuoState.partnerUid) {
+        const partnerNode = res.byUid[compDuoState.partnerUid];
+        if (!partnerNode || partnerNode.status === 'idle') {
+          if (compDuoState.status === 'ready') {
+            compDuoState.status = 'idle';
+            compDuoState.partnerUid = '';
+            compDuoState.partnerNick = '';
+            compDuoState.partyId = '';
+            showToast('2대2 팀원이 파티에서 나갔습니다.');
+            renderCompModeAndDuoUI();
+            updateCompLobbyMatchStateUI();
+          }
+        } else if (partnerNode.status === 'declined' && partnerNode.targetUid === myUid) {
+          compDuoState.status = 'idle';
+          compDuoState.partnerUid = '';
+          compDuoState.partnerNick = '';
+          compDuoState.partyId = '';
+          showToast('상대방이 2대2 팀 초대를 거절했습니다.');
+          renderCompModeAndDuoUI();
+          updateCompLobbyMatchStateUI();
+        } else if ((partnerNode.status === 'ready' || partnerNode.status === 'queueing') && partnerNode.partyId === compDuoState.partyId) {
+          if (compDuoState.status !== 'ready') {
+            compDuoState.status = 'ready';
+            compDuoState.partnerNick = partnerNode.nickname || compDuoState.partnerNick;
+            SFX.chestJackpot();
+            showToast(`[${compDuoState.partnerNick}] 님이 2대2 팀 초대를 수락했습니다!`);
+            await ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+              status: 'ready',
+              targetUid: compDuoState.partnerUid,
+              partyId: compDuoState.partyId
+            });
+            renderCompModeAndDuoUI();
+            updateCompLobbyMatchStateUI();
+          }
+          // If partner started 2v2 matchmaking, auto-join the exact same 2v2 queue seamlessly!
+          if (partnerNode.status === 'queueing' && (!compQueueState || compQueueState.cancelled) && !getActiveCompPendingMatch()) {
+            selectedCompMode = '2v2';
+            renderCompModeAndDuoUI();
+            showToast(`[${compDuoState.partnerNick}] 님이 2대2 매칭을 시작해 자동 참가합니다!`);
+            startCompetitiveMatchmaking({ compMode: '2v2', autoFromDuo: true });
+          }
+        }
+        // Keep ready/inviting heartbeat fresh
+        if (compDuoState.status === 'ready' || compDuoState.status === 'inviting') {
+          ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+            status: (compQueueState && !compQueueState.cancelled && compQueueState.compMode === '2v2') ? 'queueing' : compDuoState.status,
+            targetUid: compDuoState.partnerUid,
+            partyId: compDuoState.partyId
+          }).catch(() => {});
+        }
+        return;
+      }
+
+      // 2. Otherwise check if any friend is inviting ME to a 2v2 team!
+      const inviter = (res.entries || []).find(
+        (e) => e && e.uid !== myUid && e.status === 'inviting' && e.targetUid === myUid
+      );
+      if (inviter) {
+        const changed = !compDuoState.incomingInvite || compDuoState.incomingInvite.uid !== inviter.uid;
+        compDuoState.incomingInvite = {
+          uid: String(inviter.uid),
+          nickname: inviter.nickname || '친구',
+          trophies: inviter.trophies || 0,
+          partyId: inviter.partyId || ONLINE.makeCompDuoPartyId(myUid, inviter.uid)
+        };
+        if (changed) SFX.seasonUp();
+      } else {
+        compDuoState.incomingInvite = null;
+      }
+      renderCompModeAndDuoUI();
+    } catch {}
+  }
 
   function createSeededRng(seedStr) {
     let h = 2166136261 >>> 0;
@@ -6561,20 +6892,21 @@
       if (currentTab === 'comp') updateCompLobbyMatchStateUI();
       return;
     }
-    const totalSlots = DATA.COMP_MATCH_PLAYERS || 8;
+    const modeLbl = q.compMode === '2v2' ? '2대2' : '1대1';
+    const totalSlots = q.totalSlots || (q.compMode === '2v2' ? 4 : 2);
     const curCnt = Math.min(totalSlots, (q.players || []).length || 1);
     if (el.compOwQueueBar) {
       el.compOwQueueBar.classList.remove('hidden');
       el.compOwQueueBar.classList.toggle('is-found', Boolean(q.launching));
     }
     if (el.owQueueTitle) {
-      el.owQueueTitle.textContent = q.launching ? '경쟁전 매칭 완료!' : '경쟁전 매칭 중';
+      el.owQueueTitle.textContent = q.launching ? `${modeLbl} 매칭 완료!` : `${modeLbl} 경쟁전 매칭 중`;
     }
     if (el.owQueueSub) {
       if (q.launching) {
         el.owQueueSub.textContent = (run && run.active)
           ? '잠시 후 경쟁전으로 자동 입장합니다'
-          : `8인 준비 완료 · 크로스 플레이`;
+          : `${modeLbl} 준비 완료 · 크로스 플레이`;
       } else {
         const modeTag = q.aiStarted ? 'AI 보충 중' : (q.online ? '크로스 플레이' : '연결 재시도');
         el.owQueueSub.textContent = `${modeTag} · ${curCnt}/${totalSlots}명`;
@@ -6593,7 +6925,7 @@
 
   function openCompMatchOverlay() {
     if (!compQueueState || compQueueState.cancelled) return;
-    renderCompMatchGrid(compQueueState.players || []);
+    renderCompMatchGrid(compQueueState.players || [], compQueueState.compMode);
     if (el.btnCompMatchMinimize) {
       el.btnCompMatchMinimize.classList.toggle('hidden', Boolean(compQueueState.launching));
     }
@@ -6611,6 +6943,7 @@
       el.modeSelectOverlay,
       el.weatherOverlay,
       el.friendsOverlay,
+      el.compDuoInviteOverlay,
       el.profileEditOverlay,
       el.settingsOverlay,
       el.seasonPassOverlay,
@@ -6631,45 +6964,71 @@
     });
   }
 
-  function renderCompMatchGrid(players) {
+  function renderCompMatchSlotHtml(p) {
+    if (!p) {
+      return `
+        <div class="comp-slot waiting">
+          <div class="comp-slot-av-empty"></div>
+          <div class="comp-slot-meta">
+            <div class="comp-slot-name">대기 중...</div>
+            <div class="comp-slot-sub">PC·모바일 탐색</div>
+          </div>
+        </div>
+      `;
+    }
+    const avInfo = getProfileAvatarInfo({ avatarCharId: p.profileCharId || p.charId, avatarSkinId: p.profileSkinId !== undefined ? p.profileSkinId : p.skinId }, p.charId, p.skinId, p.isMe);
+    const tInfo = DATA.getCompTier(p.trophies || 0);
+    const platCls = !p.isHuman ? 'ai' : (p.platform || 'pc');
+    const platLbl = !p.isHuman ? 'AI' : (p.platformLabel || 'PC');
+    return `
+      <div class="comp-slot ready${p.isMe ? ' me' : ''}">
+        <div class="comp-slot-av-wrap">
+          <img src="${avInfo.src}" alt="" class="comp-slot-av" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
+          <img src="${getTierImgUrl(tInfo)}" alt="${tInfo.name}" class="comp-slot-tier-img" />
+        </div>
+        <div class="comp-slot-meta">
+          <div class="comp-slot-name">${escapeNickHtml(p.nickname)}${p.isMe ? ' <span class="comp-me-tag">나</span>' : ''}<span class="comp-plat-badge ${platCls}">${platLbl}</span></div>
+          <div class="comp-slot-sub" style="color:${tInfo.color}">${tInfo.name} · ${(p.trophies || 0).toLocaleString('ko-KR')}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCompMatchGrid(players, modeArg = null) {
     if (!el.compMatchGrid) return;
-    const totalSlots = DATA.COMP_MATCH_PLAYERS || 8;
+    const mode = modeArg || (compQueueState && compQueueState.compMode) || selectedCompMode || '1v1';
+    const is2v2 = mode === '2v2';
+    const totalSlots = is2v2 ? 4 : 2;
+    const teamSize = is2v2 ? 2 : 1;
+    if (el.compMatchTitle) {
+      el.compMatchTitle.textContent = is2v2 ? '2대2 팀 경쟁전 매칭' : '1대1 경쟁전 매칭';
+    }
     if (el.compMatchCountPill) {
       el.compMatchCountPill.textContent = `${Math.min(totalSlots, players.length)} / ${totalSlots}`;
     }
-    let html = '';
-    for (let i = 0; i < totalSlots; i++) {
-      const p = players[i];
-      if (!p) {
-        html += `
-          <div class="comp-slot waiting">
-            <div class="comp-slot-av-empty"></div>
-            <div class="comp-slot-meta">
-              <div class="comp-slot-name">대기 중...</div>
-              <div class="comp-slot-sub">PC·모바일 매칭 탐색</div>
-            </div>
-          </div>
-        `;
-      } else {
-        const avInfo = getProfileAvatarInfo({ avatarCharId: p.profileCharId || p.charId, avatarSkinId: p.profileSkinId !== undefined ? p.profileSkinId : p.skinId }, p.charId, p.skinId, p.isMe);
-        const tInfo = DATA.getCompTier(p.trophies || 0);
-        const platCls = !p.isHuman ? 'ai' : (p.platform || 'pc');
-        const platLbl = !p.isHuman ? 'AI' : (p.platformLabel || 'PC');
-        html += `
-          <div class="comp-slot ready${p.isMe ? ' me' : ''}">
-            <div class="comp-slot-av-wrap">
-              <img src="${avInfo.src}" alt="" class="comp-slot-av" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
-              <img src="${getTierImgUrl(tInfo)}" alt="${tInfo.name}" class="comp-slot-tier-img" />
-            </div>
-            <div class="comp-slot-meta">
-              <div class="comp-slot-name">${escapeNickHtml(p.nickname)}${p.isMe ? ' <span class="comp-me-tag">나</span>' : ''}<span class="comp-plat-badge ${platCls}">${platLbl}</span></div>
-              <div class="comp-slot-sub" style="color:${tInfo.color}">${tInfo.name} · ${(p.trophies || 0).toLocaleString('ko-KR')}</div>
-            </div>
-          </div>
-        `;
-      }
-    }
-    el.compMatchGrid.innerHTML = html;
+
+    const me = players.find((x) => x && x.isMe);
+    const myTeam = me ? (Number(me.team) === 1 ? 1 : 0) : 0;
+    const allies = players.filter((x) => x && (Number(x.team) === 1 ? 1 : 0) === myTeam).slice(0, teamSize);
+    const enemies = players.filter((x) => x && (Number(x.team) === 1 ? 1 : 0) !== myTeam).slice(0, teamSize);
+
+    let allyHtml = '';
+    for (let i = 0; i < teamSize; i++) allyHtml += renderCompMatchSlotHtml(allies[i] || null);
+    let enemyHtml = '';
+    for (let i = 0; i < teamSize; i++) enemyHtml += renderCompMatchSlotHtml(enemies[i] || null);
+
+    el.compMatchGrid.className = `comp-match-grid ${is2v2 ? 'mode-2v2' : 'mode-1v1'}`;
+    el.compMatchGrid.innerHTML = `
+      <div class="comp-team-col ally">
+        <div class="comp-team-head">${is2v2 ? '우리팀 (초록 테두리)' : '나'}</div>
+        ${allyHtml}
+      </div>
+      <div class="comp-vs-badge">VS</div>
+      <div class="comp-team-col enemy">
+        <div class="comp-team-head">${is2v2 ? '상대팀 (빨강 테두리)' : '상대'}</div>
+        ${enemyHtml}
+      </div>
+    `;
   }
 
   function clearCompQueueTimers(q) {
@@ -6690,6 +7049,13 @@
       if (prev.online && ONLINE && ONLINE.leaveCompQueue && prev.myQueueInfo) {
         ONLINE.leaveCompQueue(prev.myQueueInfo);
       }
+      if (compDuoState.status === 'ready' && compDuoState.partnerUid && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
+        ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+          status: 'ready',
+          targetUid: compDuoState.partnerUid,
+          partyId: compDuoState.partyId
+        }).catch(() => {});
+      }
     }
     if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
     updateCompOwQueueBarUI();
@@ -6699,7 +7065,7 @@
     }
   }
 
-  function createCompRival(index, myTrophies, myScoreMult, usedNames, rateMult, rngFn = Math.random) {
+  function createCompRival(index, myTrophies, myScoreMult, usedNames, rateMult, rngFn = Math.random, team = 1) {
     const rnd = typeof rngFn === 'function' ? rngFn : Math.random;
     const pool = COMP_RIVAL_NAMES.filter((n) => !usedNames.has(n));
     const nickname = pool.length ? pool[Math.floor(rnd() * pool.length)] : `러너${100 + index}`;
@@ -6716,7 +7082,7 @@
     const tierFactor = 1 + Math.min(0.45, (trophies / 2400) * 0.45);
     const baseMid = 104 * Math.max(1, (myScoreMult || 1) * 0.92) * tierFactor;
     const baseRate = baseMid * rateMult * (0.94 + rnd() * 0.12);
-    const earlyFinish = rnd() < 0.28 ? (36 + rnd() * 20) : 60;
+    const earlyFinish = rnd() < 0.25 ? (38 + rnd() * 19) : 60;
 
     return {
       uid: `rv_${index}_${Math.floor(rnd() * 999999)}`,
@@ -6726,6 +7092,7 @@
       trophies,
       tierName: tier.name,
       tierColor: tier.color,
+      team: Number(team) === 1 ? 1 : 0,
       platform: 'ai',
       platformLabel: 'AI',
       isMe: false,
@@ -6739,6 +7106,48 @@
       stumbleTimer: 0,
       diedAt: earlyFinish
     };
+  }
+
+  function assignTeamsForCompPool(pool, compMode) {
+    if (compMode !== '2v2') {
+      const teamMap = {};
+      pool.slice(0, 2).forEach((p, idx) => {
+        if (p && p.uid) teamMap[String(p.uid)] = idx === 0 ? 0 : 1;
+      });
+      return teamMap;
+    }
+    // 2v2: Always keep duo friends sharing the same partyId on the SAME team!
+    const team0 = [];
+    const team1 = [];
+    const used = new Set();
+    const byParty = new Map();
+    pool.slice(0, 4).forEach((p) => {
+      if (p && p.partyId) {
+        if (!byParty.has(p.partyId)) byParty.set(p.partyId, []);
+        byParty.get(p.partyId).push(p);
+      }
+    });
+    byParty.forEach((grp) => {
+      if (grp.length === 2) {
+        if (team0.length === 0) {
+          team0.push(...grp);
+          grp.forEach((x) => used.add(String(x.uid)));
+        } else if (team1.length === 0) {
+          team1.push(...grp);
+          grp.forEach((x) => used.add(String(x.uid)));
+        }
+      }
+    });
+    pool.slice(0, 4).forEach((p) => {
+      if (!p || !p.uid || used.has(String(p.uid))) return;
+      if (team0.length < 2) team0.push(p);
+      else team1.push(p);
+      used.add(String(p.uid));
+    });
+    const teamMap = {};
+    team0.forEach((p) => { teamMap[String(p.uid)] = 0; });
+    team1.forEach((p) => { teamMap[String(p.uid)] = 1; });
+    return teamMap;
   }
 
   async function startCompetitiveMatchmaking(opts = {}) {
@@ -6783,6 +7192,13 @@
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
     SFX.click();
 
+    const compMode = ((opts && opts.compMode) || selectedCompMode) === '2v2' ? '2v2' : '1v1';
+    const is2v2 = compMode === '2v2';
+    const totalSlots = is2v2 ? 4 : 2;
+    const modeLabel = is2v2 ? '2대2' : '1대1';
+    const activePartyId = (is2v2 && compDuoState.status === 'ready' && compDuoState.partyId) ? compDuoState.partyId : '';
+    const activePartnerUid = (is2v2 && compDuoState.status === 'ready' && compDuoState.partnerUid) ? compDuoState.partnerUid : '';
+
     const myChar = getCharDef(save.selectedChar);
     const myStats = getCharStats(myChar);
     const mySkin = getEquippedSkin(myChar.id);
@@ -6806,6 +7222,9 @@
       profileSkinId: myProfMeta.profileSkinId,
       trophies: myTrophies,
       tierBand: myTierBand,
+      compMode,
+      partyId: activePartyId,
+      partnerUid: activePartnerUid,
       platform: myPlat,
       queuedAt: (ONLINE && ONLINE.getCompServerNow) ? ONLINE.getCompServerNow() : Date.now()
     };
@@ -6821,6 +7240,8 @@
       trophies: myTrophies,
       tierName: myTier.name,
       tierColor: myTier.color,
+      team: 0,
+      partyId: activePartyId,
       platform: myPlat.id,
       platformLabel: myPlat.label,
       isMe: true,
@@ -6829,12 +7250,22 @@
       finished: false
     };
 
-    const totalSlots = DATA.COMP_MATCH_PLAYERS || 8;
+    // Signal duo partner so they auto-join our 2v2 queue immediately!
+    if (is2v2 && activePartyId && activePartnerUid && ONLINE && ONLINE.publishCompDuoState) {
+      ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+        status: 'queueing',
+        targetUid: activePartnerUid,
+        partyId: activePartyId
+      }).catch(() => {});
+    }
+
     const AI_FALLBACK_DELAY_SEC = 60;
     const token = Date.now() + Math.random();
     const q = {
       token,
       cancelled: false,
+      compMode,
+      totalSlots,
       roomId: `local_${Date.now()}`,
       safeUid: myUid,
       online: false,
@@ -6862,17 +7293,17 @@
       if (!compQueueState || compQueueState !== q || q.cancelled) return;
       if (el.compMatchRuleNote) {
         el.compMatchRuleNote.textContent = allowAiFallback
-          ? 'PC · Android · iOS 크로스 플레이 · 1분 대기 시 실버 이하 AI 보충 · 대기 중 다른 콘텐츠 이용 가능'
-          : 'PC · Android · iOS 크로스 플레이 · 골드 이상 실제 유저 전용 · 대기 중 다른 콘텐츠 이용 가능';
+          ? `${modeLabel} 크로스 플레이 · 1대1·2대2 트로피 공유 · 1분 대기 시 실버 이하 AI 보충`
+          : `${modeLabel} 크로스 플레이 · 골드 이상 실제 유저 전용 · 1대1·2대2 트로피 공유`;
       }
       if (el.compMatchStatus && !q.launching) {
         const waitDisp = formatQueueClock(q.waitSec);
         if (q.aiStarted) {
-          el.compMatchStatus.textContent = `1분 경과 · 실버 이하 AI 보충 완료 준비 중 (${q.players.length} / ${totalSlots})`;
+          el.compMatchStatus.textContent = `1분 경과 · 실버 이하 AI 보충 완료 (${q.players.length} / ${totalSlots})`;
         } else {
           el.compMatchStatus.textContent = q.allowAiFallback
-            ? `PC · 모바일 실제 러너 탐색 중... (${q.players.length} / ${totalSlots} · ${waitDisp} / 1분 후 AI 보충)`
-            : `골드+ 크로스 플레이 탐색 중... (${q.players.length} / ${totalSlots} · ${waitDisp})`;
+            ? `${modeLabel} 실제 러너 탐색 중... (${q.players.length} / ${totalSlots} · ${waitDisp} / 1분 후 AI 보충)`
+            : `${modeLabel} 골드+ 크로스 플레이 탐색 중... (${q.players.length} / ${totalSlots} · ${waitDisp})`;
         }
       }
       updateCompOwQueueBarUI();
@@ -6880,18 +7311,19 @@
 
     if (el.btnCompMatchCancel) el.btnCompMatchCancel.disabled = false;
     if (el.btnCompMatchMinimize) el.btnCompMatchMinimize.classList.remove('hidden');
-    renderCompMatchGrid(q.players);
+    renderCompMatchGrid(q.players, compMode);
     updateQueueStatusText();
 
-    // Overwatch-style non-blocking matchmaking: float top bar immediately so player can enjoy other content!
     if (opts && opts.openModal) {
       openCompMatchOverlay();
     } else {
       if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
-      showToast('경쟁전 매칭 시작! 상단 배너를 보며 다른 콘텐츠를 자유롭게 즐길 수 있습니다.');
+      if (!opts.autoFromDuo) {
+        showToast(`${modeLabel} 경쟁전 매칭 시작! 상단 배너를 보며 다른 콘텐츠를 자유롭게 즐길 수 있습니다.`);
+      }
     }
 
-    const toHumanEntry = (rp) => {
+    const toHumanEntry = (rp, teamVal = 0) => {
       const t = DATA.getCompTier(rp.trophies || 0);
       return {
         uid: String(rp.uid),
@@ -6904,6 +7336,8 @@
         trophies: Math.max(0, Math.floor(rp.trophies || 0)),
         tierName: t.name,
         tierColor: t.color,
+        team: Number(teamVal) === 1 ? 1 : 0,
+        partyId: rp.partyId || '',
         platform: rp.platform || 'pc',
         platformLabel: rp.platformLabel || (rp.platform === 'android' ? 'Android' : (rp.platform === 'ios' ? 'iOS' : (rp.platform === 'ipad' ? 'iPad' : 'PC'))),
         isMe: String(rp.uid) === myUid,
@@ -6913,7 +7347,7 @@
       };
     };
 
-    const launchSyncedMatch = async (roomId, humanRoster) => {
+    const launchSyncedMatch = async (roomId, humanRoster, teamMapArg = null) => {
       if (q.launching || q.cancelled || compQueueState !== q) return;
       q.launching = true;
       q.roomId = roomId || `local_${Date.now()}`;
@@ -6921,41 +7355,54 @@
       if (el.btnCompMatchCancel) el.btnCompMatchCancel.disabled = true;
       if (el.btnCompMatchMinimize) el.btnCompMatchMinimize.classList.add('hidden');
 
-      // Build deterministic 8-player roster (same humans + seeded AI rivals across PC, Android, iOS!)
+      const teamMap = (teamMapArg && Object.keys(teamMapArg).length)
+        ? teamMapArg
+        : assignTeamsForCompPool(humanRoster || [meEntry], compMode);
+
       const finalPlayers = [];
       const seenUids = new Set();
       const usedNames = new Set();
       (humanRoster || [meEntry]).forEach((hp) => {
         if (!hp || !hp.uid || seenUids.has(hp.uid) || finalPlayers.length >= totalSlots) return;
+        const tm = teamMap[String(hp.uid)] !== undefined ? (Number(teamMap[String(hp.uid)]) === 1 ? 1 : 0) : (Number(hp.team) === 1 ? 1 : 0);
         seenUids.add(hp.uid);
         usedNames.add(hp.nickname || '');
-        finalPlayers.push({ ...hp, score: 0, finished: false });
+        finalPlayers.push({ ...hp, team: tm, score: 0, finished: false });
       });
       if (!seenUids.has(myUid)) {
-        finalPlayers.unshift({ ...meEntry, score: 0, finished: false });
+        const myTm = teamMap[myUid] !== undefined ? (Number(teamMap[myUid]) === 1 ? 1 : 0) : 0;
+        finalPlayers.unshift({ ...meEntry, team: myTm, score: 0, finished: false });
         seenUids.add(myUid);
         usedNames.add(meEntry.nickname);
       }
+
+      // Fill remaining slots with deterministically seeded AI rivals balanced across teams!
       if (finalPlayers.length < totalSlots) {
         const rng = createSeededRng(q.roomId);
-        const rateSpread = [0.72, 0.81, 0.90, 0.98, 1.06, 1.15, 1.25];
+        const rateSpread = [0.84, 0.96, 1.08, 1.18];
         for (let i = rateSpread.length - 1; i > 0; i--) {
           const j = Math.floor(rng() * (i + 1));
           const tmp = rateSpread[i]; rateSpread[i] = rateSpread[j]; rateSpread[j] = tmp;
         }
+        const teamCap = is2v2 ? 2 : 1;
         let cursor = 0;
         while (finalPlayers.length < totalSlots) {
+          const cnt0 = finalPlayers.filter((x) => x.team === 0).length;
+          const nextTeam = cnt0 < teamCap ? 0 : 1;
           const mult = rateSpread[cursor % rateSpread.length] || 1.0;
           cursor += 1;
-          finalPlayers.push(createCompRival(cursor, myTrophies, myStats.scoreMult, usedNames, mult, rng));
+          finalPlayers.push(createCompRival(cursor, myTrophies, myStats.scoreMult, usedNames, mult, rng, nextTeam));
         }
       }
-      q.players = finalPlayers;
-      renderCompMatchGrid(q.players);
 
-      // Register our live match room entry on RTDB (2-level strict-rule-safe path!)
+      const myFinalEntry = finalPlayers.find((p) => p.isMe);
+      const myTeamVal = myFinalEntry ? myFinalEntry.team : 0;
+      q.players = finalPlayers;
+      renderCompMatchGrid(q.players, compMode);
+
+      // Register live match room entry on RTDB (2-level strict-rule-safe path!)
       if (q.online && !q.roomId.startsWith('local_') && ONLINE && ONLINE.joinCompActiveRoom) {
-        ONLINE.joinCompActiveRoom(q.roomId, q.myQueueInfo).catch(() => {});
+        ONLINE.joinCompActiveRoom(q.roomId, { ...q.myQueueInfo, team: myTeamVal }).catch(() => {});
       }
 
       SFX.seasonUp();
@@ -6964,7 +7411,7 @@
         closeBrowsingModalsForCompLaunch();
         openCompMatchOverlay();
       } else {
-        showToast('경쟁전 매칭 완료! 3초 후 경쟁전으로 입장합니다 (획득 코인 자동 저장)');
+        showToast(`${modeLabel} 경쟁전 매칭 완료! 3초 후 자동 입장합니다 (획득 코인 자동 저장)`);
       }
 
       let sec = 3;
@@ -6973,7 +7420,7 @@
         q.launchSecLeft = sec;
         updateCompOwQueueBarUI();
         if (sec > 0) {
-          if (el.compMatchStatus) el.compMatchStatus.textContent = `8인 크로스 플레이 매칭 완료! ${sec}초 후 경기 시작`;
+          if (el.compMatchStatus) el.compMatchStatus.textContent = `${modeLabel} 매칭 완료! ${sec}초 후 경기 시작`;
           SFX.click();
           sec -= 1;
         } else {
@@ -6982,7 +7429,6 @@
           if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
           updateCompOwQueueBarUI();
 
-          // If player was running Normal / Today's Weather skirmish while waiting, safely bank coins first!
           if (run && run.active && run.gameMode !== 'competitive') {
             const bankedCoins = Math.max(0, Math.floor(run.coinsCollected || 0));
             if (bankedCoins > 0) {
@@ -6998,9 +7444,20 @@
             if (el.gameoverOverlay) el.gameoverOverlay.classList.add('hidden');
           }
 
+          if (is2v2 && activePartyId && activePartnerUid && ONLINE && ONLINE.publishCompDuoState) {
+            ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+              status: 'ready',
+              targetUid: activePartnerUid,
+              partyId: activePartyId
+            }).catch(() => {});
+          }
+
           const dur = DATA.COMP_MATCH_DURATION || 60;
           const nowMs = Date.now();
           const matchCfg = {
+            compMode,
+            myTeam: myTeamVal,
+            hadFriendDuo: Boolean(activePartyId),
             roomId: q.roomId,
             safeUid: q.safeUid,
             online: q.online,
@@ -7010,6 +7467,7 @@
               charId: myChar.id,
               skinId: mySkin ? mySkin.id : null,
               trophies: myTrophies,
+              team: myTeamVal,
               platform: myPlat.id,
               platformLabel: myPlat.label
             },
@@ -7019,7 +7477,7 @@
             participants: q.players.slice(0, totalSlots).map((p) => ({ ...p, score: 0, finished: false })),
             syncTimer: 0,
             pollTimer: 0,
-            lastRank: totalSlots,
+            lastRank: 1,
             finished: false
           };
           startRun({ mode: 'competitive', compMatch: matchCfg });
@@ -7040,17 +7498,26 @@
       if (launcher) {
         const rosterMap = new Map();
         list.forEach((p) => { if (p && p.uid) rosterMap.set(String(p.uid), p); });
+        const tMap = (launcher.teamMap && typeof launcher.teamMap === 'object') ? launcher.teamMap : {};
         const matchedHumans = launcher.rosterUids
-          .map((uid) => (String(uid) === myUid ? meEntry : (rosterMap.get(String(uid)) ? toHumanEntry(rosterMap.get(String(uid))) : null)))
+          .map((uid) => {
+            const sUid = String(uid);
+            const tm = tMap[sUid] !== undefined ? Number(tMap[sUid]) : 0;
+            if (sUid === myUid) return { ...meEntry, team: tm };
+            return rosterMap.get(sUid) ? toHumanEntry(rosterMap.get(sUid), tm) : null;
+          })
           .filter(Boolean);
-        await launchSyncedMatch(launcher.matchRoomId, matchedHumans);
+        await launchSyncedMatch(launcher.matchRoomId, matchedHumans, tMap);
         return;
       }
 
-      // 2. Gather compatible searching humans across ALL platforms (PC, Android, iOS, iPad)
+      // 2. Gather compatible searching humans in the SAME compMode (1v1 or 2v2) across ALL platforms
       const widenHighTier = q.waitSec >= 20 && (q.tierBand === 'gp' || q.tierBand === 'dm');
       const compatible = list.filter((p) => {
         if (!p || !p.uid || p.state !== 'searching') return false;
+        const pMode = p.compMode === '2v2' ? '2v2' : '1v1';
+        if (pMode !== compMode) return false;
+        if (activePartyId && p.partyId === activePartyId) return true; // Duo partner ALWAYS matches regardless of tier diff!
         const pb = p.tierBand || ((Number(p.trophies) || 0) < 3000 ? 'bs' : ((Number(p.trophies) || 0) < 6000 ? 'gp' : 'dm'));
         if (pb === q.tierBand) return true;
         if (widenHighTier && (pb === 'gp' || pb === 'dm')) return true;
@@ -7072,27 +7539,42 @@
         return (qa - qb) || String(a.uid).localeCompare(String(b.uid));
       });
 
-      const myIdx = Math.max(0, compatible.findIndex((p) => String(p.uid) === myUid));
-      const chunkStart = Math.floor(myIdx / totalSlots) * totalSlots;
-      const myPool = compatible.slice(chunkStart, chunkStart + totalSlots);
+      // Keep duo partner adjacent in pool!
+      let myPool = [];
+      if (is2v2 && activePartyId) {
+        const duoGroup = compatible.filter((p) => p.partyId === activePartyId).slice(0, 2);
+        const others = compatible.filter((p) => p.partyId !== activePartyId).slice(0, totalSlots - duoGroup.length);
+        myPool = [...duoGroup, ...others];
+      } else {
+        const myIdx = Math.max(0, compatible.findIndex((p) => String(p.uid) === myUid));
+        const chunkStart = Math.floor(myIdx / totalSlots) * totalSlots;
+        myPool = compatible.slice(chunkStart, chunkStart + totalSlots);
+      }
+
       const leader = myPool[0] || null;
       q.isLeader = Boolean(leader && String(leader.uid) === myUid);
       const leaderQueued = leader ? (Number(leader.queuedAt) || Number(leader.updatedAt) || serverNow) : serverNow;
       q.leaderWaitSec = Math.max(q.waitSec, Math.floor(Math.max(0, serverNow - leaderQueued) / 1000));
 
-      const prevCount = q.players.length;
-      const nextPlayers = myPool.map((rp) => (String(rp.uid) === myUid ? meEntry : toHumanEntry(rp)));
+      const tMap = assignTeamsForCompPool(myPool, compMode);
+      const prevSig = q.players.map((x) => `${x.uid}:${x.team}`).join(',');
+      const nextPlayers = myPool.map((rp) => {
+        const sUid = String(rp.uid);
+        const tm = tMap[sUid] !== undefined ? tMap[sUid] : 0;
+        return sUid === myUid ? { ...meEntry, team: tm } : toHumanEntry(rp, tm);
+      });
       q.players = nextPlayers;
-      if (nextPlayers.length !== prevCount) {
-        if (nextPlayers.length > prevCount) SFX.click();
-        renderCompMatchGrid(q.players);
+      const nextSig = nextPlayers.map((x) => `${x.uid}:${x.team}`).join(',');
+      if (nextSig !== prevSig) {
+        if (nextPlayers.length > prevSig.split(',').filter(Boolean).length) SFX.click();
+        renderCompMatchGrid(q.players, compMode);
       }
       updateQueueStatusText();
 
-      // 3. Full 8 real players across platforms -> launch immediately!
+      // 3. Full match found (2 players for 1v1, 4 players for 2v2) -> launch immediately!
       if (myPool.length >= totalSlots) {
         q.fullGroupTicks += 1;
-        const deterministicRoomId = `cm_${String((leader && leader.uid) || myUid).slice(0, 8)}_${Math.floor(leaderQueued / 1000)}`;
+        const deterministicRoomId = `cm_${compMode}_${String((leader && leader.uid) || myUid).slice(0, 8)}_${Math.floor(leaderQueued / 1000)}`;
         if (q.isLeader || q.fullGroupTicks >= 3) {
           const rosterUids = myPool.map((p) => String(p.uid));
           if (q.online && ONLINE && ONLINE.heartbeatCompQueue) {
@@ -7100,17 +7582,18 @@
               state: 'launching',
               matchRoomId: deterministicRoomId,
               rosterUids,
+              teamMap: tMap,
               launchAt: serverNow + 3500
             });
           }
-          await launchSyncedMatch(deterministicRoomId, nextPlayers);
+          await launchSyncedMatch(deterministicRoomId, nextPlayers, tMap);
         }
       } else {
         q.fullGroupTicks = 0;
       }
     };
 
-    // Join shared cross-platform RTDB queue (strict 2-level path + server timestamp!)
+    // Join shared cross-platform RTDB queue
     if (ONLINE && ONLINE.joinCompQueue) {
       try {
         const res = await ONLINE.joinCompQueue(myQueueInfo);
@@ -7143,7 +7626,7 @@
       }, 1500);
     }
 
-    // Send live server-timestamp heartbeat every 4s so PC / Android / iOS stay visible & synced!
+    // Send live server-timestamp heartbeat every 4s
     if (ONLINE && ONLINE.heartbeatCompQueue) {
       q.hbTimer = setInterval(async () => {
         if (q.cancelled || q.launching || compQueueState !== q) return;
@@ -7168,8 +7651,9 @@
           updateQueueStatusText();
           const serverNow = (ONLINE && ONLINE.getCompServerNow) ? ONLINE.getCompServerNow() : Date.now();
           const roomId = q.online
-            ? `cm_${myUid.slice(0, 8)}_${Math.floor(serverNow / 1000)}`
+            ? `cm_${compMode}_${myUid.slice(0, 8)}_${Math.floor(serverNow / 1000)}`
             : `local_${Date.now()}`;
+          const tMap = assignTeamsForCompPool(q.players, compMode);
           const rosterUids = q.players.map((p) => String(p.uid));
           if (q.online && ONLINE && ONLINE.heartbeatCompQueue) {
             try {
@@ -7177,11 +7661,12 @@
                 state: 'launching',
                 matchRoomId: roomId,
                 rosterUids,
+                teamMap: tMap,
                 launchAt: serverNow + 3500
               });
             } catch {}
           }
-          await launchSyncedMatch(roomId, q.players);
+          await launchSyncedMatch(roomId, q.players, tMap);
         }
       }
     }, 1000);
@@ -7199,14 +7684,30 @@
     if (!m || !el.compWaitOverlay) return;
     const now = Date.now();
     const remSec = Math.max(0, Math.ceil((m.endsAt - now) / 1000));
+    const is2v2 = m.compMode === '2v2';
+    const myTeam = Number(m.myTeam) === 1 ? 1 : 0;
     const list = (m.participants || []).slice().sort((a, b) => (b.score - a.score) || (a.isMe ? -1 : (b.isMe ? 1 : 0)));
-    const myIdx = Math.max(0, list.findIndex((p) => p.isMe));
     const doneCnt = list.filter((p) => p.finished).length;
+
+    let leadLabel = '잠정 동점';
+    let leadTop = false;
+    if (is2v2) {
+      const allySum = list.filter((p) => (Number(p.team) === 1 ? 1 : 0) === myTeam).reduce((s, p) => s + Math.floor(p.score || 0), 0);
+      const enemySum = list.filter((p) => (Number(p.team) === 1 ? 1 : 0) !== myTeam).reduce((s, p) => s + Math.floor(p.score || 0), 0);
+      leadLabel = allySum > enemySum ? '팀 우세' : (allySum < enemySum ? '팀 열세' : '팀 동점');
+      leadTop = allySum >= enemySum;
+    } else {
+      const opp = list.find((p) => !p.isMe);
+      const mySc = Math.floor(m.myScore || 0);
+      const oppSc = Math.floor((opp && opp.score) || 0);
+      leadLabel = mySc > oppSc ? '잠정 우세' : (mySc < oppSc ? '잠정 열세' : '잠정 동점');
+      leadTop = mySc >= oppSc;
+    }
 
     if (el.compWaitBarTitle) {
       el.compWaitBarTitle.textContent = m.leftEarly
-        ? '중도 퇴장 · 다른 러너 대기 중'
-        : '경기 종료 · 다른 러너 대기 중';
+        ? `${is2v2 ? '2대2' : '1대1'} 중도 퇴장 · 다른 러너 대기 중`
+        : `${is2v2 ? '2대2' : '1대1'} 경기 종료 · 다른 러너 대기 중`;
     }
     if (el.compWaitScoreLbl) {
       el.compWaitScoreLbl.textContent = m.leftEarly ? '퇴장 시점 반영 점수' : '내 최종 점수';
@@ -7219,16 +7720,18 @@
     if (el.compWaitTimerPill) el.compWaitTimerPill.textContent = `${remSec}s`;
     if (el.compWaitMyScore) el.compWaitMyScore.textContent = `${Math.floor(m.myScore || 0).toLocaleString('ko-KR')}점`;
     if (el.compWaitProvRank) {
-      el.compWaitProvRank.textContent = `잠정 ${myIdx + 1}위`;
-      el.compWaitProvRank.className = `comp-res-rank-pill${myIdx < 3 ? ` top${myIdx + 1}` : ''}`;
+      el.compWaitProvRank.textContent = leadLabel;
+      el.compWaitProvRank.className = `comp-res-rank-pill${leadTop ? ' top1' : ''}`;
     }
     if (el.compWaitDoneCount) el.compWaitDoneCount.textContent = `완료 ${doneCnt} / ${list.length}명`;
     if (el.compWaitList) {
       el.compWaitList.innerHTML = list.map((p, idx) => {
         const avInfo = getProfileAvatarInfo({ avatarCharId: p.charId, avatarSkinId: p.skinId }, p.charId, p.skinId, p.isMe);
         const pTier = DATA.getCompTier(p.trophies || 0);
+        const isAlly = is2v2 && (Number(p.team) === 1 ? 1 : 0) === myTeam;
+        const teamCls = is2v2 ? (isAlly ? ' team-ally' : ' team-enemy') : '';
         return `
-          <div class="comp-res-row${p.isMe ? ' me' : ''}">
+          <div class="comp-res-row${p.isMe ? ' me' : ''}${teamCls}">
             <span class="comp-res-rk">${idx + 1}</span>
             <img src="${avInfo.src}" alt="" class="comp-res-av" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
             <img src="${getTierImgUrl(pTier)}" alt="${pTier.name}" class="comp-res-tier-mini" />
@@ -7669,27 +8172,41 @@
     if (el.compResOwCard) el.compResOwCard.classList.toggle('hidden', compResShowingBoard);
     if (el.compResBoardPanel) el.compResBoardPanel.classList.toggle('hidden', !compResShowingBoard);
     if (el.btnCompResToggleBoard) {
-      el.btnCompResToggleBoard.textContent = compResShowingBoard ? '진행도 보기' : '8인 순위표';
+      el.btnCompResToggleBoard.textContent = compResShowingBoard ? '진행도 보기' : '경기 순위표';
     }
   }
 
   function showCompFinalResultModal(m) {
     if (!m || m.claimed) return;
     m.claimed = true;
+    const is2v2 = m.compMode === '2v2';
+    const modeLbl = is2v2 ? '2대2' : '1대1';
+    const myTeam = Number(m.myTeam) === 1 ? 1 : 0;
     const finalList = (m.participants || []).map((p) => ({
       ...p,
+      team: Number(p.team) === 1 ? 1 : 0,
       finalScore: Math.max(0, Math.floor(p.isMe ? (m.myScore || 0) : (p.score || 0)))
     }));
     finalList.sort((a, b) => (b.finalScore - a.finalScore) || (a.isMe ? -1 : (b.isMe ? 1 : 0)));
 
-    const myRankIdx = Math.max(0, finalList.findIndex((p) => p.isMe));
-    const myRank = myRankIdx + 1;
+    let allyTotal = 0;
+    let enemyTotal = 0;
+    if (is2v2) {
+      allyTotal = finalList.filter((p) => p.team === myTeam).reduce((s, p) => s + p.finalScore, 0);
+      enemyTotal = finalList.filter((p) => p.team !== myTeam).reduce((s, p) => s + p.finalScore, 0);
+    } else {
+      const meObj = finalList.find((p) => p.isMe);
+      const oppObj = finalList.find((p) => !p.isMe);
+      allyTotal = meObj ? meObj.finalScore : Math.floor(m.myScore || 0);
+      enemyTotal = oppObj ? oppObj.finalScore : 0;
+    }
+
+    const outcome = allyTotal > enemyTotal ? 'win' : (allyTotal < enemyTotal ? 'loss' : 'draw');
     const prevTrophies = Math.max(0, Math.floor(save.trophies || 0));
     const prevTier = DATA.getCompTier(prevTrophies);
-    const deltas = DATA.getCompTrophyDeltas
-      ? DATA.getCompTrophyDeltas(prevTrophies)
-      : (DATA.COMP_TROPHY_DELTAS || [40, 28, 16, 6, -6, -16, -28, -40]);
-    const trophyDelta = deltas[Math.min(deltas.length - 1, myRankIdx)] ?? 0;
+    const trophyDelta = DATA.getCompMatchTrophyDelta
+      ? DATA.getCompMatchTrophyDelta(prevTrophies, outcome)
+      : (outcome === 'win' ? 36 : (outcome === 'loss' ? -28 : 0));
     const totalGold = m.baseGoldEarned || 0;
 
     const newTrophies = Math.max(0, prevTrophies + trophyDelta);
@@ -7700,7 +8217,7 @@
     save.compMatches = (save.compMatches || 0) + 1;
     save.compSeasonMatches = (save.compSeasonMatches || 0) + 1;
     save.compSeasonId = DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo().seasonId : 's1';
-    if (myRank === 1) save.compWins = (save.compWins || 0) + 1;
+    if (outcome === 'win') save.compWins = (save.compWins || 0) + 1;
     if ((m.myScore || 0) > (save.compBestScore || 0)) save.compBestScore = m.myScore || 0;
     save.gold += totalGold;
     save.playCount += 1;
@@ -7709,7 +8226,6 @@
       save.maxDodgeComboEver = m.maxDodgeCombo;
     }
 
-    // Prune claimed match from pending queue
     save.pendingCompMatches = ensurePendingCompMatches().filter((x) => x && !x.claimed);
     persistSave(true);
     renderProfileUI();
@@ -7719,35 +8235,42 @@
     if (currentTab === 'rank') renderRankingTab();
 
     if (el.compResOutcomePill) {
-      let outTxt = myRank === 1 ? '1위 승리!' : (actualDelta > 0 ? 'TOP 4 상승' : (actualDelta < 0 ? '순위 하락' : '변동 없음'));
+      let outTxt = outcome === 'win'
+        ? (is2v2 ? '2대2 팀 승리!' : '1대1 승리!')
+        : (outcome === 'loss' ? (is2v2 ? '2대2 패배' : '1대1 패배') : `${modeLbl} 무승부`);
       if (m.leftEarly) outTxt += ' · 중도 퇴장';
-      const outCls = myRank === 1 ? 'win' : (actualDelta >= 0 ? 'up' : 'down');
+      const outCls = outcome === 'win' ? 'win' : (outcome === 'loss' ? 'down' : 'up');
       el.compResOutcomePill.textContent = outTxt;
       el.compResOutcomePill.className = `ow-res-outcome-pill ${outCls}`;
     }
 
     if (el.compResModifiers) {
       const mods = [];
-      if (myRank === 1) mods.push({ cls: 'gold', txt: `1위 압도적 승리 (${actualDelta >= 0 ? `+${actualDelta}` : actualDelta})` });
-      else if (actualDelta > 0) mods.push({ cls: 'up', txt: `${myRank}위 상위권 진입 (+${actualDelta})` });
-      else if (actualDelta < 0) mods.push({ cls: 'down', txt: `${myRank}위 하위권 마감 (${actualDelta})` });
-      else mods.push({ cls: 'info', txt: `${myRank}위 마감 (0)` });
-
+      if (outcome === 'win') {
+        mods.push({ cls: 'gold', txt: `${is2v2 ? '2대2 팀 합산 승리' : '1대1 승리'} (+${Math.max(0, actualDelta)})` });
+      } else if (outcome === 'loss') {
+        mods.push({ cls: 'down', txt: `${is2v2 ? '2대2 팀 패배' : '1대1 패배'} (${actualDelta})` });
+      } else {
+        mods.push({ cls: 'info', txt: `${modeLbl} 무승부 (0)` });
+      }
       if (newTier.divIndex > prevTier.divIndex) {
         mods.push({ cls: 'gold', txt: `${newTier.name} 승급` });
       } else if (newTier.divIndex < prevTier.divIndex) {
         mods.push({ cls: 'down', txt: `${newTier.name} 강등` });
       }
+      if (m.hadFriendDuo && is2v2) {
+        mods.push({ cls: 'up', txt: '친구 듀오 팀전' });
+      }
       if (m.leftEarly) {
         mods.push({ cls: 'warn', txt: '중도 퇴장 시점 점수 반영' });
       }
-      mods.push({ cls: 'info', txt: '8인 크로스 플레이 경기' });
+      mods.push({ cls: 'info', txt: '1대1 · 2대2 트로피 공유' });
       el.compResModifiers.innerHTML = mods.map((md) => `<span class="ow-mod-chip ${md.cls}">${md.txt}</span>`).join('');
     }
 
     if (el.compResRankPill) {
-      el.compResRankPill.textContent = `${myRank}위 / ${finalList.length}`;
-      el.compResRankPill.className = `comp-res-rank-pill${myRank <= 3 ? ` top${myRank}` : ''}`;
+      el.compResRankPill.textContent = outcome === 'win' ? `${modeLbl} 승리` : (outcome === 'loss' ? `${modeLbl} 패배` : `${modeLbl} 무승부`);
+      el.compResRankPill.className = `comp-res-rank-pill${outcome === 'win' ? ' top1' : ''}`;
     }
     if (el.compResDelta) {
       el.compResDelta.textContent = actualDelta >= 0 ? `+${actualDelta}` : `${actualDelta}`;
@@ -7755,20 +8278,46 @@
     }
     if (el.compResGold) el.compResGold.textContent = `+${totalGold.toLocaleString('ko-KR')}G`;
     if (el.compResMyScore) el.compResMyScore.textContent = `${Math.floor(m.myScore || 0).toLocaleString('ko-KR')}점`;
+    if (el.compResBoardTitle) {
+      el.compResBoardTitle.textContent = is2v2 ? '2대2 팀 경쟁전 최종 결과' : '1대1 경쟁전 최종 결과';
+    }
 
     if (el.compResList) {
-      el.compResList.innerHTML = finalList.map((p, idx) => {
-        const rk = idx + 1;
-        const dVal = deltas[Math.min(deltas.length - 1, idx)] ?? 0;
+      const winD = DATA.getCompMatchTrophyDelta ? DATA.getCompMatchTrophyDelta(prevTrophies, 'win') : 36;
+      const lossD = DATA.getCompMatchTrophyDelta ? DATA.getCompMatchTrophyDelta(prevTrophies, 'loss') : -28;
+      let boardHtml = '';
+      if (is2v2) {
+        boardHtml += `
+          <div class="comp-res-team-banner">
+            <div class="comp-res-tb-side ally">
+              <span>우리팀 합산 (초록)</span>
+              <strong>${allyTotal.toLocaleString('ko-KR')}점</strong>
+            </div>
+            <div class="comp-vs-badge">VS</div>
+            <div class="comp-res-tb-side enemy">
+              <span>상대팀 합산 (빨강)</span>
+              <strong>${enemyTotal.toLocaleString('ko-KR')}점</strong>
+            </div>
+          </div>
+        `;
+      }
+      const ordered = is2v2
+        ? [...finalList.filter((p) => p.team === myTeam), ...finalList.filter((p) => p.team !== myTeam)]
+        : finalList;
+      boardHtml += ordered.map((p, idx) => {
+        const isAllySide = is2v2 ? (p.team === myTeam) : p.isMe;
+        const pWon = outcome === 'draw' ? null : (isAllySide ? outcome === 'win' : outcome === 'loss');
+        const dVal = pWon === null ? 0 : (pWon ? winD : lossD);
         const dStr = dVal >= 0 ? `+${dVal}` : `${dVal}`;
         const dCls = dVal > 0 ? 'up' : (dVal < 0 ? 'down' : 'flat');
         const avInfo = getProfileAvatarInfo({ avatarCharId: p.charId, avatarSkinId: p.skinId }, p.charId, p.skinId, p.isMe);
         const pTier = DATA.getCompTier(p.isMe ? newTrophies : (p.trophies || 0));
         const platCls = !p.isHuman ? 'ai' : (p.platform || 'pc');
         const platLbl = !p.isHuman ? 'AI' : (p.platformLabel || 'PC');
+        const teamCls = is2v2 ? (isAllySide ? ' team-ally' : ' team-enemy') : '';
         return `
-          <div class="comp-res-row${p.isMe ? ' me' : ''}${rk <= 3 ? ` top${rk}` : ''}">
-            <span class="comp-res-rk">${rk}</span>
+          <div class="comp-res-row${p.isMe ? ' me' : ''}${teamCls}">
+            <span class="comp-res-rk">${is2v2 ? (isAllySide ? '아군' : '상대') : `${idx + 1}위`}</span>
             <img src="${avInfo.src}" alt="" class="comp-res-av" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
             <img src="${getTierImgUrl(pTier)}" alt="${pTier.name}" class="comp-res-tier-mini" />
             <span class="comp-res-name">${escapeNickHtml(p.nickname)}${p.isMe ? ' <span class="comp-me-tag">나</span>' : ''}<span class="comp-plat-badge ${platCls}">${platLbl}</span></span>
@@ -7777,13 +8326,13 @@
           </div>
         `;
       }).join('');
+      el.compResList.innerHTML = boardHtml;
     }
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
     activeWaitMatchId = null;
     setCompResBoardVisible(false);
     if (el.compResultOverlay) el.compResultOverlay.classList.remove('hidden');
 
-    // Launch Full-Screen Overwatch Competitive Progress & Tier-Up Celebration!
     runCompResultProgressionAnim(prevTrophies, newTrophies, actualDelta);
   }
 
@@ -7864,8 +8413,9 @@
     if (!run || !run.compMatch || run.compMatch.finished) return;
     const cm = run.compMatch;
     const myScoreNow = Math.max(0, Math.floor(run.score || 0));
+    const groundY = Renderer.GROUND_Y;
 
-    // Update each participant's live score
+    // 1. Update each participant's live score
     for (let i = 0; i < cm.participants.length; i++) {
       const p = cm.participants[i];
       if (p.isMe) {
@@ -7887,25 +8437,131 @@
       }
     }
 
-    // Push & poll real online room scores every ~2.2s if connected
+    // 2. Update translucent in-world ghosts (1v1 opponent & 2v2 green teammate / red opponents!)
+    if (Array.isArray(run.compGhosts) && run.compGhosts.length > 0) {
+      const baseX = run.basePlayerX || 144;
+      const obstacles = run.obstacles || [];
+      const curWeath = run.weatherEvent || 'clear';
+      for (let gi = 0; gi < run.compGhosts.length; gi++) {
+        const g = run.compGhosts[gi];
+        const p = cm.participants.find((x) => x.uid === g.uid);
+        if (!p) continue;
+
+        const scoreDiff = (p.score || 0) - myScoreNow;
+        const targetX = p.finished
+          ? Math.max(22, baseX - 95)
+          : Math.max(baseX - 48, Math.min(baseX + 148, baseX + scoreDiff * 0.042 + (g.slotOffsetX || 0)));
+        g.x += (targetX - g.x) * Math.min(1, dt * 4.5);
+
+        if (p.isHuman) {
+          // Smoothly interpolate real human player's live pose (jump, slide, umbrella, mask, hurt, dead)
+          const tY = g.remoteTargetY !== undefined ? g.remoteTargetY : groundY;
+          g.y += (tY - g.y) * Math.min(1, dt * 14);
+          if (Math.abs(g.y - groundY) < 1.2 && (g.vy || 0) >= 0) g.y = groundY;
+          g.dead = Boolean(p.finished || g.remoteDead);
+          if (g.hitPoseTimer > 0) g.hitPoseTimer = Math.max(0, g.hitPoseTimer - dt);
+        } else {
+          // Reactive obstacle-dodging AI ghost physics on the EXACT same track!
+          g.dead = Boolean(p.finished);
+          if (!g.dead) {
+            if (g.slideTimer > 0) g.slideTimer = Math.max(0, g.slideTimer - dt);
+            if (g.doubleJumpDelay > 0) {
+              g.doubleJumpDelay -= dt;
+              if (g.doubleJumpDelay <= 0 && g.y < groundY - 4) {
+                g.vy = -370;
+              }
+            }
+            // Scan upcoming obstacles right in front of this AI ghost
+            let reactObs = null;
+            for (let oi = 0; oi < obstacles.length; oi++) {
+              const ob = obstacles[oi];
+              const dx = ob.x - g.x;
+              if (dx > -10 && dx < 72) {
+                reactObs = ob;
+                break;
+              }
+            }
+            if (reactObs) {
+              if (reactObs.lane === 'air') {
+                if (g.y >= groundY - 2 && g.slideTimer <= 0.05) g.slideTimer = 0.56;
+              } else if (reactObs.lane === 'tall') {
+                if (g.y >= groundY - 2) {
+                  g.vy = -440;
+                  g.slideTimer = 0;
+                  g.doubleJumpDelay = 0.19;
+                }
+              } else {
+                if (g.y >= groundY - 2) {
+                  g.vy = -415;
+                  g.slideTimer = 0;
+                }
+              }
+            }
+            g.vy = (g.vy || 0) + 1260 * dt;
+            g.y += g.vy * dt;
+            if (g.y >= groundY) {
+              g.y = groundY;
+              g.vy = 0;
+              g.doubleJumpDelay = 0;
+            }
+            g.sliding = g.slideTimer > 0 && g.y >= groundY - 2;
+            g.umbrellaOn = (curWeath === 'rain' || curWeath === 'flood' || curWeath === 'heat') && (p.stumbleTimer || 0) <= 0;
+            g.maskOn = (curWeath === 'dust' || curWeath === 'covid') && (p.stumbleTimer || 0) <= 0;
+            g.hitPoseTimer = (p.stumbleTimer || 0) > 0 ? 0.25 : 0;
+          } else {
+            g.y = groundY;
+            g.vy = 0;
+            g.sliding = false;
+            g.umbrellaOn = false;
+            g.maskOn = false;
+          }
+        }
+      }
+    }
+
+    // 3. Real-time pose + score telemetry sync with human PC / Android / iOS players (~2Hz!)
     if (cm.online && ONLINE && ONLINE.pushCompLiveScore) {
       cm.syncTimer = (cm.syncTimer || 0) + dt;
-      if (cm.syncTimer >= 2.2) {
+      if (cm.syncTimer >= 0.45) {
         cm.syncTimer = 0;
-        ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, myScoreNow, false, cm.myMeta);
-        if (ONLINE.pollCompMatchRoom) {
-          ONLINE.pollCompMatchRoom(cm.roomId).then((remote) => {
-            if (!run || run.compMatch !== cm || !Array.isArray(remote)) return;
-            remote.forEach((rp) => {
-              if (!rp || !rp.uid || rp.uid === cm.safeUid) return;
-              const target = cm.participants.find((x) => x.uid === rp.uid);
-              if (target && target.isHuman) {
-                target.score = Math.max(target.score || 0, Math.floor(rp.score || 0));
-                if (rp.finished) target.finished = true;
+        const livePose = {
+          y: run.playerY,
+          vy: run.vy,
+          sl: run.sliding ? 1 : 0,
+          um: run.umbrellaOn ? 1 : 0,
+          mk: run.maskOn ? 1 : 0,
+          ht: (run.hitPoseTimer || 0) > 0 ? 1 : 0,
+          dd: (run.dead || run.dying) ? 1 : 0,
+          fv: (run.feverTimer || 0) > 0 ? 1 : 0,
+          distM: run.distanceM || 0
+        };
+        ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, myScoreNow, false, cm.myMeta, livePose);
+      }
+      cm.pollTimer = (cm.pollTimer || 0) + dt;
+      if (cm.pollTimer >= 0.55 && ONLINE.pollCompMatchRoom) {
+        cm.pollTimer = 0;
+        ONLINE.pollCompMatchRoom(cm.roomId).then((remote) => {
+          if (!run || run.compMatch !== cm || !Array.isArray(remote)) return;
+          remote.forEach((rp) => {
+            if (!rp || !rp.uid || rp.uid === cm.safeUid) return;
+            const target = cm.participants.find((x) => x.uid === rp.uid);
+            if (target && target.isHuman) {
+              target.score = Math.max(target.score || 0, Math.floor(rp.score || 0));
+              if (rp.finished) target.finished = true;
+              const ghost = (run.compGhosts || []).find((g) => g.uid === rp.uid);
+              if (ghost && rp.pose) {
+                ghost.remoteTargetY = Number(rp.pose.y) || groundY;
+                ghost.vy = Number(rp.pose.vy) || 0;
+                ghost.sliding = Boolean(rp.pose.sl);
+                ghost.umbrellaOn = Boolean(rp.pose.um);
+                ghost.maskOn = Boolean(rp.pose.mk);
+                if (rp.pose.ht) ghost.hitPoseTimer = 0.35;
+                ghost.remoteDead = Boolean(rp.pose.dd);
+                ghost.fever = Boolean(rp.pose.fv);
               }
-            });
-          }).catch(() => {});
-        }
+            }
+          });
+        }).catch(() => {});
       }
     }
 
@@ -7944,6 +8600,9 @@
     const othersStillRunning = remSec > 1.2 && (cm.participants || []).some((p) => !p.isMe && !p.finished);
     const matchRecord = {
       id: `cm_${now}_${Math.floor(Math.random() * 999)}`,
+      compMode: cm.compMode || '1v1',
+      myTeam: Number(cm.myTeam) === 1 ? 1 : 0,
+      hadFriendDuo: Boolean(cm.hadFriendDuo),
       roomId: cm.roomId,
       safeUid: cm.safeUid,
       online: Boolean(cm.online),
@@ -8163,7 +8822,7 @@
         empty.className = 'rank-empty-card';
         empty.innerHTML = `
           <div class="rank-empty-title">아직 트로피 랭킹 기록이 없습니다!</div>
-          <div class="rank-empty-sub">홈 화면 [플레이] → [경쟁전]에서 Google 연동 후 8인 트로피 경기에 참가해 보세요.</div>
+          <div class="rank-empty-sub">홈 화면 [플레이] → [경쟁전]에서 Google 연동 후 1대1 · 2대2 트로피 경기에 참가해 보세요.</div>
         `;
         el.rankBoardList.appendChild(empty);
         return;
@@ -9874,6 +10533,7 @@
       gameMode,
       todayWeather: twMods,
       compMatch: (gameMode === 'competitive' && opts && opts.compMatch) ? opts.compMatch : null,
+      compGhosts: [],
       tut: isTutorial ? {
         stepIdx: 0,
         phase: 'intro',
@@ -10011,6 +10671,52 @@
     };
 
     if (Renderer && Renderer.preloadForRun) Renderer.preloadForRun(ch, skinDef, initSeasonId);
+    if (run.gameMode === 'competitive' && run.compMatch && Array.isArray(run.compMatch.participants)) {
+      const is2v2 = run.compMatch.compMode === '2v2';
+      const myTeam = Number(run.compMatch.myTeam) === 1 ? 1 : 0;
+      const others = run.compMatch.participants.filter((p) => p && !p.isMe);
+      let enemySlotIdx = 0;
+      const enemySlots = is2v2 ? [20, 38] : [22];
+      run.compGhosts = others.map((p, idx) => {
+        const pTeam = Number(p.team) === 1 ? 1 : 0;
+        const isAlly = is2v2 && pTeam === myTeam;
+        const slotOffsetX = isAlly ? -18 : (enemySlots[enemySlotIdx++] || (22 + idx * 14));
+        const gChar = getCharDef(p.charId);
+        const gSkin = p.skinId && DATA.getSkinById ? DATA.getSkinById(p.skinId) : null;
+        if (Renderer && Renderer.preloadGhostChar && gChar) {
+          Renderer.preloadGhostChar(gChar, gSkin);
+        }
+        return {
+          uid: p.uid,
+          nickname: p.nickname || '러너',
+          charId: gChar ? gChar.id : save.selectedChar,
+          skinId: gSkin ? gSkin.id : null,
+          team: pTeam,
+          isAlly,
+          alpha: 0.56,
+          outlineColor: is2v2 ? (isAlly ? '#24f56a' : '#ff2c46') : '',
+          label: is2v2
+            ? `${isAlly ? '팀원' : '상대'} · ${p.nickname || '러너'}`
+            : `상대 · ${p.nickname || '러너'}`,
+          slotOffsetX,
+          phaseOffset: (idx + 1) * 0.43,
+          x: run.basePlayerX + slotOffsetX,
+          y: Renderer.GROUND_Y,
+          floorY: Renderer.GROUND_Y,
+          vy: 0,
+          sliding: false,
+          slideTimer: 0,
+          doubleJumpDelay: 0,
+          umbrellaOn: false,
+          maskOn: false,
+          hitPoseTimer: 0,
+          dead: false,
+          remoteDead: false,
+          remoteTargetY: Renderer.GROUND_Y,
+          fever: false
+        };
+      });
+    }
     el.runPortraitImg.src = getSkinAvatar(ch, skinDef);
     el.runPortraitImg.style.filter = getSkinFilter(skinDef);
     el.runCanvasWrap.classList.toggle('fever-active', startFever > 0);
@@ -10019,6 +10725,7 @@
     el.gameoverOverlay.classList.add('hidden');
     if (el.compResultOverlay) el.compResultOverlay.classList.add('hidden');
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
+    if (el.compDuoReqBanner) el.compDuoReqBanner.classList.add('hidden');
     if (el.compRunHud) el.compRunHud.classList.toggle('hidden', !run.compMatch);
     updateCompPendingPill();
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
@@ -10073,7 +10780,13 @@
     SFX.seasonUp();
     if (!isTutorial) {
       if (run.compMatch) {
-        showRunBanner('60초 최고 점수 대결 · 8인 실시간 매칭', 2400, 'gold', '8인 경쟁전');
+        const is2v2 = run.compMatch.compMode === '2v2';
+        showRunBanner(
+          is2v2 ? '60초 팀 합산 대결 · 초록 팀원 / 빨강 상대 동시 주행' : '60초 최고 점수 대결 · 상대와 같은 공간 동시 주행',
+          2400,
+          'gold',
+          is2v2 ? '2대2 경쟁전' : '1대1 경쟁전'
+        );
       } else if (twMods) {
         const snap = twMods.snapshot;
         showRunBanner(`${snap.cityName} ${Math.round(snap.tempC)}°C · ${twMods.desc.label} · 점수 ×${twMods.scoreMult.toFixed(2)}`, 2600, 'sky', '오늘의 날씨');
@@ -11965,7 +12678,7 @@
     const isTodayWeather = run.gameMode === 'today_weather' && Boolean(run.todayWeather);
     const isCompRun = run.gameMode === 'competitive' && Boolean(run.compMatch);
     if (isCompRun) {
-      hudText('yr', el.runYearNum, '8인');
+      hudText('yr', el.runYearNum, run.compMatch.compMode === '2v2' ? '2v2' : '1v1');
       hudClass('yrCls', el.runYearNum, 'portrait-yr-badge yr-comp');
     } else if (isTodayWeather) {
       hudText('yr', el.runYearNum, 'LIVE');
@@ -12202,45 +12915,74 @@
       }
     }
 
-    // Live 8-Player Competitive Race Ticker (Top-Right Compact HUD)
+    // Live 1v1 / 2v2 Competitive Race HUD (Top-Right Compact Scoreboard)
     if (run.compMatch && el.compRunHud) {
       hudToggle('compHudHide', el.compRunHud, 'hidden', false);
       if (doSlow) {
         const cm = run.compMatch;
+        const is2v2 = cm.compMode === '2v2';
+        const myTeam = Number(cm.myTeam) === 1 ? 1 : 0;
         const remSec = Math.max(0, Math.ceil((cm.duration || 60) - (run.elapsed || 0)));
         hudText('compTmr', el.compRunTimer, `${remSec}s`);
         hudToggle('compTmrUrg', el.compRunTimer, 'urgent', remSec <= 10);
 
-        const sorted = cm.participants.slice().sort((a, b) => (b.score - a.score) || (a.isMe ? -1 : (b.isMe ? 1 : 0)));
-        const myIdx = Math.max(0, sorted.findIndex((p) => p.isMe));
-        const myRank = myIdx + 1;
-        hudText('compRk', el.compRunRank, `${myRank}위 / ${sorted.length}`);
-        hudClass('compRkCls', el.compRunRank, `comp-run-rank${myRank <= 3 ? ` top${myRank}` : ''}`);
+        const list = (cm.participants || []).slice();
+        if (is2v2) {
+          const allies = list.filter((p) => (Number(p.team) === 1 ? 1 : 0) === myTeam);
+          const enemies = list.filter((p) => (Number(p.team) === 1 ? 1 : 0) !== myTeam);
+          const allySum = allies.reduce((acc, p) => acc + Math.floor(p.score || 0), 0);
+          const enemySum = enemies.reduce((acc, p) => acc + Math.floor(p.score || 0), 0);
+          const stateLbl = allySum > enemySum ? '2대2 우세' : (allySum < enemySum ? '2대2 열세' : '2대2 동점');
+          hudText('compRk', el.compRunRank, stateLbl);
+          hudClass('compRkCls', el.compRunRank, `comp-run-rank${allySum >= enemySum ? ' top1' : ''}`);
 
-        // Pick 3 compact live ticker rows: always show immediate competitors around me!
-        const indices = [];
-        if (myIdx <= 1) {
-          for (let i = 0; i < Math.min(3, sorted.length); i++) indices.push(i);
-        } else if (myIdx >= sorted.length - 1) {
-          indices.push(0);
-          indices.push(Math.max(1, sorted.length - 2));
-          indices.push(sorted.length - 1);
+          allies.sort((a, b) => (a.isMe ? -1 : (b.isMe ? 1 : (b.score - a.score))));
+          enemies.sort((a, b) => (b.score - a.score));
+          const ordered = [...allies, ...enemies];
+          const rowKey = `2v2|${Math.floor(allySum / 10)}|${Math.floor(enemySum / 10)}|` + ordered.map((p) => `${p.uid}:${Math.floor((p.score || 0) / 10)}`).join('|');
+          if (hudCache.compRowsKey !== rowKey && el.compRunRows) {
+            hudCache.compRowsKey = rowKey;
+            const teamBarHtml = `
+              <div class="comp-run-team-bar">
+                <span class="team-ally">우리팀 ${allySum.toLocaleString('ko-KR')}</span>
+                <span class="team-vs">VS</span>
+                <span class="team-enemy">상대팀 ${enemySum.toLocaleString('ko-KR')}</span>
+              </div>
+            `;
+            const rowsHtml = ordered.map((p) => {
+              const isAlly = (Number(p.team) === 1 ? 1 : 0) === myTeam;
+              const tag = p.isMe ? '나' : (isAlly ? '팀' : '적');
+              return `
+                <div class="comp-run-row${p.isMe ? ' me' : ''} ${isAlly ? 'ally-row' : 'enemy-row'}">
+                  <span class="cr-rk">${tag}</span>
+                  <span class="cr-nm">${escapeNickHtml(p.nickname)}</span>
+                  <span class="cr-sc">${Math.floor(p.score || 0).toLocaleString('ko-KR')}</span>
+                </div>
+              `;
+            }).join('');
+            el.compRunRows.innerHTML = teamBarHtml + rowsHtml;
+          }
         } else {
-          indices.push(myIdx - 1, myIdx, myIdx + 1);
-        }
-        const rowKey = indices.map((idx) => `${idx}:${sorted[idx].uid}:${Math.floor(sorted[idx].score / 10)}`).join('|');
-        if (hudCache.compRowsKey !== rowKey && el.compRunRows) {
-          hudCache.compRowsKey = rowKey;
-          el.compRunRows.innerHTML = indices.map((idx) => {
-            const p = sorted[idx];
-            return `
-              <div class="comp-run-row${p.isMe ? ' me' : ''}">
-                <span class="cr-rk">${idx + 1}</span>
+          const sorted = list.sort((a, b) => (b.score - a.score) || (a.isMe ? -1 : (b.isMe ? 1 : 0)));
+          const meP = sorted.find((p) => p.isMe);
+          const oppP = sorted.find((p) => !p.isMe);
+          const mySc = Math.floor((meP && meP.score) || 0);
+          const oppSc = Math.floor((oppP && oppP.score) || 0);
+          const stateLbl = mySc > oppSc ? '1대1 우세' : (mySc < oppSc ? '1대1 열세' : '1대1 동점');
+          hudText('compRk', el.compRunRank, stateLbl);
+          hudClass('compRkCls', el.compRunRank, `comp-run-rank${mySc >= oppSc ? ' top1' : ''}`);
+
+          const rowKey = `1v1|` + sorted.map((p) => `${p.uid}:${Math.floor((p.score || 0) / 10)}`).join('|');
+          if (hudCache.compRowsKey !== rowKey && el.compRunRows) {
+            hudCache.compRowsKey = rowKey;
+            el.compRunRows.innerHTML = sorted.map((p) => `
+              <div class="comp-run-row${p.isMe ? ' me ally-row' : ' enemy-row'}">
+                <span class="cr-rk">${p.isMe ? '나' : '상대'}</span>
                 <span class="cr-nm">${escapeNickHtml(p.nickname)}</span>
                 <span class="cr-sc">${Math.floor(p.score || 0).toLocaleString('ko-KR')}</span>
               </div>
-            `;
-          }).join('');
+            `).join('');
+          }
         }
       }
     } else if (el.compRunHud) {
@@ -12427,6 +13169,7 @@
     switchTab('home');
     updateCompPendingPill();
     updateCompOwQueueBarUI();
+    renderCompModeAndDuoUI();
   }
 
   // ===================== MAIN LOOP =====================
@@ -12903,6 +13646,57 @@
         startCompetitiveMatchmaking();
       });
     }
+    if (el.btnCompMode1v1) {
+      el.btnCompMode1v1.addEventListener('click', () => {
+        SFX.click();
+        setCompMode('1v1');
+      });
+    }
+    if (el.btnCompMode2v2) {
+      el.btnCompMode2v2.addEventListener('click', () => {
+        SFX.click();
+        setCompMode('2v2');
+      });
+    }
+    if (el.btnCompDuoInvite) {
+      el.btnCompDuoInvite.addEventListener('click', () => {
+        openCompDuoInviteModal();
+      });
+    }
+    if (el.btnCompDuoLeave) {
+      el.btnCompDuoLeave.addEventListener('click', () => {
+        leaveCompDuoParty(false);
+      });
+    }
+    if (el.btnCloseDuoInvite) {
+      el.btnCloseDuoInvite.addEventListener('click', () => {
+        SFX.click();
+        closeCompDuoInviteModal();
+      });
+    }
+    if (el.compDuoInviteOverlay) {
+      el.compDuoInviteOverlay.addEventListener('click', (e) => {
+        if (e.target === el.compDuoInviteOverlay) closeCompDuoInviteModal();
+      });
+    }
+    if (el.btnDuoRefresh) {
+      el.btnDuoRefresh.addEventListener('click', async () => {
+        SFX.click();
+        await refreshFriendsDirectory({ silent: true });
+        renderCompDuoFriendList();
+        showToast('친구 목록이 갱신되었습니다!');
+      });
+    }
+    if (el.btnDuoReqAccept) {
+      el.btnDuoReqAccept.addEventListener('click', () => {
+        acceptIncomingDuoInvite();
+      });
+    }
+    if (el.btnDuoReqDecline) {
+      el.btnDuoReqDecline.addEventListener('click', () => {
+        declineIncomingDuoInvite();
+      });
+    }
     if (el.btnCompMatchMinimize) {
       el.btnCompMatchMinimize.addEventListener('click', () => {
         SFX.click();
@@ -12929,6 +13723,9 @@
       });
     }
     window.addEventListener('pagehide', () => {
+      if (compDuoState && compDuoState.status !== 'idle') {
+        leaveCompDuoParty(true);
+      }
       if (compQueueState && !compQueueState.cancelled && compQueueState.online && ONLINE && ONLINE.leaveCompQueue && compQueueState.myQueueInfo) {
         ONLINE.leaveCompQueue(compQueueState.myQueueInfo);
       }
@@ -13038,6 +13835,11 @@
         renderRankingTab();
       }
     }, 5000);
+    setInterval(() => {
+      if ((!run || !run.active) && isMyAccountLinkedForFriends()) {
+        pollCompDuoUpdates();
+      }
+    }, 3500);
 
     // Brawl Stars Right-Dock Weather Button (below Settings) + Weather Modal + Mode Select Modal
     if (el.btnHomeWeather) {

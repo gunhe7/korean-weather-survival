@@ -643,54 +643,58 @@ window.RUN_DATA = (function () {
     3: { rank: 3, gems: 1000, frameId: 'rank_3', frameName: '3위 닉네임 장식' }
   };
 
-  // ===================== 8-PLAYER COMPETITIVE TROPHY RACE (OVERWATCH 5-DIVISION TIERS) =====================
-  const COMP_MATCH_PLAYERS = 8;
+  // ===================== 1v1 & 2v2 COMPETITIVE TROPHY RACE (SHARED TROPHIES · OVERWATCH 5-DIVISION TIERS) =====================
+  const COMP_MODES = {
+    '1v1': { id: '1v1', name: '1대1', players: 2, teamSize: 1, desc: '실시간 1대1 점수 대결' },
+    '2v2': { id: '2v2', name: '2대2', players: 4, teamSize: 2, desc: '친구와 팀 합산 2대2 대결' }
+  };
+  const COMP_MATCH_PLAYERS = 2; // 기본 1대1 (2대2는 4인)
   const COMP_MATCH_DURATION = 60; // 60-second full 4-season competitive sprint!
   const COMP_DIVS_PER_TIER = 5;   // 오버워치식 세부 티어 5단계 (5 → 4 → 3 → 2 → 1)
   const COMP_DIV_STEP = 300;      // 모든 티어 공통: 세부 티어당 300 트로피 (일반 티어당 1,500)
-  const COMP_TROPHY_DELTAS = [40, 28, 16, 6, -6, -16, -28, -40];
-  const COMP_GOLD_REWARDS = [0, 0, 0, 0, 0, 0, 0, 0]; // 트로피 골드 보상 삭제 -> 티어별 시즌 종료 보상으로 전환!
-  const COMP_AI_MAX_TROPHIES = 2999; // 브론즈~실버 구간(0~2,999)까지만 1분 대기 후 AI 보충 허용! 골드(3,000+) 전원 실제 유저
+  const COMP_TROPHY_DELTAS = [36, -28]; // 기본 승리/패배 트로피 증감
+  const COMP_GOLD_REWARDS = [0, 0];     // 티어별 시즌 종료 보상으로 통합!
+  const COMP_AI_MAX_TROPHIES = 2999;    // 브론즈~실버 구간(0~2,999)까지만 1분 대기 후 AI 보충 허용! 골드(3,000+) 전원 실제 유저
   const COMP_TIERS = [
     {
       id: 'bronze', name: '브론즈', minTrophies: 0, color: '#d98c54', img: 'assets/tiers/tier_bronze.png',
       seasonReward: { gems: 0, diamondChests: 5 },
-      trophyDeltas: [40, 28, 16, 6, -6, -16, -28, -40]
+      winDelta: 36, lossDelta: -28, trophyDeltas: [36, -28]
     },
     {
       id: 'silver', name: '실버', minTrophies: 1500, color: '#b6c8de', img: 'assets/tiers/tier_silver.png',
       seasonReward: { gems: 500, diamondChests: 10 },
-      trophyDeltas: [36, 25, 14, 6, -6, -14, -25, -36]
+      winDelta: 33, lossDelta: -29, trophyDeltas: [33, -29]
     },
     {
       id: 'gold', name: '골드', minTrophies: 3000, color: '#ffcf40', img: 'assets/tiers/tier_gold.png',
       seasonReward: { gems: 1000, diamondChests: 15 },
-      trophyDeltas: [32, 22, 13, 5, -5, -13, -22, -32]
+      winDelta: 30, lossDelta: -30, trophyDeltas: [30, -30]
     },
     {
       id: 'platinum', name: '플래티넘', minTrophies: 4500, color: '#3fe6d8', img: 'assets/tiers/tier_platinum.png',
       seasonReward: { gems: 1500, diamondChests: 18 },
-      trophyDeltas: [28, 20, 12, 5, -5, -12, -20, -28]
+      winDelta: 27, lossDelta: -27, trophyDeltas: [27, -27]
     },
     {
       id: 'diamond', name: '다이아', minTrophies: 6000, color: '#4ea8ff', img: 'assets/tiers/tier_diamond.png',
       seasonReward: { gems: 2000, diamondChests: 20 },
-      trophyDeltas: [25, 18, 10, 4, -4, -10, -18, -25]
+      winDelta: 24, lossDelta: -24, trophyDeltas: [24, -24]
     },
     {
       id: 'master', name: '마스터', minTrophies: 7500, color: '#c475ff', img: 'assets/tiers/tier_master.png',
       seasonReward: { gems: 4000, diamondChests: 30 },
-      trophyDeltas: [22, 15, 9, 4, -4, -9, -15, -22]
+      winDelta: 21, lossDelta: -21, trophyDeltas: [21, -21]
     },
     {
       id: 'grandmaster', name: '그랜드 마스터', minTrophies: 9000, color: '#ff5268', img: 'assets/tiers/tier_grandmaster.png',
       seasonReward: { gems: 6000, diamondChests: 40 },
-      trophyDeltas: [19, 13, 8, 3, -3, -8, -13, -19]
+      winDelta: 18, lossDelta: -18, trophyDeltas: [18, -18]
     },
     {
       id: 'champion', name: '챔피언', minTrophies: 10500, color: '#ffe566', img: 'assets/tiers/tier_champion.png',
       seasonReward: { gems: 10000, diamondChests: 100 },
-      trophyDeltas: [16, 11, 7, 3, -3, -7, -11, -16]
+      winDelta: 15, lossDelta: -15, trophyDeltas: [15, -15]
     }
   ];
 
@@ -746,6 +750,13 @@ window.RUN_DATA = (function () {
   function getCompTrophyDeltas(trophies = 0) {
     const tier = getCompTier(trophies);
     return (tier && Array.isArray(tier.trophyDeltas)) ? tier.trophyDeltas : COMP_TROPHY_DELTAS;
+  }
+
+  function getCompMatchTrophyDelta(trophies = 0, outcome = 'win') {
+    if (outcome === 'draw') return 0;
+    const tier = getCompTier(trophies);
+    if (outcome === 'win') return (tier && typeof tier.winDelta === 'number') ? tier.winDelta : 36;
+    return (tier && typeof tier.lossDelta === 'number') ? tier.lossDelta : -28;
   }
 
   // ===================== 60-DAY UNIFIED SEASON (SEASON PASS & COMPETITIVE SYNC) =====================
@@ -963,6 +974,7 @@ window.RUN_DATA = (function () {
     GAME_SEASON_EPOCH_MS,
     getGameSeasonInfo,
     getCompSeasonResetTrophies,
+    COMP_MODES,
     COMP_MATCH_PLAYERS,
     COMP_MATCH_DURATION,
     COMP_DIVS_PER_TIER,
@@ -974,6 +986,7 @@ window.RUN_DATA = (function () {
     getCompTierByDivIndex,
     getCompTier,
     getCompTrophyDeltas,
+    getCompMatchTrophyDelta,
     PROFILE_NAME_COLORS,
     PROFILE_NAME_FRAMES,
     SCORE_ROAD_STEP,
