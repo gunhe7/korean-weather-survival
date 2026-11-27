@@ -4142,8 +4142,8 @@
     {
       id: 'rain_umbrella',
       icon: '',
-      title: '4. 비가 오면 우산을 펴세요!',
-      sub: '왼쪽 위 [우산] 버튼을 터치하세요 (10초 자동 해제)',
+      title: '4. 폭우·침수엔 우산을 펴세요!',
+      sub: '비가 오거나 도로가 침수되면 왼쪽 위 [우산] 버튼을 눌러 막으세요',
       actionPrompt: '지금! [우산] 버튼을 눌러 펴세요!',
       targetBtn: 'umbrella',
       successMsg: '빗물 완벽 방어!'
@@ -4152,16 +4152,35 @@
       id: 'gust_fold',
       icon: '',
       title: '5. 태풍 돌풍엔 우산을 접으세요!',
-      sub: '제한 시간 안에 [우산] 버튼을 다시 눌러 접으세요!',
+      sub: '강풍이 불면 제한 시간 안에 [우산] 버튼을 다시 눌러 접으세요!',
       actionPrompt: '지금! [우산] 버튼을 눌러 접으세요!',
       targetBtn: 'umbrella',
       successMsg: '태풍 대비! 우산 접기 성공!'
     },
     {
+      id: 'heat_umbrella',
+      icon: '',
+      title: '6. 폭염 경보엔 양산으로 우산!',
+      sub: '여름 폭염으로 더위가 차오르면 [우산]을 펼쳐 열사병을 막으세요',
+      actionPrompt: '지금! [우산]을 펼쳐 햇볕을 가리세요!',
+      targetBtn: 'umbrella',
+      successMsg: '폭염 차단! 양산 냉각 성공!'
+    },
+    {
+      id: 'hail_parry',
+      icon: '',
+      title: '7. 겨울 우박 연속 타이밍 방어!',
+      sub: '겨울 대각선 우박이 떨어질 때마다 타이밍 맞춰 [우산]을 펼치세요!',
+      actionPrompt: '지금! [우산]을 눌러 첫 우박을 막으세요!',
+      secondPrompt: '연속 우박! 한 번 더 [우산]을 누르세요!',
+      targetBtn: 'umbrella',
+      successMsg: '우박 연속 타이밍 방어 성공!'
+    },
+    {
       id: 'dust_mask',
       icon: '',
-      title: '6. 황사·미세먼지엔 마스크!',
-      sub: '오른쪽 위 [마스크] 버튼을 터치해 황사를 막으세요',
+      title: '8. 황사·미세먼지엔 마스크!',
+      sub: '오른쪽 위 [마스크] 버튼을 터치해 황사와 미세먼지를 막으세요',
       actionPrompt: '지금! [마스크] 버튼을 누르세요!',
       targetBtn: 'mask',
       successMsg: '황사 완벽 차단!'
@@ -4169,8 +4188,8 @@
     {
       id: 'covid_parry',
       icon: '',
-      title: '7. 코로나 바이러스 돌진 차단!',
-      sub: '바이러스가 돌진할 때 [마스크] 버튼을 눌러 튕겨내세요!',
+      title: '9. 코로나 바이러스 돌진 차단!',
+      sub: '바이러스가 돌진할 때 타이밍 맞춰 [마스크]를 눌러 튕겨내세요!',
       actionPrompt: '지금! [마스크]로 바이러스를 튕겨내세요!',
       targetBtn: 'mask',
       successMsg: '완벽 차단! 모든 조작 마스터!'
@@ -4204,9 +4223,8 @@
 
     if (el.tutRunActionCallout) {
       if (waiting) {
-        const promptTxt = (tut.waitAction === 'double_jump' && step.secondPrompt)
-          ? step.secondPrompt
-          : step.actionPrompt;
+        const useSecond = (tut.waitAction === 'double_jump' || (tut.waitAction === 'hail_umbrella' && run.hailAttack && (run.hailAttack.stoneIdx || 1) >= 2)) && step.secondPrompt;
+        const promptTxt = useSecond ? step.secondPrompt : step.actionPrompt;
         el.tutRunActionCallout.textContent = promptTxt;
         el.tutRunActionCallout.classList.remove('hidden');
       } else {
@@ -4355,6 +4373,7 @@
         tut.didFirstJump = false;
         tut.didSecondJump = false;
         tut.covidDeflected = false;
+        tut.hailBlockedCount = 0;
         updateTutorialHudUI();
       }
       return;
@@ -4514,12 +4533,144 @@
       return;
     }
 
-    // ---- STEP 6: YELLOW DUST -> PUT ON MASK ----
+    // ---- STEP 6: SUMMER HEATWAVE -> OPEN UMBRELLA AS PARASOL ----
+    if (step.id === 'heat_umbrella') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          run.seasonIdx = 1;
+          run.seasonId = 'summer';
+          if (Renderer && Renderer.preloadSeason) Renderer.preloadSeason('summer');
+          run.weatherEvent = 'heat';
+          run.umbrellaOn = false;
+          run.umbrellaActiveTimer = 0;
+          run.umbrellaParryTimer = 0;
+          run.heatGauge = 56;
+          SFX.playWeatherCue('heat');
+          SFX.setWeatherAmbient('heat');
+          showWeatherCenterAlert('heat');
+          tut.phase = 'active';
+          tut.timer = 0.7;
+          for (let i = 0; i < 4; i++) {
+            run.items.push({ kind: 'coin', x: getSpawnRight() + 30 + i * 34, y: Renderer.GROUND_Y - 26 });
+          }
+        }
+      } else if (tut.phase === 'active') {
+        if (run.umbrellaOn) {
+          run.heatGauge = Math.max(0, (run.heatGauge || 0) - 65 * dt);
+          tut.phase = 'hold_success';
+          tut.timer = 1.35;
+          updateTutorialHudUI();
+        } else {
+          run.heatGauge = Math.min(82, Math.max(56, (run.heatGauge || 56) + 16 * dt));
+          tut.timer -= dt;
+          if (tut.timer <= 0) {
+            tut.waitAction = 'umbrella_on';
+            updateTutorialHudUI();
+          }
+        }
+      } else if (tut.phase === 'hold_success') {
+        run.heatGauge = Math.max(0, (run.heatGauge || 0) - 65 * dt);
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          run.heatGauge = 0;
+          run.umbrellaOn = false;
+          run.umbrellaActiveTimer = 0;
+          run.umbrellaParryTimer = 0;
+          advanceTutorialStep();
+        }
+      }
+      return;
+    }
+
+    // ---- STEP 7: WINTER DIAGONAL HAIL VOLLEY -> TIMED MULTI-UMBRELLA PARRY ----
+    if (step.id === 'hail_parry') {
+      if (tut.phase === 'intro') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          run.seasonIdx = 3;
+          run.seasonId = 'winter';
+          if (Renderer && Renderer.preloadSeason) Renderer.preloadSeason('winter');
+          run.weatherEvent = 'clear';
+          run.heatGauge = 0;
+          run.umbrellaOn = false;
+          run.umbrellaActiveTimer = 0;
+          run.umbrellaParryTimer = 0;
+          run.umbrellaHailBlockTimer = 0;
+          run.hailEffects = [];
+          SFX.setWeatherAmbient('clear');
+          SFX.playWeatherCue('hail');
+          showWeatherCenterAlert('hail', '우박 2연발!');
+          const guardX = run.playerX + 18;
+          const guardY = Math.max(76, Math.min(Renderer.GROUND_Y - 26, run.playerY - 40));
+          const spawnX = Math.min(getSpawnRight() - 36, Math.max(run.playerX + 150, guardX + 168));
+          run.hailAttack = {
+            phase: 'warn',
+            timer: 1.05,
+            maxTimer: 1.05,
+            x: spawnX,
+            y: 34,
+            startX: spawnX,
+            startY: 34,
+            targetX: guardX,
+            targetY: guardY,
+            vx: 0,
+            vy: 0,
+            progress: 0,
+            animT: 0,
+            impactTimer: 0,
+            checked: false,
+            stoneIdx: 1,
+            totalCount: 2,
+            blockedCount: 0
+          };
+          tut.spawned = true;
+          tut.hailBlockedCount = 0;
+          tut.phase = 'active';
+        }
+      } else if (tut.phase === 'active') {
+        const hAtk = run.hailAttack;
+        if (hAtk && hAtk.phase === 'fall' && !hAtk.checked) {
+          const remDist = Math.hypot((run.playerX + 18) - hAtk.x, (run.playerY - 40) - hAtk.y);
+          if (remDist <= 135 && !(run.umbrellaOn && run.umbrellaParryTimer > 0)) {
+            tut.waitAction = 'hail_umbrella';
+            updateTutorialHudUI();
+          }
+        } else if (!hAtk && tut.spawned) {
+          if ((tut.hailBlockedCount || 0) >= 2) {
+            tut.phase = 'hold_success';
+            tut.timer = 0.95;
+            updateTutorialHudUI();
+          } else {
+            tut.phase = 'intro';
+            tut.timer = 0.6;
+            tut.spawned = false;
+          }
+        }
+      } else if (tut.phase === 'hold_success') {
+        tut.timer -= dt;
+        if (tut.timer <= 0) {
+          run.umbrellaOn = false;
+          run.umbrellaActiveTimer = 0;
+          run.umbrellaParryTimer = 0;
+          run.umbrellaHailBlockTimer = 0;
+          advanceTutorialStep();
+        }
+      }
+      return;
+    }
+
+    // ---- STEP 8: YELLOW DUST -> PUT ON MASK ----
     if (step.id === 'dust_mask') {
       if (tut.phase === 'intro') {
         tut.timer -= dt;
         if (tut.timer <= 0) {
+          run.seasonIdx = 0;
+          run.seasonId = 'spring';
           run.weatherEvent = 'dust';
+          run.umbrellaOn = false;
+          run.umbrellaActiveTimer = 0;
+          run.umbrellaParryTimer = 0;
           run.maskOn = false;
           run.maskActiveTimer = 0;
           run.maskParryTimer = 0;
@@ -4553,7 +4704,7 @@
       return;
     }
 
-    // ---- STEP 7: CORONA VIRUS RUSH -> TIMED MASK PARRY ----
+    // ---- STEP 9: CORONA VIRUS RUSH -> TIMED MASK PARRY ----
     if (step.id === 'covid_parry') {
       if (tut.phase === 'intro') {
         tut.timer -= dt;
@@ -11769,6 +11920,9 @@
       } else if (wa === 'umbrella_off' && run.umbrellaOn) {
         run.tut.waitAction = null;
         updateTutorialHudUI();
+      } else if (wa === 'hail_umbrella') {
+        run.tut.waitAction = null;
+        updateTutorialHudUI();
       } else {
         return;
       }
@@ -12955,7 +13109,9 @@
         run.gustExposeTimer = 0;
       }
     } else {
-      run.heatGauge = Math.max(0, run.heatGauge - 40 * dt);
+      if (!(run.isTutorial && run.weatherEvent === 'heat' && !run.umbrellaOn)) {
+        run.heatGauge = Math.max(0, run.heatGauge - 40 * dt);
+      }
       run.rainExposeTimer = 0;
       run.dustExposeTimer = 0;
       run.gustExposeTimer = 0;
@@ -13162,6 +13318,9 @@
 
       const spawnNextHailInVolley = (prevAtk, blockedThis) => {
         const nextBlocked = (prevAtk.blockedCount || 0) + (blockedThis ? 1 : 0);
+        if (run.isTutorial && run.tut && blockedThis) {
+          run.tut.hailBlockedCount = nextBlocked;
+        }
         const totalCnt = prevAtk.totalCount || 1;
         const curIdx = prevAtk.stoneIdx || 1;
 
@@ -13331,6 +13490,26 @@
               impactTimer: 0.16, impactX: hitX, impactY: hitY
             });
             spawnNextHailInVolley(hAtk, true);
+          } else if (run.isTutorial) {
+            run.hitPoseTimer = 0.3;
+            run.hitFlashTimer = 0.2;
+            SFX.hit();
+            Renderer.spawnPickupEffect(run.playerX + 8, run.playerY - 34, '#8be4ff', false);
+            Renderer.spawnFloater('괜찮아요! 우박 타이밍 다시 한번!', '#ffe866', run.playerX + 14, run.playerY - 52);
+            run.hailEffects.push({
+              phase: 'impact', x: run.playerX + 8, y: run.playerY - 30,
+              vx: 0, vy: 0, deflectTimer: 0.36,
+              impactTimer: 0.36, impactX: run.playerX + 8, impactY: run.playerY - 30
+            });
+            run.hailAttack = null;
+            if (run.tut) {
+              run.tut.phase = 'intro';
+              run.tut.timer = 0.7;
+              run.tut.spawned = false;
+              run.tut.waitAction = null;
+              run.tut.hailBlockedCount = 0;
+              updateTutorialHudUI();
+            }
           } else {
             run.hp = Math.max(0, run.hp - 1);
             run.hitPoseTimer = 0.45;
