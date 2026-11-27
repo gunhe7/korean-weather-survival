@@ -1960,15 +1960,42 @@
   let weatherAlertTimer = null;
   let weatherAlertActive = false;
   const WEATHER_ALERT_META = {
-    rain:       { iconKey: 'umbrella', title: '우산!' },
-    flood:      { iconKey: 'umbrella', title: '우산!' },
-    dust:       { iconKey: 'mask',     title: '마스크!' },
-    heat:       { iconKey: 'umbrella', title: '우산!' },
-    gust:       { iconSvg: '<svg viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path d="M4 9h12a2.5 2.5 0 1 0-2.2-3.7M3 13.5h15.5a2.5 2.5 0 1 1-2.2 3.7M6 18h8" fill="none" stroke="#9be8ff" stroke-width="2.6" stroke-linecap="round"/></svg>', title: '우산 접기!' },
-    ice_road:   { iconSvg: '<svg viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2L3.8 16.8" fill="none" stroke="#9ee8ff" stroke-width="2.4" stroke-linecap="round"/></svg>', title: '빙판!' },
-    covid:      { iconKey: 'mask',     title: '마스크!' },
-    covid_rush: { iconKey: 'mask',     title: '마스크!' },
-    hail:       { iconKey: 'umbrella', title: '우박! 우산!' }
+    rain: {
+      title: '폭우',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6.5 13.5h11a3.2 3.2 0 0 0 .4-6.35A4.6 4.6 0 0 0 8.8 5.9a3.8 3.8 0 0 0-2.3 7.6z" fill="#ffffff" stroke="#071022" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 16.5l-1.2 3.5M12.5 16.5l-1.2 3.5M16.5 16.5l-1.2 3.5" fill="none" stroke="#9be8ff" stroke-width="2.2" stroke-linecap="round"/></svg>'
+    },
+    flood: {
+      title: '침수',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 13.5c2-1.8 4-1.8 6 0s4 1.8 6 0 4-1.8 6 0M3 18c2-1.8 4-1.8 6 0s4 1.8 6 0 4-1.8 6 0" fill="none" stroke="#9be8ff" stroke-width="2.4" stroke-linecap="round"/><path d="M9 5l-1.2 3.5M13 4.5l-1.2 3.5M17 5l-1.2 3.5" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round"/></svg>'
+    },
+    dust: {
+      title: '황사',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 14h11.5a3 3 0 0 0 .3-5.95A4.5 4.5 0 0 0 8.9 6.6 3.6 3.6 0 0 0 6 14z" fill="#ffe47a" stroke="#071022" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7" cy="18.2" r="1.4" fill="#ffe47a"/><circle cx="12" cy="19.2" r="1.4" fill="#ffe47a"/><circle cx="17" cy="18" r="1.4" fill="#ffe47a"/></svg>'
+    },
+    heat: {
+      title: '폭염',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="#ffe666" stroke="#071022" stroke-width="1.7"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7" fill="none" stroke="#ffe666" stroke-width="2.2" stroke-linecap="round"/></svg>'
+    },
+    gust: {
+      title: '강풍',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3.5 9h12.2a2.4 2.4 0 1 0-2.1-3.5M3 13.5h15.5a2.4 2.4 0 1 1-2.1 3.5M5.5 18h7.5" fill="none" stroke="#c8f7ff" stroke-width="2.4" stroke-linecap="round"/></svg>'
+    },
+    ice_road: {
+      title: '빙판길',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9" fill="none" stroke="#ccf8ff" stroke-width="2.3" stroke-linecap="round"/><circle cx="12" cy="12" r="2.2" fill="#ffffff"/></svg>'
+    },
+    covid: {
+      title: '코로나',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#ff6b8b" stroke="#071022" stroke-width="1.7"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2.2 2.2M15.8 15.8L18 18M18 6l-2.2 2.2M8.2 15.8L6 18" stroke="#ffb3c4" stroke-width="2.1" stroke-linecap="round"/></svg>'
+    },
+    covid_rush: {
+      title: '코로나 돌진',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#ff5478" stroke="#071022" stroke-width="1.7"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2.2 2.2M15.8 15.8L18 18M18 6l-2.2 2.2M8.2 15.8L6 18" stroke="#ffd1dc" stroke-width="2.1" stroke-linecap="round"/></svg>'
+    },
+    hail: {
+      title: '우박',
+      iconSvg: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><polygon points="12,3 17,9 12,15 7,9" fill="#b8f2ff" stroke="#071022" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7.5" cy="18.5" r="2.2" fill="#ffffff" stroke="#071022" stroke-width="1.5"/><circle cx="16.2" cy="17.5" r="2.5" fill="#9be8ff" stroke="#071022" stroke-width="1.5"/></svg>'
+    }
   };
 
   function showWeatherCenterAlert(weatherId, customKeyword = null) {
@@ -1978,7 +2005,7 @@
     weatherAlertActive = true;
     el.weatherCenterAlert.className = `weather-center-alert ev-${weatherId}`;
     if (el.weatherAlertIcon) {
-      el.weatherAlertIcon.innerHTML = meta.iconKey ? uiIcon(meta.iconKey, 'hero') : (meta.iconSvg || '');
+      el.weatherAlertIcon.innerHTML = meta.iconSvg || '';
     }
     el.weatherAlertTitle.textContent = customKeyword || meta.title;
     // Force clean animation restart on consecutive events
@@ -1988,7 +2015,7 @@
     weatherAlertTimer = setTimeout(() => {
       weatherAlertActive = false;
       if (el.weatherCenterAlert) el.weatherCenterAlert.classList.add('hidden');
-    }, 1650);
+    }, 1500);
   }
 
   function hideWeatherCenterAlert() {
@@ -4053,7 +4080,7 @@
           run.gustExposeTimer = 0;
           SFX.playWeatherCue('gust');
           SFX.setWeatherAmbient('gust');
-          showWeatherCenterAlert('gust', '우산 접기!');
+          showWeatherCenterAlert('gust');
           tut.phase = 'active';
           tut.timer = 0.72;
         }
@@ -7117,8 +7144,7 @@
       }
       showWeatherCenterAlert('covid');
     } else if (nextW === 'gust') {
-      const subTxt = run.umbrellaOn ? '제한 시간 안에 우산을 접으세요!' : '맞바람 주의! 슬라이드로 돌파!';
-      showWeatherCenterAlert('gust', subTxt);
+      showWeatherCenterAlert('gust');
     } else if (nextW !== 'clear') {
       showWeatherCenterAlert(nextW);
     } else {
@@ -8656,45 +8682,44 @@
       let chipUrgent = false;
 
       if (covidUrgent) {
-        chipBadge = needCovidMask ? `${uiIcon('mask', 'sm')} 마스크!` : `${uiIcon('check', 'sm')} 차단 완료`;
+        chipBadge = needCovidMask ? '코로나 돌진' : `${uiIcon('check', 'sm')} 차단 완료`;
         chipTimer = needCovidMask
           ? (run.covidAttack.phase === 'warn' ? `${Math.max(0, run.covidAttack.timer).toFixed(1)}s` : 'NOW!')
           : '';
         chipUrgent = needCovidMask;
       } else if (hailUrgent) {
-        chipBadge = needHailUmb ? `${uiIcon('umbrella', 'sm')} 우박 · 우산!` : `${uiIcon('check', 'sm')} 우박 방어 완료`;
+        chipBadge = needHailUmb ? '우박' : `${uiIcon('check', 'sm')} 우박 방어 완료`;
         chipTimer = needHailUmb
           ? (run.hailAttack.phase === 'warn' ? `${Math.max(0, run.hailAttack.timer).toFixed(1)}s` : 'NOW!')
           : '';
         chipUrgent = needHailUmb;
       } else if (needFoldUmb) {
         const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
-        chipBadge = `${uiIcon('umbrella', 'sm')} 강풍 · 우산 접기!`;
+        chipBadge = '강풍';
         chipTimer = `${rem.toFixed(1)}s`;
         chipUrgent = true;
       } else if (needOpenUmb && hudRainNow) {
         const rem = Math.max(0, rainLimit - (run.rainExposeTimer || 0));
-        chipBadge = `${uiIcon('umbrella', 'sm')} 우산!`;
+        chipBadge = activeEv === 'flood' ? '침수' : '폭우';
         chipTimer = `${rem.toFixed(1)}s`;
         chipUrgent = rem <= 1.4;
       } else if (needOpenMask) {
         const rem = Math.max(0, dustLimit - (run.dustExposeTimer || 0));
-        chipBadge = `${uiIcon('mask', 'sm')} 마스크!`;
+        chipBadge = '황사';
         chipTimer = `${rem.toFixed(1)}s`;
         chipUrgent = rem <= 1.4;
       } else if (hudHeatNow && !run.umbrellaOn) {
-        chipBadge = `${uiIcon('umbrella', 'sm')} 폭염 · 우산!`;
+        chipBadge = '폭염';
         chipTimer = `${Math.round(run.heatGauge)}%`;
         chipUrgent = run.heatGauge >= 60;
       } else if (run.heatGauge > 15 && !run.umbrellaOn) {
-        chipBadge = '열기 주의';
+        chipBadge = '폭염';
         chipTimer = `${Math.round(run.heatGauge)}%`;
         chipUrgent = run.heatGauge >= 75;
       } else if (incomingEv && activeEv === 'clear') {
         const nextMeta = WEATHER_ALERT_META[incomingEv];
         const sec = Math.max(0.1, run.weatherPrepTimer || 0).toFixed(1);
-        const ico = nextMeta && nextMeta.iconKey ? `${uiIcon(nextMeta.iconKey, 'sm')} ` : '';
-        chipBadge = nextMeta ? `${ico}${nextMeta.title}` : '기상 주의';
+        chipBadge = nextMeta ? nextMeta.title : '기상 주의';
         chipTimer = `${sec}s`;
       }
 
