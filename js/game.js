@@ -10819,6 +10819,12 @@
     }
     setDynamicDockCollapsed(false);
     refreshAllMenus();
+    if (!run || !run.active) {
+      try {
+        SFX.startBgm();
+        SFX.setBgmMode(tab === 'comp' ? 'comp' : 'menu');
+      } catch {}
+    }
   }
 
   // ===================== RUNNER ENGINE (WEATHER PHYSICS + GEAR + CORONA EVENT) =====================
@@ -15387,7 +15393,7 @@
       window.removeEventListener('pointerdown', unlockBgmOnGesture);
       try {
         SFX.startBgm();
-        if (!run || !run.active) SFX.setBgmMode('menu');
+        if (!run || !run.active) SFX.setBgmMode(currentTab === 'comp' ? 'comp' : 'menu');
       } catch {}
     }
     let firstGestureLandscapeTried = false;
@@ -15535,7 +15541,7 @@
       if (el.introOverlay && el.introOverlay.classList.contains('hidden') && (!run || !run.active)) {
         try {
           SFX.startBgm();
-          SFX.setBgmMode('menu');
+          SFX.setBgmMode(currentTab === 'comp' ? 'comp' : 'menu');
         } catch {}
       }
     });

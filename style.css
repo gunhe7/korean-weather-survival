@@ -27813,6 +27813,16 @@ input:focus-visible {
   transition: transform 0.09s ease, filter 0.12s ease, box-shadow 0.09s ease;
 }
 
+/* Preserve exact absolute/fixed anchoring on floating glossy buttons (gacha skip, detail arrows, pending pill) */
+.gacha-wish-skip-btn,
+.brawl-nav-arrow {
+  position: absolute !important;
+}
+
+.comp-pending-pill {
+  position: fixed !important;
+}
+
 /* Signature Brawl Stars Hard-Candy Curved Upper Gloss Reflection + Corner Spark Glint */
 .bs-play-btn::before,
 .bs-vault-home-btn::before,

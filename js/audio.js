@@ -7,14 +7,16 @@ window.SFX = (function () {
 
   const BGM_TRACK_URLS = {
     home: 'assets/audio/bgm_home.m4a?v=20261121hd86',
+    comp: 'assets/audio/bgm_comp.m4a?v=20261121hd147',
     game: 'assets/audio/bgm_game.m4a?v=20261121hd86'
   };
+  const BGM_TRACK_KEYS = ['home', 'comp', 'game'];
   const BGM_SOFT_SCALE = 0.22;
-  const bgmTracks = { home: null, game: null };
+  const bgmTracks = { home: null, comp: null, game: null };
   let activeBgmKey = null;
   let bgmFadeTimer = null;
   let bgmUnlockBound = false;
-  let bgmMode = 'menu'; // 'menu' | 'run' | 'fever'
+  let bgmMode = 'menu'; // 'menu' | 'comp' | 'run' | 'fever'
   let bgmStarted = false;
   let studioIntroPlaying = false;
   let activeStudioStop = null;
@@ -562,11 +564,14 @@ window.SFX = (function () {
   }
 
   function getBgmTrackKey(mode) {
-    return (mode === 'run' || mode === 'fever') ? 'game' : 'home';
+    if (mode === 'run' || mode === 'fever') return 'game';
+    if (mode === 'comp') return 'comp';
+    return 'home';
   }
 
   function getTargetBgmVol() {
-    return Math.max(0, Math.min(0.35, bgmVolume * BGM_SOFT_SCALE * (bgmMode === 'fever' ? 1.12 : 1.0)));
+    const modeScale = bgmMode === 'fever' ? 1.12 : (bgmMode === 'comp' ? 0.62 : 1.0);
+    return Math.max(0, Math.min(0.35, bgmVolume * BGM_SOFT_SCALE * modeScale));
   }
 
   function routeBgmThroughWebAudio(el) {
@@ -604,7 +609,7 @@ window.SFX = (function () {
   }
 
   function ensureBgmAudio(key) {
-    const k = key === 'game' ? 'game' : 'home';
+    const k = BGM_TRACK_URLS[key] ? key : 'home';
     if (bgmTracks[k]) return bgmTracks[k];
     if (typeof Audio === 'undefined') return null;
     const el = new Audio(BGM_TRACK_URLS[k]);
@@ -640,7 +645,7 @@ window.SFX = (function () {
   }
 
   function stopAllBgmImmediate() {
-    ['home', 'game'].forEach((k) => {
+    BGM_TRACK_KEYS.forEach((k) => {
       const el = bgmTracks[k];
       if (el) {
         setBgmTrackLevel(el, 0);
@@ -660,11 +665,14 @@ window.SFX = (function () {
         stopAllBgmImmediate();
         return;
       }
-      const startVols = {
-        home: getBgmTrackLevel(bgmTracks.home),
-        game: getBgmTrackLevel(bgmTracks.game)
-      };
-      if (startVols.home <= 0.002 && startVols.game <= 0.002) {
+      const startVols = {};
+      let maxStart = 0;
+      BGM_TRACK_KEYS.forEach((k) => {
+        const lv = getBgmTrackLevel(bgmTracks[k]);
+        startVols[k] = lv;
+        if (lv > maxStart) maxStart = lv;
+      });
+      if (maxStart <= 0.002) {
         stopAllBgmImmediate();
         return;
       }
@@ -673,7 +681,7 @@ window.SFX = (function () {
       bgmFadeTimer = setInterval(() => {
         step += 1;
         const t = Math.min(1, step / steps);
-        ['home', 'game'].forEach((k) => {
+        BGM_TRACK_KEYS.forEach((k) => {
           setBgmTrackLevel(bgmTracks[k], Math.max(0, startVols[k] * (1 - t)));
         });
         if (step >= steps) {
@@ -685,9 +693,8 @@ window.SFX = (function () {
     }
 
     const wantKey = getBgmTrackKey(bgmMode);
-    const otherKey = wantKey === 'home' ? 'game' : 'home';
+    const otherKeys = BGM_TRACK_KEYS.filter((k) => k !== wantKey);
     const wantEl = ensureBgmAudio(wantKey);
-    const otherEl = bgmTracks[otherKey];
     const targetVol = getTargetBgmVol();
 
     if (wantEl) {
@@ -706,36 +713,57 @@ window.SFX = (function () {
         }
       }
     }
-    if (otherEl) routeBgmThroughWebAudio(otherEl);
 
     const startWant = getBgmTrackLevel(wantEl);
-    const startOther = getBgmTrackLevel(otherEl);
-    const needFade = (wantEl && Math.abs(startWant - targetVol) > 0.005) || (otherEl && (!otherEl.paused || startOther > 0.002));
+    const startOthers = {};
+    let anyOtherPlaying = false;
+    otherKeys.forEach((ok) => {
+      const oEl = bgmTracks[ok];
+      if (oEl) {
+        routeBgmThroughWebAudio(oEl);
+        const lv = getBgmTrackLevel(oEl);
+        startOthers[ok] = lv;
+        if (!oEl.paused || lv > 0.002) anyOtherPlaying = true;
+      } else {
+        startOthers[ok] = 0;
+      }
+    });
+
+    const needFade = (wantEl && Math.abs(startWant - targetVol) > 0.004) || anyOtherPlaying;
     activeBgmKey = wantKey;
 
     if (!needFade) {
       setBgmTrackLevel(wantEl, targetVol);
-      if (otherEl) {
-        setBgmTrackLevel(otherEl, 0);
-        try { if (!otherEl.paused) otherEl.pause(); } catch {}
-      }
+      otherKeys.forEach((ok) => {
+        const oEl = bgmTracks[ok];
+        if (oEl) {
+          setBgmTrackLevel(oEl, 0);
+          try { if (!oEl.paused) oEl.pause(); } catch {}
+        }
+      });
       return;
     }
 
     let step = 0;
-    const steps = 12; // ~360ms smooth crossfade
+    const steps = wantKey === 'comp' ? 18 : 12; // gentle ~540ms fade-in for calm comp lobby BGM
     bgmFadeTimer = setInterval(() => {
       step += 1;
       const t = Math.min(1, step / steps);
       if (wantEl) setBgmTrackLevel(wantEl, startWant + (targetVol - startWant) * t);
-      if (otherEl) setBgmTrackLevel(otherEl, Math.max(0, startOther * (1 - t)));
+      otherKeys.forEach((ok) => {
+        const oEl = bgmTracks[ok];
+        if (oEl) setBgmTrackLevel(oEl, Math.max(0, startOthers[ok] * (1 - t)));
+      });
       if (step >= steps) {
         clearBgmFadeTimer();
         setBgmTrackLevel(wantEl, targetVol);
-        if (otherEl) {
-          setBgmTrackLevel(otherEl, 0);
-          try { if (!otherEl.paused) otherEl.pause(); } catch {}
-        }
+        otherKeys.forEach((ok) => {
+          const oEl = bgmTracks[ok];
+          if (oEl) {
+            setBgmTrackLevel(oEl, 0);
+            try { if (!oEl.paused) oEl.pause(); } catch {}
+          }
+        });
       }
     }, 30);
   }
@@ -965,7 +993,7 @@ window.SFX = (function () {
       return bgmEnabled;
     },
     setBgmMode(mode) {
-      const target = (mode === 'run' || mode === 'fever') ? mode : 'menu';
+      const target = (mode === 'run' || mode === 'fever' || mode === 'comp') ? mode : 'menu';
       const prevKey = getBgmTrackKey(bgmMode);
       const nextKey = getBgmTrackKey(target);
       const changed = bgmMode !== target;
