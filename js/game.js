@@ -4206,6 +4206,7 @@
   function updateTutorialHudUI() {
     const isTut = Boolean(run && run.isTutorial && run.tut);
     if (el.tutRunHud) el.tutRunHud.classList.toggle('hidden', !isTut);
+    if (el.viewRun) el.viewRun.classList.toggle('is-tutorial-run', isTut);
     if (!isTut) {
       clearTutorialHighlights();
       return;
@@ -4311,6 +4312,7 @@
     save.tutorialDone = true;
     clearTutorialHighlights();
     if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
+    if (el.viewRun) el.viewRun.classList.remove('is-tutorial-run');
     SFX.setWeatherAmbient('clear');
     SFX.setAmbientPaused(false);
     hideWeatherCenterAlert();
@@ -14014,7 +14016,7 @@
       const yrTier = run.year >= 4 ? 'yr-4' : (run.year === 3 ? 'yr-3' : (run.year === 2 ? 'yr-2' : 'yr-1'));
       hudClass('yrCls', el.runYearNum, `portrait-yr-badge ${yrTier}`);
     }
-    hudToggle('seasonBarHide', el.runSeasonExpWrap, 'hidden', isTodayWeather);
+    hudToggle('seasonBarHide', el.runSeasonExpWrap, 'hidden', isTodayWeather || Boolean(run.isTutorial));
     if (doSlow) {
       let seasonLbl;
       if (run.isTutorial) {
@@ -14169,7 +14171,7 @@
         runBannerActive = false;
         if (el.runBanner) el.runBanner.classList.add('hidden');
       }
-      const showChip = Boolean(chipBadge) && !weatherAlertActive && (!runBannerActive || chipUrgent);
+      const showChip = !run.isTutorial && Boolean(chipBadge) && !weatherAlertActive && (!runBannerActive || chipUrgent);
       const barJustShown = showChip && hudCache.wBarHide !== false;
       hudToggle('wBarHide', el.runWeatherBar, 'hidden', !showChip);
       hudToggle('wBarUrg', el.runWeatherBar, 'urgent-danger', chipUrgent);
@@ -14514,6 +14516,7 @@
     releaseAllControlButtons();
     clearTutorialHighlights();
     if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
+    if (el.viewRun) el.viewRun.classList.remove('is-tutorial-run');
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();

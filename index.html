@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd156" />
+  <link rel="manifest" href="manifest.json?v=20261121hd157" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
@@ -17,7 +17,7 @@
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
   <link rel="preload" as="image" href="assets/home_bg.jpg?v=20261121hd156" />
-  <link rel="stylesheet" href="style.css?v=20261121hd156" />
+  <link rel="stylesheet" href="style.css?v=20261121hd157" />
 </head>
 <body>
   <div id="mobile-app" class="is-home-bg">
@@ -1430,6 +1430,20 @@
             <div id="comp-run-rows" class="comp-run-rows"></div>
           </div>
         </div>
+
+        <!-- Cookie Run Style Live Playable Tutorial HUD Banner (In-flow inside #run-hud so it NEVER overlaps top rows!) -->
+        <div id="tut-run-hud" class="tut-run-hud hidden" aria-live="polite">
+          <div class="tut-run-top">
+            <span id="tut-run-step-pill" class="tut-run-step-pill">튜토리얼 1/9</span>
+            <div class="tut-run-text">
+              <strong id="tut-run-title">장애물을 뛰어넘으세요!</strong>
+              <span id="tut-run-sub">왼쪽 [점프] 버튼을 터치해 피하세요</span>
+            </div>
+            <button id="btn-tut-run-skip" class="tut-skip-btn" type="button">건너뛰기</button>
+          </div>
+          <div id="tut-run-action-callout" class="tut-run-callout hidden">지금! 점프 버튼을 누르세요!</div>
+          <div id="tut-run-dots" class="tut-run-dots" aria-hidden="true"></div>
+        </div>
       </div>
 
       <!-- 2D Cookie Run 16:9 Widescreen Retina HD Stage -->
@@ -1457,20 +1471,6 @@
             <span id="weather-alert-icon" class="weather-alert-icon" aria-hidden="true"></span>
             <span id="weather-alert-title" class="weather-alert-title">폭우</span>
           </div>
-        </div>
-
-        <!-- Cookie Run Style Live Playable Tutorial HUD Banner -->
-        <div id="tut-run-hud" class="tut-run-hud hidden" aria-live="polite">
-          <div class="tut-run-top">
-            <span id="tut-run-step-pill" class="tut-run-step-pill">튜토리얼 1/7</span>
-            <div class="tut-run-text">
-              <strong id="tut-run-title">장애물을 뛰어넘으세요!</strong>
-              <span id="tut-run-sub">왼쪽 [점프] 버튼을 터치해 피하세요</span>
-            </div>
-            <button id="btn-tut-run-skip" class="tut-skip-btn" type="button">건너뛰기</button>
-          </div>
-          <div id="tut-run-action-callout" class="tut-run-callout hidden">지금! 점프 버튼을 누르세요!</div>
-          <div id="tut-run-dots" class="tut-run-dots" aria-hidden="true"></div>
         </div>
       </div>
 
@@ -2197,15 +2197,15 @@
   <script src="js/studio-intro.js?v=20261121hd156"></script>
   <script src="js/online.js?v=20261121hd156"></script>
   <script src="js/renderer.js?v=20261121hd156"></script>
-  <script src="js/game.js?v=20261121hd156"></script>
+  <script src="js/game.js?v=20261121hd157"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       let swReloading = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (swReloading) return;
         try {
-          if (sessionStorage.getItem('kws_sw_ver') === 'hd156') return;
-          sessionStorage.setItem('kws_sw_ver', 'hd156');
+          if (sessionStorage.getItem('kws_sw_ver') === 'hd157') return;
+          sessionStorage.setItem('kws_sw_ver', 'hd157');
         } catch {}
         swReloading = true;
         location.reload();

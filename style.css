@@ -9267,17 +9267,27 @@ input:focus-visible {
 }
 
 .tut-run-hud {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(560px, 88%);
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  align-self: center;
+  margin: 2px auto 0;
+  width: min(560px, 92%);
   z-index: 26;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
   pointer-events: none;
+}
+
+.tut-run-hud.hidden {
+  display: none !important;
+}
+
+#view-run.is-tutorial-run .weather-center-alert {
+  top: 44%;
 }
 
 .tut-run-top {
@@ -9500,8 +9510,8 @@ input:focus-visible {
 
 @media (max-height: 440px), (orientation: portrait) and (max-width: 520px) {
   .tut-run-hud {
-    top: 4px;
-    width: min(460px, 92%);
+    margin-top: 1px;
+    width: min(460px, 94%);
     gap: 3px;
   }
   .tut-run-top {
@@ -9620,10 +9630,6 @@ input:focus-visible {
 .modal-overlay {
   padding-left: max(14px, var(--safe-left));
   padding-right: max(14px, var(--safe-right));
-}
-
-.tut-run-hud {
-  top: calc(var(--safe-top) + 76px) !important;
 }
 
 .ctrl-stack {
@@ -9868,9 +9874,6 @@ input:focus-visible {
   .run-banner {
     top: calc(var(--safe-top) + 124px);
   }
-  .tut-run-hud {
-    top: calc(var(--safe-top) + 114px) !important;
-  }
 }
 
 @media (min-width: 960px) and (min-height: 620px) {
@@ -9982,8 +9985,7 @@ input:focus-visible {
     bottom: calc(max(12px, var(--safe-bottom)) + 86px) !important;
   }
   .tut-run-hud {
-    top: calc(var(--safe-top) + 104px) !important;
-    width: 94%;
+    width: 96%;
   }
 }
 
