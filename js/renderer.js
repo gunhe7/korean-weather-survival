@@ -29,17 +29,17 @@ window.RunRenderer = (function () {
   // Stable static sprite version keeps unchanged PNGs 100% cached across code deploys!
   const SPRITE_VER = '20261121hd56';
   const CHAR_SHEET_SKINS = [
-    { id: 'yellow', frames: 3, runFrames: 8 },
-    { id: 'blue', frames: 3, runFrames: 8 },
-    { id: 'hanbok', frames: 3, runFrames: 8 },
-    { id: 'skier', frames: 4, runFrames: 8, ver: '20261121hd67' },
-    { id: 'santa', frames: 4, runFrames: 8, ver: '20261121hd79' },
-    { id: 'ice_emperor', frames: 4, runFrames: 8, ver: '20261121hd83' },
-    { id: 'thunder', frames: 4, runFrames: 8, ver: '20261121hd138' },
-    { id: 'cyber_cyan', frames: 4, runFrames: 4, ver: '20261121hd138' },
-    { id: 'cyber_violet', frames: 4, runFrames: 8, ver: '20261121hd138' },
-    { id: 'catgirl', frames: 4, runFrames: 8 },
-    { id: 'hades', frames: 3, runFrames: 4 }
+    { id: 'yellow', frames: 3, runFrames: 8, ver: '20261121hd156' },
+    { id: 'blue', frames: 3, runFrames: 8, ver: '20261121hd156' },
+    { id: 'hanbok', frames: 3, runFrames: 8, ver: '20261121hd156' },
+    { id: 'skier', frames: 4, runFrames: 8, ver: '20261121hd156' },
+    { id: 'santa', frames: 4, runFrames: 8, ver: '20261121hd156' },
+    { id: 'ice_emperor', frames: 4, runFrames: 8, ver: '20261121hd156' },
+    { id: 'thunder', frames: 4, runFrames: 8, ver: '20261121hd156' },
+    { id: 'cyber_cyan', frames: 4, runFrames: 4, ver: '20261121hd156' },
+    { id: 'cyber_violet', frames: 4, runFrames: 8, ver: '20261121hd156' },
+    { id: 'catgirl', frames: 4, runFrames: 8, ver: '20261121hd156' },
+    { id: 'hades', frames: 3, runFrames: 4, ver: '20261121hd156' }
   ];
   const CHAR_ANIM_STATES = ['idle', 'run', 'jump', 'fall', 'slide', 'hurt', 'die'];
   const CHAR_VFX_SPRITES = [

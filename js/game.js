@@ -92,7 +92,7 @@
     return getTodayKey();
   }
 
-  const ASSET_VER = '20261121hd151';
+  const ASSET_VER = '20261121hd156';
   const ICONS = window.UIIcons;
 
   function uiIcon(key, size = 'sm', extraClass = '') {
@@ -10375,11 +10375,7 @@
   }
 
   function getCharSpriteVer(animSkin) {
-    if (animSkin === 'skier') return '20261121hd67';
-    if (animSkin === 'santa') return '20261121hd79';
-    if (animSkin === 'ice_emperor') return '20261121hd83';
-    if (animSkin === 'thunder' || animSkin === 'cyber_cyan' || animSkin === 'cyber_violet') return '20261121hd138';
-    return ASSET_VER;
+    return '20261121hd156';
   }
 
   function renderHomeCharStage() {
@@ -11163,11 +11159,11 @@
 
             <div class="gacha-showcase-collage" aria-hidden="true">
               <img src="assets/chars/hades_aura_0.png?v=${ASSET_VER}" alt="" class="gc-art-aura" />
-              <img src="assets/chars/port_thunder.png?v=20261121hd138" alt="" class="gc-art-side left-far" />
+              <img src="assets/chars/port_thunder.png?v=${ASSET_VER}" alt="" class="gc-art-side left-far" />
               <img src="assets/chars/port_catgirl.png?v=${ASSET_VER}" alt="" class="gc-art-side left" />
               <img src="assets/chars/port_hades.png?v=${ASSET_VER}" alt="" class="gc-art-center" />
-              <img src="assets/chars/port_cyber_cyan.png?v=20261121hd138" alt="" class="gc-art-side right" />
-              <img src="assets/chars/port_cyber_violet.png?v=20261121hd138" alt="" class="gc-art-side right-far" />
+              <img src="assets/chars/port_cyber_cyan.png?v=${ASSET_VER}" alt="" class="gc-art-side right" />
+              <img src="assets/chars/port_cyber_violet.png?v=${ASSET_VER}" alt="" class="gc-art-side right-far" />
             </div>
           </div>
 
