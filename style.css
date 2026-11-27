@@ -25846,3 +25846,593 @@ input:focus-visible {
     gap: 5px;
   }
 }
+
+/* =========================================================================
+   FULL-SCREEN OVERWATCH 2 COMPETITIVE PROGRESS RESULT SCREEN
+   ========================================================================= */
+@keyframes owResStageIn {
+  0% { opacity: 0; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes owResEmblemBreath {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5px) scale(1.025); }
+}
+
+.ow-res-overlay {
+  padding: 0 !important;
+  background: rgba(5, 11, 26, 0.96) !important;
+  z-index: 995 !important;
+}
+
+.ow-res-screen {
+  --tier-color: #d98c54;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: max(14px, env(safe-area-inset-top, 0px)) max(22px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(22px, env(safe-area-inset-left, 0px));
+  background:
+    radial-gradient(ellipse 68% 58% at 50% 42%, color-mix(in srgb, var(--tier-color) 28%, transparent) 0%, transparent 70%),
+    radial-gradient(ellipse 90% 80% at 50% 100%, rgba(28, 72, 165, 0.32) 0%, transparent 65%),
+    linear-gradient(180deg, #0b1630 0%, #102042 46%, #071024 100%);
+  animation: owResStageIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ow-res-bg-slashes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(112deg, transparent 0%, transparent 24%, rgba(122, 194, 255, 0.05) 24.5%, rgba(122, 194, 255, 0.05) 31%, transparent 31.5%),
+    linear-gradient(112deg, transparent 0%, transparent 66%, rgba(255, 224, 110, 0.05) 66.5%, rgba(255, 224, 110, 0.05) 75%, transparent 75.5%);
+}
+
+.ow-res-fx-canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 4 !important;
+  pointer-events: none !important;
+}
+
+/* Top Overwatch Header Strip */
+.ow-res-header {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid rgba(158, 208, 255, 0.18);
+  flex-shrink: 0;
+}
+
+.ow-res-head-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ow-res-kicker {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: #84bfff;
+  text-transform: uppercase;
+}
+
+.ow-res-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ow-res-heading {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-md);
+  line-height: 1.05;
+}
+
+.ow-res-outcome-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transform: skewX(-12deg);
+  border: 2px solid #071022;
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 3px 0 #071022;
+}
+
+.ow-res-outcome-pill.up {
+  background: linear-gradient(180deg, #3de87e 0%, #149646 100%);
+}
+
+.ow-res-outcome-pill.win {
+  background: linear-gradient(180deg, #ffe34d 0%, #e5930c 100%);
+}
+
+.ow-res-outcome-pill.down {
+  background: linear-gradient(180deg, #ff5c72 0%, #c41d34 100%);
+}
+
+.ow-res-head-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ow-res-stat-chip {
+  padding: 5px 11px;
+  border-radius: 9px;
+  border: 2.2px solid #071022;
+  background: rgba(11, 26, 58, 0.85);
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 3px 0 #071022;
+  white-space: nowrap;
+}
+
+.ow-res-stat-chip.score {
+  color: #9be8ff;
+}
+
+.ow-res-stat-chip.gold {
+  color: #ffe254;
+}
+
+/* Main Overwatch Progression Center Stage */
+.ow-res-stage.comp-res-ow-card {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 8px 0 !important;
+  overflow: visible !important;
+}
+
+.ow-res-stage.comp-res-ow-card.is-tier-up,
+.ow-res-stage.comp-res-ow-card.is-tier-down {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ow-res-promo-banner {
+  font-size: 18px !important;
+  padding: 6px 22px !important;
+  border-radius: 8px !important;
+  transform: skewX(-12deg);
+  letter-spacing: 0.06em !important;
+}
+
+.ow-res-center-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.ow-res-emblem-giant.comp-res-ow-emblem-wrap {
+  width: 176px !important;
+  height: 176px !important;
+  animation: owResEmblemBreath 3.2s ease-in-out infinite;
+}
+
+.ow-res-emblem-giant.comp-res-ow-emblem-wrap .comp-res-tier-img {
+  width: 162px !important;
+  height: 162px !important;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 26px color-mix(in srgb, var(--tier-color) 55%, transparent));
+}
+
+.ow-res-emblem-giant.comp-res-ow-emblem-wrap .comp-res-ow-rays {
+  inset: -44px !important;
+}
+
+.ow-res-emblem-giant.comp-res-ow-emblem-wrap .comp-res-ow-ring.r1 {
+  inset: -14px !important;
+}
+
+.ow-res-emblem-giant.comp-res-ow-emblem-wrap .comp-res-ow-ring.r2 {
+  inset: -28px !important;
+}
+
+.ow-res-rank-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.ow-res-tier-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ow-res-tier-name.comp-tier-badge {
+  font-size: 28px !important;
+  font-style: italic;
+  padding: 4px 18px !important;
+  border-width: 3px !important;
+  border-radius: 10px !important;
+  background: rgba(8, 19, 44, 0.85) !important;
+  box-shadow: 0 4px 0 #071022, 0 0 18px color-mix(in srgb, var(--tier-color) 38%, transparent) !important;
+  text-shadow: var(--bs-outline-md) !important;
+}
+
+.ow-res-delta-big.comp-res-delta {
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  padding: 4px 14px !important;
+  border-radius: 9px !important;
+  border: 2.5px solid #071022 !important;
+  box-shadow: 0 4px 0 #071022 !important;
+  text-shadow: var(--bs-outline-sm) !important;
+}
+
+.ow-res-trophy-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(158, 212, 255, 0.25);
+  background: rgba(7, 17, 40, 0.72);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.ow-res-trophy-sub strong {
+  font-size: 20px;
+  color: #ffe357;
+  text-shadow: var(--bs-outline-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Wide Slanted Overwatch Rank Progress Bar */
+.ow-res-bar-panel.comp-res-ow-bar-wrap {
+  width: min(680px, 92%);
+  padding: 14px 18px !important;
+  border-radius: 14px !important;
+  border: 2.5px solid rgba(140, 200, 255, 0.25) !important;
+  background: rgba(7, 16, 38, 0.78) !important;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  gap: 9px !important;
+}
+
+.ow-res-bar-ends .comp-ow-mini-ico {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.ow-res-bar-ends .comp-ow-end strong {
+  font-size: 14px !important;
+}
+
+.ow-res-pct-big.comp-ow-pct {
+  font-size: 22px !important;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  text-shadow: var(--bs-outline-sm);
+}
+
+.ow-res-track.comp-res-ow-track {
+  height: 30px !important;
+  border-radius: 8px !important;
+  border: 2.8px solid #060e20 !important;
+  transform: skewX(-14deg);
+  background: rgba(5, 11, 26, 0.92) !important;
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(145, 206, 255, 0.18) !important;
+}
+
+.ow-res-track .comp-res-bar-val {
+  transform: skewX(14deg);
+  font-size: 13.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.03em;
+  text-shadow: var(--bs-outline-sm) !important;
+}
+
+.ow-res-modifiers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.ow-mod-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 6px;
+  transform: skewX(-10deg);
+  border: 1.8px solid #071022;
+  background: rgba(24, 48, 92, 0.88);
+  color: #d6ecff;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 2px 0 #071022;
+}
+
+.ow-mod-chip.up {
+  background: linear-gradient(180deg, #1f7d4b 0%, #125431 100%);
+  color: #a8ffc8;
+}
+
+.ow-mod-chip.gold {
+  background: linear-gradient(180deg, #b87b0e 0%, #7a4c04 100%);
+  color: #fff09e;
+}
+
+.ow-mod-chip.down {
+  background: linear-gradient(180deg, #992235 0%, #63111f 100%);
+  color: #ffc2cb;
+}
+
+.ow-mod-chip.warn {
+  background: linear-gradient(180deg, #8a5612 0%, #573306 100%);
+  color: #ffe299;
+}
+
+/* Toggleable 8-Player Scoreboard Panel */
+.ow-res-board-panel {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  min-height: 0;
+  width: min(680px, 100%);
+  margin: 8px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 15px;
+  border: 2.5px solid rgba(145, 206, 255, 0.25);
+  background: rgba(8, 19, 44, 0.85);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+.ow-res-board-panel.hidden {
+  display: none !important;
+}
+
+.ow-res-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ow-res-board-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+}
+
+.ow-res-board-hint {
+  font-size: 11px;
+  font-weight: 800;
+  color: #8fc7ff;
+}
+
+.ow-res-list {
+  flex: 1;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Overwatch Bottom Action Bar */
+.ow-res-footer {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1.5px solid rgba(158, 208, 255, 0.18);
+  flex-shrink: 0;
+}
+
+.ow-res-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ow-res-btn {
+  padding: 11px 22px;
+  border-radius: 10px;
+  border: 2.8px solid #071022;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 0 #071022;
+  transition: transform 0.08s ease, filter 0.1s ease;
+}
+
+.ow-res-btn:hover {
+  filter: brightness(1.08);
+}
+
+.ow-res-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #071022;
+}
+
+.ow-res-btn.ghost {
+  background: linear-gradient(180deg, #3266b8 0%, #1c4180 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(190, 226, 255, 0.45);
+}
+
+.ow-res-btn.slate {
+  background: linear-gradient(180deg, #4f648a 0%, #314261 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(210, 228, 255, 0.35);
+}
+
+.ow-res-btn.primary {
+  background: linear-gradient(180deg, #ffe24a 0%, #ffe24a 48%, #f4a412 50%, #d48206 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(255, 252, 224, 0.72);
+}
+
+/* Compact Mobile Landscape Overwatch Progress Screen (Zero Overlap / Zero Scroll!) */
+@media (max-height: 500px) {
+  .ow-res-screen {
+    padding: 8px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px));
+  }
+
+  .ow-res-header {
+    padding-bottom: 6px;
+  }
+
+  .ow-res-kicker {
+    display: none;
+  }
+
+  .ow-res-heading {
+    font-size: 18px;
+  }
+
+  .ow-res-outcome-pill {
+    padding: 2px 9px;
+    font-size: 10.5px;
+  }
+
+  .ow-res-stat-chip {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  .ow-res-stage.comp-res-ow-card {
+    gap: 8px;
+    padding: 2px 0 !important;
+  }
+
+  .ow-res-center-hero {
+    flex-direction: row;
+    gap: 16px;
+  }
+
+  .ow-res-emblem-giant.comp-res-ow-emblem-wrap {
+    width: 102px !important;
+    height: 102px !important;
+  }
+
+  .ow-res-emblem-giant.comp-res-ow-emblem-wrap .comp-res-tier-img {
+    width: 94px !important;
+    height: 94px !important;
+  }
+
+  .ow-res-rank-readout {
+    align-items: flex-start;
+  }
+
+  .ow-res-tier-name.comp-tier-badge {
+    font-size: 20px !important;
+    padding: 2px 12px !important;
+  }
+
+  .ow-res-delta-big.comp-res-delta {
+    font-size: 18px !important;
+    padding: 2px 10px !important;
+  }
+
+  .ow-res-trophy-sub {
+    font-size: 12px;
+    padding: 2px 10px;
+  }
+
+  .ow-res-trophy-sub strong {
+    font-size: 15px;
+  }
+
+  .ow-res-promo-banner {
+    font-size: 13px !important;
+    padding: 3px 14px !important;
+  }
+
+  .ow-res-bar-panel.comp-res-ow-bar-wrap {
+    width: min(560px, 96%);
+    padding: 8px 12px !important;
+    gap: 5px !important;
+  }
+
+  .ow-res-bar-ends .comp-ow-mini-ico {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .ow-res-bar-ends .comp-ow-end strong {
+    font-size: 11.5px !important;
+  }
+
+  .ow-res-pct-big.comp-ow-pct {
+    font-size: 16px !important;
+  }
+
+  .ow-res-track.comp-res-ow-track {
+    height: 21px !important;
+  }
+
+  .ow-res-track .comp-res-bar-val {
+    font-size: 11px !important;
+  }
+
+  .ow-mod-chip {
+    padding: 2px 8px;
+    font-size: 10px;
+  }
+
+  .ow-res-footer {
+    padding-top: 6px;
+  }
+
+  .ow-res-btn {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+}

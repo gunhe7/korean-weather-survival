@@ -726,6 +726,10 @@
     btnOwQueueCancel: document.getElementById('btn-ow-queue-cancel'),
     compResultOverlay: document.getElementById('comp-result-overlay'),
     compResultModalBox: document.getElementById('comp-result-modal-box'),
+    compResOutcomePill: document.getElementById('comp-res-outcome-pill'),
+    compResModifiers: document.getElementById('comp-res-modifiers'),
+    compResBoardPanel: document.getElementById('comp-res-board-panel'),
+    btnCompResToggleBoard: document.getElementById('btn-comp-res-toggle-board'),
     compResOwCard: document.getElementById('comp-res-ow-card'),
     compResFxCanvas: document.getElementById('comp-res-fx-canvas'),
     compResEmblemWrap: document.getElementById('comp-res-emblem-wrap'),
@@ -800,6 +804,9 @@
     compSeasonRewardCard: document.getElementById('comp-season-reward-card'),
     compMatchRuleNote: document.getElementById('comp-match-rule-note'),
     compWaitOverlay: document.getElementById('comp-wait-overlay'),
+    compWaitBarTitle: document.getElementById('comp-wait-bar-title'),
+    compWaitScoreLbl: document.getElementById('comp-wait-score-lbl'),
+    compWaitRuleNote: document.getElementById('comp-wait-rule-note'),
     compWaitTimerPill: document.getElementById('comp-wait-timer-pill'),
     compWaitMyScore: document.getElementById('comp-wait-my-score'),
     compWaitProvRank: document.getElementById('comp-wait-prov-rank'),
@@ -6976,7 +6983,7 @@
           updateCompOwQueueBarUI();
 
           // If player was running Normal / Today's Weather skirmish while waiting, safely bank coins first!
-          if (run && run.active && run.mode !== 'competitive') {
+          if (run && run.active && run.gameMode !== 'competitive') {
             const bankedCoins = Math.max(0, Math.floor(run.coinsCollected || 0));
             if (bankedCoins > 0) {
               save.gold += bankedCoins;
@@ -7196,6 +7203,19 @@
     const myIdx = Math.max(0, list.findIndex((p) => p.isMe));
     const doneCnt = list.filter((p) => p.finished).length;
 
+    if (el.compWaitBarTitle) {
+      el.compWaitBarTitle.textContent = m.leftEarly
+        ? '중도 퇴장 · 다른 러너 대기 중'
+        : '경기 종료 · 다른 러너 대기 중';
+    }
+    if (el.compWaitScoreLbl) {
+      el.compWaitScoreLbl.textContent = m.leftEarly ? '퇴장 시점 반영 점수' : '내 최종 점수';
+    }
+    if (el.compWaitRuleNote) {
+      el.compWaitRuleNote.textContent = m.leftEarly
+        ? '나간 시점의 점수가 반영되었습니다. 모든 참가자가 끝나야 최종 결과가 확정됩니다.'
+        : '모든 참가자가 경기를 마칠 때까지 기다리는 동안 다른 콘텐츠를 즐길 수 있습니다.';
+    }
     if (el.compWaitTimerPill) el.compWaitTimerPill.textContent = `${remSec}s`;
     if (el.compWaitMyScore) el.compWaitMyScore.textContent = `${Math.floor(m.myScore || 0).toLocaleString('ko-KR')}점`;
     if (el.compWaitProvRank) {
@@ -7272,9 +7292,9 @@
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Emit from the tier emblem center!
-    let ox = 56;
-    let oy = Math.min(h * 0.42, 62);
+    // Emit from the giant centerpiece tier emblem!
+    let ox = w * 0.5;
+    let oy = h * 0.42;
     if (el.compResEmblemWrap) {
       const er = el.compResEmblemWrap.getBoundingClientRect();
       if (er.width > 0 && rect.width > 0) {
@@ -7286,32 +7306,32 @@
     const palette = isPromotion
       ? [tierColor || '#ffe554', '#ffe866', '#ffffff', '#7df2ff', '#ff94d6']
       : [tierColor || '#6affb0', '#ffe866', '#ffffff'];
-    const count = isPromotion ? 76 : 24;
+    const count = isPromotion ? 110 : 42;
     const particles = [];
     for (let i = 0; i < count; i++) {
       const ang = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.35;
-      const spd = isPromotion ? (90 + Math.random() * 240) : (55 + Math.random() * 115);
+      const spd = isPromotion ? (140 + Math.random() * 340) : (80 + Math.random() * 190);
       particles.push({
-        x: ox + (Math.random() - 0.5) * 14,
-        y: oy + (Math.random() - 0.5) * 14,
+        x: ox + (Math.random() - 0.5) * 18,
+        y: oy + (Math.random() - 0.5) * 18,
         vx: Math.cos(ang) * spd,
-        vy: Math.sin(ang) * spd - (isPromotion ? 45 : 22),
-        size: isPromotion ? (3.5 + Math.random() * 5.2) : (2.5 + Math.random() * 3.2),
+        vy: Math.sin(ang) * spd - (isPromotion ? 65 : 30),
+        size: isPromotion ? (4.0 + Math.random() * 5.8) : (2.8 + Math.random() * 3.8),
         rot: Math.random() * Math.PI * 2,
         vrot: (Math.random() - 0.5) * 10,
         color: palette[i % palette.length],
         kind: (i % 3 === 0) ? 'star' : ((i % 3 === 1) ? 'ribbon' : 'spark'),
         life: 0,
-        maxLife: isPromotion ? (0.85 + Math.random() * 0.75) : (0.55 + Math.random() * 0.4)
+        maxLife: isPromotion ? (0.95 + Math.random() * 0.85) : (0.65 + Math.random() * 0.45)
       });
     }
 
     const shockwaves = isPromotion
       ? [
-          { r: 10, maxR: Math.max(w, h) * 0.65, life: 0, maxLife: 0.62, color: '#ffffff', width: 5 },
-          { r: 6, maxR: Math.max(w, h) * 0.85, life: 0, maxLife: 0.82, color: tierColor || '#ffe866', width: 4 }
+          { r: 14, maxR: Math.max(w, h) * 0.65, life: 0, maxLife: 0.65, color: '#ffffff', width: 5.5 },
+          { r: 8, maxR: Math.max(w, h) * 0.88, life: 0, maxLife: 0.88, color: tierColor || '#ffe866', width: 4.5 }
         ]
-      : [{ r: 8, maxR: 120, life: 0, maxLife: 0.45, color: tierColor || '#6affb0', width: 2.5 }];
+      : [{ r: 12, maxR: Math.min(w, h) * 0.42, life: 0, maxLife: 0.52, color: tierColor || '#6affb0', width: 3 }];
 
     if (compResFxRaf) cancelAnimationFrame(compResFxRaf);
     let prevTs = performance.now();
@@ -7399,6 +7419,7 @@
 
   function applyCompResultTierVisual(tierObj, displayTrophies, basePct, deltaLeftPct, deltaWidthPct, deltaMode) {
     if (!tierObj) return;
+    if (el.compResultModalBox) el.compResultModalBox.style.setProperty('--tier-color', tierObj.color);
     if (el.compResEmblemWrap) el.compResEmblemWrap.style.setProperty('--tier-color', tierObj.color);
     if (el.compResOwCard) el.compResOwCard.style.setProperty('--tier-color', tierObj.color);
     if (el.compResTierImg) {
@@ -7641,6 +7662,17 @@
     })();
   }
 
+  let compResShowingBoard = false;
+
+  function setCompResBoardVisible(showBoard) {
+    compResShowingBoard = Boolean(showBoard);
+    if (el.compResOwCard) el.compResOwCard.classList.toggle('hidden', compResShowingBoard);
+    if (el.compResBoardPanel) el.compResBoardPanel.classList.toggle('hidden', !compResShowingBoard);
+    if (el.btnCompResToggleBoard) {
+      el.btnCompResToggleBoard.textContent = compResShowingBoard ? '진행도 보기' : '8인 순위표';
+    }
+  }
+
   function showCompFinalResultModal(m) {
     if (!m || m.claimed) return;
     m.claimed = true;
@@ -7653,6 +7685,7 @@
     const myRankIdx = Math.max(0, finalList.findIndex((p) => p.isMe));
     const myRank = myRankIdx + 1;
     const prevTrophies = Math.max(0, Math.floor(save.trophies || 0));
+    const prevTier = DATA.getCompTier(prevTrophies);
     const deltas = DATA.getCompTrophyDeltas
       ? DATA.getCompTrophyDeltas(prevTrophies)
       : (DATA.COMP_TROPHY_DELTAS || [40, 28, 16, 6, -6, -16, -28, -40]);
@@ -7660,6 +7693,7 @@
     const totalGold = m.baseGoldEarned || 0;
 
     const newTrophies = Math.max(0, prevTrophies + trophyDelta);
+    const newTier = DATA.getCompTier(newTrophies);
     const actualDelta = newTrophies - prevTrophies;
 
     save.trophies = newTrophies;
@@ -7684,13 +7718,40 @@
     if (currentTab === 'comp') renderCompetitiveLobby();
     if (currentTab === 'rank') renderRankingTab();
 
+    if (el.compResOutcomePill) {
+      let outTxt = myRank === 1 ? '1위 승리!' : (actualDelta > 0 ? 'TOP 4 상승' : (actualDelta < 0 ? '순위 하락' : '변동 없음'));
+      if (m.leftEarly) outTxt += ' · 중도 퇴장';
+      const outCls = myRank === 1 ? 'win' : (actualDelta >= 0 ? 'up' : 'down');
+      el.compResOutcomePill.textContent = outTxt;
+      el.compResOutcomePill.className = `ow-res-outcome-pill ${outCls}`;
+    }
+
+    if (el.compResModifiers) {
+      const mods = [];
+      if (myRank === 1) mods.push({ cls: 'gold', txt: `1위 압도적 승리 (${actualDelta >= 0 ? `+${actualDelta}` : actualDelta})` });
+      else if (actualDelta > 0) mods.push({ cls: 'up', txt: `${myRank}위 상위권 진입 (+${actualDelta})` });
+      else if (actualDelta < 0) mods.push({ cls: 'down', txt: `${myRank}위 하위권 마감 (${actualDelta})` });
+      else mods.push({ cls: 'info', txt: `${myRank}위 마감 (0)` });
+
+      if (newTier.divIndex > prevTier.divIndex) {
+        mods.push({ cls: 'gold', txt: `${newTier.name} 승급` });
+      } else if (newTier.divIndex < prevTier.divIndex) {
+        mods.push({ cls: 'down', txt: `${newTier.name} 강등` });
+      }
+      if (m.leftEarly) {
+        mods.push({ cls: 'warn', txt: '중도 퇴장 시점 점수 반영' });
+      }
+      mods.push({ cls: 'info', txt: '8인 크로스 플레이 경기' });
+      el.compResModifiers.innerHTML = mods.map((md) => `<span class="ow-mod-chip ${md.cls}">${md.txt}</span>`).join('');
+    }
+
     if (el.compResRankPill) {
       el.compResRankPill.textContent = `${myRank}위 / ${finalList.length}`;
       el.compResRankPill.className = `comp-res-rank-pill${myRank <= 3 ? ` top${myRank}` : ''}`;
     }
     if (el.compResDelta) {
       el.compResDelta.textContent = actualDelta >= 0 ? `+${actualDelta}` : `${actualDelta}`;
-      el.compResDelta.className = `comp-res-delta ${actualDelta > 0 ? 'up' : (actualDelta < 0 ? 'down' : 'flat')}`;
+      el.compResDelta.className = `comp-res-delta ow-res-delta-big ${actualDelta > 0 ? 'up' : (actualDelta < 0 ? 'down' : 'flat')}`;
     }
     if (el.compResGold) el.compResGold.textContent = `+${totalGold.toLocaleString('ko-KR')}G`;
     if (el.compResMyScore) el.compResMyScore.textContent = `${Math.floor(m.myScore || 0).toLocaleString('ko-KR')}점`;
@@ -7703,12 +7764,14 @@
         const dCls = dVal > 0 ? 'up' : (dVal < 0 ? 'down' : 'flat');
         const avInfo = getProfileAvatarInfo({ avatarCharId: p.charId, avatarSkinId: p.skinId }, p.charId, p.skinId, p.isMe);
         const pTier = DATA.getCompTier(p.isMe ? newTrophies : (p.trophies || 0));
+        const platCls = !p.isHuman ? 'ai' : (p.platform || 'pc');
+        const platLbl = !p.isHuman ? 'AI' : (p.platformLabel || 'PC');
         return `
           <div class="comp-res-row${p.isMe ? ' me' : ''}${rk <= 3 ? ` top${rk}` : ''}">
             <span class="comp-res-rk">${rk}</span>
             <img src="${avInfo.src}" alt="" class="comp-res-av" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
             <img src="${getTierImgUrl(pTier)}" alt="${pTier.name}" class="comp-res-tier-mini" />
-            <span class="comp-res-name">${escapeNickHtml(p.nickname)}${p.isMe ? ' <span class="comp-me-tag">나</span>' : ''}</span>
+            <span class="comp-res-name">${escapeNickHtml(p.nickname)}${p.isMe ? ' <span class="comp-me-tag">나</span>' : ''}<span class="comp-plat-badge ${platCls}">${platLbl}</span></span>
             <span class="comp-res-sc">${p.finalScore.toLocaleString('ko-KR')}점</span>
             <span class="comp-res-dt ${dCls}">${dStr}</span>
           </div>
@@ -7717,9 +7780,10 @@
     }
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
     activeWaitMatchId = null;
+    setCompResBoardVisible(false);
     if (el.compResultOverlay) el.compResultOverlay.classList.remove('hidden');
 
-    // Launch Overwatch-style live trophy bar & spectacular Tier-Up celebration!
+    // Launch Full-Screen Overwatch Competitive Progress & Tier-Up Celebration!
     runCompResultProgressionAnim(prevTrophies, newTrophies, actualDelta);
   }
 
@@ -7853,58 +7917,130 @@
     }
   }
 
-  function settleCompetitiveMatch(finalScore, baseGoldEarned) {
+  function settleCompetitiveMatch(finalScore, baseGoldEarned, opts = {}) {
     const cm = run && run.compMatch;
     if (!cm) return;
     cm.finished = true;
+    const leftEarly = Boolean(opts && opts.leftEarly);
+    const silentPageHide = Boolean(opts && opts.silentPageHide);
+    const lockedScore = Math.max(0, Math.floor(Number(finalScore) || 0));
 
-    // Immediately lock & publish my final score to the live room
+    // Immediately lock & publish my exact score at finish/exit to the live RTDB room
     (cm.participants || []).forEach((p) => {
       if (p.isMe) {
-        p.score = finalScore;
+        p.score = lockedScore;
         p.finished = true;
+        if (leftEarly) p.leftEarly = true;
       }
     });
     if (cm.online && ONLINE && ONLINE.pushCompLiveScore) {
-      ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, finalScore, true, cm.myMeta);
+      ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, lockedScore, true, cm.myMeta);
     }
 
-    const dur = cm.duration || 60;
-    const remSec = Math.max(0, dur - (run.elapsed || 0));
-    const othersStillRunning = remSec > 1.2 && (cm.participants || []).some((p) => !p.isMe && !p.finished);
     const now = Date.now();
+    const dur = cm.duration || 60;
+    const wallRemSec = cm.endsAt ? Math.max(0, Math.min(dur, (cm.endsAt - now) / 1000)) : Math.max(0, dur - (run.elapsed || 0));
+    const remSec = Math.max(0, wallRemSec);
+    const othersStillRunning = remSec > 1.2 && (cm.participants || []).some((p) => !p.isMe && !p.finished);
     const matchRecord = {
       id: `cm_${now}_${Math.floor(Math.random() * 999)}`,
       roomId: cm.roomId,
       safeUid: cm.safeUid,
       online: Boolean(cm.online),
-      myScore: finalScore,
-      baseGoldEarned,
+      myScore: lockedScore,
+      baseGoldEarned: Math.max(0, Math.floor(Number(baseGoldEarned) || 0)),
       coinsCollected: run.coinsCollected || 0,
       maxDodgeCombo: run.maxDodgeCombo || 0,
       startedAt: cm.startedAt || (now - Math.round((run.elapsed || 0) * 1000)),
-      endsAt: now + Math.max(2, Math.ceil(remSec)) * 1000,
+      endsAt: cm.endsAt && cm.endsAt > now ? cm.endsAt : (now + Math.max(2, Math.ceil(remSec)) * 1000),
       lastTickAt: now,
       lastPollAt: 0,
+      leftEarly,
       participants: (cm.participants || []).map((p) => ({ ...p })),
       settled: !othersStillRunning,
       claimed: false
     };
 
+    // On browser close/reload mid-match: persist pending match synchronously so player waits/receives result on return!
+    if (silentPageHide) {
+      save.pendingCompMatches = [matchRecord];
+      persistSave(false, { localOnly: true });
+      if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid && cloudHydratedUid === save.auth.uid) {
+        try { ONLINE.saveCloudUserSave(save.auth.uid, save, true); } catch {}
+      }
+      return;
+    }
+
+    // If player explicitly left mid-match, tear down gameplay canvas immediately so they return cleanly to lobby/wait UI
+    if (leftEarly) {
+      run = null;
+      paused = false;
+      el.pauseOverlay.classList.add('hidden');
+      el.gameoverOverlay.classList.add('hidden');
+      el.viewRun.classList.add('hidden');
+      switchTab('comp');
+    }
+
     if (!othersStillRunning) {
-      // Survived full 60s or all rivals already finished -> immediate settlement!
+      // Survived full 60s or all rivals already finished -> immediate Overwatch Progress screen!
       showCompFinalResultModal(matchRecord);
       return;
     }
 
-    // Cookie Run OvenBreak Style: Player died early -> Wait for remaining runners (1 match at a time; other content allowed!)
+    // Wait for ALL 8 players to finish (works identically for early death AND mid-match leave!)
     save.pendingCompMatches = [matchRecord];
-    persistSave(false);
+    persistSave(true);
     activeWaitMatchId = matchRecord.id;
     renderCompWaitModal(matchRecord);
     if (el.compWaitOverlay) el.compWaitOverlay.classList.remove('hidden');
     updateCompPendingPill();
     updateCompLobbyMatchStateUI();
+    if (leftEarly) {
+      showToast(`나간 시점 점수(${lockedScore.toLocaleString('ko-KR')}점) 반영! 모든 참가자가 끝날 때까지 결과를 기다립니다.`);
+    }
+  }
+
+  function leaveCompetitiveRunEarly() {
+    if (!run || run.gameMode !== 'competitive' || !run.compMatch || run.compMatch.finished) {
+      exitRunToHome();
+      return;
+    }
+    SFX.click();
+    run.active = false;
+    run.dying = false;
+    run.dead = true;
+    paused = false;
+    releaseAllControlButtons();
+    clearTutorialHighlights();
+    if (dockAutoHideTimer) {
+      clearTimeout(dockAutoHideTimer);
+      dockAutoHideTimer = null;
+    }
+    el.mudOverlay.classList.add('hidden');
+    hideWeatherCenterAlert();
+    if (el.runWeatherBar) el.runWeatherBar.classList.add('hidden');
+    if (el.ctrlCenterOrbs) el.ctrlCenterOrbs.classList.add('hidden');
+    if (el.compRunHud) el.compRunHud.classList.add('hidden');
+    el.runCanvasWrap.classList.remove('fever-active');
+    SFX.setWeatherAmbient('clear');
+    SFX.setAmbientPaused(false);
+    SFX.setBgmMode('menu');
+
+    ensureTodayMissions();
+    commitRunMissionProgress();
+
+    const leaveScore = Math.max(0, Math.floor(run.score || 0));
+    const distGoldBonus = Math.floor((run.elapsed || 0) * 0.25);
+    const totalGoldEarned = Math.floor((run.gold || 0) + distGoldBonus);
+    settleCompetitiveMatch(leaveScore, totalGoldEarned, { leftEarly: true });
+  }
+
+  function syncPauseModalForMode() {
+    if (!el.btnQuitHome) return;
+    const span = el.btnQuitHome.querySelector('span');
+    if (!span) return;
+    const isActiveComp = Boolean(run && run.gameMode === 'competitive' && run.compMatch && !run.compMatch.finished);
+    span.textContent = isActiveComp ? '나가기 (현재 점수 반영)' : '나가기';
   }
 
   async function renderRankingTab() {
@@ -12262,7 +12398,7 @@
     } else if (run) {
       commitRunMissionProgress();
     }
-    const wasCompRun = Boolean(run && run.mode === 'competitive');
+    const wasCompRun = Boolean(run && run.gameMode === 'competitive');
     run = null;
     paused = false;
     if (dockAutoHideTimer) {
@@ -12796,7 +12932,19 @@
       if (compQueueState && !compQueueState.cancelled && compQueueState.online && ONLINE && ONLINE.leaveCompQueue && compQueueState.myQueueInfo) {
         ONLINE.leaveCompQueue(compQueueState.myQueueInfo);
       }
+      if (run && run.active && run.gameMode === 'competitive' && run.compMatch && !run.compMatch.finished) {
+        const leaveScore = Math.max(0, Math.floor(run.score || 0));
+        const distGoldBonus = Math.floor((run.elapsed || 0) * 0.25);
+        const totalGoldEarned = Math.floor((run.gold || 0) + distGoldBonus);
+        settleCompetitiveMatch(leaveScore, totalGoldEarned, { leftEarly: true, silentPageHide: true });
+      }
     });
+    if (el.btnCompResToggleBoard) {
+      el.btnCompResToggleBoard.addEventListener('click', () => {
+        SFX.click();
+        setCompResBoardVisible(!compResShowingBoard);
+      });
+    }
     if (el.btnCompMatchCancel) {
       el.btnCompMatchCancel.addEventListener('click', () => {
         cancelCompetitiveMatchmaking();
@@ -13781,6 +13929,7 @@
         if (run && run.active && !paused) {
           paused = true;
           SFX.setAmbientPaused(true);
+          syncPauseModalForMode();
           el.pauseOverlay.classList.remove('hidden');
         }
         if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid && cloudHydratedUid === save.auth.uid) {
@@ -13855,6 +14004,7 @@
       paused = true;
       releaseAllControlButtons();
       SFX.setAmbientPaused(true);
+      syncPauseModalForMode();
       el.pauseOverlay.classList.remove('hidden');
     });
 
@@ -13865,7 +14015,13 @@
       el.pauseOverlay.classList.add('hidden');
     });
 
-    el.btnQuitHome.addEventListener('click', exitRunToHome);
+    el.btnQuitHome.addEventListener('click', () => {
+      if (run && run.gameMode === 'competitive' && run.compMatch && !run.compMatch.finished) {
+        leaveCompetitiveRunEarly();
+      } else {
+        exitRunToHome();
+      }
+    });
     el.btnResultHome.addEventListener('pointerdown', () => el.btnResultHome.classList.add('pressed'));
     el.btnResultHome.addEventListener('pointerup', () => el.btnResultHome.classList.remove('pressed'));
     el.btnResultHome.addEventListener('pointercancel', () => el.btnResultHome.classList.remove('pressed'));
@@ -13954,6 +14110,7 @@
       } else if (e.code === 'Escape') {
         paused = !paused;
         SFX.setAmbientPaused(paused);
+        if (paused) syncPauseModalForMode();
         el.pauseOverlay.classList.toggle('hidden', !paused);
       }
     });
