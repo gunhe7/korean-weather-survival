@@ -807,7 +807,6 @@
     compPartnerName: document.getElementById('comp-partner-name'),
     compPartnerHeroAura: document.getElementById('comp-partner-hero-aura'),
     compPartnerHeroImg: document.getElementById('comp-partner-hero-img'),
-    btnCompPartnerLeave: document.getElementById('btn-comp-partner-leave'),
     compMode1v1Lock: document.getElementById('comp-mode-1v1-lock'),
     compWaitTeamBanner: document.getElementById('comp-wait-team-banner'),
     compResOwTeamLine: document.getElementById('comp-res-ow-team-line'),
@@ -6696,9 +6695,6 @@
           }
           if (el.compPartnerName) {
             el.compPartnerName.textContent = compDuoState.partnerNick || '팀원';
-          }
-          if (el.btnCompPartnerLeave) {
-            el.btnCompPartnerLeave.textContent = compDuoState.status === 'inviting' ? '초대 취소' : '파티 나가기';
           }
           if (el.compPartnerHeroImg && pChar) {
             const src = getCharShowcaseFrameSrc(pChar, pSkin, performance.now() / 1000, true);
@@ -14150,11 +14146,6 @@
     }
     if (el.btnCompDuoLeave) {
       el.btnCompDuoLeave.addEventListener('click', () => {
-        leaveCompDuoParty(false);
-      });
-    }
-    if (el.btnCompPartnerLeave) {
-      el.btnCompPartnerLeave.addEventListener('click', () => {
         leaveCompDuoParty(false);
       });
     }
