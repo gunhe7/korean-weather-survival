@@ -27999,3 +27999,510 @@ input:focus-visible {
     inset 0 2px 0 rgba(255, 255, 255, 0.52),
     inset 0 -2px 0 rgba(0, 0, 0, 0.25) !important;
 }
+
+/* ==========================================================================
+   v20261121hd148 — WHITE NICKNAME VISIBILITY FIX ON LIGHT RANKING ROWS,
+   2v2 DUAL-READY PLAY!, 2v2 PARTY LIVE CHAT & 닉네임 변경권 SHOP/PROFILE UI
+   ========================================================================== */
+
+/* 1. White & Light Custom Nickname Contrast Fix on Ranking Rows! */
+.np-nick-txt.np-default-white {
+  color: #ffffff;
+}
+
+/* Light-background ranking rows (#view-rank & #comp-rank-overlay): dark navy ink for default white nicknames! */
+.rank-row .rank-row-name .np-nick-txt.np-default-white {
+  color: #0e2249 !important;
+  text-shadow: none !important;
+}
+
+/* Colored / Rainbow nicknames on light ranking rows: clean crisp outline so bright yellows/cyans stay legible! */
+.rank-row .rank-row-name .np-nick-txt.np-custom-color:not(.nick-rainbow) {
+  text-shadow:
+    0 1.2px 0 #0b1834,
+    0 -1px 0 #0b1834,
+    1.2px 0 0 #0b1834,
+    -1px 0 0 #0b1834,
+    0 2px 3px rgba(7, 16, 34, 0.34);
+}
+
+/* 2. 2v2 Dual-Ready PLAY! & Partner Status Styles */
+.comp-ob-play-btn.is-duo-ready {
+  background: linear-gradient(180deg, #43f08b 0%, #19c25f 50%, #0d8d41 100%) !important;
+  color: #ffffff !important;
+}
+
+.comp-ob-play-btn.is-duo-ready .comp-ob-play-main,
+.comp-ob-play-btn.is-duo-ready .comp-ob-play-sub {
+  color: #ffffff !important;
+  text-shadow: var(--bs-outline-md);
+}
+
+.comp-ob-play-btn.is-partner-ready {
+  animation: bsDuoPlayPulse 1.3s ease-in-out infinite;
+}
+
+@keyframes bsDuoPlayPulse {
+  0%, 100% { filter: saturate(1.15) brightness(1.04); transform: scale(1); }
+  50% { filter: saturate(1.28) brightness(1.13); transform: scale(1.025); }
+}
+
+.comp-partner-status-pill.is-play-ready {
+  background: linear-gradient(180deg, #54ff9d 0%, #10b858 100%);
+  border-color: #ffffff;
+  box-shadow: 0 2.5px 0 #071022, 0 0 14px rgba(56, 255, 146, 0.72);
+  animation: bsReadyPillPop 1.4s ease-in-out infinite;
+}
+
+@keyframes bsReadyPillPop {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* 3. 2v2 Party Live Chat Button, Unread Badge, Floating Speech Bubble & Chat Drawer */
+.comp-duo-btn.chat {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(180deg, #43b4ff 0%, #1875eb 52%, #0e4db5 100%);
+}
+
+.comp-duo-btn.chat.active {
+  background: linear-gradient(180deg, #ffe24a 0%, #f29d12 100%);
+  color: #241300;
+  text-shadow: none;
+}
+
+.comp-duo-chat-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #ff5b73 0%, #d41735 100%);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 14px;
+  text-align: center;
+  text-shadow: none;
+  box-shadow: 0 2px 0 #071022;
+  z-index: 4;
+}
+
+.comp-duo-chat-badge.hidden {
+  display: none !important;
+}
+
+/* Comic Speech Bubble Floating Above Partner Character */
+.comp-partner-filled {
+  position: relative;
+}
+
+.comp-partner-bubble {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  max-width: 185px;
+  padding: 6px 11px;
+  border-radius: 13px;
+  border: 2.5px solid #071022;
+  background: #ffffff;
+  color: #0d1e42;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+  word-break: keep-all;
+  box-shadow: 0 4px 0 #071022, 0 8px 18px rgba(0, 0, 0, 0.36);
+  cursor: pointer;
+  animation: bsBubblePop 0.2s ease-out;
+}
+
+.comp-partner-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 7px 0 7px;
+  border-style: solid;
+  border-color: #071022 transparent transparent transparent;
+}
+
+.comp-partner-bubble.hidden {
+  display: none !important;
+}
+
+@keyframes bsBubblePop {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.78) translateY(6px); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
+
+/* Floating Brawl Stars 2v2 Party Chat Drawer */
+.comp-duo-chat-drawer {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left, 0px));
+  bottom: 72px;
+  z-index: 45;
+  width: min(350px, 86vw);
+  max-height: min(330px, 68vh);
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 3px solid #071022;
+  background: linear-gradient(180deg, #132c61 0%, #0a1838 100%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.62), 0 5px 0 #071022, inset 0 2px 0 rgba(162, 224, 255, 0.34);
+  overflow: hidden;
+}
+
+.comp-duo-chat-drawer.hidden {
+  display: none !important;
+}
+
+.comp-chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 11px;
+  background: linear-gradient(180deg, #2150a8 0%, #133172 100%);
+  border-bottom: 2.5px solid #071022;
+}
+
+.comp-chat-head-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.comp-chat-head-l strong {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-chat-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3df582;
+  box-shadow: 0 0 8px #3df582;
+  flex-shrink: 0;
+}
+
+.comp-chat-messages {
+  flex: 1;
+  min-height: 112px;
+  max-height: 175px;
+  overflow-y: auto;
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: rgba(6, 14, 34, 0.56);
+}
+
+.comp-chat-empty {
+  margin: auto 0;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #8cb2e6;
+  padding: 14px 8px;
+  line-height: 1.4;
+}
+
+.comp-chat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 86%;
+}
+
+.comp-chat-item.me {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.comp-chat-item.partner {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.comp-chat-sender {
+  font-size: 10px;
+  font-weight: 900;
+  color: #7dffae;
+  padding-left: 3px;
+}
+
+.comp-chat-bubble-row {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.comp-chat-item.me .comp-chat-bubble-row {
+  flex-direction: row-reverse;
+}
+
+.comp-chat-bubble {
+  padding: 6px 10px;
+  border-radius: 11px;
+  border: 2px solid #071022;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  word-break: break-word;
+  box-shadow: 0 2px 0 #071022;
+}
+
+.comp-chat-item.me .comp-chat-bubble {
+  background: linear-gradient(180deg, #3da8ff 0%, #1a6ce0 100%);
+  color: #ffffff;
+  border-bottom-right-radius: 3px;
+}
+
+.comp-chat-item.partner .comp-chat-bubble {
+  background: linear-gradient(180deg, #27c868 0%, #138a42 100%);
+  color: #ffffff;
+  border-bottom-left-radius: 3px;
+}
+
+.comp-chat-time {
+  font-size: 9px;
+  font-weight: 800;
+  color: #7b9bc9;
+  flex-shrink: 0;
+}
+
+.comp-chat-quick-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-top: 1.5px solid rgba(130, 185, 255, 0.18);
+  background: rgba(11, 25, 58, 0.9);
+}
+
+.comp-chat-quick-row::-webkit-scrollbar {
+  display: none;
+}
+
+.comp-chat-qbtn {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1.8px solid #071022;
+  background: linear-gradient(180deg, #294e94 0%, #183269 100%);
+  color: #e6f4ff;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.comp-chat-qbtn:active {
+  transform: translateY(1px);
+}
+
+.comp-chat-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-top: 2px solid #071022;
+  background: #0b1a3d;
+}
+
+.comp-chat-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 2px solid #2b549c;
+  background: #07122b;
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  outline: none;
+}
+
+.comp-chat-input:focus {
+  border-color: #54c6ff;
+}
+
+.comp-chat-send-btn {
+  position: relative;
+  padding: 7px 13px;
+  border-radius: 9px;
+  border: 2.2px solid #071022;
+  background: linear-gradient(180deg, #ffe24a 0%, #f29a10 100%);
+  color: #241300;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.comp-chat-send-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+@media (max-height: 500px) {
+  .comp-duo-chat-drawer {
+    bottom: 54px;
+    width: min(310px, 84vw);
+    max-height: 70vh;
+  }
+
+  .comp-chat-messages {
+    min-height: 72px;
+    max-height: 112px;
+    padding: 6px 8px;
+  }
+
+  .comp-chat-head {
+    padding: 5px 9px;
+  }
+
+  .comp-chat-form {
+    padding: 5px 7px;
+  }
+}
+
+/* 4. 닉네임 변경권 Shop Tab, Featured Card & Profile Ticket Status Bar */
+#view-shop .bs-shop-tab.items-tab.active {
+  background: linear-gradient(180deg, #c668ff 0%, #8632df 52%, #5e1cb0 100%) !important;
+  color: #ffffff !important;
+}
+
+.bs-shop-sec-head.items {
+  background: linear-gradient(90deg, #6f2bd4 0%, #a542f5 55%, #f5b324 100%);
+}
+
+.bs-shop-grid.items-showcase {
+  display: grid;
+  grid-template-columns: minmax(250px, 390px);
+  justify-content: center;
+  gap: 14px;
+  padding: 6px 4px;
+}
+
+.bs-offer-card.nick-ticket-card {
+  background: linear-gradient(180deg, #2d1d66 0%, #17153d 100%);
+  border-color: #ffd84a !important;
+  box-shadow: 0 8px 0 #071022, 0 14px 28px rgba(154, 72, 255, 0.35), inset 0 2px 0 rgba(255, 232, 130, 0.45);
+}
+
+.bs-offer-stage.nick-ticket-stage {
+  height: 132px;
+  background: radial-gradient(circle at 50% 52%, rgba(255, 214, 74, 0.36) 0%, rgba(162, 68, 255, 0.16) 56%, transparent 78%);
+}
+
+.bs-offer-img.nick-ticket-art {
+  width: 176px !important;
+  height: auto !important;
+  max-height: 116px !important;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.55));
+  animation: bsTicketFloat 2.8s ease-in-out infinite;
+}
+
+@keyframes bsTicketFloat {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-5px) rotate(1.5deg); }
+}
+
+.bs-offer-foot.dual-foot {
+  display: flex;
+  gap: 8px;
+}
+
+.bs-offer-foot.dual-foot .bs-buy-btn {
+  flex: 1;
+}
+
+/* Profile Nickname Change Ticket Status Strip */
+.prof-nick-ticket-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-top: -2px;
+  border-radius: 10px;
+  border: 2px solid #071022;
+  background: rgba(11, 28, 66, 0.85);
+}
+
+.prof-nick-ticket-bar.is-free {
+  border-color: #2ee872;
+  background: rgba(14, 62, 42, 0.72);
+}
+
+.prof-nick-ticket-bar.has-ticket {
+  border-color: #ffd84a;
+  background: rgba(66, 48, 16, 0.72);
+}
+
+.prof-nick-ticket-bar.need-ticket {
+  border-color: #ff6e80;
+  background: rgba(74, 20, 34, 0.72);
+}
+
+.prof-nt-ico {
+  width: 30px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.prof-nt-txt {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #e8f4ff;
+  line-height: 1.25;
+}
+
+.prof-nt-buy-btn {
+  position: relative;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #ffe24a 0%, #f09510 100%);
+  color: #241300;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 2.5px 0 #071022, inset 0 1.5px 0 rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.prof-nt-buy-btn.hidden {
+  display: none !important;
+}
+

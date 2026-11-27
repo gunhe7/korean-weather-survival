@@ -192,6 +192,8 @@
       equippedSkins: {},
       chestBag: { wood: 0, silver: 0, gold: 0, diamond: 0 },
       gachaTickets: 0,
+      nickChangeTickets: 0,
+      nickChangesUsed: 0,
       mileage: 0,
       gachaHistory: [],
       pity: { gold: 0, diamond: 0 },
@@ -266,6 +268,8 @@
       equippedSkins: raw.equippedSkins && typeof raw.equippedSkins === 'object' ? { ...raw.equippedSkins } : {},
       chestBag: { wood: 0, silver: 0, gold: 0, diamond: 0, ...(raw.chestBag || {}) },
       gachaTickets: typeof raw.gachaTickets === 'number' && Number.isFinite(raw.gachaTickets) ? Math.max(0, Math.floor(raw.gachaTickets)) : 0,
+      nickChangeTickets: typeof raw.nickChangeTickets === 'number' && Number.isFinite(raw.nickChangeTickets) ? Math.max(0, Math.floor(raw.nickChangeTickets)) : 0,
+      nickChangesUsed: typeof raw.nickChangesUsed === 'number' && Number.isFinite(raw.nickChangesUsed) ? Math.max(0, Math.floor(raw.nickChangesUsed)) : 0,
       mileage: typeof raw.mileage === 'number' && Number.isFinite(raw.mileage) ? Math.max(0, Math.floor(raw.mileage)) : 0,
       gachaHistory: toSafeArray(raw.gachaHistory).filter((x) => x && typeof x === 'object').slice(0, 50),
       pity: { gold: 0, diamond: 0, ...(raw.pity || {}) },
@@ -537,6 +541,9 @@
     btnProfCopyTag: document.getElementById('btn-prof-copy-tag'),
     profPrevBattletag: document.getElementById('prof-prev-battletag'),
     profNicknameInput: document.getElementById('prof-nickname-input'),
+    profNickTicketBar: document.getElementById('prof-nick-ticket-bar'),
+    profNickTicketTxt: document.getElementById('prof-nick-ticket-txt'),
+    btnProfBuyNickTicket: document.getElementById('btn-prof-buy-nick-ticket'),
     btnProfSaveNick: document.getElementById('btn-prof-save-nick'),
     btnProfOpenAccount: document.getElementById('btn-prof-open-account'),
     profCustomGrid: document.getElementById('prof-custom-grid'),
@@ -723,6 +730,16 @@
     btnCompMode2v2: document.getElementById('btn-comp-mode-2v2'),
     compDuoPanel: document.getElementById('comp-duo-panel'),
     compDuoPartnerName: document.getElementById('comp-duo-partner-name'),
+    btnCompDuoChat: document.getElementById('btn-comp-duo-chat'),
+    compDuoChatBadge: document.getElementById('comp-duo-chat-badge'),
+    compPartnerChatBubble: document.getElementById('comp-partner-chat-bubble'),
+    compDuoChatDrawer: document.getElementById('comp-duo-chat-drawer'),
+    compChatPartnerTitle: document.getElementById('comp-chat-partner-title'),
+    btnCloseCompChat: document.getElementById('btn-close-comp-chat'),
+    compChatMessages: document.getElementById('comp-chat-messages'),
+    compChatForm: document.getElementById('comp-chat-form'),
+    compChatInput: document.getElementById('comp-chat-input'),
+    btnCompChatSend: document.getElementById('btn-comp-chat-send'),
     btnCompDuoInvite: document.getElementById('btn-comp-duo-invite'),
     btnCompDuoLeave: document.getElementById('btn-comp-duo-leave'),
     compDuoInviteOverlay: document.getElementById('comp-duo-invite-overlay'),
@@ -3515,13 +3532,14 @@
   function renderNameplateHtml(nickname, nameFrame, nameColor, sizeClass = 'sm', extraPlainClass = '') {
     const safeNick = escapeNickHtml(nickname || '날씨러너');
     const isRainbow = nameColor === 'rainbow';
-    const colorAttr = isRainbow ? '' : `style="color:${escapeNickHtml(nameColor || '#ffffff')};"`;
+    const isDefaultWhite = !isRainbow && (!nameColor || /^#(?:fff|ffffff)$/i.test(String(nameColor).trim()));
+    const colorAttr = (isRainbow || isDefaultWhite) ? '' : `style="color:${escapeNickHtml(nameColor)};"`;
     const rainbowCls = isRainbow ? ' nick-rainbow' : '';
     const frameMeta = getNameFrameMeta(nameFrame);
     if (frameMeta && frameMeta.img) {
-      return `<span class="rank-nameplate ${frameMeta.id} ${sizeClass}"><img src="${frameMeta.img}?v=${RANK_ART_VER}" alt="" class="rnp-bg" /><span class="rnp-txt${rainbowCls}" ${colorAttr}>${safeNick}</span></span>`;
+      return `<span class="rank-nameplate ${frameMeta.id} ${sizeClass}"><img src="${frameMeta.img}?v=${RANK_ART_VER}" alt="" class="rnp-bg" /><span class="rnp-txt${isDefaultWhite ? ' np-default-white' : ''}${rainbowCls}" ${colorAttr}>${safeNick}</span></span>`;
     }
-    const innerSpan = `<span${rainbowCls ? ` class="${rainbowCls.trim()}"` : ''} ${colorAttr}>${safeNick}</span>`;
+    const innerSpan = `<span class="np-nick-txt${isDefaultWhite ? ' np-default-white' : ' np-custom-color'}${rainbowCls}" ${colorAttr}>${safeNick}</span>`;
     return extraPlainClass ? `<span class="${escapeNickHtml(extraPlainClass)}">${innerSpan}</span>` : innerSpan;
   }
 
@@ -3532,6 +3550,7 @@
     if (ONLINE && save.auth && ONLINE.isRankedProvider(save.auth.provider)) {
       try { await syncMyWeeklyScore(); } catch {}
       try { await syncMyDailyWeatherScore(); } catch {}
+      try { await syncMyTrophyProfile({ skipFriendSync: true }); } catch {}
       try { await syncMyFriendProfile({ silent: true }); } catch {}
       if (currentTab === 'rank') renderRankingTab();
     }
@@ -3786,12 +3805,43 @@
     }
   }
 
+  const NICK_CHANGE_TICKET_GEMS = 1000;
+
+  function renderNickChangeTicketUI() {
+    const used = Math.max(0, Math.floor(save.nickChangesUsed || 0));
+    const tickets = Math.max(0, Math.floor(save.nickChangeTickets || 0));
+    const isFree = used === 0;
+    if (el.profNickTicketTxt) {
+      if (isFree) {
+        el.profNickTicketTxt.textContent = tickets > 0
+          ? `최초 1회 무료 변경 가능 · 보유 변경권 ${tickets}개`
+          : '최초 1회 무료 변경 가능 (이후 변경권 1개 필요)';
+      } else if (tickets > 0) {
+        el.profNickTicketTxt.textContent = `닉네임 변경권 보유 ${tickets}개 (변경 시 1개 사용)`;
+      } else {
+        el.profNickTicketTxt.textContent = '닉네임 변경권 0개 · 상점에서 1,000 보석으로 구매 가능';
+      }
+    }
+    if (el.profNickTicketBar) {
+      el.profNickTicketBar.classList.toggle('is-free', isFree);
+      el.profNickTicketBar.classList.toggle('has-ticket', !isFree && tickets > 0);
+      el.profNickTicketBar.classList.toggle('need-ticket', !isFree && tickets <= 0);
+    }
+    if (el.btnProfBuyNickTicket) {
+      el.btnProfBuyNickTicket.classList.toggle('hidden', isFree || tickets > 0);
+    }
+    if (el.btnProfSaveNick) {
+      el.btnProfSaveNick.textContent = isFree ? '무료 변경' : (tickets > 0 ? '변경권 사용' : '변경');
+    }
+  }
+
   function openProfileEditModal() {
     if (!el.profileEditOverlay) return;
     SFX.click();
     if (el.profNicknameInput) {
       el.profNicknameInput.value = (save.auth && save.auth.nickname) || '';
     }
+    renderNickChangeTicketUI();
     renderProfileEditModal();
     el.profileEditOverlay.classList.remove('hidden');
   }
@@ -3921,6 +3971,8 @@
       totalCoinsEver: Math.max(c.totalCoinsEver || 0, l.totalCoinsEver || 0),
       maxDodgeComboEver: Math.max(c.maxDodgeComboEver || 0, l.maxDodgeComboEver || 0),
       playCount: Math.max(c.playCount || 0, l.playCount || 0),
+      nickChangesUsed: Math.max(c.nickChangesUsed || 0, l.nickChangesUsed || 0),
+      nickChangeTickets: Math.max(primary.nickChangeTickets || 0, secondary.nickChangeTickets || 0),
       attendance: mergedAttendance,
       dailyMissions: {
         ...(primary.dailyMissions || { date: todayKey, progress: {}, claimed: {} }),
@@ -4729,13 +4781,41 @@
       showToast('닉네임을 입력해 주세요.');
       return false;
     }
-    SFX.click();
     const clean = ONLINE ? ONLINE.sanitizeNickname(raw, '날씨러너') : raw.slice(0, 12);
+    const curNick = String((save.auth && save.auth.nickname) || '').trim();
+    if (clean === curNick) {
+      SFX.click();
+      showToast('현재와 동일한 닉네임입니다.');
+      return false;
+    }
+    const used = Math.max(0, Math.floor(save.nickChangesUsed || 0));
+    const tickets = Math.max(0, Math.floor(save.nickChangeTickets || 0));
+    const isFree = used === 0;
+    if (!isFree && tickets <= 0) {
+      SFX.error();
+      showToast(`닉네임 변경권이 필요합니다! 상점 [아이템] 탭에서 ${NICK_CHANGE_TICKET_GEMS.toLocaleString('ko-KR')} 보석으로 구매해 주세요.`);
+      renderNickChangeTicketUI();
+      return false;
+    }
+
+    SFX.chestJackpot();
+    if (isFree) {
+      save.nickChangesUsed = 1;
+    } else {
+      save.nickChangeTickets = Math.max(0, tickets - 1);
+      save.nickChangesUsed = used + 1;
+    }
     save.auth = { ...(save.auth || activeAuth), nickname: clean };
     if (el.loginNicknameInput) el.loginNicknameInput.value = clean;
     if (el.profNicknameInput) el.profNicknameInput.value = clean;
+    renderNickChangeTicketUI();
     await syncProfileOnlineIfLinked();
-    showToast(`닉네임이 [${clean}](으)로 저장되었습니다!`);
+    refreshAllMenus();
+    if (isFree) {
+      showToast(`최초 1회 무료로 닉네임이 [${clean}](으)로 변경되었습니다!`);
+    } else {
+      showToast(`닉네임 변경권 1개를 사용해 [${clean}](으)로 변경되었습니다! (남은 변경권 ${save.nickChangeTickets}개)`);
+    }
     return true;
   }
 
@@ -6036,16 +6116,27 @@
     }
 
     if (el.btnCompLobbyStart) {
-      el.btnCompLobbyStart.classList.remove('is-locked', 'is-result-ready', 'is-queueing');
+      el.btnCompLobbyStart.classList.remove('is-locked', 'is-result-ready', 'is-queueing', 'is-duo-ready', 'is-partner-ready');
     }
     const modeLabel = selectedCompMode === '2v2' ? '2대2' : '1대1';
-    if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = 'PLAY!';
-    if (el.compLobbyStartSub) {
-      el.compLobbyStartSub.textContent = isGoogleLinked
-        ? (selectedCompMode === '2v2' && compDuoState.status === 'ready'
-          ? `2대2 듀오 매칭 (${compDuoState.partnerNick})`
-          : `${modeLabel} 크로스 플레이 · 트로피 공유`)
-        : '계정 연동 전용';
+    const is2v2DuoReady = selectedCompMode === '2v2' && compDuoState.status === 'ready';
+    if (is2v2DuoReady && compDuoState.myPlayReady) {
+      if (el.btnCompLobbyStart) el.btnCompLobbyStart.classList.add('is-duo-ready');
+      if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = '준비 완료!';
+      if (el.compLobbyStartSub) el.compLobbyStartSub.textContent = `${compDuoState.partnerNick} PLAY 대기 중 · 취소`;
+    } else if (is2v2DuoReady && compDuoState.partnerPlayReady) {
+      if (el.btnCompLobbyStart) el.btnCompLobbyStart.classList.add('is-partner-ready');
+      if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = 'PLAY!';
+      if (el.compLobbyStartSub) el.compLobbyStartSub.textContent = `${compDuoState.partnerNick} 준비 완료! 눌러서 시작`;
+    } else {
+      if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = 'PLAY!';
+      if (el.compLobbyStartSub) {
+        el.compLobbyStartSub.textContent = isGoogleLinked
+          ? (is2v2DuoReady
+            ? `2대2 준비 (모두 PLAY 시 시작)`
+            : `${modeLabel} 크로스 플레이`)
+          : '계정 연동 전용';
+      }
     }
     if (el.compLobbyLockLabel) {
       el.compLobbyLockLabel.textContent = isGoogleLinked ? '1경기씩 매칭 가능' : 'Google 계정 연동 필요';
@@ -6372,12 +6463,8 @@
         renderCompetitiveLobby();
         renderProfileUI();
         renderCompCharModal();
-        if ((compDuoState.status === 'ready' || compDuoState.status === 'inviting') && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
-          ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
-            status: compDuoState.status,
-            targetUid: compDuoState.partnerUid,
-            partyId: compDuoState.partyId
-          }).catch(() => {});
+        if (compDuoState.status === 'ready' || compDuoState.status === 'inviting') {
+          syncCompDuoNow();
         }
       });
       el.compCharGrid.appendChild(card);
@@ -6422,12 +6509,8 @@
           renderProfileUI();
           renderCharList();
           renderCompCharModal();
-          if ((compDuoState.status === 'ready' || compDuoState.status === 'inviting') && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
-            ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
-              status: compDuoState.status,
-              targetUid: compDuoState.partnerUid,
-              partyId: compDuoState.partyId
-            }).catch(() => {});
+          if (compDuoState.status === 'ready' || compDuoState.status === 'inviting') {
+            syncCompDuoNow();
           }
         });
         return btn;
@@ -6608,6 +6691,7 @@
   ];
   let selectedCompMode = '1v1'; // '1v1' | '2v2' (트로피·티어 완전 공유!)
   let lastCompPartnerHeroSrc = '';
+  let lastCompDuoPollAt = 0;
   let compDuoState = {
     status: 'idle', // 'idle' | 'inviting' | 'ready'
     partnerUid: '',
@@ -6616,9 +6700,162 @@
     partnerSkinId: null,
     partnerTrophies: 0,
     partyId: '',
+    myPlayReady: false,
+    partnerPlayReady: false,
+    myChatMsgs: [],
+    partnerChatMsgs: [],
+    chatOpen: false,
+    unreadChatCount: 0,
+    seenChatIds: new Set(),
+    bubbleTimer: null,
     incomingInvite: null // { uid, nickname, charId, skinId, trophies, partyId }
   };
   let compQueueState = null;
+
+  function getCompDuoPublishStatus(overrideStatus = null) {
+    if (overrideStatus) return overrideStatus;
+    if (compQueueState && !compQueueState.cancelled && compQueueState.compMode === '2v2') return 'queueing';
+    if (compDuoState.status === 'ready' && compDuoState.myPlayReady) return 'play_ready';
+    return compDuoState.status || 'idle';
+  }
+
+  function syncCompDuoNow(overrideStatus = null, extraOpts = {}) {
+    if (!ONLINE || !ONLINE.publishCompDuoState || !isMyAccountLinkedForFriends()) return Promise.resolve({ ok: false });
+    const st = getCompDuoPublishStatus(overrideStatus);
+    const keepalive = Boolean(extraOpts && extraOpts.keepalive);
+    return ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+      status: st,
+      targetUid: st === 'idle' ? '' : compDuoState.partnerUid,
+      partyId: st === 'idle' ? '' : compDuoState.partyId,
+      chatMsgs: st === 'idle' ? [] : compDuoState.myChatMsgs,
+      keepalive
+    }).catch(() => ({ ok: false }));
+  }
+
+  function clearPartnerSpeechBubble() {
+    if (compDuoState.bubbleTimer) {
+      clearTimeout(compDuoState.bubbleTimer);
+      compDuoState.bubbleTimer = null;
+    }
+    if (el.compPartnerChatBubble) {
+      el.compPartnerChatBubble.classList.add('hidden');
+      el.compPartnerChatBubble.textContent = '';
+    }
+  }
+
+  function showPartnerSpeechBubble(msgText) {
+    if (!el.compPartnerChatBubble || !msgText) return;
+    if (compDuoState.bubbleTimer) clearTimeout(compDuoState.bubbleTimer);
+    el.compPartnerChatBubble.textContent = msgText;
+    el.compPartnerChatBubble.classList.remove('hidden');
+    compDuoState.bubbleTimer = setTimeout(() => {
+      compDuoState.bubbleTimer = null;
+      if (el.compPartnerChatBubble) el.compPartnerChatBubble.classList.add('hidden');
+    }, 5000);
+  }
+
+  function renderCompDuoChatUI() {
+    const isReadyParty = selectedCompMode === '2v2' && compDuoState.status === 'ready';
+    if (el.btnCompDuoChat) {
+      el.btnCompDuoChat.classList.toggle('hidden', !isReadyParty);
+      el.btnCompDuoChat.classList.toggle('active', Boolean(compDuoState.chatOpen && isReadyParty));
+    }
+    if (el.compDuoChatBadge) {
+      const cnt = Math.max(0, compDuoState.unreadChatCount || 0);
+      el.compDuoChatBadge.classList.toggle('hidden', cnt <= 0 || compDuoState.chatOpen || !isReadyParty);
+      if (cnt > 0) el.compDuoChatBadge.textContent = cnt > 9 ? '9+' : String(cnt);
+    }
+    if (el.compDuoChatDrawer) {
+      const showDrawer = Boolean(isReadyParty && compDuoState.chatOpen);
+      el.compDuoChatDrawer.classList.toggle('hidden', !showDrawer);
+    }
+    if (el.compChatPartnerTitle) {
+      el.compChatPartnerTitle.textContent = compDuoState.partnerNick
+        ? `2대2 채팅 · ${compDuoState.partnerNick}`
+        : '2대2 파티 채팅';
+    }
+    if (!el.compChatMessages) return;
+
+    const merged = [];
+    const seen = new Set();
+    (compDuoState.myChatMsgs || []).forEach((m) => {
+      if (!m || !m.id || seen.has(m.id)) return;
+      seen.add(m.id);
+      merged.push({ ...m, isMe: true, sender: (save.auth && save.auth.nickname) || '나' });
+    });
+    (compDuoState.partnerChatMsgs || []).forEach((m) => {
+      if (!m || !m.id || seen.has(m.id)) return;
+      seen.add(m.id);
+      merged.push({ ...m, isMe: false, sender: compDuoState.partnerNick || '팀원' });
+    });
+    merged.sort((a, b) => (a.t - b.t) || String(a.id).localeCompare(String(b.id)));
+
+    if (!merged.length) {
+      el.compChatMessages.innerHTML = '<div class="comp-chat-empty">팀원과 대화를 나누고 모두 PLAY!를 눌러 매칭을 시작해 보세요.</div>';
+      return;
+    }
+
+    el.compChatMessages.innerHTML = merged.map((msg) => {
+      const dtObj = new Date(msg.t || Date.now());
+      const hh = String(dtObj.getHours()).padStart(2, '0');
+      const mm = String(dtObj.getMinutes()).padStart(2, '0');
+      return `
+        <div class="comp-chat-item${msg.isMe ? ' me' : ' partner'}">
+          ${msg.isMe ? '' : `<span class="comp-chat-sender">${escapeNickHtml(msg.sender)}</span>`}
+          <div class="comp-chat-bubble-row">
+            <span class="comp-chat-bubble">${escapeNickHtml(msg.m)}</span>
+            <span class="comp-chat-time">${hh}:${mm}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    el.compChatMessages.scrollTop = el.compChatMessages.scrollHeight;
+  }
+
+  function openCompDuoChat() {
+    if (compDuoState.status !== 'ready') return;
+    SFX.click();
+    compDuoState.chatOpen = true;
+    compDuoState.unreadChatCount = 0;
+    clearPartnerSpeechBubble();
+    renderCompDuoChatUI();
+    if (el.compChatInput) {
+      setTimeout(() => { try { el.compChatInput.focus(); } catch {} }, 60);
+    }
+  }
+
+  function closeCompDuoChat() {
+    compDuoState.chatOpen = false;
+    renderCompDuoChatUI();
+  }
+
+  function toggleCompDuoChat() {
+    if (compDuoState.chatOpen) {
+      SFX.click();
+      closeCompDuoChat();
+    } else {
+      openCompDuoChat();
+    }
+  }
+
+  async function sendCompDuoChatMessage(rawText) {
+    if (compDuoState.status !== 'ready' || !compDuoState.partyId) return;
+    const text = String(rawText || '').trim().slice(0, 60);
+    if (!text) return;
+    const myUid = getMyFriendUid() || 'me';
+    const nowTs = (ONLINE && ONLINE.getCompServerNow) ? ONLINE.getCompServerNow() : Date.now();
+    const msg = {
+      id: `${myUid.slice(0, 6)}_${nowTs}_${Math.floor(Math.random() * 999)}`,
+      t: nowTs,
+      m: text
+    };
+    compDuoState.myChatMsgs = [...(compDuoState.myChatMsgs || []), msg].slice(-16);
+    compDuoState.seenChatIds.add(msg.id);
+    if (el.compChatInput) el.compChatInput.value = '';
+    SFX.click();
+    renderCompDuoChatUI();
+    await syncCompDuoNow();
+  }
 
   function buildMyCompBasicMeta() {
     const myAuth = save.auth || { provider: 'guest', uid: '', nickname: '게스트' };
@@ -6710,8 +6947,15 @@
           const pChar = getCharDef(compDuoState.partnerCharId || 'umbrella_master');
           const pSkin = compDuoState.partnerSkinId && DATA.getSkinById ? DATA.getSkinById(compDuoState.partnerSkinId) : null;
           if (el.compPartnerStatusPill) {
-            el.compPartnerStatusPill.textContent = compDuoState.status === 'ready' ? '2대2 팀원' : '초대 대기 중';
-            el.compPartnerStatusPill.classList.toggle('waiting', compDuoState.status === 'inviting');
+            if (compDuoState.status === 'ready' && compDuoState.partnerPlayReady) {
+              el.compPartnerStatusPill.textContent = 'PLAY 준비 완료!';
+              el.compPartnerStatusPill.classList.remove('waiting');
+              el.compPartnerStatusPill.classList.add('is-play-ready');
+            } else {
+              el.compPartnerStatusPill.textContent = compDuoState.status === 'ready' ? '2대2 팀원' : '초대 대기 중';
+              el.compPartnerStatusPill.classList.toggle('waiting', compDuoState.status === 'inviting');
+              el.compPartnerStatusPill.classList.remove('is-play-ready');
+            }
           }
           if (el.compPartnerName) {
             el.compPartnerName.textContent = compDuoState.partnerNick || '팀원';
@@ -6744,10 +6988,10 @@
         el.compDuoReqMsg.textContent = `[${inc.nickname}] 님이 2대2 팀으로 초대했습니다!`;
       }
     }
+    renderCompDuoChatUI();
   }
 
-  async function leaveCompDuoParty(silent = false) {
-    const had = compDuoState.status !== 'idle';
+  function resetCompDuoLocalState() {
     compDuoState.status = 'idle';
     compDuoState.partnerUid = '';
     compDuoState.partnerNick = '';
@@ -6755,9 +6999,22 @@
     compDuoState.partnerSkinId = null;
     compDuoState.partnerTrophies = 0;
     compDuoState.partyId = '';
+    compDuoState.myPlayReady = false;
+    compDuoState.partnerPlayReady = false;
+    compDuoState.myChatMsgs = [];
+    compDuoState.partnerChatMsgs = [];
+    compDuoState.chatOpen = false;
+    compDuoState.unreadChatCount = 0;
+    compDuoState.seenChatIds = new Set();
     lastCompPartnerHeroSrc = '';
-    if (had && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
-      ONLINE.publishCompDuoState(buildMyCompBasicMeta(), { status: 'idle', targetUid: '', partyId: '', keepalive: silent }).catch(() => {});
+    clearPartnerSpeechBubble();
+  }
+
+  async function leaveCompDuoParty(silent = false) {
+    const had = compDuoState.status !== 'idle';
+    resetCompDuoLocalState();
+    if (had) {
+      syncCompDuoNow('idle', { keepalive: silent });
     }
     renderCompModeAndDuoUI();
     updateCompLobbyMatchStateUI();
@@ -6776,6 +7033,7 @@
     }
     const meta = buildMyCompBasicMeta();
     const partyId = ONLINE.makeCompDuoPartyId(meta.uid, friendUser.uid);
+    resetCompDuoLocalState();
     selectedCompMode = '2v2';
     compDuoState.status = 'inviting';
     compDuoState.partnerUid = String(friendUser.uid);
@@ -6788,7 +7046,7 @@
     renderCompModeAndDuoUI();
     updateCompLobbyMatchStateUI();
     SFX.click();
-    await ONLINE.publishCompDuoState(meta, { status: 'inviting', targetUid: compDuoState.partnerUid, partyId });
+    await syncCompDuoNow('inviting');
     showToast(`[${compDuoState.partnerNick}] 님에게 2대2 팀 초대를 보냈습니다!`);
   }
 
@@ -6796,6 +7054,7 @@
     const inc = compDuoState.incomingInvite;
     if (!inc || !inc.uid) return;
     if (compQueueState && !compQueueState.cancelled) cancelCompetitiveMatchmaking(true);
+    resetCompDuoLocalState();
     selectedCompMode = '2v2';
     compDuoState.status = 'ready';
     compDuoState.partnerUid = String(inc.uid);
@@ -6806,15 +7065,11 @@
     compDuoState.partyId = inc.partyId || ONLINE.makeCompDuoPartyId(getMyFriendUid(), inc.uid);
     compDuoState.incomingInvite = null;
     SFX.chestJackpot();
-    await ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
-      status: 'ready',
-      targetUid: compDuoState.partnerUid,
-      partyId: compDuoState.partyId
-    });
+    await syncCompDuoNow('ready');
     switchTab('comp');
     renderCompModeAndDuoUI();
     updateCompLobbyMatchStateUI();
-    showToast(`[${compDuoState.partnerNick}] 님과 2대2 팀이 결성되었습니다!`);
+    showToast(`[${compDuoState.partnerNick}] 님과 2대2 팀이 결성되었습니다! 채팅과 PLAY 준비를 이용해 보세요.`);
   }
 
   async function declineIncomingDuoInvite() {
@@ -6900,33 +7155,35 @@
   async function pollCompDuoUpdates() {
     if (!ONLINE || !ONLINE.pollCompDuoDirectory || !isMyAccountLinkedForFriends()) return;
     if (run && run.active) return;
+    const nowPoll = Date.now();
+    if (nowPoll - lastCompDuoPollAt < 1100) return;
+    lastCompDuoPollAt = nowPoll;
     try {
       const res = await ONLINE.pollCompDuoDirectory();
       if (!res || !res.byUid) return;
       const myUid = getMyFriendUid();
 
-      // 1. If we invited someone or are in a ready duo party, check partner state!
+      // 1. If we invited someone or are in a ready duo party, check partner state, Dual-Ready, & Live Chat!
       if (compDuoState.status !== 'idle' && compDuoState.partnerUid) {
         const partnerNode = res.byUid[compDuoState.partnerUid];
         if (!partnerNode || partnerNode.status === 'idle') {
           if (compDuoState.status === 'ready') {
-            compDuoState.status = 'idle';
-            compDuoState.partnerUid = '';
-            compDuoState.partnerNick = '';
-            compDuoState.partyId = '';
+            resetCompDuoLocalState();
             showToast('2대2 팀원이 파티에서 나갔습니다.');
             renderCompModeAndDuoUI();
             updateCompLobbyMatchStateUI();
           }
         } else if (partnerNode.status === 'declined' && partnerNode.targetUid === myUid) {
-          compDuoState.status = 'idle';
-          compDuoState.partnerUid = '';
-          compDuoState.partnerNick = '';
-          compDuoState.partyId = '';
+          resetCompDuoLocalState();
           showToast('상대방이 2대2 팀 초대를 거절했습니다.');
           renderCompModeAndDuoUI();
           updateCompLobbyMatchStateUI();
-        } else if ((partnerNode.status === 'ready' || partnerNode.status === 'queueing') && partnerNode.partyId === compDuoState.partyId) {
+        } else if (
+          (partnerNode.status === 'ready' || partnerNode.status === 'play_ready' || partnerNode.status === 'queueing')
+          && partnerNode.partyId === compDuoState.partyId
+        ) {
+          const prevPartnerPlayReady = Boolean(compDuoState.partnerPlayReady);
+          const nextPartnerPlayReady = partnerNode.status === 'play_ready' || partnerNode.status === 'queueing';
           const charChanged = (partnerNode.charId && partnerNode.charId !== compDuoState.partnerCharId)
             || ((partnerNode.skinId || null) !== (compDuoState.partnerSkinId || null))
             || (partnerNode.nickname && partnerNode.nickname !== compDuoState.partnerNick);
@@ -6934,35 +7191,63 @@
           compDuoState.partnerSkinId = partnerNode.skinId || null;
           if (Number.isFinite(Number(partnerNode.trophies))) compDuoState.partnerTrophies = Number(partnerNode.trophies);
           if (partnerNode.nickname) compDuoState.partnerNick = partnerNode.nickname;
+          compDuoState.partnerPlayReady = nextPartnerPlayReady;
+
           if (compDuoState.status !== 'ready') {
             compDuoState.status = 'ready';
             SFX.chestJackpot();
             showToast(`[${compDuoState.partnerNick}] 님이 2대2 팀 초대를 수락했습니다!`);
-            await ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
-              status: 'ready',
-              targetUid: compDuoState.partnerUid,
-              partyId: compDuoState.partyId
-            });
+            await syncCompDuoNow('ready');
             renderCompModeAndDuoUI();
             updateCompLobbyMatchStateUI();
-          } else if (charChanged) {
+          } else if (charChanged || prevPartnerPlayReady !== nextPartnerPlayReady) {
+            if (!prevPartnerPlayReady && nextPartnerPlayReady && !compDuoState.myPlayReady) {
+              SFX.coin(2);
+              showToast(`[${compDuoState.partnerNick}] 님이 PLAY 준비 완료! 나도 PLAY!를 누르면 매칭이 시작됩니다.`);
+            }
             renderCompModeAndDuoUI();
+            updateCompLobbyMatchStateUI();
           }
-          // If partner started 2v2 matchmaking, auto-join the exact same 2v2 queue seamlessly!
-          if (partnerNode.status === 'queueing' && (!compQueueState || compQueueState.cancelled) && !getActiveCompPendingMatch()) {
+
+          // Merge partner's live party chat messages!
+          const remoteMsgs = Array.isArray(partnerNode.chatMsgs) ? partnerNode.chatMsgs : [];
+          let latestNewMsg = null;
+          remoteMsgs.forEach((m) => {
+            if (!m || !m.id || !m.m) return;
+            if (!compDuoState.seenChatIds.has(m.id)) {
+              compDuoState.seenChatIds.add(m.id);
+              latestNewMsg = m;
+              if (!compDuoState.chatOpen) {
+                compDuoState.unreadChatCount = (compDuoState.unreadChatCount || 0) + 1;
+              }
+            }
+          });
+          compDuoState.partnerChatMsgs = remoteMsgs.slice(-16);
+          if (latestNewMsg) {
+            SFX.coin(1);
+            if (!compDuoState.chatOpen && currentTab === 'comp') {
+              showPartnerSpeechBubble(latestNewMsg.m);
+            }
+            renderCompDuoChatUI();
+          }
+
+          // DUAL-READY LAUNCH: Start 2v2 matchmaking ONLY when BOTH me AND my partner pressed PLAY!
+          const bothReady = Boolean(compDuoState.myPlayReady && nextPartnerPlayReady);
+          if (bothReady && (!compQueueState || compQueueState.cancelled) && !getActiveCompPendingMatch()) {
             selectedCompMode = '2v2';
+            compDuoState.myPlayReady = false;
+            compDuoState.partnerPlayReady = false;
+            compDuoState.chatOpen = false;
             renderCompModeAndDuoUI();
-            showToast(`[${compDuoState.partnerNick}] 님이 2대2 매칭을 시작해 자동 참가합니다!`);
-            startCompetitiveMatchmaking({ compMode: '2v2', autoFromDuo: true });
+            updateCompLobbyMatchStateUI();
+            showToast('파티원 모두 준비 완료! 2대2 매칭을 시작합니다!');
+            startCompetitiveMatchmaking({ compMode: '2v2', fromDualReady: true });
+            return;
           }
         }
-        // Keep ready/inviting heartbeat fresh
+        // Keep ready/play_ready/inviting heartbeat & chat messages fresh
         if (compDuoState.status === 'ready' || compDuoState.status === 'inviting') {
-          ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
-            status: (compQueueState && !compQueueState.cancelled && compQueueState.compMode === '2v2') ? 'queueing' : compDuoState.status,
-            targetUid: compDuoState.partnerUid,
-            partyId: compDuoState.partyId
-          }).catch(() => {});
+          syncCompDuoNow();
         }
         return;
       }
@@ -7178,12 +7463,10 @@
       if (prev.online && ONLINE && ONLINE.leaveCompQueue && prev.myQueueInfo) {
         ONLINE.leaveCompQueue(prev.myQueueInfo);
       }
-      if (compDuoState.status === 'ready' && compDuoState.partnerUid && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
-        ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
-          status: 'ready',
-          targetUid: compDuoState.partnerUid,
-          partyId: compDuoState.partyId
-        }).catch(() => {});
+      if (compDuoState.status === 'ready' && compDuoState.partnerUid) {
+        compDuoState.myPlayReady = false;
+        compDuoState.partnerPlayReady = false;
+        syncCompDuoNow('ready');
       }
     }
     if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
@@ -7316,6 +7599,39 @@
       return;
     }
 
+    // 2v2 PARTY DUAL-READY GATE: Both me AND my party partner MUST press PLAY! before matchmaking starts!
+    const reqMode = ((opts && opts.compMode) || selectedCompMode) === '2v2' ? '2v2' : '1v1';
+    if (reqMode === '2v2' && compDuoState.status === 'inviting') {
+      SFX.hit();
+      showToast('초대한 친구가 수락하거나 [초대 취소] 후 매칭할 수 있습니다.');
+      return;
+    }
+    if (reqMode === '2v2' && compDuoState.status === 'ready' && compDuoState.partyId && !(opts && opts.fromDualReady)) {
+      if (compDuoState.myPlayReady) {
+        compDuoState.myPlayReady = false;
+        SFX.click();
+        await syncCompDuoNow('ready');
+        renderCompModeAndDuoUI();
+        updateCompLobbyMatchStateUI();
+        showToast('2대2 준비 완료를 취소했습니다.');
+        return;
+      }
+      if (!compDuoState.partnerPlayReady) {
+        compDuoState.myPlayReady = true;
+        SFX.coin(2);
+        await syncCompDuoNow('play_ready');
+        renderCompModeAndDuoUI();
+        updateCompLobbyMatchStateUI();
+        showToast(`준비 완료! 팀원 [${compDuoState.partnerNick}] 님도 PLAY!를 누르면 매칭이 시작됩니다.`);
+        return;
+      }
+      // Partner ALREADY pressed PLAY -> Both ready! Launch 2v2 matchmaking immediately!
+      compDuoState.myPlayReady = false;
+      compDuoState.partnerPlayReady = false;
+      compDuoState.chatOpen = false;
+      renderCompModeAndDuoUI();
+    }
+
     cancelCompetitiveMatchmaking(true);
     if (el.compResultOverlay) el.compResultOverlay.classList.add('hidden');
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
@@ -7379,13 +7695,9 @@
       finished: false
     };
 
-    // Signal duo partner so they auto-join our 2v2 queue immediately!
-    if (is2v2 && activePartyId && activePartnerUid && ONLINE && ONLINE.publishCompDuoState) {
-      ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
-        status: 'queueing',
-        targetUid: activePartnerUid,
-        partyId: activePartyId
-      }).catch(() => {});
+    // Signal duo partner so both ready players enter the 2v2 queue together (preserving chat history!)
+    if (is2v2 && activePartyId && activePartnerUid) {
+      syncCompDuoNow('queueing');
     }
 
     const AI_FALLBACK_DELAY_SEC = 60;
@@ -7573,12 +7885,10 @@
             if (el.gameoverOverlay) el.gameoverOverlay.classList.add('hidden');
           }
 
-          if (is2v2 && activePartyId && activePartnerUid && ONLINE && ONLINE.publishCompDuoState) {
-            ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
-              status: 'ready',
-              targetUid: activePartnerUid,
-              partyId: activePartyId
-            }).catch(() => {});
+          if (is2v2 && activePartyId && activePartnerUid) {
+            compDuoState.myPlayReady = false;
+            compDuoState.partnerPlayReady = false;
+            syncCompDuoNow('ready');
           }
 
           const dur = DATA.COMP_MATCH_DURATION || 60;
@@ -10479,7 +10789,7 @@
   }
 
   function renderShopList() {
-    if (!['gacha', 'chests', 'gold', 'gems'].includes(currentShopSubtab)) {
+    if (!['gacha', 'chests', 'gold', 'gems', 'items'].includes(currentShopSubtab)) {
       currentShopSubtab = 'gacha';
     }
     document.querySelectorAll('.subtab-btn').forEach((b) => {
@@ -10785,6 +11095,75 @@
         grid.appendChild(card);
       });
 
+      sec.appendChild(grid);
+      el.shopItemsList.appendChild(sec);
+    } else if (currentShopSubtab === 'items') {
+      // BRAWL STARS SPECIAL ITEM SHOP (NICKNAME CHANGE TICKET · 1,000 GEMS · 1ST CHANGE FREE!)
+      const ownedTickets = Math.max(0, Math.floor(save.nickChangeTickets || 0));
+      const freeAvail = Math.max(0, Math.floor(save.nickChangesUsed || 0)) === 0;
+      const sec = document.createElement('div');
+      sec.className = 'bs-shop-section';
+      sec.innerHTML = `
+        <div class="bs-shop-sec-head items">
+          <span class="bs-shop-sec-title"><img src="assets/ui/nick_change_ticket.png?v=${ASSET_VER}" alt="" class="ui-ico ui-ico-sm" /> 특수 아이템 상점</span>
+          <span class="bs-shop-sec-sub">${freeAvail ? '최초 1회 닉네임 변경 무료 · 추가 변경 시 변경권 1개 사용!' : `보유 닉네임 변경권 ${ownedTickets}개 · 프로필 꾸미기에서 바로 사용 가능!`}</span>
+        </div>
+      `;
+      const grid = document.createElement('div');
+      grid.className = 'bs-shop-grid items-showcase';
+
+      const card = document.createElement('div');
+      card.className = 'bs-offer-card special-item-card nick-ticket-card';
+      card.innerHTML = `
+        <div class="bs-offer-ribbon bonus">${freeAvail ? '최초 1회 무료 변경 가능' : `보유 ${ownedTickets}개`}</div>
+        <div class="bs-offer-stage nick-ticket-stage">
+          <div class="bs-offer-rays"></div>
+          <img src="assets/ui/nick_change_ticket.png?v=${ASSET_VER}" alt="닉네임 변경권" class="bs-offer-img nick-ticket-art" />
+        </div>
+        <div class="bs-offer-bigval gold">닉네임 변경권</div>
+        <div class="bs-offer-sub">언제든지 원하는 닉네임으로 즉시 변경 (보유 ${ownedTickets}개)</div>
+      `;
+      const foot = document.createElement('div');
+      foot.className = 'bs-offer-foot dual-foot';
+
+      const buyBtn = document.createElement('button');
+      buyBtn.type = 'button';
+      buyBtn.className = 'bs-buy-btn gem';
+      buyBtn.innerHTML = `${uiIcon('gem', 'btn')} ${NICK_CHANGE_TICKET_GEMS.toLocaleString('ko-KR')}`;
+      buyBtn.onclick = () => {
+        if ((save.gems || 0) < NICK_CHANGE_TICKET_GEMS) {
+          SFX.error();
+          currentShopSubtab = 'gems';
+          renderShopList();
+          showToast('보석이 부족합니다! 보석 상점에서 충전할 수 있어요.');
+          return;
+        }
+        SFX.chestJackpot();
+        save.gems -= NICK_CHANGE_TICKET_GEMS;
+        save.nickChangeTickets = Math.max(0, Math.floor(save.nickChangeTickets || 0)) + 1;
+        persistSave(true);
+        refreshAllMenus();
+        renderNickChangeTicketUI();
+        showToast(`닉네임 변경권 1개 구매 완료! (보유 ${save.nickChangeTickets}개)`);
+      };
+      foot.appendChild(buyBtn);
+
+      if (freeAvail || ownedTickets > 0) {
+        const useBtn = document.createElement('button');
+        useBtn.type = 'button';
+        useBtn.className = 'bs-buy-btn cash';
+        useBtn.textContent = freeAvail ? '무료 변경하기' : '바로 사용하기';
+        useBtn.onclick = () => {
+          openProfileEditModal();
+          if (el.profNicknameInput) {
+            setTimeout(() => { try { el.profNicknameInput.focus(); } catch {} }, 80);
+          }
+        };
+        foot.appendChild(useBtn);
+      }
+
+      card.appendChild(foot);
+      grid.appendChild(card);
       sec.appendChild(grid);
       el.shopItemsList.appendChild(sec);
     }
@@ -14193,6 +14572,41 @@
         leaveCompDuoParty(false);
       });
     }
+    if (el.btnCompDuoChat) {
+      el.btnCompDuoChat.addEventListener('click', () => {
+        toggleCompDuoChat();
+      });
+    }
+    if (el.compPartnerChatBubble) {
+      el.compPartnerChatBubble.addEventListener('click', () => {
+        openCompDuoChat();
+      });
+    }
+    if (el.btnCloseCompChat) {
+      el.btnCloseCompChat.addEventListener('click', () => {
+        SFX.click();
+        closeCompDuoChat();
+      });
+    }
+    if (el.compChatForm) {
+      el.compChatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (el.compChatInput) sendCompDuoChatMessage(el.compChatInput.value);
+      });
+    }
+    document.querySelectorAll('.comp-chat-qbtn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        sendCompDuoChatMessage(btn.dataset.qmsg || btn.textContent || '');
+      });
+    });
+    if (el.btnProfBuyNickTicket) {
+      el.btnProfBuyNickTicket.addEventListener('click', () => {
+        SFX.click();
+        if (el.profileEditOverlay) el.profileEditOverlay.classList.add('hidden');
+        currentShopSubtab = 'items';
+        switchTab('shop');
+      });
+    }
     if (el.btnCompSpectateLeave) {
       el.btnCompSpectateLeave.addEventListener('click', () => {
         SFX.click();
@@ -14372,9 +14786,12 @@
     }, 5000);
     setInterval(() => {
       if ((!run || !run.active) && isMyAccountLinkedForFriends()) {
-        pollCompDuoUpdates();
+        const inActiveParty = compDuoState.status === 'ready' || compDuoState.status === 'inviting';
+        if (inActiveParty || (Date.now() - lastCompDuoPollAt) >= 3400) {
+          pollCompDuoUpdates();
+        }
       }
-    }, 3500);
+    }, 1500);
 
     // Brawl Stars Right-Dock Weather Button (below Settings) + Weather Modal + Mode Select Modal
     if (el.btnHomeWeather) {

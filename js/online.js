@@ -1471,6 +1471,16 @@ window.OnlineService = (function () {
     const uid = String(playerInfo.uid);
     const plat = playerInfo.platform || detectClientPlatform();
     const nick = sanitizeNickname(playerInfo.nickname, '날씨러너');
+    const cleanChat = Array.isArray(duoPatch.chatMsgs)
+      ? duoPatch.chatMsgs
+          .filter((x) => x && typeof x.m === 'string' && x.m.trim())
+          .slice(-16)
+          .map((x) => ({
+            id: String(x.id || '').slice(0, 32),
+            t: Math.max(0, Math.floor(Number(x.t) || Date.now())),
+            m: String(x.m).trim().slice(0, 60)
+          }))
+      : null;
     return writeCompBoardNode(RTDB_COMP_DUO_BUCKET, uid, () => ({
       provider: playerInfo.provider,
       nickname: nick,
@@ -1481,9 +1491,10 @@ window.OnlineService = (function () {
       trophies: Math.max(0, Math.floor(Number(playerInfo.trophies) || 0)),
       platform: plat.id || 'pc',
       platformLabel: plat.label || 'PC',
-      status: duoPatch.status || 'idle', // 'idle' | 'inviting' | 'ready' | 'queueing' | 'declined'
+      status: duoPatch.status || 'idle', // 'idle' | 'inviting' | 'ready' | 'play_ready' | 'queueing' | 'declined'
       targetUid: String(duoPatch.targetUid || ''),
       partyId: String(duoPatch.partyId || ''),
+      ...(cleanChat ? { chatMsgs: cleanChat } : {}),
       updatedClientAt: Date.now()
     }), { keepalive: Boolean(duoPatch.keepalive) });
   }
