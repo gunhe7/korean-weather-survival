@@ -836,6 +836,7 @@
     compDuoPartnerName: document.getElementById('comp-duo-partner-name'),
     btnCompDuoChat: document.getElementById('btn-comp-duo-chat'),
     compDuoChatBadge: document.getElementById('comp-duo-chat-badge'),
+    compMeChatBubble: document.getElementById('comp-me-chat-bubble'),
     compPartnerChatBubble: document.getElementById('comp-partner-chat-bubble'),
     compDuoChatDrawer: document.getElementById('comp-duo-chat-drawer'),
     compChatPartnerTitle: document.getElementById('comp-chat-partner-title'),
@@ -6852,6 +6853,25 @@
       el.compPartnerChatBubble.classList.add('hidden');
       el.compPartnerChatBubble.textContent = '';
     }
+    if (compDuoState.myBubbleTimer) {
+      clearTimeout(compDuoState.myBubbleTimer);
+      compDuoState.myBubbleTimer = null;
+    }
+    if (el.compMeChatBubble) {
+      el.compMeChatBubble.classList.add('hidden');
+      el.compMeChatBubble.textContent = '';
+    }
+  }
+
+  function showMySpeechBubble(msgText) {
+    if (!el.compMeChatBubble || !msgText) return;
+    if (compDuoState.myBubbleTimer) clearTimeout(compDuoState.myBubbleTimer);
+    el.compMeChatBubble.textContent = msgText;
+    el.compMeChatBubble.classList.remove('hidden');
+    compDuoState.myBubbleTimer = setTimeout(() => {
+      compDuoState.myBubbleTimer = null;
+      if (el.compMeChatBubble) el.compMeChatBubble.classList.add('hidden');
+    }, 4500);
   }
 
   function showPartnerSpeechBubble(msgText) {
@@ -6964,6 +6984,7 @@
     compDuoState.seenChatIds.add(msg.id);
     if (el.compChatInput) el.compChatInput.value = '';
     SFX.click();
+    showMySpeechBubble(text);
     renderCompDuoChatUI();
     await syncCompDuoNow();
   }
@@ -7336,7 +7357,7 @@
           compDuoState.partnerChatMsgs = remoteMsgs.slice(-16);
           if (latestNewMsg) {
             SFX.coin(1);
-            if (!compDuoState.chatOpen && currentTab === 'comp') {
+            if (currentTab === 'comp') {
               showPartnerSpeechBubble(latestNewMsg.m);
             }
             renderCompDuoChatUI();
@@ -14687,6 +14708,11 @@
     if (el.btnCompDuoChat) {
       el.btnCompDuoChat.addEventListener('click', () => {
         toggleCompDuoChat();
+      });
+    }
+    if (el.compMeChatBubble) {
+      el.compMeChatBubble.addEventListener('click', () => {
+        openCompDuoChat();
       });
     }
     if (el.compPartnerChatBubble) {
