@@ -5324,7 +5324,7 @@
     const gemTileHtml = rw.gems > 0
       ? `
         <div class="comp-sr-item gems">
-          <img src="assets/icons/ico_gem.svg?v=20261121hd132" alt="보석" class="comp-sr-item-ico" />
+          <img src="assets/icons/ico_gem.svg?v=20261121hd133" alt="보석" class="comp-sr-item-ico" />
           <div class="comp-sr-item-txt">
             <span>보석</span>
             <strong>${rw.gems.toLocaleString('ko-KR')}개</strong>
@@ -8496,7 +8496,7 @@
       (DATA.GEM_PACKS || []).forEach((pk) => {
         const card = document.createElement('div');
         card.className = `bs-offer-card gem-pack tier-${pk.tier}`;
-        const gemCount = pk.tier === 'xl' ? 3 : (pk.tier === 'lg' ? 2 : 1);
+        const gemCount = pk.pile || (pk.tier === 'max' ? 5 : (pk.tier === 'xl' ? 4 : (pk.tier === 'lg' ? 3 : (pk.tier === 'md' ? 2 : 1))));
         let gemPileHtml = '';
         for (let gi = 0; gi < gemCount; gi++) gemPileHtml += uiIcon('gem', 'xl');
         card.innerHTML = `

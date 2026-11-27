@@ -24502,3 +24502,167 @@ input:focus-visible {
 
   .comp-sr-item-txt strong { font-size: 12.5px; }
 }
+
+/* ==========================================================================
+   v20261121hd133 — CRISP 8-DIRECTION TEXT OUTLINES (ZERO JAGGED CORNERS / SMUDGES)
+   + EXPANDED 10,000 GEM & 1,000-GEM GOLD SHOP PACK STYLING
+   ========================================================================== */
+
+:root {
+  --bs-outline-sm:
+    -1px -1px 0 #071022,
+     1px -1px 0 #071022,
+    -1px  1px 0 #071022,
+     1px  1px 0 #071022,
+     0   -1px 0 #071022,
+     0    1px 0 #071022,
+    -1px  0   0 #071022,
+     1px  0   0 #071022,
+     0    2px 0 rgba(7, 16, 34, 0.78);
+  --bs-outline-md:
+    -1.2px -1.2px 0 #071022,
+     1.2px -1.2px 0 #071022,
+    -1.2px  1.2px 0 #071022,
+     1.2px  1.2px 0 #071022,
+     0     -1.2px 0 #071022,
+     0      1.2px 0 #071022,
+    -1.2px  0     0 #071022,
+     1.2px  0     0 #071022,
+     0      2.5px 0 #071022;
+}
+
+/* 1. Fix Dark-Shadow-On-Dark-Text Smudge on Bright Gem Pack Ribbons */
+#view-shop .bs-offer-ribbon.gem-rib {
+  color: #071022 !important;
+  text-shadow: none !important;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+#view-shop .bs-offer-ribbon,
+#skin-exchange-overlay .bs-offer-ribbon,
+#char-skins-overlay .bs-offer-ribbon {
+  text-shadow: 0 1.5px 0 rgba(7, 16, 34, 0.85);
+}
+
+/* 2. Replace Broken 4-Way Non-Diagonal Text Shadows with Smooth 8-Way Outlines */
+#view-shop .bs-shop-sec-title,
+#skin-exchange-overlay .bs-shop-sec-title,
+#view-shop .bs-offer-name,
+#skin-exchange-overlay .bs-offer-name,
+#char-skins-overlay .bs-offer-name,
+#view-shop .bs-buy-btn,
+#skin-exchange-overlay .bs-buy-btn,
+#char-skins-overlay .bs-buy-btn,
+.bs-rcard-stat,
+.bs-road-num,
+.comp-ow-bar-val,
+.comp-res-bar-val,
+.comp-ob-prog-text {
+  text-shadow: var(--bs-outline-sm) !important;
+}
+
+#view-shop .bs-offer-bigval,
+.comp-ob-play-main {
+  text-shadow: var(--bs-outline-md) !important;
+}
+
+.comp-ow-tier-name {
+  text-shadow:
+    -1.5px -1.5px 0 #071022,
+     1.5px -1.5px 0 #071022,
+    -1.5px  1.5px 0 #071022,
+     1.5px  1.5px 0 #071022,
+     0     -1.5px 0 #071022,
+     0      1.5px 0 #071022,
+    -1.5px  0     0 #071022,
+     1.5px  0     0 #071022,
+     0      3px   0 #071022,
+     0      0    16px rgba(255, 214, 72, 0.35) !important;
+}
+
+/* Keep Buy Button Text Un-Skewed & Razor-Sharp */
+#view-shop .bs-buy-btn,
+#skin-exchange-overlay .bs-buy-btn,
+#char-skins-overlay .bs-buy-btn {
+  transform: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#view-shop .bs-buy-btn:active:not(:disabled),
+#skin-exchange-overlay .bs-buy-btn:active:not(:disabled),
+#char-skins-overlay .bs-buy-btn:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+#view-shop .bs-shop-sec-head,
+#skin-exchange-overlay .bs-shop-sec-head,
+#view-shop .bs-shop-sec-title,
+#skin-exchange-overlay .bs-shop-sec-title,
+#view-shop .bs-shop-sec-sub,
+#skin-exchange-overlay .bs-shop-sec-sub {
+  transform: none;
+}
+
+#view-shop .bs-shop-sec-sub,
+#skin-exchange-overlay .bs-shop-sec-sub {
+  text-shadow: none;
+}
+
+/* 3. Expanded Gem (Up to 10,000) & Gold (Up to 1,000 Gems) Prestige Cards & Piles */
+#view-shop .bs-offer-card.gem-pack.tier-max {
+  background: radial-gradient(circle at 50% 34%, #fff275 0%, #ff8c2b 42%, #c91868 78%, #5e0838 100%);
+  border-color: #ffe24a;
+  box-shadow: 0 6px 0 #071022, 0 0 18px rgba(255, 224, 71, 0.42), inset 0 2.5px 0 rgba(255, 255, 255, 0.48);
+}
+
+#view-shop .bs-offer-card.gold-pack.tier-lg {
+  background: radial-gradient(circle at 50% 34%, #fff37a 0%, #ff9d14 55%, #a84800 100%);
+}
+
+#view-shop .bs-offer-card.gold-pack.tier-xl {
+  background: radial-gradient(circle at 50% 34%, #fff58c 0%, #ff8514 52%, #942f00 100%);
+}
+
+#view-shop .bs-offer-card.gold-pack.tier-max {
+  background: radial-gradient(circle at 50% 34%, #fff9a8 0%, #ffbe14 45%, #c75300 82%, #6b2200 100%);
+  border-color: #ffe24a;
+  box-shadow: 0 6px 0 #071022, 0 0 18px rgba(255, 212, 54, 0.45), inset 0 2.5px 0 rgba(255, 255, 255, 0.52);
+}
+
+.bs-gem-pile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0 !important;
+}
+
+.bs-gem-pile .ui-ico.ui-ico-xl {
+  margin: 0 -4px;
+}
+
+.bs-gem-pile.lg .ui-ico.ui-ico-xl {
+  width: 30px;
+  height: 30px;
+  margin: 0 -5px;
+}
+
+.bs-gem-pile.xl .ui-ico.ui-ico-xl {
+  width: 28px;
+  height: 28px;
+  margin: 0 -7px;
+}
+
+.bs-gem-pile.max .ui-ico.ui-ico-xl {
+  width: 26px;
+  height: 26px;
+  margin: 0 -8px;
+  filter: drop-shadow(0 0 6px rgba(255, 232, 102, 0.65));
+}
+
+.bs-offer-img.coin.lg { transform: scale(1.06); }
+.bs-offer-img.coin.xl { transform: scale(1.12); }
+.bs-offer-img.coin.max {
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 10px rgba(255, 232, 92, 0.72)) drop-shadow(0 5px 0 rgba(7, 16, 34, 0.52)) !important;
+}

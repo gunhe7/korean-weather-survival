@@ -765,20 +765,28 @@ window.RUN_DATA = (function () {
     return { score, kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1', tier: 'gold', tag: '상자' };
   }
 
-  // 보석으로 구매하는 골드 패키지 (브롤스타즈 상점 스타일!)
+  // 보석으로 구매하는 골드 패키지 (보석 10개 ~ 1,000개 구간 · 브롤스타즈 상점 스타일!)
   const GOLD_PACKS = [
-    { id: 'gold_pack_1', name: '골드 주머니', gold: 500,   gemCost: 10,  bonusTag: '',          accent: '#ffe047', tier: 'sm' },
-    { id: 'gold_pack_2', name: '골드 가방',   gold: 1650,  gemCost: 30,  bonusTag: '+10% 보너스', accent: '#ffcb2b', tier: 'md' },
-    { id: 'gold_pack_3', name: '골드 상자',   gold: 4800,  gemCost: 80,  bonusTag: '+20% 인기!',  accent: '#ffae19', tier: 'lg' },
-    { id: 'gold_pack_4', name: '골드 금고',   gold: 13000, gemCost: 200, bonusTag: '+30% BEST!',  accent: '#ff8a1f', tier: 'xl' }
+    { id: 'gold_pack_1', name: '골드 주머니',   gold: 500,   gemCost: 10,   bonusTag: '',             accent: '#ffe047', tier: 'sm'  },
+    { id: 'gold_pack_2', name: '골드 가방',     gold: 1650,  gemCost: 30,   bonusTag: '+10% 보너스',  accent: '#ffcb2b', tier: 'sm'  },
+    { id: 'gold_pack_3', name: '골드 상자',     gold: 4800,  gemCost: 80,   bonusTag: '+20% 보너스',  accent: '#ffae19', tier: 'md'  },
+    { id: 'gold_pack_4', name: '골드 금고',     gold: 13000, gemCost: 200,  bonusTag: '+30% 인기!',   accent: '#ff9619', tier: 'md'  },
+    { id: 'gold_pack_5', name: '대형 골드 금고', gold: 23600, gemCost: 350,  bonusTag: '+35% 추천!',   accent: '#ff8a1f', tier: 'lg'  },
+    { id: 'gold_pack_6', name: '황금 보물고',   gold: 35000, gemCost: 500,  bonusTag: '+40% 특가!',   accent: '#ff7b1f', tier: 'lg'  },
+    { id: 'gold_pack_7', name: '왕실 보물고',   gold: 54500, gemCost: 750,  bonusTag: '+45% 대용량!', accent: '#ff6629', tier: 'xl'  },
+    { id: 'gold_pack_8', name: '전설의 황금성', gold: 75000, gemCost: 1000, bonusTag: '+50% MAX!',    accent: '#ffe857', tier: 'max' }
   ];
 
-  // 실제 결제 보석 패키지 (100개 = ₩1,000 고정 단가!)
+  // 실제 결제 보석 패키지 (100개 = ₩1,000 고정 단가 · 최대 10,000보석까지!)
   const GEM_PACKS = [
-    { id: 'gem_pack_100',  productId: 'com.gunhe7.kweathersurvival.gems100',  name: '보석 100개',   gems: 100,  krwPrice: 1000,  badge: '스타터',      accent: '#39e38a', tier: 'sm' },
-    { id: 'gem_pack_300',  productId: 'com.gunhe7.kweathersurvival.gems300',  name: '보석 300개',   gems: 300,  krwPrice: 3000,  badge: '인기!',       accent: '#2fd8ff', tier: 'md' },
-    { id: 'gem_pack_500',  productId: 'com.gunhe7.kweathersurvival.gems500',  name: '보석 500개',   gems: 500,  krwPrice: 5000,  badge: '추천!',       accent: '#a96dff', tier: 'lg' },
-    { id: 'gem_pack_1000', productId: 'com.gunhe7.kweathersurvival.gems1000', name: '보석 1,000개', gems: 1000, krwPrice: 10000, badge: '스킨 뽑기 팩', accent: '#ff5ea8', tier: 'xl' }
+    { id: 'gem_pack_100',   productId: 'com.gunhe7.kweathersurvival.gems100',   name: '보석 100개',    gems: 100,   krwPrice: 1000,   badge: '스타터',      accent: '#39e38a', tier: 'sm',  pile: 1 },
+    { id: 'gem_pack_300',   productId: 'com.gunhe7.kweathersurvival.gems300',   name: '보석 300개',    gems: 300,   krwPrice: 3000,   badge: '인기!',       accent: '#2fd8ff', tier: 'md',  pile: 1 },
+    { id: 'gem_pack_500',   productId: 'com.gunhe7.kweathersurvival.gems500',   name: '보석 500개',    gems: 500,   krwPrice: 5000,   badge: '추천!',       accent: '#59b2ff', tier: 'md',  pile: 2 },
+    { id: 'gem_pack_1000',  productId: 'com.gunhe7.kweathersurvival.gems1000',  name: '보석 1,000개',  gems: 1000,  krwPrice: 10000,  badge: '스킨 뽑기 팩', accent: '#a96dff', tier: 'lg',  pile: 2 },
+    { id: 'gem_pack_2000',  productId: 'com.gunhe7.kweathersurvival.gems2000',  name: '보석 2,000개',  gems: 2000,  krwPrice: 20000,  badge: '더블 팩',     accent: '#d66bff', tier: 'lg',  pile: 3 },
+    { id: 'gem_pack_3000',  productId: 'com.gunhe7.kweathersurvival.gems3000',  name: '보석 3,000개',  gems: 3000,  krwPrice: 30000,  badge: '프리미엄 팩',  accent: '#ff70be', tier: 'xl',  pile: 3 },
+    { id: 'gem_pack_5000',  productId: 'com.gunhe7.kweathersurvival.gems5000',  name: '보석 5,000개',  gems: 5000,  krwPrice: 50000,  badge: '마스터 팩',    accent: '#ff5ea8', tier: 'xl',  pile: 4 },
+    { id: 'gem_pack_10000', productId: 'com.gunhe7.kweathersurvival.gems10000', name: '보석 10,000개', gems: 10000, krwPrice: 100000, badge: '챔피언 MAX!',  accent: '#ffe047', tier: 'max', pile: 5 }
   ];
 
   // 브롤스타즈 스타일 시즌 1 패스 (80티어 · 무료 보상: 보석/상자/뽑기권/골드 · 골드패스 ₩9,900 최종 보상: 신화 스킨 얼음황제!)
