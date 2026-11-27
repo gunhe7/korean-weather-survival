@@ -22344,3 +22344,956 @@ input:focus-visible {
     height: 4px !important;
   }
 }
+
+/* ==========================================================================
+   v20261121hd129 — COOKIE RUN OVENBREAK x BRAWL STARS COMPETITIVE LOBBY
+   + 1-MATCH LOCK BAR + 4-SEASON COURSE CARDS + REWARDS MODAL
+   ========================================================================== */
+
+/* Scenic Stadium Horizon Backdrop + Runner Ground Track */
+#view-comp .comp-lobby-arena {
+  background:
+    linear-gradient(180deg, rgba(11, 28, 72, 0.72) 0%, rgba(16, 46, 108, 0.56) 52%, rgba(9, 22, 54, 0.88) 76%, #091532 100%),
+    url('assets/home_bg.jpg') center / cover no-repeat !important;
+  gap: 8px;
+}
+
+#view-comp .comp-lobby-rays {
+  opacity: 0.22;
+}
+
+/* Hide floating pill inside #view-comp (footer bar already shows live match progress & button!) */
+#mobile-app.is-comp-lobby .comp-pending-pill {
+  display: none !important;
+}
+
+.comp-ob-topbar .comp-lt-cur.gems {
+  border-color: #071022;
+}
+
+/* Main 2-Zone Stage: Left Scenic Track + Quick Stack | Right OvenBreak League Card */
+.comp-ob-main {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(276px, 0.98fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.comp-ob-left {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(112px, 0.65fr);
+  gap: 8px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.comp-ob-stage-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 0;
+  padding: 2px 4px;
+}
+
+.comp-ob-overhead {
+  gap: 3px;
+}
+
+.comp-ob-runner-btn {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  justify-content: flex-end;
+  padding-bottom: 6px;
+}
+
+.comp-ob-runner-btn .comp-hero-img {
+  width: clamp(114px, 31vh, 196px);
+  height: clamp(114px, 31vh, 196px);
+  margin-bottom: -8px;
+}
+
+.comp-ob-runner-btn .comp-hero-aura {
+  width: clamp(134px, 35vh, 218px);
+  height: clamp(134px, 35vh, 218px);
+  bottom: 8px;
+}
+
+.comp-ob-runner-btn .bs-run-dust {
+  bottom: 16px !important;
+  left: calc(50% - 48px) !important;
+}
+
+.comp-ob-runner-btn .bs-run-dust.d2 {
+  bottom: 12px !important;
+  left: calc(50% - 36px) !important;
+}
+
+.comp-ob-track-floor {
+  width: 86%;
+  max-width: 240px;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #4ec6ff 0%, #1c63d6 55%, #0c2b70 100%);
+  border: 2.5px solid #071022;
+  box-shadow: 0 5px 0 #071022, 0 0 18px rgba(78, 198, 255, 0.48), inset 0 2px 0 rgba(255, 255, 255, 0.42);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+/* 3 Record Medallions Under the Runner (OvenBreak Treasure-Slot Style) */
+.comp-ob-slots-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  max-width: 268px;
+  margin-top: 4px;
+}
+
+.comp-ob-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 4px;
+  border-radius: 11px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #1d448f 0%, #0d214f 100%);
+  box-shadow: 0 3px 0 #071022, inset 0 1.5px 0 rgba(162, 224, 255, 0.35);
+}
+
+.comp-ob-slot-lbl {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #8ce4ff;
+  line-height: 1.1;
+}
+
+.comp-ob-slot strong {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Center-Right Quick Action Stack (OvenBreak Top Ranking / Combi / Status Column) */
+.comp-ob-mid-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding: 4px 2px;
+}
+
+.comp-ob-clock-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(7, 16, 38, 0.78);
+  border: 2px solid #071022;
+  color: #e6f4ff;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-ob-stack-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 11px;
+  border: 2.5px solid #071022;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.55);
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.comp-ob-stack-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #071022;
+}
+
+.comp-ob-stack-btn.silver {
+  background: linear-gradient(180deg, #f4f9ff 0%, #c8dcf5 100%);
+  color: #0b224f;
+}
+
+.comp-ob-stack-btn.gold {
+  background: linear-gradient(180deg, #ffe757 0%, #f5a610 100%);
+  color: #241300;
+}
+
+.comp-ob-rule-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border-radius: 9px;
+  border: 2px solid #071022;
+  background: rgba(7, 18, 42, 0.84);
+  color: #d6ecff;
+  font-size: 10px;
+  font-weight: 900;
+  box-shadow: 0 2.5px 0 #071022;
+}
+
+.comp-ob-rule-pill.ok {
+  border-color: #4be878;
+}
+
+.comp-ob-rule-pill.strict {
+  border-color: #ffcf4d;
+}
+
+.comp-ob-rule-tag {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #52f07b, #1ca83d);
+  color: #06210c;
+  font-size: 9.5px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.comp-ob-rule-pill.strict .comp-ob-rule-tag {
+  background: linear-gradient(180deg, #ffe554, #e5930b);
+  color: #261200;
+}
+
+.comp-ob-rule-tag.blue {
+  background: linear-gradient(180deg, #4fd0ff, #1978e6);
+  color: #ffffff;
+}
+
+/* RIGHT OVENBREAK LEAGUE & 4-SEASON COURSE PANEL */
+.comp-ob-panel {
+  border-radius: 16px;
+  border: 3px solid #071022;
+  background: linear-gradient(180deg, rgba(24, 58, 126, 0.94) 0%, rgba(11, 29, 72, 0.97) 100%);
+  box-shadow: 0 6px 0 #071022, inset 0 2px 0 rgba(162, 224, 255, 0.34);
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.comp-ob-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(6, 15, 36, 0.72);
+  border: 1.5px solid rgba(132, 206, 255, 0.28);
+  font-size: 11px;
+  font-weight: 900;
+  color: #c2e2ff;
+}
+
+.comp-ob-panel-head strong {
+  color: #ffe866;
+}
+
+.comp-ob-tier-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.comp-ob-emblem-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.comp-ob-emblem-stage {
+  width: 72px;
+  height: 72px;
+}
+
+.comp-ob-emblem-img {
+  width: 68px;
+  height: 68px;
+}
+
+.comp-ob-tier-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffe566;
+  text-shadow: 0 2px 0 #071022;
+  line-height: 1.1;
+}
+
+.comp-ob-tier-right {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.comp-ob-payout-summary {
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 11px;
+  border: 2px solid #071022;
+  background: rgba(7, 18, 42, 0.78);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: filter 0.1s ease;
+}
+
+.comp-ob-payout-summary:hover {
+  filter: brightness(1.12);
+}
+
+.comp-ob-ps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.comp-ob-ps-more {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #1b4ea8;
+  color: #9ce6ff;
+  font-size: 9.5px;
+}
+
+.comp-ob-ps-vals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-ob-ps-vals .up { color: #6affb0; }
+.comp-ob-ps-vals .dn { color: #ff8093; }
+
+.comp-ob-prog-wrap {
+  width: 100%;
+}
+
+.comp-ob-prog-track {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  border-radius: 999px;
+  background: #061026;
+  border: 2px solid #040914;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-ob-prog-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.comp-ob-prog-text {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071022, -1px 0 0 #071022, 1px 0 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 2x2 Numbered Season Sprint Stages Grid (OvenBreak 1/2/3/4 Land Cards!) */
+.comp-ob-stages-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.comp-ob-stage-card {
+  position: relative;
+  border-radius: 10px;
+  border: 2.5px solid #071022;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 54px;
+  box-shadow: 0 3px 0 #071022, inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  background-size: cover;
+  background-position: center;
+}
+
+.comp-ob-stage-card.st-spring { background-image: url('assets/world/bg_sky_spring.jpg'); }
+.comp-ob-stage-card.st-summer { background-image: url('assets/world/bg_sky_summer.jpg'); }
+.comp-ob-stage-card.st-autumn { background-image: url('assets/world/bg_sky_autumn.jpg'); }
+.comp-ob-stage-card.st-winter { background-image: url('assets/world/bg_sky_winter.jpg'); }
+
+.comp-ob-st-num {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: rgba(7, 16, 34, 0.88);
+  border: 1.5px solid rgba(255, 255, 255, 0.42);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-ob-st-stars {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: rgba(7, 16, 34, 0.56);
+}
+
+.comp-ob-st-foot {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 3px 6px;
+  background: linear-gradient(180deg, rgba(7, 16, 34, 0.52) 0%, rgba(7, 16, 34, 0.92) 100%);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.comp-ob-st-foot strong {
+  color: #ffe866;
+  flex-shrink: 0;
+}
+
+.comp-ob-st-foot span {
+  color: #d6ecff;
+  font-size: 9.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* BOTTOM OVENBREAK ACTION FOOTER */
+.comp-ob-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.comp-ob-foot-left,
+.comp-ob-foot-right {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.comp-ob-chest-btn {
+  width: 66px;
+  height: 58px;
+  border-radius: 14px;
+  border: 3px solid #071022;
+  background: linear-gradient(180deg, #2756b0 0%, #112b66 100%);
+  box-shadow: 0 5px 0 #071022, inset 0 2px 0 rgba(162, 224, 255, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+}
+
+.comp-ob-chest-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2.5px 0 #071022;
+}
+
+.comp-ob-chest-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+}
+
+.comp-ob-chest-btn span {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071022;
+  line-height: 1;
+}
+
+.comp-ob-status-card {
+  height: 58px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  border: 2.5px solid #071022;
+  background: rgba(11, 28, 66, 0.86);
+  box-shadow: 0 4px 0 #071022, inset 0 1.5px 0 rgba(162, 224, 255, 0.28);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  min-width: 158px;
+}
+
+.comp-ob-status-card.is-live {
+  border-color: #62ecff;
+  background: linear-gradient(180deg, rgba(20, 68, 148, 0.94), rgba(10, 32, 82, 0.96));
+}
+
+.comp-ob-status-card.is-ready {
+  border-color: #ffe252;
+  background: linear-gradient(180deg, #ffe554 0%, #f59c1a 100%);
+}
+
+.comp-ob-status-card.is-ready .comp-ob-st-copy strong,
+.comp-ob-status-card.is-ready .comp-ob-st-copy span {
+  color: #1f1100;
+  text-shadow: none;
+}
+
+.comp-ob-st-tier-ico {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+
+.comp-ob-st-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.comp-ob-st-copy strong {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071022;
+  white-space: nowrap;
+}
+
+.comp-ob-st-copy span {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #9ce6ff;
+  white-space: nowrap;
+}
+
+/* 1-Match Queue Meter (Matches OvenBreak Boost Bar beside PLAY!) */
+.comp-ob-queue-meter {
+  width: 164px;
+  padding: 6px 9px;
+  border-radius: 13px;
+  border: 2.5px solid #071022;
+  background: rgba(8, 21, 52, 0.88);
+  box-shadow: 0 4px 0 #071022;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comp-ob-qm-title {
+  font-size: 10px;
+  font-weight: 900;
+  color: #d6ecff;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-ob-qm-track {
+  position: relative;
+  width: 100%;
+  height: 18px;
+  border-radius: 999px;
+  background: #050d20;
+  border: 2px solid #040914;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-ob-qm-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2be05c, #8aff66);
+  transition: width 0.35s ease;
+}
+
+.comp-ob-qm-fill.locking {
+  background: linear-gradient(90deg, #2898ff, #62ecff);
+}
+
+.comp-ob-qm-fill.ready {
+  background: linear-gradient(90deg, #ffb718, #fff066);
+}
+
+.comp-ob-qm-val {
+  position: relative;
+  z-index: 2;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.2px 0 #071022, -1px 0 0 #071022, 1px 0 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+/* GIANT GLOSSY YELLOW PLAY! BUTTON */
+.comp-ob-play-btn {
+  min-width: 196px;
+  height: 58px;
+  padding: 6px 22px;
+  border-radius: 16px;
+  border: 3.5px solid #071022;
+  background: linear-gradient(180deg, #fff066 0%, #ffc414 55%, #e68600 100%);
+  box-shadow: 0 6px 0 #071022, 0 0 24px rgba(255, 212, 48, 0.48), inset 0 3px 0 rgba(255, 255, 255, 0.72);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.comp-ob-play-btn:hover {
+  filter: brightness(1.06);
+}
+
+.comp-ob-play-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 #071022;
+}
+
+.comp-ob-play-main {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  text-shadow: 0 2.5px 0 #071022, -2px 0 0 #071022, 2px 0 0 #071022, 0 -1.5px 0 #071022;
+  line-height: 1.05;
+}
+
+.comp-ob-play-sub {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #291500;
+  line-height: 1.1;
+}
+
+.comp-ob-play-btn.is-locked {
+  background: linear-gradient(180deg, #4b6899 0%, #273e69 58%, #18294a 100%);
+  box-shadow: 0 5px 0 #071022, inset 0 2px 0 rgba(178, 218, 255, 0.35);
+}
+
+.comp-ob-play-btn.is-locked .comp-ob-play-main {
+  font-size: 18px;
+  color: #d6ecff;
+}
+
+.comp-ob-play-btn.is-locked .comp-ob-play-sub {
+  color: #8ce4ff;
+}
+
+.comp-ob-play-btn.is-result-ready {
+  background: linear-gradient(180deg, #6eff9a 0%, #1ecf58 58%, #0e943b 100%);
+  box-shadow: 0 6px 0 #071022, 0 0 22px rgba(72, 240, 128, 0.6), inset 0 3px 0 rgba(255, 255, 255, 0.65);
+}
+
+.comp-ob-play-btn.is-result-ready .comp-ob-play-main {
+  font-size: 20px;
+}
+
+.comp-ob-play-btn.is-result-ready .comp-ob-play-sub {
+  color: #052910;
+}
+
+/* Rewards & 8-Tier Roadmap Modal (#comp-rewards-overlay) */
+.comp-rewards-modal {
+  width: min(560px, 94vw) !important;
+}
+
+.comp-rewards-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comp-rew-sec {
+  padding: 9px 11px;
+  border-radius: 13px;
+  background: rgba(7, 18, 42, 0.72);
+  border: 2px solid #071022;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Compact Smartphone Landscape: Clean Zero-Scroll Fit! */
+@media (max-height: 460px), (max-width: 720px) {
+  .comp-ob-main {
+    grid-template-columns: minmax(0, 1.12fr) minmax(242px, 0.98fr);
+    gap: 8px;
+  }
+
+  .comp-ob-left {
+    grid-template-columns: minmax(0, 1.32fr) minmax(96px, 0.68fr);
+    gap: 6px;
+  }
+
+  .comp-ob-runner-btn .comp-hero-img {
+    width: clamp(84px, 28vh, 122px);
+    height: clamp(84px, 28vh, 122px);
+  }
+
+  .comp-ob-runner-btn .comp-hero-aura {
+    width: clamp(98px, 32vh, 138px);
+    height: clamp(98px, 32vh, 138px);
+  }
+
+  .comp-ob-track-floor {
+    height: 11px;
+  }
+
+  .comp-ob-slots-row {
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .comp-ob-slot {
+    padding: 3px 2px;
+    border-radius: 8px;
+  }
+
+  .comp-ob-slot-lbl { font-size: 8.5px; }
+  .comp-ob-slot strong { font-size: 10.5px; }
+
+  .comp-ob-mid-stack {
+    gap: 4px;
+  }
+
+  .comp-ob-clock-chip {
+    font-size: 8.5px;
+    padding: 2.5px 6px;
+  }
+
+  .comp-ob-stack-btn {
+    padding: 5.5px 6px;
+    font-size: 10.5px;
+    border-radius: 9px;
+  }
+
+  .comp-ob-rule-pill {
+    padding: 3px 5px;
+    font-size: 8.5px;
+  }
+
+  .comp-ob-panel {
+    padding: 6px 8px;
+    gap: 5px;
+    border-radius: 13px;
+  }
+
+  .comp-ob-panel-head {
+    font-size: 9.5px;
+    padding: 2px 7px;
+  }
+
+  .comp-ob-emblem-stage {
+    width: 50px;
+    height: 50px;
+  }
+
+  .comp-ob-emblem-img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .comp-ob-tier-name {
+    font-size: 11.5px;
+  }
+
+  .comp-ob-payout-summary {
+    padding: 4px 6px;
+  }
+
+  .comp-ob-ps-head,
+  .comp-ob-ps-vals {
+    font-size: 9px;
+  }
+
+  .comp-ob-prog-track {
+    height: 18px;
+  }
+
+  .comp-ob-prog-text {
+    font-size: 9.5px;
+  }
+
+  .comp-ob-stage-card {
+    min-height: 40px;
+    border-radius: 8px;
+  }
+
+  .comp-ob-st-num {
+    width: 15px;
+    height: 15px;
+    font-size: 9px;
+  }
+
+  .comp-ob-st-foot {
+    padding: 2px 5px;
+    font-size: 8.5px;
+  }
+
+  .comp-ob-st-foot span {
+    font-size: 8px;
+  }
+
+  .comp-ob-chest-btn {
+    width: 52px;
+    height: 46px;
+    border-radius: 11px;
+  }
+
+  .comp-ob-chest-img {
+    width: 26px;
+    height: 26px;
+  }
+
+  .comp-ob-chest-btn span {
+    font-size: 9px;
+  }
+
+  .comp-ob-status-card {
+    height: 46px;
+    padding: 4px 9px;
+    min-width: 126px;
+    border-radius: 11px;
+  }
+
+  .comp-ob-st-tier-ico {
+    width: 28px;
+    height: 28px;
+  }
+
+  .comp-ob-st-copy strong { font-size: 10.5px; }
+  .comp-ob-st-copy span { font-size: 9px; }
+
+  .comp-ob-queue-meter {
+    width: 132px;
+    padding: 4px 7px;
+    border-radius: 10px;
+  }
+
+  .comp-ob-qm-title { font-size: 8.5px; }
+  .comp-ob-qm-track { height: 15px; }
+  .comp-ob-qm-val { font-size: 8.5px; }
+
+  .comp-ob-play-btn {
+    min-width: 154px;
+    height: 46px;
+    padding: 4px 14px;
+    border-radius: 13px;
+  }
+
+  .comp-ob-play-main {
+    font-size: 19px;
+  }
+
+  .comp-ob-play-btn.is-locked .comp-ob-play-main,
+  .comp-ob-play-btn.is-result-ready .comp-ob-play-main {
+    font-size: 14.5px;
+  }
+
+  .comp-ob-play-sub {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 640px) and (orientation: portrait) {
+  .comp-ob-main {
+    grid-template-columns: 1fr;
+  }
+
+  .comp-ob-footer {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}

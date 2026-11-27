@@ -272,7 +272,7 @@
       compMatches: typeof raw.compMatches === 'number' && Number.isFinite(raw.compMatches) ? Math.max(0, Math.floor(raw.compMatches)) : 0,
       compWins: typeof raw.compWins === 'number' && Number.isFinite(raw.compWins) ? Math.max(0, Math.floor(raw.compWins)) : 0,
       compBestScore: typeof raw.compBestScore === 'number' && Number.isFinite(raw.compBestScore) ? Math.max(0, Math.floor(raw.compBestScore)) : 0,
-      pendingCompMatches: Array.isArray(raw.pendingCompMatches) ? raw.pendingCompMatches.filter((m) => m && m.id && !m.claimed).slice(-5) : [],
+      pendingCompMatches: Array.isArray(raw.pendingCompMatches) ? raw.pendingCompMatches.filter((m) => m && m.id && !m.claimed).slice(-1) : [],
       bestScore: typeof raw.bestScore === 'number' && Number.isFinite(raw.bestScore) ? Math.max(0, Math.floor(raw.bestScore)) : 0,
       bestYear: typeof raw.bestYear === 'number' && Number.isFinite(raw.bestYear) ? Math.max(1, Math.floor(raw.bestYear)) : 1,
       bestDistanceM: typeof raw.bestDistanceM === 'number' && Number.isFinite(raw.bestDistanceM) ? Math.max(0, Math.floor(raw.bestDistanceM)) : 0,
@@ -699,6 +699,8 @@
     btnCompLobbyBack: document.getElementById('btn-comp-lobby-back'),
     btnCompLobbyRank: document.getElementById('btn-comp-lobby-rank'),
     btnCompLobbyHome: document.getElementById('btn-comp-lobby-home'),
+    compLobbyTitle: document.getElementById('comp-lobby-title'),
+    compLobbyGems: document.getElementById('comp-lobby-gems'),
     compLobbyGold: document.getElementById('comp-lobby-gold'),
     compLobbyEmblemWrap: document.getElementById('comp-lobby-emblem-wrap'),
     compLobbyTierImg: document.getElementById('comp-lobby-tier-img'),
@@ -718,7 +720,22 @@
     compLobbyStatBest: document.getElementById('comp-lobby-stat-best'),
     btnCompLobbyChars: document.getElementById('btn-comp-lobby-chars'),
     btnCompLobbyStart: document.getElementById('btn-comp-lobby-start'),
+    compLobbyStartMain: document.getElementById('comp-lobby-start-main'),
     compLobbyStartSub: document.getElementById('comp-lobby-start-sub'),
+    compLobbySeasonTimer: document.getElementById('comp-lobby-season-timer'),
+    compLobbySettleTimer: document.getElementById('comp-lobby-settle-timer'),
+    compLobbyAiBadge: document.getElementById('comp-lobby-ai-badge'),
+    compLobbyAiText: document.getElementById('comp-lobby-ai-text'),
+    btnCompTierEmblem: document.getElementById('btn-comp-tier-emblem'),
+    btnCompPayoutPreview: document.getElementById('btn-comp-payout-preview'),
+    btnCompLobbyRewards: document.getElementById('btn-comp-lobby-rewards'),
+    btnCompStatusCard: document.getElementById('btn-comp-status-card'),
+    compStatusTierImg: document.getElementById('comp-status-tier-img'),
+    compLobbyLockLabel: document.getElementById('comp-lobby-lock-label'),
+    compLobbyLockFill: document.getElementById('comp-lobby-lock-fill'),
+    compLobbyLockVal: document.getElementById('comp-lobby-lock-val'),
+    compRewardsOverlay: document.getElementById('comp-rewards-overlay'),
+    btnCloseCompRewards: document.getElementById('btn-close-comp-rewards'),
     compMatchRuleNote: document.getElementById('comp-match-rule-note'),
     compWaitOverlay: document.getElementById('comp-wait-overlay'),
     compWaitTimerPill: document.getElementById('comp-wait-timer-pill'),
@@ -5119,36 +5136,160 @@
     `;
   }
 
+  function getActiveCompPendingMatch() {
+    const list = ensurePendingCompMatches().filter((m) => m && !m.claimed);
+    return list[0] || null;
+  }
+
+  function openActiveCompMatchModal() {
+    const m = getActiveCompPendingMatch();
+    if (!m) return false;
+    if (m.settled) {
+      showCompFinalResultModal(m);
+    } else {
+      activeWaitMatchId = m.id;
+      renderCompWaitModal(m);
+      if (el.compWaitOverlay) el.compWaitOverlay.classList.remove('hidden');
+    }
+    return true;
+  }
+
+  function updateCompLobbyMatchStateUI() {
+    const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
+    const tier = DATA.getCompTier(myTrophies);
+    const isGoogleLinked = Boolean(ONLINE && save.auth && ONLINE.isRankedProvider(save.auth.provider));
+    const activeMatch = getActiveCompPendingMatch();
+
+    if (ONLINE && ONLINE.getWeekInfo) {
+      const wInfo = ONLINE.getWeekInfo();
+      const shortTxt = (wInfo && wInfo.countdownText) ? wInfo.countdownText : '주간 정산 진행 중';
+      if (el.compLobbySeasonTimer) el.compLobbySeasonTimer.textContent = shortTxt;
+      if (el.compLobbySettleTimer) el.compLobbySettleTimer.textContent = shortTxt;
+    }
+
+    if (activeMatch && !activeMatch.settled) {
+      const remSec = Math.max(1, Math.ceil((activeMatch.endsAt - Date.now()) / 1000));
+      const totalP = (activeMatch.participants || []).length || 8;
+      const doneCnt = (activeMatch.participants || []).filter((p) => p.finished).length;
+      const totalDur = Math.max(10, Math.round(((activeMatch.endsAt || 0) - (activeMatch.startedAt || 0)) / 1000) || 60);
+      const elapsedPct = Math.min(98, Math.max(8, Math.round(((totalDur - remSec) / totalDur) * 100)));
+
+      if (el.btnCompLobbyStart) {
+        el.btnCompLobbyStart.classList.add('is-locked');
+        el.btnCompLobbyStart.classList.remove('is-result-ready');
+      }
+      if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = '경기 진행 중';
+      if (el.compLobbyStartSub) el.compLobbyStartSub.textContent = `종료까지 ${remSec}초 · 1경기 제한`;
+      if (el.compLobbyLockLabel) el.compLobbyLockLabel.textContent = '경기 종료 전 매칭 불가';
+      if (el.compLobbyLockFill) {
+        el.compLobbyLockFill.style.width = `${elapsedPct}%`;
+        el.compLobbyLockFill.classList.add('locking');
+        el.compLobbyLockFill.classList.remove('ready');
+      }
+      if (el.compLobbyLockVal) el.compLobbyLockVal.textContent = `완료 ${doneCnt}/${totalP} · ${remSec}s`;
+      if (el.btnCompStatusCard) {
+        el.btnCompStatusCard.classList.add('is-live');
+        el.btnCompStatusCard.classList.remove('is-ready');
+      }
+      if (el.compLobbyProgCur) el.compLobbyProgCur.textContent = '진행 중인 경기';
+      if (el.compLobbyProgNext) el.compLobbyProgNext.textContent = `완료 ${doneCnt}/${totalP}명 · ${remSec}s 남음`;
+      return;
+    }
+
+    if (activeMatch && activeMatch.settled) {
+      if (el.btnCompLobbyStart) {
+        el.btnCompLobbyStart.classList.remove('is-locked');
+        el.btnCompLobbyStart.classList.add('is-result-ready');
+      }
+      if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = '결과 확인!';
+      if (el.compLobbyStartSub) el.compLobbyStartSub.textContent = '경기 종료 · 보상 수령 후 재매칭';
+      if (el.compLobbyLockLabel) el.compLobbyLockLabel.textContent = '결과 확인 후 매칭 가능';
+      if (el.compLobbyLockFill) {
+        el.compLobbyLockFill.style.width = '100%';
+        el.compLobbyLockFill.classList.remove('locking');
+        el.compLobbyLockFill.classList.add('ready');
+      }
+      if (el.compLobbyLockVal) el.compLobbyLockVal.textContent = '결과 도착!';
+      if (el.btnCompStatusCard) {
+        el.btnCompStatusCard.classList.remove('is-live');
+        el.btnCompStatusCard.classList.add('is-ready');
+      }
+      if (el.compLobbyProgCur) el.compLobbyProgCur.textContent = '경쟁전 결과 도착!';
+      if (el.compLobbyProgNext) el.compLobbyProgNext.textContent = '눌러서 순위·트로피 받기';
+      return;
+    }
+
+    if (el.btnCompLobbyStart) {
+      el.btnCompLobbyStart.classList.remove('is-locked', 'is-result-ready');
+    }
+    if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = 'PLAY!';
+    if (el.compLobbyStartSub) {
+      el.compLobbyStartSub.textContent = isGoogleLinked ? '8인 트로피 매칭' : 'Google 연동 전용';
+    }
+    if (el.compLobbyLockLabel) {
+      el.compLobbyLockLabel.textContent = isGoogleLinked ? '1경기씩 매칭 가능' : 'Google 계정 연동 필요';
+    }
+    if (el.compLobbyLockFill) {
+      el.compLobbyLockFill.style.width = isGoogleLinked ? '100%' : '0%';
+      el.compLobbyLockFill.classList.remove('locking', 'ready');
+    }
+    if (el.compLobbyLockVal) {
+      el.compLobbyLockVal.textContent = isGoogleLinked ? '1 / 1 준비 완료' : '연동 필요';
+    }
+    if (el.btnCompStatusCard) {
+      el.btnCompStatusCard.classList.remove('is-live', 'is-ready');
+    }
+    if (el.compLobbyProgCur) el.compLobbyProgCur.textContent = `${tier.name} 티어`;
+    if (el.compLobbyProgNext) {
+      el.compLobbyProgNext.textContent = tier.next
+        ? `${tier.next.name}까지 ${Math.max(0, tier.next.minTrophies - myTrophies).toLocaleString('ko-KR')} 트로피`
+        : '최고 티어 달성!';
+    }
+  }
+
   let lastCompHeroSrc = '';
   function renderCompetitiveLobby() {
     const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
     const tier = DATA.getCompTier(myTrophies);
     const ch = getCharDef(save.selectedChar);
     const skin = getEquippedSkin(ch.id);
+    const aiMaxTrophies = DATA.COMP_AI_MAX_TROPHIES ?? 699;
+    const allowAiFallback = myTrophies <= aiMaxTrophies;
 
+    if (el.compLobbyTitle) el.compLobbyTitle.textContent = `트로피 경기: ${tier.name}`;
+    if (el.compLobbyGems) el.compLobbyGems.textContent = (save.gems || 0).toLocaleString('ko-KR');
     if (el.compLobbyGold) el.compLobbyGold.textContent = (save.gold || 0).toLocaleString('ko-KR');
     if (el.compLobbyEmblemWrap) el.compLobbyEmblemWrap.style.setProperty('--tier-color', tier.color);
     if (el.compLobbyTierImg) {
       el.compLobbyTierImg.src = getTierImgUrl(tier);
       el.compLobbyTierImg.alt = tier.name;
     }
+    if (el.compStatusTierImg) {
+      el.compStatusTierImg.src = getTierImgUrl(tier);
+      el.compStatusTierImg.alt = tier.name;
+    }
     if (el.compLobbyTierName) {
       el.compLobbyTierName.textContent = tier.name;
       el.compLobbyTierName.style.color = tier.color;
     }
-    if (el.compLobbyTrophyVal) el.compLobbyTrophyVal.textContent = myTrophies.toLocaleString('ko-KR');
+    if (el.compLobbyTrophyVal) {
+      el.compLobbyTrophyVal.textContent = tier.next
+        ? `${myTrophies.toLocaleString('ko-KR')} / ${tier.next.minTrophies.toLocaleString('ko-KR')}`
+        : `${myTrophies.toLocaleString('ko-KR')} MAX`;
+    }
     if (el.compLobbyProgFill) {
       el.compLobbyProgFill.style.width = `${tier.progressPct}%`;
       el.compLobbyProgFill.style.background = `linear-gradient(90deg, ${tier.color}, #ffe866)`;
     }
-    if (el.compLobbyProgCur) el.compLobbyProgCur.textContent = tier.name;
-    if (el.compLobbyProgNext) {
-      el.compLobbyProgNext.textContent = tier.next
-        ? `${tier.next.name}까지 ${Math.max(0, tier.next.minTrophies - myTrophies).toLocaleString('ko-KR')}`
-        : '최고 티어 달성!';
+    if (el.compLobbyAiBadge) {
+      el.compLobbyAiBadge.classList.toggle('ok', allowAiFallback);
+      el.compLobbyAiBadge.classList.toggle('strict', !allowAiFallback);
+    }
+    if (el.compLobbyAiText) {
+      el.compLobbyAiText.textContent = allowAiFallback ? '1분 후 AI 보충' : '골드+ 실제 매칭';
     }
 
-    // 8-Tier Emblem Roadmap (Bronze ~ Champion)
+    // 8-Tier Emblem Roadmap (Bronze ~ Champion inside #comp-rewards-overlay)
     if (el.compTierRoadmap && Array.isArray(DATA.COMP_TIERS)) {
       el.compTierRoadmap.innerHTML = DATA.COMP_TIERS.map((t, idx) => {
         const isCurrent = t.id === tier.id;
@@ -5163,7 +5304,7 @@
       }).join('');
     }
 
-    // Center KartRider-style Runner Podium
+    // Scenic Running Character Showcase
     if (el.compLobbyCharPerk) el.compLobbyCharPerk.textContent = ch.perkLabel || ch.tierLabel || '특화 러너';
     if (el.compLobbyCharName) el.compLobbyCharName.textContent = skin ? `${ch.name} · ${skin.name}` : ch.name;
     if (el.compLobbyHeroImg) {
@@ -5186,10 +5327,18 @@
     if (el.compLobbyStatWins) el.compLobbyStatWins.textContent = `${save.compWins || 0}승`;
     if (el.compLobbyStatMatches) el.compLobbyStatMatches.textContent = `${save.compMatches || 0}전`;
     if (el.compLobbyStatBest) el.compLobbyStatBest.textContent = `${(save.compBestScore || 0).toLocaleString('ko-KR')}점`;
-    if (el.compLobbyStartSub) {
-      const isGoogleLinked = Boolean(ONLINE && save.auth && ONLINE.isRankedProvider(save.auth.provider));
-      el.compLobbyStartSub.textContent = isGoogleLinked ? '8인 실시간 트로피 경기' : 'Google 계정 연동 전용';
-    }
+
+    updateCompLobbyMatchStateUI();
+  }
+
+  function openCompRewardsModal() {
+    SFX.click();
+    renderCompetitiveLobby();
+    if (el.compRewardsOverlay) el.compRewardsOverlay.classList.remove('hidden');
+  }
+
+  function closeCompRewardsModal() {
+    if (el.compRewardsOverlay) el.compRewardsOverlay.classList.add('hidden');
   }
 
   // In-Tab Competitive Character & Skin Quick Picker (Stays inside #view-comp!)
@@ -5488,9 +5637,13 @@
 
   function cancelCompetitiveMatchmaking(silent = false) {
     if (compQueueState) {
-      compQueueState.cancelled = true;
-      clearCompQueueTimers(compQueueState);
+      const prev = compQueueState;
+      prev.cancelled = true;
+      clearCompQueueTimers(prev);
       compQueueState = null;
+      if (prev.online && ONLINE && ONLINE.leaveCompMatchRoom) {
+        ONLINE.leaveCompMatchRoom(prev.roomId, prev.safeUid);
+      }
     }
     if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
     if (!silent) SFX.click();
@@ -5537,6 +5690,22 @@
 
   async function startCompetitiveMatchmaking() {
     if (run && run.active) return;
+    if (compQueueState && !compQueueState.cancelled) return;
+
+    // STRICT SINGLE-MATCH RULE: Cannot start another match until current match finishes & is settled!
+    const activeMatch = getActiveCompPendingMatch();
+    if (activeMatch) {
+      if (!activeMatch.settled) {
+        SFX.hit();
+        showToast('진행 중인 경쟁전 경기가 끝난 뒤 다시 매칭할 수 있습니다! (1경기씩 진행)');
+        openActiveCompMatchModal();
+      } else {
+        SFX.click();
+        showToast('종료된 경기 결과를 먼저 확인해 주세요!');
+        showCompFinalResultModal(activeMatch);
+      }
+      return;
+    }
 
     // STRICT RULE: Only real Google-linked players may enter Competitive Matchmaking!
     const myAuth = save.auth || { provider: 'guest', uid: '', nickname: '게스트' };
@@ -5604,10 +5773,14 @@
 
     if (el.compMatchRuleNote) {
       el.compMatchRuleNote.textContent = allowAiFallback
-        ? '실제 Google 유저 우선 매칭 · 10초 지연 시 실버 이하 구간 AI 보충 · 1~4위 +트로피 / 5~8위 -트로피'
+        ? '실제 Google 유저 우선 매칭 · 1분 이상 대기 시 실버 이하 구간 AI 보충 · 1~4위 +트로피 / 5~8위 -트로피'
         : '골드 이상 구간은 실제 Google 연동 플레이어만 매칭됩니다 (AI 보충 없음 · 1~4위 +트로피 / 5~8위 -트로피)';
     }
-    if (el.compMatchStatus) el.compMatchStatus.textContent = '실제 Google 연동 러너를 찾는 중... (1 / 8 · 0초)';
+    if (el.compMatchStatus) {
+      el.compMatchStatus.textContent = allowAiFallback
+        ? '실제 Google 연동 러너를 찾는 중... (1 / 8 · 0초 / 60초 후 AI 보충)'
+        : '골드+ 구간: 실제 Google 연동 러너 대기 중... (1 / 8 · 0초)';
+    }
     if (el.btnCompMatchCancel) el.btnCompMatchCancel.disabled = false;
     renderCompMatchGrid(q.players);
     if (el.compMatchOverlay) el.compMatchOverlay.classList.remove('hidden');
@@ -5745,8 +5918,8 @@
       }, 1000);
     }
 
-    // 1-second live wait clock: after 10s without full 8 real players, ONLY Bronze/Silver (0~699) allows AI fill!
-    const AI_FALLBACK_DELAY_SEC = 10;
+    // 1-second live wait clock: after 60s (1 minute) without full 8 real players, ONLY Bronze/Silver (0~699) allows AI fill!
+    const AI_FALLBACK_DELAY_SEC = 60;
     q.waitTimer = setInterval(() => {
       if (q.cancelled || q.launching || compQueueState !== q) return;
       q.waitSec += 1;
@@ -5757,7 +5930,7 @@
       if (q.allowAiFallback && !q.aiStarted && q.waitSec >= AI_FALLBACK_DELAY_SEC) {
         q.aiStarted = true;
         if (el.compMatchStatus) {
-          el.compMatchStatus.textContent = `매칭 지연 · 실버 이하 구간 AI 보충 중... (${q.players.length} / ${totalSlots})`;
+          el.compMatchStatus.textContent = `1분 경과 · 실버 이하 구간 AI 보충 중... (${q.players.length} / ${totalSlots})`;
         }
         q.fillTimer = setInterval(() => {
           if (q.cancelled || q.launching || compQueueState !== q) return;
@@ -5774,15 +5947,18 @@
           SFX.click();
           renderCompMatchGrid(q.players);
           if (el.compMatchStatus) {
-            el.compMatchStatus.textContent = `실버 이하 구간 AI 보충 중... (${q.players.length} / ${totalSlots})`;
+            el.compMatchStatus.textContent = `1분 경과 · 실버 이하 구간 AI 보충 중... (${q.players.length} / ${totalSlots})`;
           }
           if (q.players.length >= totalSlots) launchCountdown();
         }, 550);
       } else if (!q.aiStarted) {
         if (el.compMatchStatus) {
+          const mm = Math.floor(q.waitSec / 60);
+          const ss = String(q.waitSec % 60).padStart(2, '0');
+          const waitDisp = mm > 0 ? `${mm}분 ${ss}초` : `${q.waitSec}초`;
           el.compMatchStatus.textContent = q.allowAiFallback
-            ? `실제 Google 연동 러너 찾는 중... (${q.players.length} / ${totalSlots} · ${q.waitSec}초)`
-            : `골드+ 구간: 실제 Google 연동 러너 대기 중... (${q.players.length} / ${totalSlots} · ${q.waitSec}초)`;
+            ? `실제 Google 연동 러너 찾는 중... (${q.players.length} / ${totalSlots} · ${waitDisp} / 1분 후 AI 보충)`
+            : `골드+ 구간: 실제 Google 연동 러너 대기 중... (${q.players.length} / ${totalSlots} · ${waitDisp})`;
         }
       }
     }, 1000);
@@ -5944,6 +6120,7 @@
     const list = ensurePendingCompMatches();
     if (!list.length) {
       updateCompPendingPill();
+      if (currentTab === 'comp') updateCompLobbyMatchStateUI();
       return;
     }
     const now = Date.now();
@@ -6009,6 +6186,7 @@
 
     if (dirty) persistSave(false);
     updateCompPendingPill();
+    if (currentTab === 'comp') updateCompLobbyMatchStateUI();
   }
 
   function updateCompMatchSimulation(dt) {
@@ -6112,13 +6290,14 @@
       return;
     }
 
-    // Cookie Run OvenBreak Style: Player died early -> Wait for remaining runners (can play other content while waiting!)
-    ensurePendingCompMatches().push(matchRecord);
+    // Cookie Run OvenBreak Style: Player died early -> Wait for remaining runners (1 match at a time; other content allowed!)
+    save.pendingCompMatches = [matchRecord];
     persistSave(false);
     activeWaitMatchId = matchRecord.id;
     renderCompWaitModal(matchRecord);
     if (el.compWaitOverlay) el.compWaitOverlay.classList.remove('hidden');
     updateCompPendingPill();
+    updateCompLobbyMatchStateUI();
   }
 
   async function renderRankingTab() {
@@ -10879,6 +11058,7 @@
       el.btnCompLobbyBack.addEventListener('click', () => {
         closeCompCharModal();
         closeCompRankModal();
+        closeCompRewardsModal();
         switchTab('home');
       });
     }
@@ -10886,7 +11066,42 @@
       el.btnCompLobbyHome.addEventListener('click', () => {
         closeCompCharModal();
         closeCompRankModal();
+        closeCompRewardsModal();
         switchTab('home');
+      });
+    }
+    if (el.btnCompLobbyRewards) {
+      el.btnCompLobbyRewards.addEventListener('click', () => {
+        openCompRewardsModal();
+      });
+    }
+    if (el.btnCompTierEmblem) {
+      el.btnCompTierEmblem.addEventListener('click', () => {
+        openCompRewardsModal();
+      });
+    }
+    if (el.btnCompPayoutPreview) {
+      el.btnCompPayoutPreview.addEventListener('click', () => {
+        openCompRewardsModal();
+      });
+    }
+    if (el.btnCloseCompRewards) {
+      el.btnCloseCompRewards.addEventListener('click', () => {
+        SFX.click();
+        closeCompRewardsModal();
+      });
+    }
+    if (el.compRewardsOverlay) {
+      el.compRewardsOverlay.addEventListener('click', (e) => {
+        if (e.target === el.compRewardsOverlay) closeCompRewardsModal();
+      });
+    }
+    if (el.btnCompStatusCard) {
+      el.btnCompStatusCard.addEventListener('click', () => {
+        SFX.click();
+        if (!openActiveCompMatchModal()) {
+          openCompRewardsModal();
+        }
       });
     }
     if (el.btnCompLobbyRank) {

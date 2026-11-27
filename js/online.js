@@ -1052,8 +1052,8 @@ window.OnlineService = (function () {
       return { rejected: 'google_required', roomId: null, safeUid: null, players: [], online: false };
     }
     const now = Date.now();
-    // 30-second shared matchmaking bucket per tier band so real Google-linked players match reliably!
-    const bucket = Math.floor(now / 30000);
+    // 120-second shared matchmaking bucket per tier band so real Google players waiting 60s+ match reliably!
+    const bucket = Math.floor(now / 120000);
     const tr = Math.max(0, Math.floor(Number(playerInfo.trophies) || 0));
     const tierBand = tr < 700 ? 'bs' : (tr < 1800 ? 'gp' : 'dm');
     const roomId = `r_${tierBand}_${bucket}`;
@@ -1067,6 +1067,7 @@ window.OnlineService = (function () {
       trophies: tr,
       score: 0,
       finished: false,
+      cancelled: false,
       joinedAt: now,
       updatedAt: now
     };
@@ -1089,7 +1090,7 @@ window.OnlineService = (function () {
             const data = await listRes.json();
             if (data && typeof data === 'object') {
               players = Object.values(data)
-                .filter((p) => p && p.uid && isRankedProvider(p.provider) && (now - (p.joinedAt || 0)) < 120000)
+                .filter((p) => p && p.uid && !p.cancelled && isRankedProvider(p.provider) && (now - (p.joinedAt || 0)) < 180000)
                 .slice(0, 8);
             }
           }
@@ -1108,10 +1109,26 @@ window.OnlineService = (function () {
       if (!data || typeof data !== 'object') return [];
       const now = Date.now();
       return Object.values(data)
-        .filter((p) => p && p.uid && isRankedProvider(p.provider) && (now - (p.joinedAt || 0)) < 240000)
+        .filter((p) => p && p.uid && !p.cancelled && isRankedProvider(p.provider) && (now - (p.joinedAt || 0)) < 240000)
         .slice(0, 8);
     } catch {
       return null;
+    }
+  }
+
+  async function leaveCompMatchRoom(roomId, safeUid) {
+    if (!roomId || roomId.startsWith('local_') || !safeUid || !hasRemoteDb()) return false;
+    try {
+      const path = `${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}/${encodeURIComponent(safeUid)}.json`;
+      const { url } = await buildAuthedUrl(path, false, true);
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancelled: true, updatedAt: Date.now() })
+      });
+      return Boolean(res && res.ok);
+    } catch {
+      return false;
     }
   }
 
@@ -1206,6 +1223,7 @@ window.OnlineService = (function () {
     fetchTrophyBoard,
     joinCompMatchRoom,
     pollCompMatchRoom,
+    leaveCompMatchRoom,
     pushCompLiveScore,
     checkWeeklyChampionPayout,
     onBoardUpdate
