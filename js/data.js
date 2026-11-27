@@ -262,7 +262,7 @@ window.RUN_DATA = (function () {
     runChestDropWeights: { wood: 56, silver: 27, gold: 13, diamond: 4 }
   };
 
-  // 22종 수집형 스킨 (희귀 20종 · 신화 2종: 화이트 냥이 후드, 명계의 군주 하데스!)
+  // 26종 수집형 스킨 (희귀 20종 · 전설 3종: 썬더, 사이버 시안, 사이버 바이올렛 · 신화 3종: 화이트 냥이 후드, 명계의 군주 하데스, 얼음황제!)
   const SKINS = [
     // 희귀 (20) — 의상 색상만 변경(피부·눈·머리색 원본 유지!)
     { id: 'mint_rain',        name: '민트 우비',       rarity: 'rare', charId: 'umbrella_master', filter: 'none', customAvatar: 'assets/chars/skin_port_mint_rain.png?v=20261121hd112',        outfitColor: { mode: 'yellow',  h: 158, s: 0.76, lm: 1.02 }, glow: '#5ef5c8', trail: ['#5ef5c8', '#ffffff'] },
@@ -285,6 +285,49 @@ window.RUN_DATA = (function () {
     { id: 'frost_santa',      name: '겨울왕국 산타',   rarity: 'rare', charId: 'fashionista',     filter: 'none', customAvatar: 'assets/chars/skin_port_frost_santa.png?v=20261121hd112',      outfitColor: { mode: 'red',     h: 202, s: 0.86, lm: 1.10 }, glow: '#75e6ff', trail: ['#75e6ff', '#ffffff'] },
     { id: 'mythic_typhoon',   name: '태풍의 지배자',   rarity: 'rare', charId: 'umbrella_master', filter: 'none', customAvatar: 'assets/chars/skin_port_mythic_typhoon.png?v=20261121hd112',   outfitColor: { mode: 'yellow',  h: 292, s: 0.80, lm: 0.92 }, glow: '#ff52b8', trail: ['#ff52b8', '#5ef5ff', '#ffe859'] },
     { id: 'mythic_celestial', name: '천상의 기상술사', rarity: 'rare', charId: 'iced_americano',  filter: 'none', customAvatar: 'assets/chars/skin_port_mythic_celestial.png?v=20261121hd112', outfitColor: { mode: 'blue',    h: 268, s: 0.78, lm: 1.06 }, glow: '#c96bff', trail: ['#c96bff', '#ffe866', '#66f2ff'] },
+    // 전설 스페셜 스킨 (스킨 뽑기 5% · 다이아 상자 25% & 15회 천장 · 마일리지 50 교환!)
+    {
+      id: 'thunder_legendary',
+      name: '썬더',
+      rarity: 'legendary',
+      charId: 'short_sleeve',
+      filter: 'none',
+      customAnimSkin: 'thunder',
+      customAnimFrames: 4,
+      customRunFrames: 8,
+      customAvatar: 'assets/chars/port_thunder.png?v=20261121hd138',
+      glow: '#ffca42',
+      trail: ['#ffe857', '#ff9d14', '#ffffff'],
+      desc: '8프레임 전용 풀애니메이션(달리기·점프·슬라이드) & 황금 번개 망토 전설 스킨!'
+    },
+    {
+      id: 'cyber_cyan_legendary',
+      name: '사이버 시안',
+      rarity: 'legendary',
+      charId: 'iced_americano',
+      filter: 'none',
+      customAnimSkin: 'cyber_cyan',
+      customAnimFrames: 4,
+      customRunFrames: 4,
+      customAvatar: 'assets/chars/port_cyber_cyan.png?v=20261121hd138',
+      glow: '#38e8ff',
+      trail: ['#47ecff', '#1e90ff', '#ffffff'],
+      desc: '전용 풀애니메이션(달리기·점프·슬라이드) & 네온 시안 헤드셋·고글 전설 스킨!'
+    },
+    {
+      id: 'cyber_violet_legendary',
+      name: '사이버 바이올렛',
+      rarity: 'legendary',
+      charId: 'long_padding',
+      filter: 'none',
+      customAnimSkin: 'cyber_violet',
+      customAnimFrames: 4,
+      customRunFrames: 8,
+      customAvatar: 'assets/chars/port_cyber_violet.png?v=20261121hd138',
+      glow: '#c975ff',
+      trail: ['#d98cff', '#8e38ff', '#ffffff'],
+      desc: '8프레임 전용 풀애니메이션(달리기·점프·슬라이드) & 사이버 바이올렛 망토 전설 스킨!'
+    },
     // 신화 스페셜 스킨 (스킨 뽑기 · 마일리지 200 교환!)
     {
       id: 'catgirl_hoodie',

@@ -35,6 +35,9 @@ window.RunRenderer = (function () {
     { id: 'skier', frames: 4, runFrames: 8, ver: '20261121hd67' },
     { id: 'santa', frames: 4, runFrames: 8, ver: '20261121hd79' },
     { id: 'ice_emperor', frames: 4, runFrames: 8, ver: '20261121hd83' },
+    { id: 'thunder', frames: 4, runFrames: 8, ver: '20261121hd138' },
+    { id: 'cyber_cyan', frames: 4, runFrames: 4, ver: '20261121hd138' },
+    { id: 'cyber_violet', frames: 4, runFrames: 8, ver: '20261121hd138' },
     { id: 'catgirl', frames: 4, runFrames: 8 },
     { id: 'hades', frames: 3, runFrames: 4 }
   ];

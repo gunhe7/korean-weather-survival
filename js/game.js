@@ -2032,7 +2032,7 @@
         <ul class="prob-rules" style="margin-top:6px;">
           <li><strong>뽑기 비용:</strong> ${ticketIconHtml('xs')} 뽑기권 1장/회 (뽑기권 부족 시 ${uiIcon('gem', 'xs')} 200 보석/회) · <strong>1회당 +2 마일리지 적립 + 중복 스킨 출현 시 +2 마일리지 추가 지급!</strong></li>
           <li><strong>${ticketIconHtml('xs')} 상자 → 뽑기권 교환 (상자 보관함):</strong> 나무 15개 · 은 10개 · 황금 5개 · 다이아 2개 = 뽑기권 1장</li>
-          <li>미출시 중간 등급(영웅·전설)은 희귀 스킨 풀로 자동 전환되며, 신화 스킨 확률(${gRates.mythic}%)은 그대로 유지됩니다.</li>
+          <li>미출시 중간 등급(영웅)은 희귀 스킨 풀로 자동 전환되며, 전설(${gRates.legendary}%) · 신화(${gRates.mythic}%) 스킨 확률은 그대로 유지됩니다.</li>
           <li><strong>시즌 패스 전용 스킨(얼음황제):</strong> 시즌 기간 동안 골드 패스로만 획득할 수 있으며, 시즌 종료 후 신화 등급 뽑기 풀에 추가됩니다.</li>
         </ul>
       </div>
@@ -2040,7 +2040,7 @@
         <h4>상자별 보상 확률 (합계 100%)</h4>
         <table class="prob-table">
           <thead>
-            <tr><th>보상</th><th>나무(300G)</th><th>은(700G)</th><th>${uiIcon('crown', 'xs')} 황금(40${uiIcon('gem', 'xs')})</th><th>${uiIcon('gem', 'xs')} 다이아(100${uiIcon('gem', 'xs')})</th></tr>
+            <tr><th>보상</th><th>나무(500G)</th><th>은(1,000G)</th><th>${uiIcon('crown', 'xs')} 황금(40${uiIcon('gem', 'xs')})</th><th>${uiIcon('gem', 'xs')} 다이아(100${uiIcon('gem', 'xs')})</th></tr>
           </thead>
           <tbody>
             <tr><td>${uiIcon('coin', 'xs')} 골드</td><td>75%</td><td>65%</td><td>50%</td><td>25%</td></tr>
@@ -5352,7 +5352,7 @@
     const gemTileHtml = rw.gems > 0
       ? `
         <div class="comp-sr-item gems">
-          <img src="assets/icons/ico_gem.svg?v=20261121hd137" alt="보석" class="comp-sr-item-ico" />
+          <img src="assets/icons/ico_gem.svg?v=20261121hd138" alt="보석" class="comp-sr-item-ico" />
           <div class="comp-sr-item-txt">
             <span>보석</span>
             <strong>${rw.gems.toLocaleString('ko-KR')}개</strong>
@@ -7569,6 +7569,7 @@
     if (animSkin === 'skier') return '20261121hd67';
     if (animSkin === 'santa') return '20261121hd79';
     if (animSkin === 'ice_emperor') return '20261121hd83';
+    if (animSkin === 'thunder' || animSkin === 'cyber_cyan' || animSkin === 'cyber_violet') return '20261121hd138';
     return ASSET_VER;
   }
 
@@ -8331,11 +8332,11 @@
 
             <div class="gacha-showcase-collage" aria-hidden="true">
               <img src="assets/chars/hades_aura_0.png?v=${ASSET_VER}" alt="" class="gc-art-aura" />
-              <img src="assets/chars/port_hanbok.png?v=${ASSET_VER}" alt="" class="gc-art-side left-far" />
+              <img src="assets/chars/port_thunder.png?v=20261121hd138" alt="" class="gc-art-side left-far" />
               <img src="assets/chars/port_catgirl.png?v=${ASSET_VER}" alt="" class="gc-art-side left" />
               <img src="assets/chars/port_hades.png?v=${ASSET_VER}" alt="" class="gc-art-center" />
-              <img src="assets/chars/port_blue.png?v=${ASSET_VER}" alt="" class="gc-art-side right" />
-              <img src="assets/chars/port_yellow.png?v=${ASSET_VER}" alt="" class="gc-art-side right-far" />
+              <img src="assets/chars/port_cyber_cyan.png?v=20261121hd138" alt="" class="gc-art-side right" />
+              <img src="assets/chars/port_cyber_violet.png?v=20261121hd138" alt="" class="gc-art-side right-far" />
             </div>
           </div>
 
