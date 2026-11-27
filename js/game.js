@@ -734,9 +734,11 @@
     btnToggleUmbrella: document.getElementById('btn-toggle-umbrella'),
     gearUmbrellaBar: document.getElementById('gear-umbrella-bar'),
     gearUmbrellaState: document.getElementById('gear-umbrella-state'),
+    gearUmbrellaRing: document.getElementById('gear-umbrella-ring'),
     btnToggleMask: document.getElementById('btn-toggle-mask'),
     gearMaskBar: document.getElementById('gear-mask-bar'),
     gearMaskState: document.getElementById('gear-mask-state'),
+    gearMaskRing: document.getElementById('gear-mask-ring'),
     ctrlCenterOrbs: document.getElementById('ctrl-center-orbs'),
     orbUiFever: document.getElementById('orb-ui-fever'),
     orbUiSpeed: document.getElementById('orb-ui-speed'),
@@ -6684,6 +6686,9 @@
       rainExposeTimer: 0,
       dustExposeTimer: 0,
       gustExposeTimer: 0,
+      floodExposeTimer: 0,
+      floodExposeLimit: 2.4,
+      floodWarmup: 0,
       lastHeartKey: '',
 
       // Camera Juice & Feedback Timers
@@ -6776,6 +6781,10 @@
         pushSafeItem({ kind: 'coin', x: obsCx - 44, y: sideY }, 18, 16, 22);
         pushSafeItem({ kind: 'coin', x: obsCx, y: peakY }, 18, 16, 22);
         pushSafeItem({ kind: 'coin', x: obsCx + 44, y: sideY }, 18, 16, 22);
+      }
+      if (initWeatherEv === 'flood') {
+        seedOpeningFloodPlatforms();
+        run.featureCd = 0.55;
       }
     }
     resetHudCache();
@@ -7123,6 +7132,13 @@
     run.rainExposeTimer = 0;
     run.dustExposeTimer = 0;
     run.gustExposeTimer = 0;
+    run.floodExposeTimer = 0;
+    run.floodWarmup = 0;
+
+    if (nextW === 'flood') {
+      seedOpeningFloodPlatforms();
+      run.featureCd = 0.55;
+    }
 
     if (nextW === 'covid') {
       run.covidAttack = null;
@@ -7398,19 +7414,76 @@
     return false;
   }
 
+  function pickFloodPlatformSpec(preferHigh = false) {
+    const r = Math.random();
+    if (preferHigh && r < 0.52) {
+      return { kind: 'stack_plat', w: 72, platformY: Renderer.GROUND_Y - 46 };
+    }
+    if (r < 0.36) return { kind: 'car_roof',   w: 88, platformY: Renderer.GROUND_Y - 32 };
+    if (r < 0.62) return { kind: 'crate_plat', w: 80, platformY: Renderer.GROUND_Y - 28 };
+    if (r < 0.84) return { kind: 'metal_plat', w: 84, platformY: Renderer.GROUND_Y - 30 };
+    return { kind: 'stack_plat', w: 72, platformY: Renderer.GROUND_Y - 46 };
+  }
+
+  function addFloodPlatform(spec, fx) {
+    run.features.push({
+      kind: spec.kind,
+      x: fx,
+      w: spec.w,
+      platformY: spec.platformY,
+      isPlatform: true
+    });
+    const coinCnt = spec.w >= 82 ? 3 : 2;
+    const step = Math.floor((spec.w - 24) / Math.max(1, coinCnt - 1));
+    for (let i = 0; i < coinCnt; i++) {
+      const kind = (spec.kind === 'stack_plat' && i === 1) ? 'big_coin' : 'coin';
+      pushSafeItem({ kind, x: fx + 12 + i * step, y: spec.platformY - 18 }, 16, 14, 20);
+    }
+  }
+
+  function seedOpeningFloodPlatforms() {
+    if (!run || run.isTutorial) return;
+    const baseStart = Math.max(run.playerX + 185, 330);
+    const spots = [baseStart, baseStart + 158];
+    spots.forEach((sx, idx) => {
+      const spec = pickFloodPlatformSpec(idx === 1);
+      // Clear any low ground obstacle overlapping these opening dry spots so players can hop up safely!
+      for (let i = run.obstacles.length - 1; i >= 0; i--) {
+        const ob = run.obstacles[i];
+        if (ob.lane !== 'air' && sx < ob.x + ob.w + 22 && sx + spec.w + 22 > ob.x) {
+          run.obstacles.splice(i, 1);
+        }
+      }
+      if (!isRectBlockedByFeature(sx, spec.w, 16)) {
+        addFloodPlatform(spec, sx);
+      }
+    });
+  }
+
   function spawnStreetFeature() {
-    if (run.weatherEvent === 'flood') {
-      const r = Math.random();
-      const kind = r < 0.48 ? 'car_roof' : (r < 0.76 ? 'crate_plat' : 'metal_plat');
-      const w = kind === 'car_roof' ? 76 : 68;
-      const fx = getSpawnRight() + 30;
-      if (isRectBlockedByFeature(fx, w, 26) || isRectBlockedByObstacle(fx, w, 28)) return;
-      const platformY = kind === 'car_roof' ? Renderer.GROUND_Y - 30 : Renderer.GROUND_Y - 26;
-      run.features.push({ kind, x: fx, w, platformY, isPlatform: true });
-      for (let i = 0; i < 2; i++) {
-        pushSafeItem({ kind: 'coin', x: fx + 20 + i * 28, y: platformY - 18 }, 18, 14, 24);
+    if (run.weatherEvent !== 'flood') return false;
+    const spec = pickFloodPlatformSpec(false);
+    const candidates = [getSpawnRight() + 18, getSpawnRight() + 64, getSpawnRight() + 110];
+    let placedX = null;
+    for (let i = 0; i < candidates.length; i++) {
+      const fx = candidates[i];
+      if (!isRectBlockedByFeature(fx, spec.w, 18) && !isRectBlockedByObstacle(fx, spec.w, 22)) {
+        placedX = fx;
+        break;
       }
     }
+    if (placedX === null) return false;
+    addFloodPlatform(spec, placedX);
+
+    // 40% chance: chain a second elevated stepping-stone platform right ahead for continuous dry rooftop parkour!
+    if (Math.random() < 0.40) {
+      const spec2 = pickFloodPlatformSpec(spec.kind !== 'stack_plat');
+      const fx2 = placedX + spec.w + 56 + Math.floor(Math.random() * 28);
+      if (!isRectBlockedByFeature(fx2, spec2.w, 16) && !isRectBlockedByObstacle(fx2, spec2.w, 20)) {
+        addFloodPlatform(spec2, fx2);
+      }
+    }
+    return true;
   }
 
   function spawnConvenienceStore() {
@@ -7669,12 +7742,12 @@
 
     run.playerY += run.vy * dt;
 
-    // Detect active platform under player
+    // Detect active platform under player (generous edges for smooth flood rooftop parkour!)
     let floorY = Renderer.GROUND_Y;
     let landedPlatform = false;
     for (const f of run.features) {
-      if (f.isPlatform && run.playerX >= f.x - 6 && run.playerX <= f.x + f.w + 6) {
-        if (prevY <= f.platformY + 7 && run.playerY >= f.platformY && run.vy >= 0) {
+      if (f.isPlatform && run.playerX >= f.x - 10 && run.playerX <= f.x + f.w + 10) {
+        if (prevY <= f.platformY + 12 && run.playerY >= f.platformY && run.vy >= 0) {
           floorY = Math.min(floorY, f.platformY);
           landedPlatform = true;
         }
@@ -7803,6 +7876,39 @@
         }
       } else {
         run.dustExposeTimer = 0;
+      }
+
+      // 2.5. Floodwater Submersion Damage: touching floodwater too long drains HP -> hop onto cars/crates!
+      if (run.weatherEvent === 'flood') {
+        run.floodWarmup = Math.min(2.0, (run.floodWarmup || 0) + dt);
+        const floodLimit = Math.max(1.8, 2.4 - diff.exposureGracePenalty * 0.4) + (ch.floodResist ? 0.8 : 0);
+        run.floodExposeLimit = floodLimit;
+        const touchingWater = run.floodWarmup >= 0.85 && !run.onPlatform && run.playerY >= Renderer.GROUND_Y - 10;
+        if (touchingWater) {
+          run.floodExposeTimer = (run.floodExposeTimer || 0) + dt;
+          if (run.floodExposeTimer >= floodLimit) {
+            run.floodExposeTimer = 0;
+            if (run.shield) {
+              consumeShieldHit('보호막 침수 방어! 위로 올라가세요!');
+            } else {
+              run.hp = Math.max(0, run.hp - 1);
+              run.hitPoseTimer = 0.35;
+              run.hitFlashTimer = 0.25;
+              run.dodgeCombo = 0;
+              triggerCameraShake(5.5, 0.22);
+              haptic(28);
+              run.lastHitCause = `${run.year}년 차 ${DATA.SEASONS[run.seasonIdx].name}, 침수된 물에 오래 잠겨 체력이 다했습니다!`;
+              SFX.hit();
+              Renderer.spawnPickupEffect(run.playerX, Renderer.GROUND_Y - 10, '#4cc8ff', true);
+              Renderer.spawnFloater('침수 피해! -1 HP (위로 올라가세요!)', '#5ce0ff', run.playerX + 8, run.playerY - 50);
+            }
+          }
+        } else {
+          run.floodExposeTimer = Math.max(0, (run.floodExposeTimer || 0) - dt * 2.5);
+        }
+      } else {
+        run.floodExposeTimer = 0;
+        run.floodWarmup = 0;
       }
 
       // 3. Summer Heatwave (폭염): Open Umbrella(양산) to stay cool! Without Umbrella, heat builds -> -1 Heart!
@@ -8164,8 +8270,8 @@
       if (run.weatherEvent === 'flood') {
         run.featureCd -= dt;
         if (run.featureCd <= 0) {
-          spawnStreetFeature();
-          run.featureCd = 1.55;
+          const placedPlat = spawnStreetFeature();
+          run.featureCd = placedPlat ? (0.56 + Math.random() * 0.28) : 0.20;
         }
       }
 
@@ -8698,6 +8804,12 @@
         chipBadge = '강풍';
         chipTimer = `${rem.toFixed(1)}s`;
         chipUrgent = true;
+      } else if (activeEv === 'flood' && (run.floodExposeTimer || 0) > 0.12) {
+        const floodLim = run.floodExposeLimit || 2.4;
+        const rem = Math.max(0, floodLim - (run.floodExposeTimer || 0));
+        chipBadge = '침수';
+        chipTimer = `${rem.toFixed(1)}s`;
+        chipUrgent = rem <= 1.1;
       } else if (needOpenUmb && hudRainNow) {
         const rem = Math.max(0, rainLimit - (run.rainExposeTimer || 0));
         chipBadge = activeEv === 'flood' ? '침수' : '폭우';
@@ -8753,27 +8865,65 @@
       hudToggle('mudHide', el.mudOverlay, 'hidden', true);
     }
 
-    // Umbrella & Mask Toggle Buttons (instant ON/OFF visual, throttled countdown bar!)
+    // Umbrella & Mask Toggle Buttons + Circular Ring Gauges!
+    const RING_CIRC = 276.46;
+    const setGearRing = (btnEl, ringEl, key, baseCls, ratio, tone) => {
+      if (!btnEl || !ringEl) return;
+      const clamped = Math.max(0, Math.min(1, ratio || 0));
+      const active = clamped > 0.002;
+      hudToggle(`${key}Has`, btnEl, 'has-ring', active);
+      if (active) {
+        const offStr = (RING_CIRC * (1 - clamped)).toFixed(1);
+        if (hudCache[`${key}Off`] !== offStr) {
+          hudCache[`${key}Off`] = offStr;
+          ringEl.style.strokeDashoffset = offStr;
+        }
+        const cls = `gear-ring-fill ${baseCls}${tone ? ' ' + tone : ''}`;
+        if (hudCache[`${key}Cls`] !== cls) {
+          hudCache[`${key}Cls`] = cls;
+          ringEl.setAttribute('class', cls);
+        }
+      }
+    };
+
     const umbBroken = run.umbrellaBrokenTimer > 0;
     hudToggle('umbOn', el.btnToggleUmbrella, 'on', run.umbrellaOn);
     hudToggle('umbBrk', el.btnToggleUmbrella, 'broken', umbBroken);
     hudToggle('umbFold', el.btnToggleUmbrella, 'urgent-fold', needFoldUmb);
     hudToggle('umbOpen', el.btnToggleUmbrella, 'urgent-open', needOpenUmb && !umbBroken);
-    if (doSlow || hudCache._umbStateSig !== `${umbBroken}|${needFoldUmb}|${run.umbrellaOn}`) {
-      hudCache._umbStateSig = `${umbBroken}|${needFoldUmb}|${run.umbrellaOn}`;
+    if (doSlow || hudCache._umbStateSig !== `${umbBroken}|${needFoldUmb}|${run.umbrellaOn}|${needOpenUmb}`) {
+      hudCache._umbStateSig = `${umbBroken}|${needFoldUmb}|${run.umbrellaOn}|${needOpenUmb}`;
       if (umbBroken) {
+        const umbBrkRatio = run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD;
         hudText('umbSt', el.gearUmbrellaState, `파손 ${Math.ceil(run.umbrellaBrokenTimer)}s`);
-        hudWidth('umbBar', el.gearUmbrellaBar, `${((run.umbrellaBrokenTimer / UMBRELLA_BROKEN_CD) * 100).toFixed(1)}%`);
+        hudWidth('umbBar', el.gearUmbrellaBar, `${(umbBrkRatio * 100).toFixed(1)}%`);
+        setGearRing(el.btnToggleUmbrella, el.gearUmbrellaRing, 'umbR', 'umbrella', umbBrkRatio, 'danger');
       } else if (needFoldUmb) {
         const rem = Math.max(0, gustLimit - (run.gustExposeTimer || 0));
         hudText('umbSt', el.gearUmbrellaState, `접기! ${rem.toFixed(1)}s`);
         hudWidth('umbBar', el.gearUmbrellaBar, `${Math.min(100, ((run.gustExposeTimer || 0) / gustLimit) * 100).toFixed(1)}%`);
+        setGearRing(el.btnToggleUmbrella, el.gearUmbrellaRing, 'umbR', 'umbrella', rem / Math.max(0.1, gustLimit), 'danger');
       } else if (run.umbrellaOn) {
+        const ratio = run.umbrellaActiveTimer / GEAR_DURATION;
+        const tone = run.umbrellaActiveTimer <= 1.6 ? 'danger' : (run.umbrellaActiveTimer <= 3.0 ? 'warn' : '');
         hudText('umbSt', el.gearUmbrellaState, `${run.umbrellaActiveTimer.toFixed(1)}s`);
-        hudWidth('umbBar', el.gearUmbrellaBar, `${((run.umbrellaActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`);
+        hudWidth('umbBar', el.gearUmbrellaBar, `${(ratio * 100).toFixed(1)}%`);
+        setGearRing(el.btnToggleUmbrella, el.gearUmbrellaRing, 'umbR', 'umbrella', ratio, tone);
+      } else if (needOpenUmb && hudRainNow && (run.rainExposeTimer || 0) > 0.05) {
+        const rem = Math.max(0, rainLimit - (run.rainExposeTimer || 0));
+        const ratio = rem / Math.max(0.1, rainLimit);
+        hudText('umbSt', el.gearUmbrellaState, '우산');
+        hudWidth('umbBar', el.gearUmbrellaBar, '0%');
+        setGearRing(el.btnToggleUmbrella, el.gearUmbrellaRing, 'umbR', 'umbrella', ratio, rem <= 1.3 ? 'danger' : 'warn');
+      } else if (needOpenUmb && hudHeatNow && (run.heatGauge || 0) > 5) {
+        const ratio = Math.min(1, (run.heatGauge || 0) / 100);
+        hudText('umbSt', el.gearUmbrellaState, '우산');
+        hudWidth('umbBar', el.gearUmbrellaBar, '0%');
+        setGearRing(el.btnToggleUmbrella, el.gearUmbrellaRing, 'umbR', 'umbrella', ratio, run.heatGauge >= 65 ? 'danger' : 'warn');
       } else {
         hudText('umbSt', el.gearUmbrellaState, '우산');
         hudWidth('umbBar', el.gearUmbrellaBar, '0%');
+        setGearRing(el.btnToggleUmbrella, el.gearUmbrellaRing, 'umbR', 'umbrella', 0, '');
       }
     }
 
@@ -8781,20 +8931,35 @@
     hudToggle('mskFold', el.btnToggleMask, 'urgent-fold', needCovidMask);
     hudToggle('mskOpen', el.btnToggleMask, 'urgent-open', !needCovidMask && needOpenMask);
     const mskParryReady = covidUrgent && run.maskOn && run.maskParryTimer > 0;
-    if (doSlow || hudCache._mskStateSig !== `${needCovidMask}|${mskParryReady}|${run.maskOn}`) {
-      hudCache._mskStateSig = `${needCovidMask}|${mskParryReady}|${run.maskOn}`;
+    if (doSlow || hudCache._mskStateSig !== `${needCovidMask}|${mskParryReady}|${run.maskOn}|${needOpenMask}`) {
+      hudCache._mskStateSig = `${needCovidMask}|${mskParryReady}|${run.maskOn}|${needOpenMask}`;
       if (needCovidMask) {
+        const atk = run.covidAttack;
+        const cRatio = (atk && atk.phase === 'warn') ? Math.max(0.08, atk.timer / Math.max(0.4, atk.maxTimer || 2.0)) : 1;
         hudText('mskSt', el.gearMaskState, '타이밍!');
         hudWidth('mskBar', el.gearMaskBar, '100%');
+        setGearRing(el.btnToggleMask, el.gearMaskRing, 'mskR', 'mask', cRatio, 'danger');
       } else if (mskParryReady) {
+        const ratio = run.maskActiveTimer / GEAR_DURATION;
         hudText('mskSt', el.gearMaskState, '차단 ON');
-        hudWidth('mskBar', el.gearMaskBar, `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`);
+        hudWidth('mskBar', el.gearMaskBar, `${(ratio * 100).toFixed(1)}%`);
+        setGearRing(el.btnToggleMask, el.gearMaskRing, 'mskR', 'mask', ratio, '');
       } else if (run.maskOn) {
+        const ratio = run.maskActiveTimer / GEAR_DURATION;
+        const tone = run.maskActiveTimer <= 1.6 ? 'danger' : (run.maskActiveTimer <= 3.0 ? 'warn' : '');
         hudText('mskSt', el.gearMaskState, `${run.maskActiveTimer.toFixed(1)}s`);
-        hudWidth('mskBar', el.gearMaskBar, `${((run.maskActiveTimer / GEAR_DURATION) * 100).toFixed(1)}%`);
+        hudWidth('mskBar', el.gearMaskBar, `${(ratio * 100).toFixed(1)}%`);
+        setGearRing(el.btnToggleMask, el.gearMaskRing, 'mskR', 'mask', ratio, tone);
+      } else if (needOpenMask && (run.dustExposeTimer || 0) > 0.05) {
+        const rem = Math.max(0, dustLimit - (run.dustExposeTimer || 0));
+        const ratio = rem / Math.max(0.1, dustLimit);
+        hudText('mskSt', el.gearMaskState, '마스크');
+        hudWidth('mskBar', el.gearMaskBar, '0%');
+        setGearRing(el.btnToggleMask, el.gearMaskRing, 'mskR', 'mask', ratio, rem <= 1.3 ? 'danger' : 'warn');
       } else {
         hudText('mskSt', el.gearMaskState, '마스크');
         hudWidth('mskBar', el.gearMaskBar, '0%');
+        setGearRing(el.btnToggleMask, el.gearMaskRing, 'mskR', 'mask', 0, '');
       }
     }
 

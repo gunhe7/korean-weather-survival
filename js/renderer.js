@@ -187,7 +187,8 @@ window.RunRenderer = (function () {
     'ui_fever', 'fx_booster_0', 'fx_booster_1', 'fx_booster_2', 'fx_booster_3', 'fx_booster_4', 'fx_booster_5', 'fx_shield_ring',
     'chest_wood_0', 'chest_silver_0', 'chest_gold_0', 'chest_diamond_0',
     'bg_sky_spring', 'bg_sky_summer', 'bg_sky_autumn', 'bg_sky_winter',
-    'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'
+    'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter',
+    'sp_red_car', 'sp_crate', 'sp_metal_box'
   ];
   const preloadedSeasons = new Set();
 
@@ -1829,8 +1830,18 @@ window.RunRenderer = (function () {
         // Flooded Red Car Platform strictly using sp_red_car!
         const spr = getSprite('sp_red_car');
         if (spr) {
-          ctx.drawImage(spr, x + 4, f.platformY - 6, f.w - 8, GROUND_Y - f.platformY + 8);
+          ctx.drawImage(spr, x + 3, f.platformY - 6, f.w - 6, GROUND_Y - f.platformY + 8);
         }
+        // Subtle crisp dry-top landing cue along car roof
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 244, 152, 0.85)';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x + 14, f.platformY + 1);
+        ctx.lineTo(x + f.w - 14, f.platformY + 1);
+        ctx.stroke();
+        ctx.restore();
       } else if (f.kind === 'crate_plat' || f.kind === 'metal_plat') {
         // Dry Crate / Metal Box Platform during Flood strictly using sp_crate / sp_metal_box!
         const spr = getSprite(f.kind === 'metal_plat' ? 'sp_metal_box' : 'sp_crate');
@@ -1842,6 +1853,42 @@ window.RunRenderer = (function () {
             ctx.drawImage(spr, x + k * tw, f.platformY, tw, th);
           }
         }
+        ctx.save();
+        ctx.strokeStyle = 'rgba(184, 246, 255, 0.88)';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x + 5, f.platformY + 1);
+        ctx.lineTo(x + f.w - 5, f.platformY + 1);
+        ctx.stroke();
+        ctx.restore();
+      } else if (f.kind === 'stack_plat') {
+        // Two-Story Stacked Dry High Ground (Metal Base + Wooden Crates on Top!)
+        const baseSpr = getSprite('sp_metal_box') || getSprite('sp_crate');
+        const topSpr = getSprite('sp_crate') || baseSpr;
+        const tiles = 2;
+        const tw = Math.floor(f.w / tiles);
+        const totalH = GROUND_Y - f.platformY + 4;
+        const halfH = Math.ceil(totalH * 0.54);
+        if (baseSpr) {
+          for (let k = 0; k < tiles; k++) {
+            ctx.drawImage(baseSpr, x + k * tw, f.platformY + totalH - halfH, tw, halfH);
+          }
+        }
+        if (topSpr) {
+          for (let k = 0; k < tiles; k++) {
+            ctx.drawImage(topSpr, x + k * tw + 2, f.platformY, tw - 4, halfH);
+          }
+        }
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 236, 120, 0.92)';
+        ctx.lineWidth = 2.4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x + 6, f.platformY + 1);
+        ctx.lineTo(x + f.w - 6, f.platformY + 1);
+        ctx.stroke();
+        ctx.restore();
       }
     });
   }
@@ -3521,6 +3568,24 @@ window.RunRenderer = (function () {
     // Foreground Translucent Flooded Rainwater (submerges lower legs & obstacle bases with ripples & splashes!)
     if (floodLevel > 0.01) {
       drawFloodWaterFront(ctx, run, t);
+    }
+
+    // Above-Character Floodwater Danger Bar when wading in deep floodwater
+    if (run.weatherEvent === 'flood' && (run.floodExposeTimer || 0) > 0.08 && !run.dead && !run.dying) {
+      const fRatio = Math.max(0, Math.min(1, (run.floodExposeTimer || 0) / Math.max(0.5, run.floodExposeLimit || 2.4)));
+      const bw = 42;
+      const bh = 6;
+      const bx = Math.floor(run.playerX - bw / 2);
+      const by = Math.floor(run.playerY - (run.sliding ? 34 : 68));
+      const isCrit = fRatio >= 0.62;
+      ctx.save();
+      drawRoundRect(ctx, bx - 1.5, by - 1.5, bw + 3, bh + 3, 4);
+      ctx.fillStyle = 'rgba(7, 16, 34, 0.88)';
+      ctx.fill();
+      drawRoundRect(ctx, bx, by, Math.max(3, Math.round(bw * fRatio)), bh, 3);
+      ctx.fillStyle = isCrit ? (Math.floor(t * 14) % 2 === 0 ? '#ff3b5c' : '#ffaa2b') : '#46d8ff';
+      ctx.fill();
+      ctx.restore();
     }
 
     // Corona Virus Timed Rush Attack & Sky Hailstone Drop Attack!

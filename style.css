@@ -9167,6 +9167,70 @@ input:focus-visible {
   }
 }
 
+/* Circular Ring Gauge Around Umbrella & Mask Buttons */
+.img-ctrl-btn.gear-img-btn .ctrl-img-wrap {
+  position: relative;
+  overflow: visible;
+}
+
+.gear-ring-svg {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.14s ease;
+  overflow: visible;
+}
+
+.img-ctrl-btn.gear-img-btn.has-ring .gear-ring-svg {
+  opacity: 1;
+}
+
+.gear-ring-bg {
+  fill: none;
+  stroke: rgba(7, 16, 34, 0.82);
+  stroke-width: 10.5;
+}
+
+.gear-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 5.4;
+}
+
+.gear-ring-fill {
+  fill: none;
+  stroke-width: 6.4;
+  stroke-linecap: round;
+  stroke-dasharray: 276.46;
+  stroke-dashoffset: 276.46;
+  transition: stroke-dashoffset 0.08s linear, stroke 0.16s ease;
+}
+
+.gear-ring-fill.umbrella {
+  stroke: #4be3ff;
+  filter: drop-shadow(0 0 4px rgba(75, 227, 255, 0.9));
+}
+
+.gear-ring-fill.mask {
+  stroke: #48f5a3;
+  filter: drop-shadow(0 0 4px rgba(72, 245, 163, 0.9));
+}
+
+.gear-ring-fill.warn {
+  stroke: #ffae2b;
+  filter: drop-shadow(0 0 5px rgba(255, 174, 43, 0.95));
+}
+
+.gear-ring-fill.danger {
+  stroke: #ff3b5c;
+  filter: drop-shadow(0 0 6px rgba(255, 59, 92, 0.98));
+}
+
 /* Urgent Gear Button Action Rings (Open Umbrella/Mask OR Fold Umbrella During Typhoon!) */
 .img-ctrl-btn.gear-img-btn.urgent-open {
   opacity: 0.96;
