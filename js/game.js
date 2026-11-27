@@ -531,6 +531,8 @@
     uiGold: document.getElementById('ui-gold'),
     btnGemShop: document.getElementById('btn-gem-shop'),
     uiGems: document.getElementById('ui-gems'),
+    btnOpenPreload: document.getElementById('btn-open-preload'),
+    hdrPreloadDot: document.getElementById('hdr-preload-dot'),
     btnOpenSettings: document.getElementById('btn-open-settings'),
     btnShopProb: document.getElementById('btn-shop-prob'),
 
@@ -560,6 +562,17 @@
     btnReplayTutorial: document.getElementById('btn-replay-tutorial'),
     btnSettingsOk: document.getElementById('btn-settings-ok'),
     btnOpenCtrlEditor: document.getElementById('btn-open-ctrl-editor'),
+    btnOpenPreloadFromSettings: document.getElementById('btn-open-preload-from-settings'),
+    settingsPreloadSub: document.getElementById('settings-preload-sub'),
+    preloadOverlay: document.getElementById('preload-overlay'),
+    btnClosePreload: document.getElementById('btn-close-preload'),
+    preloadStatusText: document.getElementById('preload-status-text'),
+    preloadOverallPct: document.getElementById('preload-overall-pct'),
+    preloadOverallFill: document.getElementById('preload-overall-fill'),
+    preloadPackList: document.getElementById('preload-pack-list'),
+    btnPreloadClear: document.getElementById('btn-preload-clear'),
+    btnPreloadCancel: document.getElementById('btn-preload-cancel'),
+    btnPreloadAll: document.getElementById('btn-preload-all'),
     ctrlEditorOverlay: document.getElementById('ctrl-editor-overlay'),
     ctrlEdStage: document.getElementById('ctrl-ed-stage'),
     ctrlEdSelectedName: document.getElementById('ctrl-ed-selected-name'),
@@ -949,7 +962,7 @@
   }
 
   function rollOneGachaSkin() {
-    const rates = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates) || { rare: 70, epic: 20, legendary: 8, mythic: 2 };
+    const rates = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates) || { rare: 74.7, epic: 20, legendary: 5, mythic: 0.3 };
     const order = ['rare', 'epic', 'legendary', 'mythic'];
     const totalW = order.reduce((s, k) => s + (rates[k] || 0), 0) || 100;
     const r = Math.random() * totalW;
@@ -1855,7 +1868,7 @@
     SFX.click();
     const gPity = save.pity.gold || 0;
     const dPity = save.pity.diamond || 0;
-    const gRates = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates) || { rare: 70, epic: 20, legendary: 8, mythic: 2 };
+    const gRates = (DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates) || { rare: 74.7, epic: 20, legendary: 5, mythic: 0.3 };
     el.probModalBody.innerHTML = `
       <div class="prob-section">
         <h4>스킨 전용 뽑기 확률 &amp; 마일리지 교환 (4등급 체계)</h4>
@@ -6178,10 +6191,10 @@
                 <span>1회 소환 <strong>+2M</strong> · 중복 시 <strong>+2M 추가</strong> · 전 등급 스킨 출현</span>
               </div>
               <div class="gacha-rate-chips">
-                <span class="gr-chip mythic">신화 2%</span>
-                <span class="gr-chip leg">전설 8%</span>
-                <span class="gr-chip epic">영웅 20%</span>
-                <span class="gr-chip rare">희귀 70%</span>
+                <span class="gr-chip mythic">신화 ${(DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates ? DATA.SKIN_GACHA.rates.mythic : 0.3)}%</span>
+                <span class="gr-chip leg">전설 ${(DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates ? DATA.SKIN_GACHA.rates.legendary : 5)}%</span>
+                <span class="gr-chip epic">영웅 ${(DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates ? DATA.SKIN_GACHA.rates.epic : 20)}%</span>
+                <span class="gr-chip rare">희귀 ${(DATA.SKIN_GACHA && DATA.SKIN_GACHA.rates ? DATA.SKIN_GACHA.rates.rare : 74.7)}%</span>
               </div>
             </div>
 
@@ -9589,6 +9602,7 @@
     function openSettingsModal() {
       SFX.click();
       renderSettingsUI();
+      refreshPreloadStatus();
       el.settingsOverlay.classList.remove('hidden');
     }
     el.btnOpenSettings.addEventListener('click', openSettingsModal);
@@ -9597,6 +9611,230 @@
       SFX.click();
       el.settingsOverlay.classList.add('hidden');
     });
+
+    // ===================== RESOURCE PRE-DOWNLOAD MANAGER (ZERO-LAG ASSET CACHE) =====================
+    let preloadBusy = false;
+    let preloadAbortCtrl = null;
+    let preloadLastStatus = null;
+    let preloadActivePacks = null;
+    let preloadLiveProg = null;
+    let preloadLastPaintTs = 0;
+
+    function updatePreloadBadges(status) {
+      if (!status) return;
+      if (el.hdrPreloadDot) {
+        el.hdrPreloadDot.classList.toggle('hidden', preloadBusy || status.gameplayDone);
+      }
+      if (el.btnOpenPreload) {
+        el.btnOpenPreload.classList.toggle('is-downloading', preloadBusy);
+        el.btnOpenPreload.classList.toggle('is-done', !preloadBusy && status.allDone);
+      }
+      if (el.settingsPreloadSub) {
+        if (preloadBusy) {
+          el.settingsPreloadSub.textContent = '리소스 다운로드 진행 중...';
+        } else if (status.allDone) {
+          el.settingsPreloadSub.textContent = `전체 저장 완료 (${status.cachedFiles}/${status.totalFiles}개)`;
+        } else if (status.gameplayDone) {
+          el.settingsPreloadSub.textContent = `필수 장애물·배경 완료 · 전체 ${status.cachedFiles}/${status.totalFiles}개`;
+        } else {
+          el.settingsPreloadSub.textContent = `장애물 · 배경 · 캐릭터 사전 저장 (${status.cachedFiles}/${status.totalFiles}개)`;
+        }
+      }
+      if (el.btnOpenPreloadFromSettings) {
+        el.btnOpenPreloadFromSettings.textContent = preloadBusy ? '진행 중' : (status.allDone ? '완료' : '관리');
+        el.btnOpenPreloadFromSettings.className = `bs-set-action-btn ${status.allDone && !preloadBusy ? 'emerald' : 'sky'}`;
+      }
+    }
+
+    function renderPreloadModal(status, liveProg = null, progressOnly = false) {
+      if (!status || !el.preloadOverlay) return;
+      let pct = status.totalFiles > 0 ? Math.round((status.cachedFiles / status.totalFiles) * 100) : 0;
+      let statusMsg = '장애물·계절 배경·캐릭터를 미리 저장하면 게임 중 렉이 크게 줄어듭니다.';
+
+      if (preloadBusy && liveProg) {
+        if (liveProg.phase === 'bake') {
+          const bRatio = liveProg.bakeTotal > 0 ? (liveProg.bakeDone / liveProg.bakeTotal) : 1;
+          pct = Math.min(99, 95 + Math.round(bRatio * 4));
+          statusMsg = `장애물 테두리 사전 최적화 중... (${liveProg.bakeDone}/${liveProg.bakeTotal})`;
+        } else {
+          const dRatio = liveProg.total > 0 ? (liveProg.done / liveProg.total) : 0;
+          pct = Math.min(95, Math.round(dRatio * 95));
+          statusMsg = `${liveProg.packName || '리소스'} 다운로드 중... (${liveProg.done}/${liveProg.total})`;
+        }
+      } else if (status.allDone) {
+        pct = 100;
+        statusMsg = '모든 리소스 저장 완료! 게임 중 로딩 렉 없이 쾌적하게 플레이할 수 있습니다.';
+      } else if (status.gameplayDone) {
+        statusMsg = '핵심 장애물·배경 저장 완료! 캐릭터·상자 팩도 미리 받아두면 더욱 부드럽습니다.';
+      }
+
+      if (el.preloadStatusText) el.preloadStatusText.textContent = statusMsg;
+      if (el.preloadOverallPct) el.preloadOverallPct.textContent = `${pct}%`;
+      if (el.preloadOverallFill) el.preloadOverallFill.style.width = `${pct}%`;
+      if (progressOnly) return;
+
+      if (el.preloadPackList) {
+        el.preloadPackList.innerHTML = status.packs.map((p) => {
+          const isActive = preloadBusy && preloadActivePacks && preloadActivePacks.includes(p.id);
+          const badgeCls = p.done ? 'ok' : (p.id === 'gameplay' ? '' : 'sub');
+          const badgeTxt = p.done ? '완료' : p.badge;
+          const btnCls = p.done
+            ? 'bs-set-action-btn bs-preload-pack-btn done'
+            : (p.id === 'gameplay' ? 'bs-set-action-btn gold bs-preload-pack-btn' : 'bs-set-action-btn sky bs-preload-pack-btn');
+          const btnTxt = p.done ? '완료' : (isActive ? '받는 중' : (preloadBusy ? '대기' : '받기'));
+          const disabledAttr = (p.done || preloadBusy) ? 'disabled' : '';
+          return `
+            <div class="bs-preload-pack${p.done ? ' done' : ''}">
+              <div class="bs-preload-pack-info">
+                <div class="bs-preload-pack-head">
+                  <span class="bs-preload-pack-name">${p.name}</span>
+                  <span class="bs-preload-badge ${badgeCls}">${badgeTxt}</span>
+                </div>
+                <div class="bs-preload-pack-desc">${p.desc}</div>
+                <div class="bs-preload-pack-meta">약 ${p.estMb.toFixed(1)}MB · ${p.cached}/${p.total}개 저장됨</div>
+              </div>
+              <button type="button" class="${btnCls}" data-preload-pack="${p.id}" ${disabledAttr}>${btnTxt}</button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (el.btnPreloadCancel) el.btnPreloadCancel.classList.toggle('hidden', !preloadBusy);
+      if (el.btnPreloadClear) el.btnPreloadClear.disabled = preloadBusy || status.cachedFiles <= 0;
+      if (el.btnPreloadAll) {
+        if (preloadBusy) {
+          el.btnPreloadAll.disabled = true;
+          el.btnPreloadAll.className = 'bs-set-action-btn gold';
+          el.btnPreloadAll.textContent = '다운로드 중...';
+        } else if (status.allDone) {
+          el.btnPreloadAll.disabled = true;
+          el.btnPreloadAll.className = 'bs-set-action-btn emerald';
+          el.btnPreloadAll.textContent = '모두 완료';
+        } else {
+          el.btnPreloadAll.disabled = false;
+          el.btnPreloadAll.className = 'bs-set-action-btn gold';
+          el.btnPreloadAll.textContent = '전체 다운로드';
+        }
+      }
+    }
+
+    async function refreshPreloadStatus() {
+      if (!Renderer || !Renderer.inspectPreloadCacheStatus) return null;
+      const status = await Renderer.inspectPreloadCacheStatus();
+      preloadLastStatus = status;
+      updatePreloadBadges(status);
+      if (el.preloadOverlay && !el.preloadOverlay.classList.contains('hidden')) {
+        renderPreloadModal(status, preloadBusy ? preloadLiveProg : null);
+      }
+      return status;
+    }
+
+    function openPreloadModal() {
+      SFX.click();
+      if (el.settingsOverlay) el.settingsOverlay.classList.add('hidden');
+      if (el.preloadOverlay) el.preloadOverlay.classList.remove('hidden');
+      if (preloadLastStatus) {
+        renderPreloadModal(preloadLastStatus, preloadBusy ? preloadLiveProg : null);
+      }
+      refreshPreloadStatus();
+    }
+
+    async function startPreloadDownload(packIds) {
+      if (preloadBusy || !Renderer || !Renderer.downloadPreloadPacks) return;
+      SFX.click();
+      preloadBusy = true;
+      preloadActivePacks = Array.isArray(packIds) ? packIds.slice() : ['gameplay', 'chars', 'extra'];
+      preloadAbortCtrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      preloadLiveProg = { phase: 'download', done: 0, total: 1, failed: 0, packName: '리소스 확인' };
+      preloadLastPaintTs = 0;
+
+      if (preloadLastStatus) {
+        updatePreloadBadges(preloadLastStatus);
+        renderPreloadModal(preloadLastStatus, preloadLiveProg);
+      }
+
+      const eqChar = DATA.getCharById(save.selectedChar);
+      const eqSkin = getEquippedSkin(eqChar.id);
+
+      const res = await Renderer.downloadPreloadPacks(
+        preloadActivePacks,
+        (prog) => {
+          preloadLiveProg = prog;
+          const now = performance.now();
+          if (prog.phase !== 'download' || prog.done >= prog.total || (now - preloadLastPaintTs) >= 45) {
+            preloadLastPaintTs = now;
+            if (preloadLastStatus && el.preloadOverlay && !el.preloadOverlay.classList.contains('hidden')) {
+              renderPreloadModal(preloadLastStatus, prog, true);
+            }
+          }
+        },
+        {
+          signal: preloadAbortCtrl ? preloadAbortCtrl.signal : null,
+          equippedChar: eqChar,
+          equippedSkin: eqSkin
+        }
+      );
+
+      preloadBusy = false;
+      preloadAbortCtrl = null;
+      preloadActivePacks = null;
+      preloadLiveProg = null;
+      await refreshPreloadStatus();
+
+      if (res && res.cancelled) {
+        showToast('다운로드를 취소했습니다. 이미 받은 리소스는 유지됩니다.');
+      } else if (res && res.failed > 0) {
+        showToast(`일부 파일(${res.failed}개)을 받지 못했습니다. 네트워크 확인 후 다시 시도해주세요.`);
+      } else {
+        if (SFX.coin) SFX.coin();
+        showToast('리소스 다운로드 완료! 게임 중 렉이 크게 줄어듭니다.');
+      }
+    }
+
+    if (el.btnOpenPreload) el.btnOpenPreload.addEventListener('click', openPreloadModal);
+    if (el.btnOpenPreloadFromSettings) el.btnOpenPreloadFromSettings.addEventListener('click', openPreloadModal);
+    if (el.btnClosePreload) {
+      el.btnClosePreload.addEventListener('click', () => {
+        SFX.click();
+        if (el.preloadOverlay) el.preloadOverlay.classList.add('hidden');
+      });
+    }
+    if (el.preloadOverlay) {
+      el.preloadOverlay.addEventListener('click', (e) => {
+        if (e.target === el.preloadOverlay) {
+          SFX.click();
+          el.preloadOverlay.classList.add('hidden');
+        }
+      });
+    }
+    if (el.preloadPackList) {
+      el.preloadPackList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-preload-pack]');
+        if (!btn || btn.disabled) return;
+        startPreloadDownload([btn.dataset.preloadPack]);
+      });
+    }
+    if (el.btnPreloadAll) {
+      el.btnPreloadAll.addEventListener('click', () => {
+        startPreloadDownload(['gameplay', 'chars', 'extra']);
+      });
+    }
+    if (el.btnPreloadCancel) {
+      el.btnPreloadCancel.addEventListener('click', () => {
+        SFX.click();
+        if (preloadAbortCtrl) preloadAbortCtrl.abort();
+      });
+    }
+    if (el.btnPreloadClear) {
+      el.btnPreloadClear.addEventListener('click', async () => {
+        if (preloadBusy || !Renderer || !Renderer.clearPreloadCache) return;
+        SFX.click();
+        await Renderer.clearPreloadCache();
+        await refreshPreloadStatus();
+        showToast('저장된 리소스 캐시를 비웠습니다.');
+      });
+    }
+    setTimeout(() => { refreshPreloadStatus(); }, 1600);
     if (el.btnSettingsOk) {
       el.btnSettingsOk.addEventListener('click', () => {
         SFX.click();

@@ -220,6 +220,361 @@ window.RunRenderer = (function () {
     for (let f = 0; f < 8; f++) requestSprite(`chest_${tierId}_${f}`);
   }
 
+  // ===================== USER-TRIGGERED HEAVY ASSET PRE-DOWNLOADER (ZERO GAMEPLAY LAG!) =====================
+  const ASSET_CACHE_NAME = 'k-weather-survival-assets-v1';
+  const memPreloadedUrls = new Set();
+
+  function toAbsUrl(relUrl) {
+    try {
+      return new URL(relUrl, window.location.href).href;
+    } catch (_) {
+      return relUrl;
+    }
+  }
+
+  function buildPreloadPacks() {
+    const coreVfxKeys = [
+      'fx_dash_gold', 'fx_dash_blue', 'fx_shield_ring',
+      'fx_booster_0', 'fx_booster_1', 'fx_booster_2', 'fx_booster_3', 'fx_booster_4', 'fx_booster_5'
+    ];
+    const gameplayKeys = [
+      ...NEW_OBS_SPRITES,
+      'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter',
+      ...WORLD_SPRITES,
+      ...DESIGN_SPRITES,
+      ...ATLAS_SPRITES,
+      ...coreVfxKeys
+    ];
+    const gameplayUrls = Array.from(new Set(gameplayKeys.map((k) => SPRITE_URL_MAP[k]).filter(Boolean)));
+
+    const charKeys = [];
+    CHAR_SHEET_SKINS.forEach((sk) => {
+      CHAR_ANIM_STATES.forEach((st) => {
+        const fCount = (st === 'run' && sk.runFrames)
+          ? sk.runFrames
+          : ((st === 'idle' && sk.idleFrames) ? sk.idleFrames : sk.frames);
+        for (let f = 0; f < fCount; f++) charKeys.push(`${sk.id}_${st}_${f}`);
+      });
+      charKeys.push(`port_${sk.id}`);
+    });
+    const coreVfxSet = new Set(coreVfxKeys);
+    CHAR_VFX_SPRITES.forEach((k) => {
+      if (!coreVfxSet.has(k)) charKeys.push(k);
+    });
+    const charUrlSet = new Set(charKeys.map((k) => SPRITE_URL_MAP[k]).filter(Boolean));
+    const data = window.RUN_DATA;
+    if (data && Array.isArray(data.SKINS)) {
+      data.SKINS.forEach((sk) => {
+        if (sk && sk.customAvatar) charUrlSet.add(sk.customAvatar);
+      });
+    }
+    const charUrls = Array.from(charUrlSet);
+
+    const extraUrls = [];
+    CHEST_TIERS.forEach((tier) => {
+      for (let f = 0; f < 8; f++) {
+        const u = SPRITE_URL_MAP[`chest_${tier}_${f}`];
+        if (u) extraUrls.push(u);
+      }
+    });
+    extraUrls.push('assets/audio/bgm_home.m4a?v=20261121hd86');
+    extraUrls.push('assets/audio/bgm_game.m4a?v=20261121hd86');
+
+    return [
+      {
+        id: 'gameplay',
+        name: '장애물 · 계절 배경 · 이펙트',
+        desc: '32종 장애물(테두리 사전 최적화), 4계절 배경/지형, 아이템·부스터·보호막',
+        badge: '필수 추천',
+        estMb: 12.5,
+        urls: gameplayUrls,
+        bakeOutlines: true
+      },
+      {
+        id: 'chars',
+        name: '캐릭터 · 스킨 애니메이션',
+        desc: '전 캐릭터 7종 동작 프레임, 신화 스킨 이펙트, 희귀 스킨 초상화 20종',
+        badge: '모션 최적화',
+        estMb: 23.8,
+        urls: charUrls,
+        bakeOutlines: false
+      },
+      {
+        id: 'extra',
+        name: '상자 연출 · 배경음',
+        desc: '4종 상자 오픈 8프레임 애니메이션, 홈/인게임 고음질 배경음',
+        badge: '선택',
+        estMb: 9.6,
+        urls: Array.from(new Set(extraUrls)),
+        bakeOutlines: false
+      }
+    ];
+  }
+
+  async function inspectPreloadCacheStatus() {
+    const packs = buildPreloadPacks();
+    const hasCacheApi = typeof caches !== 'undefined' && caches && typeof caches.open === 'function';
+    let cachedUrlSet = new Set(memPreloadedUrls);
+
+    if (hasCacheApi) {
+      try {
+        const cache = await caches.open(ASSET_CACHE_NAME);
+        const keys = await cache.keys();
+        keys.forEach((req) => {
+          if (req && req.url) cachedUrlSet.add(req.url);
+        });
+      } catch (_) {}
+    }
+
+    let totalFiles = 0;
+    let cachedFiles = 0;
+    const packStates = packs.map((p) => {
+      let c = 0;
+      for (let i = 0; i < p.urls.length; i++) {
+        const abs = toAbsUrl(p.urls[i]);
+        if (cachedUrlSet.has(abs) || cachedUrlSet.has(p.urls[i])) c++;
+      }
+      totalFiles += p.urls.length;
+      cachedFiles += c;
+      return {
+        id: p.id,
+        name: p.name,
+        desc: p.desc,
+        badge: p.badge,
+        estMb: p.estMb,
+        total: p.urls.length,
+        cached: c,
+        done: p.urls.length > 0 && c >= p.urls.length
+      };
+    });
+
+    const gp = packStates.find((x) => x.id === 'gameplay');
+    return {
+      supported: hasCacheApi,
+      packs: packStates,
+      totalFiles,
+      cachedFiles,
+      gameplayDone: Boolean(gp && gp.done),
+      allDone: totalFiles > 0 && cachedFiles >= totalFiles
+    };
+  }
+
+  function loadAndDecodeImageKey(key) {
+    return new Promise((resolve) => {
+      const img = requestSprite(key);
+      if (!img) { resolve(null); return; }
+      const finish = () => {
+        if (img.decode) {
+          img.decode().catch(() => {}).finally(() => resolve(img));
+        } else {
+          resolve(img);
+        }
+      };
+      if (img.complete && img.naturalWidth > 0) {
+        finish();
+        return;
+      }
+      const onDone = () => {
+        img.removeEventListener('load', onDone);
+        img.removeEventListener('error', onErr);
+        finish();
+      };
+      const onErr = () => {
+        img.removeEventListener('load', onDone);
+        img.removeEventListener('error', onErr);
+        resolve(null);
+      };
+      img.addEventListener('load', onDone, { once: true });
+      img.addEventListener('error', onErr, { once: true });
+    });
+  }
+
+  function nextFrameTick() {
+    return new Promise((resolve) => {
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve());
+      else setTimeout(resolve, 16);
+    });
+  }
+
+  async function downloadPreloadPacks(packIds, onProgress, opts = {}) {
+    const allPacks = buildPreloadPacks();
+    const wantedIds = Array.isArray(packIds) && packIds.length > 0
+      ? new Set(packIds)
+      : new Set(allPacks.map((p) => p.id));
+    const targetPacks = allPacks.filter((p) => wantedIds.has(p.id));
+    const signal = opts.signal || null;
+
+    const queue = [];
+    const seen = new Set();
+    targetPacks.forEach((p) => {
+      p.urls.forEach((u) => {
+        if (!seen.has(u)) {
+          seen.add(u);
+          queue.push({ url: u, absUrl: toAbsUrl(u), packName: p.name });
+        }
+      });
+    });
+
+    const total = queue.length;
+    let done = 0;
+    let failed = 0;
+    const hasCacheApi = typeof caches !== 'undefined' && caches && typeof caches.open === 'function';
+    let cache = null;
+    const existingSet = new Set(memPreloadedUrls);
+
+    if (hasCacheApi) {
+      try {
+        cache = await caches.open(ASSET_CACHE_NAME);
+        const keys = await cache.keys();
+        keys.forEach((req) => { if (req && req.url) existingSet.add(req.url); });
+      } catch (_) {
+        cache = null;
+      }
+    }
+
+    const pending = [];
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      if (existingSet.has(item.absUrl) || existingSet.has(item.url)) {
+        done++;
+      } else {
+        pending.push(item);
+      }
+    }
+
+    if (onProgress) {
+      onProgress({
+        phase: 'download',
+        done,
+        total,
+        failed,
+        packName: targetPacks[0] ? targetPacks[0].name : ''
+      });
+    }
+
+    let cursor = 0;
+    const concurrency = IS_MOBILE ? 4 : 6;
+
+    async function fetchOne(item) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (signal && signal.aborted) return false;
+        try {
+          const resp = await fetch(item.absUrl, { cache: 'force-cache', signal: signal || undefined });
+          if (resp && resp.ok) {
+            if (cache) {
+              try {
+                await cache.put(item.absUrl, resp.clone());
+              } catch (_) {}
+            } else {
+              try { await resp.arrayBuffer(); } catch (_) {}
+            }
+            memPreloadedUrls.add(item.absUrl);
+            return true;
+          }
+        } catch (err) {
+          if (signal && signal.aborted) return false;
+        }
+      }
+      return false;
+    }
+
+    async function worker() {
+      while (cursor < pending.length) {
+        if (signal && signal.aborted) return;
+        const item = pending[cursor++];
+        const ok = await fetchOne(item);
+        if (signal && signal.aborted) return;
+        done++;
+        if (!ok) failed++;
+        if (onProgress) {
+          onProgress({
+            phase: 'download',
+            done,
+            total,
+            failed,
+            packName: item.packName
+          });
+        }
+      }
+    }
+
+    const workers = [];
+    for (let w = 0; w < Math.min(concurrency, Math.max(1, pending.length)); w++) {
+      workers.push(worker());
+    }
+    await Promise.all(workers);
+
+    if (signal && signal.aborted) {
+      if (onProgress) onProgress({ phase: 'cancelled', done, total, failed, packName: '' });
+      return { cancelled: true, done, total, failed };
+    }
+
+    // Phase 2: Decode & pre-bake all 32 obstacle red-outline canvases so first spawn has ZERO frame hitch!
+    if (wantedIds.has('gameplay')) {
+      const bakeKeys = [...NEW_OBS_SPRITES, 'sp_red_car', 'sp_covid_virus'];
+      const bakeTotal = bakeKeys.length;
+      for (let i = 0; i < bakeTotal; i++) {
+        if (signal && signal.aborted) {
+          if (onProgress) onProgress({ phase: 'cancelled', done, total, failed, packName: '' });
+          return { cancelled: true, done, total, failed };
+        }
+        const k = bakeKeys[i];
+        const img = await loadAndDecodeImageKey(k);
+        if (img && img.naturalWidth > 0) {
+          const cacheKey = k === 'sp_red_car' ? 'sp_red_car_pass' : (k === 'sp_covid_virus' ? 'sp_covid_virus_rush' : k);
+          getOutlinedObstacleSprite(cacheKey, img);
+        }
+        if (onProgress) {
+          onProgress({
+            phase: 'bake',
+            done,
+            total,
+            bakeDone: i + 1,
+            bakeTotal,
+            failed,
+            packName: '장애물 테두리 사전 최적화'
+          });
+        }
+        if (i % 2 === 1) await nextFrameTick();
+      }
+      // Also decode the 4 seasonal ground strips into memory
+      ['ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'].forEach(requestSprite);
+    }
+
+    // Optional Phase 2b: Pre-warm equipped rare skin outfit recolor canvases for zero-hitch first run
+    if (opts.equippedChar && opts.equippedSkin && opts.equippedSkin.outfitColor) {
+      const animId = opts.equippedChar.animSkin || 'yellow';
+      const spec = CHAR_SHEET_SKINS.find((s) => s.id === animId) || { frames: 3, runFrames: 4 };
+      const warmKeys = [];
+      for (let f = 0; f < (spec.runFrames || 4); f++) warmKeys.push(`${animId}_run_${f}`);
+      for (let f = 0; f < (spec.frames || 3); f++) {
+        warmKeys.push(`${animId}_jump_${f}`);
+        warmKeys.push(`${animId}_slide_${f}`);
+      }
+      for (let i = 0; i < warmKeys.length; i++) {
+        if (signal && signal.aborted) break;
+        const img = await loadAndDecodeImageKey(warmKeys[i]);
+        if (img && img.naturalWidth > 0) getFilteredCharSprite(img, opts.equippedSkin);
+        if (i % 3 === 2) await nextFrameTick();
+      }
+    }
+
+    if (onProgress) {
+      onProgress({ phase: 'done', done, total, failed, packName: '' });
+    }
+    return { cancelled: false, done, total, failed };
+  }
+
+  async function clearPreloadCache() {
+    memPreloadedUrls.clear();
+    if (typeof caches !== 'undefined' && caches && typeof caches.delete === 'function') {
+      try {
+        await caches.delete(ASSET_CACHE_NAME);
+      } catch (_) {}
+    }
+    return true;
+  }
+
   // Defer tiny core boot preload until after first paint, then warm up all 32 obstacle sprites so mobile never delays spawning!
   setTimeout(() => {
     CORE_BOOT_KEYS.forEach(requestSprite);
@@ -2864,6 +3219,9 @@ window.RunRenderer = (function () {
     preloadForRun,
     preloadSeason,
     preloadChestAnim,
+    inspectPreloadCacheStatus,
+    downloadPreloadPacks,
+    clearPreloadCache,
     clearFloaters,
     spawnFloater,
     spawnDust,

@@ -242,7 +242,7 @@ window.RUN_DATA = (function () {
     gemCostPerPull: 200,
     mileagePerPull: 2,
     dupMileageBonus: 2,
-    rates: { rare: 70, epic: 20, legendary: 8, mythic: 2 },
+    rates: { rare: 74.7, epic: 20, legendary: 5, mythic: 0.3 },
     runChestDropWeights: { wood: 56, silver: 27, gold: 13, diamond: 4 }
   };
 

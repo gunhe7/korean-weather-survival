@@ -339,6 +339,7 @@ body {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
@@ -19764,5 +19765,286 @@ input:focus-visible {
   .bs-stat-bar {
     height: 9px;
     border-width: 2px;
+  }
+}
+
+/* ================= RESOURCE PRE-DOWNLOAD BUTTON & MODAL (hd113) ================= */
+.hdr-preload-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 11px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #35b4ff 0%, #156ad4 58%, #0d4b9e 100%);
+  box-shadow: 0 3.5px 0 #071022, inset 0 2px 0 rgba(190, 238, 255, 0.55);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.14s ease, filter 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hdr-preload-btn:hover {
+  transform: scale(1.06);
+  filter: brightness(1.08);
+}
+
+.hdr-preload-btn:active {
+  transform: translateY(2px) scale(0.95);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+.hdr-preload-btn.is-downloading .hdr-preload-svg {
+  animation: preloadBob 0.9s ease-in-out infinite;
+}
+
+.hdr-preload-btn.is-done {
+  background: linear-gradient(180deg, #43df8c 0%, #169853 60%, #0f6e3c 100%);
+  box-shadow: 0 3.5px 0 #071022, inset 0 2px 0 rgba(210, 255, 228, 0.55);
+}
+
+@keyframes preloadBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2.5px); }
+}
+
+.hdr-preload-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ffe142;
+  border: 2px solid #071022;
+  box-shadow: 0 0 8px rgba(255, 225, 66, 0.95);
+}
+
+.bs-set-ico.preload {
+  background: linear-gradient(180deg, #46e0a8, #14966e);
+}
+
+.bs-preload-modal {
+  width: min(560px, 94vw) !important;
+  max-height: 92dvh !important;
+  border-radius: 18px !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-preload-body {
+  padding: 12px 14px 13px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  background: radial-gradient(circle at 50% 0%, #1d499c 0%, #0e2457 70%, #0a193d 100%);
+}
+
+.bs-preload-summary {
+  padding: 10px 12px;
+  border-radius: 13px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #173a7a 0%, #0d2350 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 1.5px 0 rgba(162, 224, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bs-preload-sum-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bs-preload-status {
+  font-size: 12.2px;
+  font-weight: 800;
+  color: #e4f3ff;
+  line-height: 1.35;
+}
+
+.bs-preload-pct {
+  min-width: 48px;
+  font-size: 12px;
+  color: #79f7ba;
+  border-color: #2f8c6c;
+}
+
+.bs-preload-track {
+  width: 100%;
+  height: 11px;
+  border-radius: 999px;
+  background: #07122a;
+  border: 2px solid #040914;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.bs-preload-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2cc8ff 0%, #4df5a8 100%);
+  box-shadow: 0 0 10px rgba(77, 245, 168, 0.55);
+  transition: width 0.16s ease-out;
+}
+
+.bs-preload-pack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bs-preload-pack {
+  padding: 9px 11px;
+  border-radius: 13px;
+  border: 2.4px solid #071022;
+  background: linear-gradient(180deg, #1b428a 0%, #112a5c 100%);
+  box-shadow: 0 3.5px 0 #071022, inset 0 1.5px 0 rgba(162, 224, 255, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bs-preload-pack.done {
+  border-color: #0b261a;
+  background: linear-gradient(180deg, #175447 0%, #0f3632 100%);
+}
+
+.bs-preload-pack-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bs-preload-pack-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bs-preload-pack-name {
+  font-size: 13.2px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071022;
+}
+
+.bs-preload-badge {
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  border: 1.5px solid #071022;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #ffe554, #ed9308);
+  color: #241000;
+}
+
+.bs-preload-badge.sub {
+  background: linear-gradient(180deg, #4ec6ff, #1b7ae0);
+  color: #ffffff;
+}
+
+.bs-preload-badge.ok {
+  background: linear-gradient(180deg, #5ef59b, #17a359);
+  color: #042412;
+}
+
+.bs-preload-pack-desc {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b7d8fa;
+  line-height: 1.3;
+}
+
+.bs-preload-pack-meta {
+  font-size: 10.8px;
+  font-weight: 800;
+  color: #8ce4ff;
+}
+
+.bs-preload-pack-btn {
+  flex-shrink: 0;
+  min-width: 74px;
+}
+
+.bs-preload-pack-btn.done {
+  background: linear-gradient(180deg, #5ef59b, #17a359);
+  color: #042412;
+  text-shadow: none;
+  opacity: 0.92;
+  cursor: default;
+}
+
+.bs-preload-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.bs-preload-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bs-set-action-btn:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: skewX(-4deg);
+}
+
+.bs-set-action-btn.emerald {
+  background: linear-gradient(180deg, #5ef59b, #17a359);
+  color: #042412;
+  text-shadow: none;
+}
+
+@media (max-height: 440px) {
+  .hdr-preload-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .hdr-preload-svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .bs-settings-body {
+    overflow-y: auto;
+    padding: 9px 11px 10px !important;
+    gap: 7px;
+  }
+
+  .bs-preload-body {
+    padding: 8px 11px 9px !important;
+    gap: 7px;
+  }
+
+  .bs-preload-summary {
+    padding: 7px 10px;
+    gap: 6px;
+  }
+
+  .bs-preload-pack {
+    padding: 7px 9px;
+  }
+
+  .bs-preload-pack-desc {
+    font-size: 10.2px;
   }
 }
