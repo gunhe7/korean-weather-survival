@@ -1261,7 +1261,7 @@ window.RunRenderer = (function () {
       const pStartRep = Math.floor((minX - cycleW) / cycleW);
       const pEndRep = Math.ceil((maxX + cycleW) / cycleW);
       ctx.save();
-      ctx.globalAlpha = 0.90 * layerAlpha;
+      ctx.globalAlpha = 0.56 * layerAlpha;
       ctx.imageSmoothingEnabled = true;
       for (let rep = pStartRep; rep <= pEndRep; rep++) {
         const px = rep * cycleW - propOff;
