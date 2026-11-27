@@ -515,6 +515,7 @@
     profileEditOverlay: document.getElementById('profile-edit-overlay'),
     btnCloseProfileEdit: document.getElementById('btn-close-profile-edit'),
     profPrevAvatar: document.getElementById('prof-prev-avatar'),
+    profPrevTierImg: document.getElementById('prof-prev-tier-img'),
     profPrevRank: document.getElementById('prof-prev-rank'),
     profPrevNameWrap: document.getElementById('prof-prev-name-wrap'),
     profPrevStats: document.getElementById('prof-prev-stats'),
@@ -527,6 +528,7 @@
     btnHeaderProfileName: document.getElementById('btn-header-profile-name'),
     hdrProfileFrameBg: document.getElementById('hdr-profile-frame-bg'),
     hdrProfileAvatar: document.getElementById('hdr-profile-avatar'),
+    hdrProfileTierImg: document.getElementById('hdr-profile-tier-img'),
     hdrProfileRank: document.getElementById('hdr-profile-rank'),
     hdrProfileBadge: document.getElementById('hdr-profile-badge'),
     hdrProfileName: document.getElementById('hdr-profile-name'),
@@ -708,11 +710,25 @@
     compLobbyCharName: document.getElementById('comp-lobby-char-name'),
     compLobbyHeroAura: document.getElementById('comp-lobby-hero-aura'),
     compLobbyHeroImg: document.getElementById('comp-lobby-hero-img'),
+    btnCompLobbyHero: document.getElementById('btn-comp-lobby-hero'),
     compLobbyStatWins: document.getElementById('comp-lobby-stat-wins'),
     compLobbyStatMatches: document.getElementById('comp-lobby-stat-matches'),
     compLobbyStatBest: document.getElementById('comp-lobby-stat-best'),
     btnCompLobbyChars: document.getElementById('btn-comp-lobby-chars'),
     btnCompLobbyStart: document.getElementById('btn-comp-lobby-start'),
+    compCharOverlay: document.getElementById('comp-char-overlay'),
+    btnCloseCompChar: document.getElementById('btn-close-comp-char'),
+    compCharGrid: document.getElementById('comp-char-grid'),
+    compCharSkinsBox: document.getElementById('comp-char-skins-box'),
+    compSkinsLabel: document.getElementById('comp-skins-label'),
+    compSkinsCount: document.getElementById('comp-skins-count'),
+    compCharSkinRow: document.getElementById('comp-char-skin-row'),
+    compRankOverlay: document.getElementById('comp-rank-overlay'),
+    compRkLivePill: document.getElementById('comp-rk-live-pill'),
+    btnCompRkRefresh: document.getElementById('btn-comp-rk-refresh'),
+    btnCloseCompRank: document.getElementById('btn-close-comp-rank'),
+    compRkMyBar: document.getElementById('comp-rk-my-bar'),
+    compRkModalList: document.getElementById('comp-rk-modal-list'),
     rankMyTierImg: document.getElementById('rank-my-tier-img'),
     rankMyTierPill: document.getElementById('rank-my-tier-pill'),
     rankStatTier: document.getElementById('rank-stat-tier'),
@@ -3400,6 +3416,12 @@
       el.hdrProfileAvatar.src = avInfo.src;
       el.hdrProfileAvatar.style.filter = avInfo.filter;
     }
+    const myCompTierHdr = DATA.getCompTier(save.trophies || 0);
+    if (el.hdrProfileTierImg) {
+      el.hdrProfileTierImg.src = getTierImgUrl(myCompTierHdr);
+      el.hdrProfileTierImg.alt = myCompTierHdr.name;
+      el.hdrProfileTierImg.title = myCompTierHdr.name;
+    }
 
     const bracket = getScoreRoadBracket(save.bestScore || 0);
     const unclaimedCnt = getUnclaimedScoreRoadMilestones().length;
@@ -3486,6 +3508,12 @@
     if (el.profPrevAvatar) {
       el.profPrevAvatar.src = avInfo.src;
       el.profPrevAvatar.style.filter = avInfo.filter;
+    }
+    const myCompTierProf = DATA.getCompTier(save.trophies || 0);
+    if (el.profPrevTierImg) {
+      el.profPrevTierImg.src = getTierImgUrl(myCompTierProf);
+      el.profPrevTierImg.alt = myCompTierProf.name;
+      el.profPrevTierImg.title = myCompTierProf.name;
     }
     if (el.profPrevRank) {
       el.profPrevRank.textContent = `R${bracket.rank}`;
@@ -5020,7 +5048,7 @@
     }
   }
 
-  const TIER_IMG_VER = '20261121hd123';
+  const TIER_IMG_VER = '20261121hd124';
   function getTierImgUrl(tier) {
     const path = (tier && tier.img) || 'assets/tiers/tier_bronze.png';
     return `${path}?v=${TIER_IMG_VER}`;
@@ -5127,9 +5155,8 @@
     if (el.compLobbyCharName) el.compLobbyCharName.textContent = skin ? `${ch.name} · ${skin.name}` : ch.name;
     if (el.compLobbyHeroImg) {
       const anim = getCharAnimSpec(ch, skin);
-      const useIdle = Boolean(skin && skin.customIdleFrames);
       const charSprVer = getCharSpriteVer(anim.skin);
-      const initSrc = `assets/chars/${anim.skin}_${useIdle ? 'idle' : 'run'}_0.png?v=${charSprVer}`;
+      const initSrc = `assets/chars/${anim.skin}_run_0.png?v=${charSprVer}`;
       const readySrc = getPreloadedHomeHeroSrc(initSrc, skin) || initSrc;
       lastCompHeroSrc = readySrc;
       el.compLobbyHeroImg.src = readySrc;
@@ -5146,6 +5173,209 @@
     if (el.compLobbyStatWins) el.compLobbyStatWins.textContent = `${save.compWins || 0}승`;
     if (el.compLobbyStatMatches) el.compLobbyStatMatches.textContent = `${save.compMatches || 0}전`;
     if (el.compLobbyStatBest) el.compLobbyStatBest.textContent = `${(save.compBestScore || 0).toLocaleString('ko-KR')}점`;
+  }
+
+  // In-Tab Competitive Character & Skin Quick Picker (Stays inside #view-comp!)
+  function openCompCharModal() {
+    SFX.click();
+    renderCompCharModal();
+    if (el.compCharOverlay) el.compCharOverlay.classList.remove('hidden');
+  }
+
+  function closeCompCharModal() {
+    if (el.compCharOverlay) el.compCharOverlay.classList.add('hidden');
+  }
+
+  function renderCompCharModal() {
+    if (!el.compCharGrid) return;
+    el.compCharGrid.innerHTML = '';
+    const chars = DATA.CHARACTERS || [];
+    chars.forEach((ch, idx) => {
+      const unlocked = isCharUnlocked(ch.id);
+      const selected = save.selectedChar === ch.id;
+      const eqSkin = getEquippedSkin(ch.id);
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = `comp-pick-card${selected ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
+      card.innerHTML = `
+        <div class="comp-pick-av-box">
+          <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="comp-pick-av" style="${getSkinFilter(eqSkin) && getSkinFilter(eqSkin) !== 'none' ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
+          ${selected ? '<span class="comp-pick-badge on">출전</span>' : (!unlocked ? '<span class="comp-pick-badge lock">잠금</span>' : '')}
+        </div>
+        <div class="comp-pick-name">${ch.name}</div>
+        <div class="comp-pick-sub">${eqSkin ? eqSkin.name : (ch.tierLabel || '기본')}</div>
+      `;
+      card.addEventListener('click', () => {
+        if (!unlocked) {
+          SFX.hit();
+          showToast(`${ch.name} 캐릭터는 상자나 캐릭터 탭에서 먼저 해금해 주세요.`);
+          return;
+        }
+        SFX.click();
+        save.selectedChar = ch.id;
+        previewCharIdx = idx;
+        persistSave();
+        renderCompetitiveLobby();
+        renderProfileUI();
+        renderCompCharModal();
+      });
+      el.compCharGrid.appendChild(card);
+    });
+
+    // Owned skins quick strip for the currently selected character
+    if (el.compCharSkinRow) {
+      const curCh = getCharDef(save.selectedChar);
+      const curEqSkin = getEquippedSkin(curCh.id);
+      const allSkins = DATA.getSkinsForChar ? DATA.getSkinsForChar(curCh.id) : [];
+      const ownedSkins = allSkins.filter((s) => Array.isArray(save.ownedSkins) && save.ownedSkins.includes(s.id));
+      if (el.compSkinsLabel) el.compSkinsLabel.textContent = `${curCh.name} 스킨`;
+      if (el.compSkinsCount) el.compSkinsCount.textContent = `보유 ${ownedSkins.length}/${allSkins.length}`;
+      el.compCharSkinRow.innerHTML = '';
+
+      const makeSkinBtn = (sk) => {
+        const isEq = sk ? (curEqSkin && curEqSkin.id === sk.id) : !curEqSkin;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `comp-skin-chip${isEq ? ' active' : ''}${sk ? ` rar-${sk.rarity}` : ''}`;
+        const avSrc = getSkinAvatar(curCh, sk);
+        const flt = getSkinFilter(sk);
+        btn.innerHTML = `
+          <img src="${avSrc}" alt="" class="comp-skin-chip-av" style="${flt && flt !== 'none' ? `filter:${flt};` : ''}" />
+          <span>${sk ? sk.name : '기본 스킨'}</span>
+        `;
+        btn.addEventListener('click', () => {
+          SFX.click();
+          if (!save.equippedSkins) save.equippedSkins = {};
+          save.equippedSkins[curCh.id] = sk ? sk.id : null;
+          persistSave();
+          renderCompetitiveLobby();
+          renderProfileUI();
+          renderCompCharModal();
+        });
+        return btn;
+      };
+
+      el.compCharSkinRow.appendChild(makeSkinBtn(null));
+      ownedSkins.forEach((sk) => el.compCharSkinRow.appendChild(makeSkinBtn(sk)));
+    }
+  }
+
+  // In-Tab Competitive Trophy Ranking Modal (Stays inside #view-comp!)
+  let compRkModalSeq = 0;
+  function openCompRankModal() {
+    SFX.click();
+    if (el.compRankOverlay) el.compRankOverlay.classList.remove('hidden');
+    renderCompRankModal();
+  }
+
+  function closeCompRankModal() {
+    if (el.compRankOverlay) el.compRankOverlay.classList.add('hidden');
+  }
+
+  async function renderCompRankModal() {
+    const seq = ++compRkModalSeq;
+    const myChar = getCharDef(save.selectedChar);
+    const mySkin = getEquippedSkin(myChar.id);
+    const myAuth = save.auth || { provider: 'guest', uid: 'guest_local', nickname: '게스트' };
+    const myUid = myAuth.uid || 'guest_local';
+    const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
+    const myTier = DATA.getCompTier(myTrophies);
+
+    if (el.compRkModalList && !el.compRkModalList.children.length) {
+      el.compRkModalList.innerHTML = '<div class="comp-rk-loading">트로피 랭킹 불러오는 중...</div>';
+    }
+
+    let tRes = { board: [], syncedOnline: false };
+    if (ONLINE && ONLINE.fetchTrophyBoard) {
+      try {
+        const fetched = await ONLINE.fetchTrophyBoard(myUid);
+        if (fetched) tRes = fetched;
+      } catch {}
+    }
+    if (seq !== compRkModalSeq) return;
+
+    let tBoard = (tRes.board || []).slice();
+    if (!tBoard.some((r) => r.isMe) && ((save.compMatches || 0) > 0 || myTrophies > 0)) {
+      tBoard.push({
+        uid: myUid,
+        nickname: myAuth.nickname || `나 (${myChar.name})`,
+        provider: myAuth.provider || 'guest',
+        charId: myChar.id,
+        skinId: mySkin ? mySkin.id : null,
+        ...buildMyBoardProfileMeta(myChar, mySkin),
+        trophies: myTrophies,
+        wins: save.compWins || 0,
+        matches: save.compMatches || 0,
+        bestCompScore: save.compBestScore || 0,
+        isMe: true
+      });
+      tBoard.sort((a, b) => (b.trophies - a.trophies) || ((b.wins || 0) - (a.wins || 0)));
+      tBoard = tBoard.map((e, i) => ({ ...e, rank: i + 1 }));
+    }
+
+    if (el.compRkLivePill) {
+      if (tRes.syncedOnline) {
+        el.compRkLivePill.className = 'rank-live-pill';
+        el.compRkLivePill.innerHTML = '<span class="live-dot"></span>LIVE';
+      } else {
+        el.compRkLivePill.className = 'rank-live-pill local';
+        el.compRkLivePill.innerHTML = '로컬';
+      }
+    }
+
+    const myEntry = tBoard.find((r) => r.isMe);
+    if (el.compRkMyBar) {
+      el.compRkMyBar.innerHTML = `
+        <img src="${getTierImgUrl(myTier)}" alt="${myTier.name}" class="comp-res-tier-img" />
+        <div class="comp-rk-my-meta">
+          <div class="comp-rk-my-top">
+            <span>내 순위 <strong>${myEntry ? `${myEntry.rank}위` : '미참여'}</strong></span>
+            <span class="comp-tier-badge" style="color:${myTier.color};border-color:${myTier.color}">${myTier.name}</span>
+          </div>
+          <div class="comp-rk-my-sub">${myTrophies.toLocaleString('ko-KR')} 트로피 · ${save.compWins || 0}승 / ${save.compMatches || 0}전</div>
+        </div>
+      `;
+    }
+
+    if (!el.compRkModalList) return;
+    el.compRkModalList.innerHTML = '';
+    if (tBoard.length === 0) {
+      el.compRkModalList.innerHTML = '<div class="comp-rk-loading">아직 트로피 기록이 없습니다. 매칭을 시작해 첫 순위에 올라 보세요!</div>';
+      return;
+    }
+
+    tBoard.forEach((entry) => {
+      const rank = entry.rank;
+      const avInfo = getProfileAvatarInfo(
+        {
+          avatarCharId: entry.profileCharId || entry.charId,
+          avatarSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : entry.skinId
+        },
+        entry.charId,
+        entry.skinId,
+        false
+      );
+      const eTier = DATA.getCompTier(entry.trophies || 0);
+      const topClass = rank === 1 ? ' top1' : (rank === 2 ? ' top2' : (rank === 3 ? ' top3' : ''));
+      const rowNameHtml = renderNameplateHtml(entry.nickname, entry.nameFrame, entry.nameColor, 'sm');
+      const row = document.createElement('div');
+      row.className = `rank-row comp-trophy-row${topClass}${entry.isMe ? ' me' : ''}`;
+      row.innerHTML = `
+        <div class="rank-medal">${rank}</div>
+        <img src="${avInfo.src}" alt="" class="rank-row-avatar" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
+        <img src="${getTierImgUrl(eTier)}" alt="${eTier.name}" class="rank-row-tier-img" />
+        <div class="rank-row-info">
+          <div class="rank-row-name">
+            <span class="comp-row-tier" style="color:${eTier.color};border-color:${eTier.color}">${eTier.name}</span>
+            ${rowNameHtml}
+            ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
+          </div>
+          <div class="rank-row-sub">${entry.wins || 0}승 / ${entry.matches || 0}전 · 최고 ${(entry.bestCompScore || 0).toLocaleString('ko-KR')}점</div>
+        </div>
+        <div class="rank-row-score comp-trophy-score">${(entry.trophies || 0).toLocaleString('ko-KR')}<span>트로피</span></div>
+      `;
+      el.compRkModalList.appendChild(row);
+    });
   }
 
   async function syncMyTrophyProfile() {
@@ -5567,6 +5797,7 @@
     }
 
     persistSave(true);
+    renderProfileUI();
     if (cm.online && ONLINE && ONLINE.pushCompLiveScore) {
       ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, finalScore, true);
     }
@@ -6215,7 +6446,7 @@
     if (isComp) {
       const ch = getCharDef(save.selectedChar);
       const skin = getEquippedSkin(ch.id);
-      const src = getCharShowcaseFrameSrc(ch, skin, t, false);
+      const src = getCharShowcaseFrameSrc(ch, skin, t, true);
       const readySrc = getPreloadedHomeHeroSrc(src, skin);
       if (el.compLobbyHeroImg && readySrc && readySrc !== lastCompHeroSrc) {
         lastCompHeroSrc = readySrc;
@@ -9832,7 +10063,7 @@
         }
       }
     } else {
-      if (currentTab === 'home') updateHomeRunningHero(t);
+      if (currentTab === 'home' || currentTab === 'comp') updateHomeRunningHero(t);
       updateDetailRunningHero(t);
     }
 
@@ -10161,25 +10392,64 @@
     // Weekly #1 Champion 500 Gems Reward Modal
     if (el.btnClaimWeeklyChamp) el.btnClaimWeeklyChamp.addEventListener('click', claimWeeklyChampionReward);
 
-    // Competitive Lobby Tab + Matchmaking + Result Listeners + Trophy Ranking Refresh
+    // Competitive Lobby Tab + In-Tab Character/Ranking Modals + Matchmaking + Result Listeners
     if (el.btnCompLobbyBack) {
       el.btnCompLobbyBack.addEventListener('click', () => {
+        closeCompCharModal();
+        closeCompRankModal();
         switchTab('home');
       });
     }
     if (el.btnCompLobbyHome) {
       el.btnCompLobbyHome.addEventListener('click', () => {
+        closeCompCharModal();
+        closeCompRankModal();
         switchTab('home');
       });
     }
     if (el.btnCompLobbyRank) {
       el.btnCompLobbyRank.addEventListener('click', () => {
-        switchTab('rank');
+        openCompRankModal();
       });
     }
     if (el.btnCompLobbyChars) {
       el.btnCompLobbyChars.addEventListener('click', () => {
-        switchTab('chars');
+        openCompCharModal();
+      });
+    }
+    if (el.btnCompLobbyHero) {
+      el.btnCompLobbyHero.addEventListener('click', () => {
+        openCompCharModal();
+      });
+    }
+    if (el.btnCloseCompChar) {
+      el.btnCloseCompChar.addEventListener('click', () => {
+        SFX.click();
+        closeCompCharModal();
+      });
+    }
+    if (el.compCharOverlay) {
+      el.compCharOverlay.addEventListener('click', (e) => {
+        if (e.target === el.compCharOverlay) closeCompCharModal();
+      });
+    }
+    if (el.btnCloseCompRank) {
+      el.btnCloseCompRank.addEventListener('click', () => {
+        SFX.click();
+        closeCompRankModal();
+      });
+    }
+    if (el.compRankOverlay) {
+      el.compRankOverlay.addEventListener('click', (e) => {
+        if (e.target === el.compRankOverlay) closeCompRankModal();
+      });
+    }
+    if (el.btnCompRkRefresh) {
+      el.btnCompRkRefresh.addEventListener('click', async () => {
+        SFX.click();
+        await syncMyTrophyProfile();
+        await renderCompRankModal();
+        showToast('경쟁전 트로피 랭킹이 갱신되었습니다!');
       });
     }
     if (el.btnCompLobbyStart) {
