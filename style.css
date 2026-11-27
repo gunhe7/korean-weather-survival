@@ -24666,3 +24666,89 @@ input:focus-visible {
   transform: scale(1.18);
   filter: drop-shadow(0 0 10px rgba(255, 232, 92, 0.72)) drop-shadow(0 5px 0 rgba(7, 16, 34, 0.52)) !important;
 }
+
+/* ==========================================================================
+   v20261121hd134 — MOBILE LANDSCAPE ZERO-OVERLAP FIX FOR OVERWATCH TIER PANEL
+   ========================================================================== */
+@media (max-height: 520px) {
+  .comp-ow-panel {
+    padding: 6px 10px 7px;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .comp-ow-panel .comp-ob-panel-head {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 3;
+    padding: 2px 8px;
+    font-size: 9.5px;
+  }
+
+  .comp-ow-showcase {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 4px;
+    padding: 2px 0;
+    justify-content: center;
+  }
+
+  .comp-ow-emblem-stage {
+    width: clamp(58px, 19vh, 86px) !important;
+    height: clamp(58px, 19vh, 86px) !important;
+  }
+
+  .comp-ow-diamond-frame {
+    width: 68%;
+    height: 68%;
+    border-radius: 10px;
+    border-width: 2px;
+  }
+
+  .comp-ow-tier-meta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex-wrap: nowrap;
+  }
+
+  .comp-ow-tier-name {
+    font-size: 15px;
+    line-height: 1.05;
+  }
+
+  .comp-ow-trophy-total {
+    padding: 1.5px 8px;
+    gap: 4px;
+  }
+
+  .comp-ow-trophy-total .ui-ico {
+    width: 12px;
+    height: 12px;
+  }
+
+  .comp-ow-trophy-total strong {
+    font-size: 12px;
+  }
+
+  .comp-ow-trophy-total span {
+    font-size: 9px;
+  }
+
+  .comp-ow-bar-box {
+    position: relative;
+    z-index: 3;
+    flex-shrink: 0;
+    padding: 5px 8px;
+    gap: 3px;
+  }
+
+  .comp-ow-bar-track {
+    height: 18px;
+  }
+
+  .comp-ow-bar-val {
+    font-size: 10px;
+  }
+}
