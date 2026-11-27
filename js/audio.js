@@ -1081,6 +1081,36 @@ window.SFX = (function () {
     yearUp() {
       [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.12, 'triangle', 0.075, i * 0.085));
     },
+    trophyTick(dir = 1, ratio = 0.5) {
+      const r = Math.max(0, Math.min(1, ratio));
+      if (dir >= 0) {
+        const freq = 620 + r * 540;
+        tone(freq, 0.042, 'triangle', 0.046, 0);
+      } else {
+        const freq = 470 - r * 195;
+        tone(freq, 0.048, 'sine', 0.042, 0);
+      }
+    },
+    tierPromote() {
+      // Dramatic Overwatch-style impact + triumphant rising brass/chime fanfare!
+      slideTone(220, 78, 0.24, 'triangle', 0.11);
+      playNoiseBurst({ bufType: 'white', dur: 0.22, filterType: 'bandpass', startFreq: 1400, endFreq: 3600, Q: 0.9, gainVal: 0.12, attack: 0.01 });
+      const notes = [
+        [523.25, 0.02, 0.14, 'triangle', 0.085],
+        [659.25, 0.10, 0.14, 'triangle', 0.085],
+        [783.99, 0.18, 0.15, 'triangle', 0.09],
+        [987.77, 0.27, 0.16, 'triangle', 0.09],
+        [1046.5, 0.36, 0.48, 'triangle', 0.105],
+        [523.25, 0.36, 0.48, 'sine',     0.07],
+        [783.99, 0.36, 0.48, 'sine',     0.065],
+        [1318.5, 0.42, 0.40, 'sine',     0.06],
+        [1567.9, 0.50, 0.35, 'triangle', 0.05]
+      ];
+      notes.forEach(([f, d, dur, t, g]) => tone(f, dur, t, g, d));
+    },
+    tierDemote() {
+      [440, 392, 330, 262].forEach((f, i) => tone(f, 0.13, 'sawtooth', 0.052, i * 0.095));
+    },
     introJingle() {
       const melody = [
         [523.25, 0.00, 0.13, 'triangle', 0.08],

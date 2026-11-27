@@ -682,6 +682,20 @@
     compMatchGrid: document.getElementById('comp-match-grid'),
     btnCompMatchCancel: document.getElementById('btn-comp-match-cancel'),
     compResultOverlay: document.getElementById('comp-result-overlay'),
+    compResultModalBox: document.getElementById('comp-result-modal-box'),
+    compResOwCard: document.getElementById('comp-res-ow-card'),
+    compResFxCanvas: document.getElementById('comp-res-fx-canvas'),
+    compResEmblemWrap: document.getElementById('comp-res-emblem-wrap'),
+    compResPromoBanner: document.getElementById('comp-res-promo-banner'),
+    compResCurIco: document.getElementById('comp-res-cur-ico'),
+    compResCurLabel: document.getElementById('comp-res-cur-label'),
+    compResOwPct: document.getElementById('comp-res-ow-pct'),
+    compResNextLabel: document.getElementById('comp-res-next-label'),
+    compResNextIco: document.getElementById('comp-res-next-ico'),
+    compResBarBase: document.getElementById('comp-res-bar-base'),
+    compResBarDelta: document.getElementById('comp-res-bar-delta'),
+    compResBarVal: document.getElementById('comp-res-bar-val'),
+    homePetalsLayer: document.getElementById('home-petals-layer'),
     compResRankPill: document.getElementById('comp-res-rank-pill'),
     compResTierImg: document.getElementById('comp-res-tier-img'),
     compResTierBadge: document.getElementById('comp-res-tier-badge'),
@@ -6047,6 +6061,403 @@
     }
   }
 
+  let compResAnimSeq = 0;
+  let compResFxRaf = 0;
+
+  function stopCompResultAnim() {
+    compResAnimSeq += 1;
+    if (compResFxRaf) {
+      cancelAnimationFrame(compResFxRaf);
+      compResFxRaf = 0;
+    }
+    if (el.compResFxCanvas) {
+      const ctx = el.compResFxCanvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, el.compResFxCanvas.width, el.compResFxCanvas.height);
+    }
+  }
+
+  function spawnCompResultBurst(tierColor, isPromotion = false) {
+    const canvas = el.compResFxCanvas;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(240, Math.round(rect.width || 460));
+    const h = Math.max(120, Math.round(rect.height || 168));
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Emit from the tier emblem center!
+    let ox = 56;
+    let oy = Math.min(h * 0.42, 62);
+    if (el.compResEmblemWrap) {
+      const er = el.compResEmblemWrap.getBoundingClientRect();
+      if (er.width > 0 && rect.width > 0) {
+        ox = (er.left - rect.left) + er.width * 0.5;
+        oy = (er.top - rect.top) + er.height * 0.5;
+      }
+    }
+
+    const palette = isPromotion
+      ? [tierColor || '#ffe554', '#ffe866', '#ffffff', '#7df2ff', '#ff94d6']
+      : [tierColor || '#6affb0', '#ffe866', '#ffffff'];
+    const count = isPromotion ? 76 : 24;
+    const particles = [];
+    for (let i = 0; i < count; i++) {
+      const ang = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.35;
+      const spd = isPromotion ? (90 + Math.random() * 240) : (55 + Math.random() * 115);
+      particles.push({
+        x: ox + (Math.random() - 0.5) * 14,
+        y: oy + (Math.random() - 0.5) * 14,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - (isPromotion ? 45 : 22),
+        size: isPromotion ? (3.5 + Math.random() * 5.2) : (2.5 + Math.random() * 3.2),
+        rot: Math.random() * Math.PI * 2,
+        vrot: (Math.random() - 0.5) * 10,
+        color: palette[i % palette.length],
+        kind: (i % 3 === 0) ? 'star' : ((i % 3 === 1) ? 'ribbon' : 'spark'),
+        life: 0,
+        maxLife: isPromotion ? (0.85 + Math.random() * 0.75) : (0.55 + Math.random() * 0.4)
+      });
+    }
+
+    const shockwaves = isPromotion
+      ? [
+          { r: 10, maxR: Math.max(w, h) * 0.65, life: 0, maxLife: 0.62, color: '#ffffff', width: 5 },
+          { r: 6, maxR: Math.max(w, h) * 0.85, life: 0, maxLife: 0.82, color: tierColor || '#ffe866', width: 4 }
+        ]
+      : [{ r: 8, maxR: 120, life: 0, maxLife: 0.45, color: tierColor || '#6affb0', width: 2.5 }];
+
+    if (compResFxRaf) cancelAnimationFrame(compResFxRaf);
+    let prevTs = performance.now();
+
+    const drawStar = (x, y, sz, rot) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const rad = (k % 2 === 0) ? sz : sz * 0.38;
+        const a = (Math.PI * k) / 4;
+        if (k === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+        else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    };
+
+    const step = (ts) => {
+      const dt = Math.min(0.05, Math.max(0.008, (ts - prevTs) / 1000));
+      prevTs = ts;
+      ctx.clearRect(0, 0, w, h);
+
+      let alive = false;
+      for (let i = 0; i < shockwaves.length; i++) {
+        const sw = shockwaves[i];
+        sw.life += dt;
+        if (sw.life < sw.maxLife) {
+          alive = true;
+          const p = sw.life / sw.maxLife;
+          const ease = 1 - Math.pow(1 - p, 3);
+          const rad = sw.r + (sw.maxR - sw.r) * ease;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, (1 - p) * 0.82);
+          ctx.strokeStyle = sw.color;
+          ctx.lineWidth = Math.max(1, sw.width * (1 - p * 0.65));
+          ctx.beginPath();
+          ctx.arc(ox, oy, rad, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      for (let i = 0; i < particles.length; i++) {
+        const pt = particles[i];
+        pt.life += dt;
+        if (pt.life >= pt.maxLife) continue;
+        alive = true;
+        pt.vy += 260 * dt;
+        pt.vx *= Math.pow(0.96, dt * 60);
+        pt.x += pt.vx * dt;
+        pt.y += pt.vy * dt;
+        pt.rot += pt.vrot * dt;
+        const p = pt.life / pt.maxLife;
+        const alpha = p < 0.72 ? 1 : Math.max(0, (1 - p) / 0.28);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = pt.color;
+        if (pt.kind === 'star') {
+          drawStar(pt.x, pt.y, pt.size, pt.rot);
+        } else if (pt.kind === 'ribbon') {
+          ctx.translate(pt.x, pt.y);
+          ctx.rotate(pt.rot);
+          ctx.fillRect(-pt.size, -pt.size * 0.42, pt.size * 2, pt.size * 0.84);
+        } else {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pt.size * 0.62, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      if (alive) {
+        compResFxRaf = requestAnimationFrame(step);
+      } else {
+        compResFxRaf = 0;
+        ctx.clearRect(0, 0, w, h);
+      }
+    };
+    compResFxRaf = requestAnimationFrame(step);
+  }
+
+  function applyCompResultTierVisual(tierObj, displayTrophies, basePct, deltaLeftPct, deltaWidthPct, deltaMode) {
+    if (!tierObj) return;
+    if (el.compResEmblemWrap) el.compResEmblemWrap.style.setProperty('--tier-color', tierObj.color);
+    if (el.compResOwCard) el.compResOwCard.style.setProperty('--tier-color', tierObj.color);
+    if (el.compResTierImg) {
+      el.compResTierImg.src = getTierImgUrl(tierObj);
+      el.compResTierImg.alt = tierObj.name;
+    }
+    if (el.compResTierBadge) {
+      el.compResTierBadge.textContent = tierObj.name;
+      el.compResTierBadge.style.color = tierObj.color;
+      el.compResTierBadge.style.borderColor = tierObj.color;
+    }
+    if (el.compResTrophyTotal) {
+      el.compResTrophyTotal.textContent = Math.max(0, Math.round(displayTrophies)).toLocaleString('ko-KR');
+    }
+    const nextT = tierObj.next || tierObj;
+    if (el.compResCurIco) {
+      el.compResCurIco.src = getTierImgUrl(tierObj);
+      el.compResCurIco.alt = tierObj.name;
+    }
+    if (el.compResCurLabel) el.compResCurLabel.textContent = tierObj.name;
+    if (el.compResNextIco) {
+      el.compResNextIco.src = getTierImgUrl(nextT);
+      el.compResNextIco.alt = nextT.name;
+    }
+    if (el.compResNextLabel) el.compResNextLabel.textContent = tierObj.next ? tierObj.next.name : '챔피언';
+
+    const curPct = Math.max(0, Math.min(100, deltaMode === 'up' ? (basePct + deltaWidthPct) : basePct));
+    if (el.compResOwPct) {
+      el.compResOwPct.textContent = tierObj.next ? `${Math.round(curPct)}%` : 'MAX';
+      el.compResOwPct.style.color = tierObj.color;
+    }
+    if (el.compResBarBase) {
+      el.compResBarBase.style.width = `${Math.max(0, Math.min(100, basePct)).toFixed(2)}%`;
+      el.compResBarBase.style.background = `linear-gradient(90deg, ${tierObj.color}, #ffe866)`;
+    }
+    if (el.compResBarDelta) {
+      el.compResBarDelta.className = `comp-res-bar-delta${deltaMode ? ` ${deltaMode}` : ''}`;
+      el.compResBarDelta.style.left = `${Math.max(0, Math.min(100, deltaLeftPct)).toFixed(2)}%`;
+      el.compResBarDelta.style.width = `${Math.max(0, Math.min(100, deltaWidthPct)).toFixed(2)}%`;
+    }
+    if (el.compResBarVal) {
+      const disp = Math.max(0, Math.round(displayTrophies));
+      el.compResBarVal.textContent = tierObj.next
+        ? `${disp.toLocaleString('ko-KR')} / ${tierObj.next.minTrophies.toLocaleString('ko-KR')}`
+        : `${disp.toLocaleString('ko-KR')} MAX`;
+    }
+  }
+
+  function runCompResultProgressionAnim(prevTrophies, newTrophies, actualDelta) {
+    stopCompResultAnim();
+    const seq = compResAnimSeq;
+    const tiers = DATA.COMP_TIERS || [];
+    const prevTier = DATA.getCompTier(prevTrophies);
+    const newTier = DATA.getCompTier(newTrophies);
+
+    const getTierObjByIdx = (idx) => {
+      const clamped = Math.max(0, Math.min(tiers.length - 1, idx));
+      const cur = tiers[clamped] || prevTier;
+      const next = tiers[clamped + 1] || null;
+      return { ...cur, index: clamped, next };
+    };
+
+    const pctInTier = (tierObj, val) => {
+      if (!tierObj.next) return 100;
+      const span = Math.max(1, tierObj.next.minTrophies - tierObj.minTrophies);
+      return Math.max(0, Math.min(100, ((val - tierObj.minTrophies) / span) * 100));
+    };
+
+    // Reset promotion/demotion classes
+    if (el.compResEmblemWrap) {
+      el.compResEmblemWrap.classList.remove('is-morphing-out', 'is-promoted', 'is-demoted');
+    }
+    if (el.compResultModalBox) {
+      el.compResultModalBox.classList.remove('is-promo-shake');
+    }
+    if (el.compResOwCard) {
+      el.compResOwCard.classList.remove('is-tier-up', 'is-tier-down');
+    }
+    if (el.compResPromoBanner) {
+      el.compResPromoBanner.className = 'comp-res-promo-banner hidden';
+      el.compResPromoBanner.textContent = '';
+    }
+
+    const startPct = pctInTier(prevTier, prevTrophies);
+    applyCompResultTierVisual(prevTier, prevTrophies, startPct, startPct, 0, '');
+
+    if (actualDelta === 0) return;
+
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const sweepSegment = (tierObj, fromVal, toVal, dir, durMs) => new Promise((resolve) => {
+      const p0 = pctInTier(tierObj, fromVal);
+      const p1 = pctInTier(tierObj, toVal);
+      const t0 = performance.now();
+      let lastTickAt = 0;
+
+      const frame = (now) => {
+        if (compResAnimSeq !== seq) { resolve(false); return; }
+        const raw = Math.min(1, Math.max(0, (now - t0) / Math.max(120, durMs)));
+        const ease = 1 - Math.pow(1 - raw, 3);
+        const curVal = fromVal + (toVal - fromVal) * ease;
+        const curPct = p0 + (p1 - p0) * ease;
+
+        if (dir > 0) {
+          applyCompResultTierVisual(tierObj, curVal, p0, p0, Math.max(0, curPct - p0), 'up');
+        } else {
+          // Overwatch loss: base drops to curPct while crimson loss segment shrinks from p0 down to curPct!
+          applyCompResultTierVisual(tierObj, curVal, curPct, curPct, Math.max(0, p0 - curPct), 'down');
+        }
+
+        if (now - lastTickAt >= 78 && raw < 0.98) {
+          lastTickAt = now;
+          try { SFX.trophyTick(dir, ease); } catch {}
+        }
+
+        if (raw < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          applyCompResultTierVisual(tierObj, toVal, p1, p1, 0, '');
+          resolve(true);
+        }
+      };
+      requestAnimationFrame(frame);
+    });
+
+    (async () => {
+      await sleep(360);
+      if (compResAnimSeq !== seq) return;
+
+      if (actualDelta > 0) {
+        if (newTier.index === prevTier.index) {
+          // Same-tier trophy rise!
+          const ok = await sweepSegment(prevTier, prevTrophies, newTrophies, 1, 1150);
+          if (!ok || compResAnimSeq !== seq) return;
+          spawnCompResultBurst(newTier.color, false);
+          try { SFX.coin(3); } catch {}
+        } else {
+          // SPECTACULAR OVERWATCH TIER PROMOTION!!
+          let curIdx = prevTier.index;
+          let curVal = prevTrophies;
+          while (curIdx < newTier.index) {
+            const curT = getTierObjByIdx(curIdx);
+            const nextT = getTierObjByIdx(curIdx + 1);
+            const boundary = nextT.minTrophies;
+
+            // Phase 1: Charge bar smoothly to 100% of old tier!
+            const ok1 = await sweepSegment(curT, curVal, boundary, 1, 720);
+            if (!ok1 || compResAnimSeq !== seq) return;
+
+            // Phase 2: Spin-flash morph into the NEW tier emblem + fireworks + fanfare!
+            if (el.compResEmblemWrap) {
+              el.compResEmblemWrap.classList.remove('is-promoted', 'is-demoted');
+              void el.compResEmblemWrap.offsetWidth;
+              el.compResEmblemWrap.classList.add('is-morphing-out');
+            }
+            await sleep(210);
+            if (compResAnimSeq !== seq) return;
+
+            // Swap to NEW tier at peak flash!
+            applyCompResultTierVisual(nextT, boundary, 0, 0, 0, '');
+            if (el.compResEmblemWrap) {
+              el.compResEmblemWrap.classList.remove('is-morphing-out');
+              void el.compResEmblemWrap.offsetWidth;
+              el.compResEmblemWrap.classList.add('is-promoted');
+            }
+            if (el.compResOwCard) {
+              el.compResOwCard.classList.add('is-tier-up');
+            }
+            if (el.compResultModalBox) {
+              el.compResultModalBox.classList.remove('is-promo-shake');
+              void el.compResultModalBox.offsetWidth;
+              el.compResultModalBox.classList.add('is-promo-shake');
+            }
+            if (el.compResPromoBanner) {
+              el.compResPromoBanner.textContent = `TIER UP! ${nextT.name} 승급!`;
+              el.compResPromoBanner.className = 'comp-res-promo-banner up';
+            }
+            try { SFX.tierPromote(); } catch {}
+            haptic(38);
+            spawnCompResultBurst(nextT.color, true);
+
+            await sleep(620);
+            if (compResAnimSeq !== seq) return;
+
+            curIdx += 1;
+            curVal = boundary;
+          }
+
+          // Phase 3: Sweep remaining trophies into the NEW tier bar!
+          if (newTrophies > curVal) {
+            await sweepSegment(newTier, curVal, newTrophies, 1, 820);
+          } else {
+            applyCompResultTierVisual(newTier, newTrophies, pctInTier(newTier, newTrophies), 0, 0, '');
+          }
+        }
+      } else {
+        // Trophy drop (Overwatch-style red loss drain!)
+        if (newTier.index === prevTier.index) {
+          // Brief red highlight preview of exact lost chunk before draining!
+          const pNew = pctInTier(prevTier, newTrophies);
+          applyCompResultTierVisual(prevTier, prevTrophies, pNew, pNew, Math.max(0, startPct - pNew), 'down');
+          await sleep(280);
+          if (compResAnimSeq !== seq) return;
+          await sweepSegment(prevTier, prevTrophies, newTrophies, -1, 1050);
+        } else {
+          // Tier demotion
+          let curIdx = prevTier.index;
+          let curVal = prevTrophies;
+          while (curIdx > newTier.index) {
+            const curT = getTierObjByIdx(curIdx);
+            const lowerT = getTierObjByIdx(curIdx - 1);
+            const boundary = curT.minTrophies;
+
+            const ok1 = await sweepSegment(curT, curVal, boundary, -1, 650);
+            if (!ok1 || compResAnimSeq !== seq) return;
+
+            applyCompResultTierVisual(lowerT, boundary, 100, 100, 0, '');
+            if (el.compResEmblemWrap) {
+              el.compResEmblemWrap.classList.remove('is-promoted', 'is-demoted');
+              void el.compResEmblemWrap.offsetWidth;
+              el.compResEmblemWrap.classList.add('is-demoted');
+            }
+            if (el.compResOwCard) el.compResOwCard.classList.add('is-tier-down');
+            if (el.compResPromoBanner) {
+              el.compResPromoBanner.textContent = `${lowerT.name} 티어 하락`;
+              el.compResPromoBanner.className = 'comp-res-promo-banner down';
+            }
+            try { SFX.tierDemote(); } catch {}
+            await sleep(460);
+            if (compResAnimSeq !== seq) return;
+
+            curIdx -= 1;
+            curVal = boundary;
+          }
+          if (newTrophies < curVal) {
+            await sweepSegment(newTier, curVal, newTrophies, -1, 780);
+          }
+        }
+      }
+    })();
+  }
+
   function showCompFinalResultModal(m) {
     if (!m || m.claimed) return;
     m.claimed = true;
@@ -6088,21 +6499,10 @@
     if (currentTab === 'comp') renderCompetitiveLobby();
     if (currentTab === 'rank') renderRankingTab();
 
-    const tier = DATA.getCompTier(newTrophies);
     if (el.compResRankPill) {
       el.compResRankPill.textContent = `${myRank}위 / ${finalList.length}`;
       el.compResRankPill.className = `comp-res-rank-pill${myRank <= 3 ? ` top${myRank}` : ''}`;
     }
-    if (el.compResTierImg) {
-      el.compResTierImg.src = getTierImgUrl(tier);
-      el.compResTierImg.alt = tier.name;
-    }
-    if (el.compResTierBadge) {
-      el.compResTierBadge.textContent = tier.name;
-      el.compResTierBadge.style.color = tier.color;
-      el.compResTierBadge.style.borderColor = tier.color;
-    }
-    if (el.compResTrophyTotal) el.compResTrophyTotal.textContent = newTrophies.toLocaleString('ko-KR');
     if (el.compResDelta) {
       el.compResDelta.textContent = actualDelta >= 0 ? `+${actualDelta}` : `${actualDelta}`;
       el.compResDelta.className = `comp-res-delta ${actualDelta > 0 ? 'up' : (actualDelta < 0 ? 'down' : 'flat')}`;
@@ -6133,6 +6533,9 @@
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
     activeWaitMatchId = null;
     if (el.compResultOverlay) el.compResultOverlay.classList.remove('hidden');
+
+    // Launch Overwatch-style live trophy bar & spectacular Tier-Up celebration!
+    runCompResultProgressionAnim(prevTrophies, newTrophies, actualDelta);
   }
 
   async function tickPendingCompMatches() {
@@ -11180,12 +11583,14 @@
     }
     if (el.btnCompResRank) {
       el.btnCompResRank.addEventListener('click', () => {
+        stopCompResultAnim();
         exitRunToHome();
         switchTab('comp');
       });
     }
     if (el.btnCompResRematch) {
       el.btnCompResRematch.addEventListener('click', () => {
+        stopCompResultAnim();
         exitRunToHome();
         switchTab('comp');
         startCompetitiveMatchmaking();
@@ -12288,6 +12693,44 @@
     });
   }
 
+  function initHomePetals() {
+    const layer = el.homePetalsLayer;
+    if (!layer || layer.dataset.ready === '1') return;
+    layer.dataset.ready = '1';
+    const count = 18;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < count; i++) {
+      const wrap = document.createElement('span');
+      wrap.className = 'home-petal-wrap';
+      const startX = -6 + (i / count) * 112 + (Math.random() - 0.5) * 8;
+      const dur = 8.2 + Math.random() * 6.8;
+      const delay = -(Math.random() * dur);
+      const drift = 75 + Math.random() * 120;
+      const swayDur = 2.6 + Math.random() * 2.2;
+      const swayAmp = 14 + Math.random() * 24;
+      const size = 12 + Math.random() * 12;
+      const op = 0.2 + Math.random() * 0.16;
+      const rot0 = Math.round(Math.random() * 360);
+      wrap.style.setProperty('--px', `${startX.toFixed(1)}%`);
+      wrap.style.setProperty('--dur', `${dur.toFixed(2)}s`);
+      wrap.style.setProperty('--delay', `${delay.toFixed(2)}s`);
+      wrap.style.setProperty('--drift', `${drift.toFixed(0)}px`);
+      wrap.style.setProperty('--op', op.toFixed(2));
+
+      const img = document.createElement('img');
+      img.src = 'assets/world/nat_sp_petal.png';
+      img.alt = '';
+      img.className = 'home-petal-img';
+      img.style.setProperty('--sz', `${size.toFixed(0)}px`);
+      img.style.setProperty('--sway-dur', `${swayDur.toFixed(2)}s`);
+      img.style.setProperty('--sway-amp', `${swayAmp.toFixed(0)}px`);
+      img.style.setProperty('--rot0', `${rot0}deg`);
+      wrap.appendChild(img);
+      frag.appendChild(wrap);
+    }
+    layer.appendChild(frag);
+  }
+
   // ===================== GLOBAL ERROR GUARD & BOOT =====================
   window.addEventListener('error', (ev) => {
     try {
@@ -12295,6 +12738,7 @@
     } catch {}
   });
   setupEvents();
+  initHomePetals();
   refreshAllMenus();
   renderIntroAuthState();
   refreshLiveWeatherUI(false);

@@ -23806,3 +23806,443 @@ input:focus-visible {
     font-size: 9px;
   }
 }
+
+/* ==========================================================================
+   v20261121hd131 — HOME LOW-OPACITY CHERRY BLOSSOM PETALS
+   + OVERWATCH COMPETITIVE TROPHY ANIMATION & TIER PROMOTION CELEBRATION
+   ========================================================================== */
+
+/* 1. Home Screen Low-Opacity Drifting Cherry Blossom Petals */
+.home-petals-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.home-petal-wrap {
+  position: absolute;
+  top: -36px;
+  left: var(--px, 50%);
+  opacity: var(--op, 0.28);
+  will-change: transform;
+  animation: homePetalFall var(--dur, 11s) linear var(--delay, 0s) infinite;
+}
+
+.home-petal-img {
+  display: block;
+  width: var(--sz, 18px);
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 2px rgba(255, 130, 182, 0.25));
+  will-change: transform;
+  animation: homePetalSway var(--sway-dur, 3.4s) ease-in-out infinite alternate;
+}
+
+#view-home:not(.active) .home-petal-wrap,
+#view-home:not(.active) .home-petal-img {
+  animation-play-state: paused;
+}
+
+@keyframes homePetalFall {
+  0% {
+    transform: translate3d(0, -10px, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--op, 0.28);
+  }
+  88% {
+    opacity: var(--op, 0.28);
+  }
+  100% {
+    transform: translate3d(var(--drift, 110px), calc(100vh + 56px), 0);
+    opacity: 0;
+  }
+}
+
+@keyframes homePetalSway {
+  0% {
+    transform: translateX(calc(var(--sway-amp, 20px) * -0.5)) rotate(var(--rot0, 0deg)) rotateY(0deg);
+  }
+  100% {
+    transform: translateX(calc(var(--sway-amp, 20px) * 0.5)) rotate(calc(var(--rot0, 0deg) + 125deg)) rotateY(52deg);
+  }
+}
+
+/* 2. Overwatch-Style Result Progression & Dramatic Tier Promotion FX */
+.comp-res-ow-card {
+  --tier-color: #d98c54;
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  border: 2.5px solid #071022;
+  background:
+    radial-gradient(ellipse 75% 70% at 18% 40%, rgba(72, 146, 255, 0.28) 0%, transparent 70%),
+    linear-gradient(180deg, #1a3f84 0%, #0d2352 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 1.5px 0 rgba(162, 224, 255, 0.34);
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.comp-res-ow-card.is-tier-up {
+  border-color: var(--tier-color, #ffe554);
+  box-shadow: 0 4px 0 #071022, 0 0 26px rgba(255, 220, 82, 0.55), inset 0 2px 0 rgba(255, 245, 190, 0.52);
+  background:
+    radial-gradient(ellipse 70% 80% at 20% 38%, color-mix(in srgb, var(--tier-color) 42%, transparent) 0%, transparent 72%),
+    linear-gradient(180deg, #224da0 0%, #10285e 100%);
+}
+
+.comp-res-ow-card.is-tier-down {
+  border-color: #ff5c77;
+  box-shadow: 0 4px 0 #071022, 0 0 18px rgba(255, 78, 108, 0.4);
+}
+
+.comp-res-fx-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.comp-res-ow-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 11px;
+}
+
+.comp-res-ow-emblem-wrap {
+  --tier-color: #d98c54;
+  position: relative;
+  width: 74px;
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.comp-res-ow-rays {
+  position: absolute;
+  inset: -26px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.24;
+  background: repeating-conic-gradient(
+    from 0deg,
+    var(--tier-color) 0deg 14deg,
+    transparent 14deg 30deg
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 68%);
+  mask-image: radial-gradient(circle, #000 18%, transparent 68%);
+  animation: compOwRaysSpin 11s linear infinite;
+  transition: opacity 0.28s ease;
+}
+
+.comp-res-ow-emblem-wrap.is-promoted .comp-res-ow-rays {
+  opacity: 0.88;
+  animation: compOwRaysSpin 4.2s linear infinite;
+}
+
+@keyframes compOwRaysSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.comp-res-ow-ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 3px solid var(--tier-color);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.comp-res-ow-emblem-wrap.is-promoted .comp-res-ow-ring.r1 {
+  animation: compTierShockwave 0.78s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.comp-res-ow-emblem-wrap.is-promoted .comp-res-ow-ring.r2 {
+  border-color: #ffffff;
+  animation: compTierShockwave 0.96s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards;
+}
+
+@keyframes compTierShockwave {
+  0% { transform: scale(0.45); opacity: 0.95; border-width: 5px; }
+  100% { transform: scale(2.5); opacity: 0; border-width: 1px; }
+}
+
+.comp-res-ow-flash {
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #fff4a3 36%, transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.comp-res-ow-emblem-wrap.is-morphing-out .comp-res-ow-flash {
+  animation: compTierFlashBuild 0.22s ease-in forwards;
+}
+
+.comp-res-ow-emblem-wrap.is-promoted .comp-res-ow-flash {
+  animation: compTierFlashRelease 0.56s ease-out forwards;
+}
+
+@keyframes compTierFlashBuild {
+  0% { transform: scale(0.35); opacity: 0; }
+  100% { transform: scale(1.25); opacity: 0.95; }
+}
+
+@keyframes compTierFlashRelease {
+  0% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+.comp-res-ow-emblem-wrap .comp-res-tier-img {
+  position: relative;
+  z-index: 3;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.62));
+}
+
+.comp-res-ow-emblem-wrap.is-morphing-out .comp-res-tier-img {
+  animation: compTierMorphOut 0.22s ease-in forwards;
+}
+
+.comp-res-ow-emblem-wrap.is-promoted .comp-res-tier-img {
+  animation: compTierPromoteIn 0.72s cubic-bezier(0.18, 1.38, 0.32, 1) forwards;
+  filter: drop-shadow(0 0 18px var(--tier-color)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.7));
+}
+
+.comp-res-ow-emblem-wrap.is-demoted .comp-res-tier-img {
+  animation: compTierDemoteShake 0.45s ease-in-out;
+}
+
+@keyframes compTierMorphOut {
+  0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  100% { transform: scale(0.28) rotate(220deg); filter: brightness(3.2); }
+}
+
+@keyframes compTierPromoteIn {
+  0% { transform: scale(2.05) rotate(-18deg); opacity: 0; filter: brightness(2.6); }
+  38% { transform: scale(0.88) rotate(5deg); opacity: 1; filter: brightness(1.4); }
+  66% { transform: scale(1.14) rotate(-2deg); filter: brightness(1.15); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+}
+
+@keyframes compTierDemoteShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-5deg); }
+  45% { transform: translateX(6px) rotate(5deg); }
+  70% { transform: translateX(-4px) rotate(-2deg); }
+}
+
+#comp-result-modal-box.is-promo-shake {
+  animation: compModalImpactShake 0.42s ease-out;
+}
+
+@keyframes compModalImpactShake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  18% { transform: translate3d(-4px, 3px, 0) scale(1.015); }
+  38% { transform: translate3d(4px, -3px, 0); }
+  58% { transform: translate3d(-3px, 2px, 0); }
+  78% { transform: translate3d(2px, -1px, 0); }
+}
+
+.comp-res-ow-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.comp-res-promo-banner {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 2px solid #071022;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2.5px 0 #071022;
+  animation: compPromoPop 0.46s cubic-bezier(0.22, 1.4, 0.36, 1) forwards;
+}
+
+.comp-res-promo-banner.up {
+  background: linear-gradient(90deg, #ffe857 0%, #ffad1f 55%, #fff078 100%);
+  color: #261200;
+  box-shadow: 0 2.5px 0 #071022, 0 0 16px rgba(255, 224, 82, 0.85);
+}
+
+.comp-res-promo-banner.down {
+  background: linear-gradient(90deg, #ff4d6a 0%, #c9183a 100%);
+  color: #ffffff;
+}
+
+@keyframes compPromoPop {
+  0% { transform: scale(0.45) translateY(6px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.comp-res-ow-tier-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.comp-res-ow-info .comp-res-trophies {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.comp-res-ow-info .comp-res-trophies strong {
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Overwatch Animated Trophy Progress Bar Inside Result Modal */
+.comp-res-ow-bar-wrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px 9px;
+  border-radius: 11px;
+  background: rgba(6, 15, 36, 0.78);
+  border: 2px solid #071022;
+}
+
+.comp-res-ow-ends {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.comp-res-ow-track {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  border-radius: 7px;
+  background: #040b1c;
+  border: 2px solid #02060f;
+  overflow: hidden;
+  transform: skewX(-8deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65);
+}
+
+.comp-res-bar-base {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.comp-res-bar-delta {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.comp-res-bar-delta.up {
+  background: linear-gradient(90deg, #32e87d 0%, #b8ff6b 65%, #fff58c 100%);
+  box-shadow: 0 0 14px rgba(82, 255, 148, 0.82);
+}
+
+.comp-res-bar-delta.up::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 5px;
+  background: #ffffff;
+  box-shadow: 0 0 10px #ffffff;
+}
+
+.comp-res-bar-delta.down {
+  background: linear-gradient(90deg, #ff2e52 0%, #ff7a90 100%);
+  box-shadow: 0 0 14px rgba(255, 58, 92, 0.82);
+}
+
+.comp-res-bar-delta.down::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: #ffd1d9;
+  box-shadow: 0 0 8px #ff5c77;
+}
+
+.comp-res-bar-val {
+  position: relative;
+  z-index: 3;
+  transform: skewX(8deg);
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071022, -1px 0 0 #071022, 1px 0 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-height: 460px) {
+  .comp-res-ow-card {
+    padding: 7px 9px;
+    gap: 6px;
+  }
+
+  .comp-res-ow-emblem-wrap {
+    width: 54px;
+    height: 54px;
+  }
+
+  .comp-res-ow-emblem-wrap .comp-res-tier-img {
+    width: 50px;
+    height: 50px;
+  }
+
+  .comp-res-ow-info .comp-res-trophies strong {
+    font-size: 17px;
+  }
+
+  .comp-res-ow-bar-wrap {
+    padding: 5px 7px;
+    gap: 3px;
+  }
+
+  .comp-res-ow-track {
+    height: 18px;
+  }
+
+  .comp-res-bar-val {
+    font-size: 10px;
+  }
+}
