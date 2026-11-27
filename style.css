@@ -27078,3 +27078,891 @@ input:focus-visible {
     font-size: 10.5px;
   }
 }
+
+/* ==========================================================================
+   v20261121hd143 — 2v2 BRAWL PARTNER STAGE, FOOTER MODE PLACEMENT NEXT TO PLAY,
+   1v1 LOCK WHEN IN PARTY, 2v2 LIVE TEAMMATE SPECTATE HUD & GLOSSY BRAWL BUTTONS
+   ========================================================================== */
+
+/* 1. Competitive Footer: Place 1v1/2v2 Switcher (+ Party Leave) Directly Left of PLAY! */
+.comp-ob-footer.comp-ob-footer-clean {
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+.comp-ob-foot-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+
+.comp-mode-top {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.comp-mode-lock {
+  display: inline-block;
+  flex-shrink: 0;
+  color: #ff9eaa;
+}
+
+.comp-mode-lock.hidden {
+  display: none !important;
+}
+
+.comp-mode-pill.is-locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: rgba(255, 118, 138, 0.45);
+  background: rgba(34, 22, 42, 0.72);
+  color: #b7c2da;
+}
+
+.comp-mode-pill.is-locked:active {
+  transform: none;
+}
+
+/* 2. Brawl Stars 2v2 Stage: My Runner + Side-by-Side Partner '+' Invite / Live Friend Character */
+.comp-stage-duo-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.comp-stage-me-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.comp-partner-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  width: 46%;
+  max-width: 196px;
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 4px;
+}
+
+.comp-partner-slot.hidden {
+  display: none !important;
+}
+
+.comp-partner-empty,
+.comp-partner-filled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  height: 100%;
+  gap: 5px;
+}
+
+.comp-partner-empty.hidden,
+.comp-partner-filled.hidden {
+  display: none !important;
+}
+
+.comp-partner-kicker,
+.comp-partner-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5px 10px;
+  border-radius: 999px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #3df582 0%, #14a84d 100%);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 900;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 2.5px 0 #071022;
+  white-space: nowrap;
+}
+
+.comp-partner-status-pill.waiting {
+  background: linear-gradient(180deg, #ffd84a 0%, #e08d0e 100%);
+}
+
+/* Iconic Brawl Stars Glossy '+' Invite Button on the 2v2 Stage! */
+.comp-partner-plus-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(62px, 16vh, 88px);
+  height: clamp(62px, 16vh, 88px);
+  margin: auto 0 6px;
+  border-radius: 22px;
+  border: 3.5px solid #071022;
+  background: linear-gradient(180deg, #4bff91 0%, #24df6d 48%, #10a84c 52%, #0a7f37 100%);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow:
+    0 6px 0 #071022,
+    0 10px 22px rgba(24, 224, 104, 0.44),
+    inset 0 3px 0 rgba(235, 255, 242, 0.8),
+    inset 0 -5px 0 rgba(4, 72, 30, 0.45);
+  animation: bsPartnerPlusPulse 2.1s ease-in-out infinite;
+  transition: transform 0.1s ease, filter 0.12s ease;
+}
+
+@keyframes bsPartnerPlusPulse {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 6px 0 #071022,
+      0 10px 20px rgba(24, 224, 104, 0.36),
+      inset 0 3px 0 rgba(235, 255, 242, 0.8),
+      inset 0 -5px 0 rgba(4, 72, 30, 0.45);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.045);
+    box-shadow:
+      0 9px 0 #071022,
+      0 14px 28px rgba(56, 255, 134, 0.62),
+      inset 0 3px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -5px 0 rgba(4, 72, 30, 0.45);
+  }
+}
+
+.comp-partner-plus-btn:active {
+  animation: none;
+  transform: translateY(3px) scale(0.96);
+  box-shadow: 0 3px 0 #071022;
+}
+
+.comp-partner-plus-btn svg {
+  filter: drop-shadow(0 2.5px 0 #071022);
+}
+
+.comp-partner-invite-lbl {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-md);
+  line-height: 1.1;
+}
+
+.comp-partner-overhead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.comp-partner-name {
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #a6ffc6;
+  text-shadow: var(--bs-outline-md);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comp-partner-hero-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.comp-partner-spotlight {
+  position: absolute;
+  bottom: 10px;
+  width: 78%;
+  height: 68%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 255, 136, 0.36) 0%, rgba(16, 178, 84, 0.14) 52%, transparent 74%);
+  pointer-events: none;
+}
+
+.comp-partner-hero-img {
+  position: relative;
+  z-index: 2;
+  width: clamp(92px, 25vh, 152px);
+  height: clamp(92px, 25vh, 152px);
+  object-fit: contain;
+  margin-bottom: -8px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+.comp-partner-filled.is-inviting .comp-partner-hero-img {
+  opacity: 0.62;
+  animation: bsPartnerWaitPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes bsPartnerWaitPulse {
+  0%, 100% { opacity: 0.46; transform: scale(0.97); }
+  50% { opacity: 0.82; transform: scale(1.02); }
+}
+
+.comp-partner-aura {
+  width: clamp(110px, 29vh, 176px) !important;
+  height: clamp(110px, 29vh, 176px) !important;
+  bottom: 6px !important;
+}
+
+.comp-partner-floor {
+  width: 86%;
+  max-width: 168px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2.5px solid #071022;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.comp-partner-floor.empty {
+  background: linear-gradient(180deg, #43f589 0%, #169848 58%, #0a4d24 100%);
+  box-shadow: 0 4px 0 #071022, 0 0 16px rgba(56, 255, 134, 0.45), inset 0 2px 0 rgba(255, 255, 255, 0.45);
+}
+
+.comp-partner-floor.ready {
+  background: linear-gradient(180deg, #52ff98 0%, #18b858 55%, #0a5c2c 100%);
+  box-shadow: 0 4px 0 #071022, 0 0 20px rgba(56, 255, 134, 0.62), inset 0 2px 0 rgba(255, 255, 255, 0.55);
+}
+
+.comp-partner-leave-btn {
+  padding: 5px 12px;
+  margin-top: 2px;
+  border-radius: 9px;
+  border: 2.2px solid #071022;
+  background: linear-gradient(180deg, #ff6c7e 0%, #ee344b 50%, #bd172e 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.05;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 3px 0 #071022;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.comp-partner-leave-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+/* Scale my hero neatly when 2v2 partner slot is visible alongside it! */
+#view-comp.is-2v2-mode .comp-ob-runner-btn .comp-hero-img {
+  width: clamp(94px, 26vh, 156px);
+  height: clamp(94px, 26vh, 156px);
+}
+
+#view-comp.is-2v2-mode .comp-ob-runner-btn .comp-hero-aura {
+  width: clamp(112px, 30vh, 180px);
+  height: clamp(112px, 30vh, 180px);
+}
+
+/* iPad / Tablet / Desktop 2v2 Side-by-Side Hero Showcase */
+@media (min-width: 740px) and (min-height: 540px) {
+  #view-comp.is-2v2-mode .comp-ob-left {
+    grid-template-columns: minmax(0, 1.65fr) minmax(126px, 0.52fr);
+    gap: 10px;
+  }
+
+  #view-comp.is-2v2-mode .comp-ob-runner-btn .comp-hero-img {
+    width: clamp(164px, 31vh, 232px) !important;
+    height: clamp(164px, 31vh, 232px) !important;
+    margin-bottom: -14px;
+  }
+
+  #view-comp.is-2v2-mode .comp-ob-runner-btn .comp-hero-aura {
+    width: clamp(192px, 36vh, 268px) !important;
+    height: clamp(192px, 36vh, 268px) !important;
+  }
+
+  #view-comp.is-2v2-mode .comp-ob-overhead .comp-hero-char-name {
+    font-size: 18px;
+  }
+
+  .comp-partner-slot {
+    width: 47%;
+    max-width: 240px;
+  }
+
+  .comp-partner-plus-btn {
+    width: clamp(78px, 14vh, 96px);
+    height: clamp(78px, 14vh, 96px);
+    border-radius: 26px;
+  }
+
+  .comp-partner-plus-btn svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .comp-partner-hero-img {
+    width: clamp(156px, 30vh, 224px);
+    height: clamp(156px, 30vh, 224px);
+    margin-bottom: -14px;
+  }
+
+  .comp-partner-aura {
+    width: clamp(184px, 35vh, 258px) !important;
+    height: clamp(184px, 35vh, 258px) !important;
+  }
+
+  .comp-partner-name {
+    font-size: 18px;
+    max-width: 200px;
+  }
+
+  .comp-partner-kicker,
+  .comp-partner-status-pill {
+    font-size: 12.5px;
+    padding: 3.5px 13px;
+  }
+
+  .comp-partner-invite-lbl {
+    font-size: 15.5px;
+  }
+
+  .comp-partner-floor {
+    height: 19px;
+    max-width: 214px;
+  }
+
+  .comp-partner-leave-btn {
+    padding: 6.5px 14px;
+    font-size: 12.5px;
+  }
+}
+
+/* Compact Mobile Landscape 2v2 Stage */
+@media (max-height: 500px) {
+  #view-comp.is-2v2-mode .comp-ob-runner-btn .comp-hero-img {
+    width: clamp(68px, 23vh, 96px) !important;
+    height: clamp(68px, 23vh, 96px) !important;
+  }
+
+  #view-comp.is-2v2-mode .comp-ob-runner-btn .comp-hero-aura {
+    width: clamp(82px, 27vh, 114px) !important;
+    height: clamp(82px, 27vh, 114px) !important;
+  }
+
+  .comp-partner-plus-btn {
+    width: clamp(46px, 15vh, 62px);
+    height: clamp(46px, 15vh, 62px);
+    border-radius: 16px;
+    border-width: 2.8px;
+  }
+
+  .comp-partner-plus-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .comp-partner-hero-img {
+    width: clamp(66px, 22vh, 94px);
+    height: clamp(66px, 22vh, 94px);
+    margin-bottom: -6px;
+  }
+
+  .comp-partner-aura {
+    width: clamp(80px, 26vh, 110px) !important;
+    height: clamp(80px, 26vh, 110px) !important;
+  }
+
+  .comp-partner-kicker,
+  .comp-partner-status-pill {
+    font-size: 8.5px;
+    padding: 2px 7px;
+  }
+
+  .comp-partner-name {
+    font-size: 11px;
+    max-width: 96px;
+  }
+
+  .comp-partner-invite-lbl {
+    font-size: 10.5px;
+  }
+
+  .comp-partner-floor {
+    height: 10px;
+  }
+
+  .comp-partner-leave-btn {
+    padding: 3.5px 8px;
+    font-size: 9.5px;
+  }
+
+  .comp-ob-foot-cluster {
+    gap: 6px;
+  }
+}
+
+/* 3. 2v2 Combined Team Score Bar on Main Overwatch Competitive Result Card */
+.comp-res-ow-team-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 2px auto 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 2.2px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(90deg, rgba(16, 98, 52, 0.86) 0%, rgba(12, 24, 52, 0.92) 50%, rgba(118, 20, 38, 0.86) 100%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.42);
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+}
+
+.comp-res-ow-team-line.hidden {
+  display: none !important;
+}
+
+.comp-res-ow-team-line .ow-tl-ally {
+  color: #7dffae;
+}
+
+.comp-res-ow-team-line .ow-tl-ally strong,
+.comp-res-ow-team-line .ow-tl-enemy strong {
+  color: #ffffff;
+  font-size: 15px;
+  margin-left: 4px;
+}
+
+.comp-res-ow-team-line .ow-tl-vs {
+  color: #ffe24a;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.comp-res-ow-team-line .ow-tl-enemy {
+  color: #ff94a2;
+}
+
+/* 4. 2v2 Live Teammate Spectate HUD Bar (Bottom Center When Dead While Teammate Runs!) */
+.comp-spectate-hud {
+  position: absolute;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 42;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: min(560px, 92vw);
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 3px solid #2ee872;
+  background: linear-gradient(180deg, rgba(12, 42, 34, 0.94) 0%, rgba(7, 20, 26, 0.96) 100%);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.62), 0 4px 0 #071022, inset 0 2px 0 rgba(145, 255, 190, 0.42);
+}
+
+.comp-spectate-hud.hidden {
+  display: none !important;
+}
+
+.comp-spec-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.comp-spec-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #3df582 0%, #149e49 100%);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 900;
+  text-shadow: var(--bs-outline-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.comp-spec-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+  animation: bsSpecBlink 1s ease-in-out infinite;
+}
+
+@keyframes bsSpecBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.comp-spec-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2.2px solid #35f57b;
+  background: #0b2430;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.comp-spec-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.comp-spec-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-spec-sub {
+  font-size: 11px;
+  font-weight: 800;
+  color: #9effc4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comp-spectate-leave-btn {
+  padding: 8px 13px;
+  border-radius: 11px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #ff6c7e 0%, #ea3048 52%, #b5152b 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 3.5px 0 #071022;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.comp-spectate-leave-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+@media (max-height: 460px) {
+  .comp-spectate-hud {
+    padding: 6px 9px;
+    gap: 8px;
+    bottom: 8px;
+  }
+
+  .comp-spec-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .comp-spec-title {
+    font-size: 11.5px;
+  }
+
+  .comp-spec-sub {
+    font-size: 9.8px;
+  }
+
+  .comp-spectate-leave-btn {
+    padding: 6px 10px;
+    font-size: 10.5px;
+  }
+}
+
+/* ==========================================================================
+   5. AUTHENTIC BRAWL STARS GLOSSY ENAMEL MATERIAL ACROSS ALL UI BUTTONS!
+      (Mirror Upper Specular Cap + Crisp White Inner Rim + Deep Glossy Bevel)
+   ========================================================================== */
+.bs-play-btn,
+.bs-vault-home-btn,
+.bs-side-arrow,
+.bs-right-dock-btn,
+.hdr-preload-btn,
+.comp-ob-play-btn,
+.comp-ob-stack-btn,
+.comp-ow-detail-btn,
+.comp-mode-pill.active,
+.comp-duo-btn,
+.comp-partner-plus-btn,
+.comp-partner-leave-btn,
+.comp-spectate-leave-btn,
+.comp-min-btn,
+.comp-pending-pill,
+.bs-char-nav-btn,
+.bs-shop-tab,
+.bs-prob-btn,
+.bs-buy-btn,
+.gacha-green-btn,
+.gacha-pill-btn,
+.gacha-wish-skip-btn,
+.chest-store-btn,
+.vault-open-all-btn,
+.vault-go-gacha-btn,
+.iap-buy-btn,
+.sp-btn-claim-all,
+.sp-btn-gold,
+.sp-btn-skip,
+.sp-skip-confirm-btn,
+.sp-skip-cancel-btn,
+.sp-subtab.active,
+.bs-qtab.active,
+.item-action-btn,
+.brawl-main-cta,
+.brawl-nav-arrow,
+.bs-char-skin-btn,
+.bs-char-hanger-pill,
+.bs-refresh-btn,
+.rank-mode-tab.active,
+.rank-link-btn,
+.bs-fr-act-btn,
+.bs-friend-add-btn,
+.bs-tag-act-btn,
+.bs-ftab-btn.active,
+.bs-fgb-btn,
+.weather-play-cta,
+.weather-refresh-btn,
+.bs-set-action-btn,
+.bs-set-toggle,
+.settings-ok-btn,
+.modal-x-btn,
+.cr-gold-btn,
+.cr-blue-btn,
+.bs-pause-btn,
+.bs-pause-action,
+.ow-res-btn,
+.tut-done-btn,
+.tut-skip-btn,
+.score-road-claim-all,
+.prof-acc-btn,
+.prof-tab-btn.active,
+.intro-auth-btn,
+.intro-switch-btn,
+.login-provider-btn,
+.login-nick-save,
+.rotate-fs-btn {
+  position: relative;
+  isolation: isolate;
+  filter: saturate(1.12) brightness(1.03);
+  box-shadow:
+    0 4px 0 #071022,
+    0 7px 14px rgba(5, 12, 28, 0.34),
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.72),
+    inset 0 9px 12px -6px rgba(255, 255, 255, 0.36),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.28) !important;
+  transition: transform 0.09s ease, filter 0.12s ease, box-shadow 0.09s ease;
+}
+
+/* Signature Brawl Stars Hard-Candy Curved Upper Gloss Reflection + Corner Spark Glint */
+.bs-play-btn::before,
+.bs-vault-home-btn::before,
+.bs-side-arrow::before,
+.bs-right-dock-btn::before,
+.hdr-preload-btn::before,
+.comp-ob-play-btn::before,
+.comp-ob-stack-btn::before,
+.comp-ow-detail-btn::before,
+.comp-mode-pill.active::before,
+.comp-duo-btn::before,
+.comp-partner-plus-btn::before,
+.comp-partner-leave-btn::before,
+.comp-spectate-leave-btn::before,
+.comp-min-btn::before,
+.comp-pending-pill::before,
+.bs-char-nav-btn::before,
+.bs-shop-tab::before,
+.bs-prob-btn::before,
+.bs-buy-btn::before,
+.gacha-green-btn::before,
+.gacha-pill-btn::before,
+.gacha-wish-skip-btn::before,
+.chest-store-btn::before,
+.vault-open-all-btn::before,
+.vault-go-gacha-btn::before,
+.iap-buy-btn::before,
+.sp-btn-claim-all::before,
+.sp-btn-gold::before,
+.sp-btn-skip::before,
+.sp-skip-confirm-btn::before,
+.sp-skip-cancel-btn::before,
+.sp-subtab.active::before,
+.bs-qtab.active::before,
+.item-action-btn::before,
+.brawl-main-cta::before,
+.brawl-nav-arrow::before,
+.bs-char-skin-btn::before,
+.bs-char-hanger-pill::before,
+.bs-refresh-btn::before,
+.rank-mode-tab.active::before,
+.rank-link-btn::before,
+.bs-fr-act-btn::before,
+.bs-friend-add-btn::before,
+.bs-tag-act-btn::before,
+.bs-ftab-btn.active::before,
+.bs-fgb-btn::before,
+.weather-play-cta::before,
+.weather-refresh-btn::before,
+.bs-set-action-btn::before,
+.bs-set-toggle::before,
+.settings-ok-btn::before,
+.modal-x-btn::before,
+.cr-gold-btn::before,
+.cr-blue-btn::before,
+.bs-pause-btn::before,
+.bs-pause-action::before,
+.ow-res-btn::before,
+.tut-done-btn::before,
+.tut-skip-btn::before,
+.score-road-claim-all::before,
+.prof-acc-btn::before,
+.prof-tab-btn.active::before,
+.intro-auth-btn::before,
+.intro-switch-btn::before,
+.login-provider-btn::before,
+.login-nick-save::before,
+.rotate-fs-btn::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  right: 3px;
+  height: 44%;
+  border-radius: 7px 7px 46% 46% / 7px 7px 14px 14px;
+  background:
+    radial-gradient(ellipse 36% 74% at 17% 20%, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0) 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.22) 66%, rgba(255, 255, 255, 0.0) 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Light-colored buttons (silver/white/bright gold with dark ink): gloss sits behind crisp foreground text! */
+.comp-ob-stack-btn.silver::before,
+.comp-ob-stack-btn.gold::before,
+.comp-ob-play-btn::before,
+.bs-play-btn::before {
+  background:
+    radial-gradient(ellipse 34% 72% at 16% 18%, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66) 0%, rgba(255, 255, 255, 0.28) 58%, rgba(255, 255, 255, 0.0) 100%);
+  mix-blend-mode: normal;
+  height: 44%;
+  z-index: 0;
+}
+
+.comp-ob-stack-btn > span,
+.comp-ob-stack-btn > img,
+.comp-ob-play-btn > span,
+.comp-partner-plus-btn > svg {
+  position: relative;
+  z-index: 2;
+}
+
+/* Preserve extra-tall hero button bottom lips & Brawl '+' box shadows */
+.bs-play-btn,
+.comp-ob-play-btn,
+.comp-partner-plus-btn {
+  box-shadow:
+    0 6px 0 #071022,
+    0 10px 20px rgba(5, 12, 28, 0.42),
+    inset 0 3px 0 rgba(255, 255, 255, 0.84),
+    inset 0 11px 14px -6px rgba(255, 255, 255, 0.44),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.26) !important;
+}
+
+/* Glossy Top-Header Gold / Gem Currency Boxes '+' Pill Glaze */
+#app-header .res-pill.gold-res-pill .bs-res-plus,
+#app-header .res-pill.gem-res-pill .bs-res-plus {
+  position: relative;
+  overflow: hidden;
+  filter: saturate(1.15) brightness(1.04);
+}
+
+#app-header .res-pill.gold-res-pill .bs-res-plus::before,
+#app-header .res-pill.gem-res-pill .bs-res-plus::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  right: 2px;
+  height: 46%;
+  border-radius: 5px 5px 45% 45%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.14) 100%);
+  pointer-events: none;
+}
+
+/* Hover gleam + tactile arcade press on glossy buttons */
+@media (hover: hover) {
+  .bs-play-btn:hover,
+  .bs-vault-home-btn:hover,
+  .bs-right-dock-btn:hover,
+  .comp-ob-play-btn:hover,
+  .comp-ob-stack-btn:hover,
+  .comp-partner-plus-btn:hover,
+  .comp-partner-leave-btn:hover,
+  .comp-spectate-leave-btn:hover,
+  .bs-buy-btn:hover,
+  .gacha-green-btn:hover,
+  .bs-fr-act-btn:hover,
+  .bs-set-action-btn:hover,
+  .ow-res-btn:hover {
+    filter: saturate(1.2) brightness(1.09);
+  }
+}
+
+.bs-vault-home-btn:active,
+.bs-right-dock-btn:active,
+.comp-ob-stack-btn:active,
+.comp-ow-detail-btn:active,
+.comp-duo-btn:active,
+.comp-partner-leave-btn:active,
+.comp-spectate-leave-btn:active,
+.bs-char-nav-btn:active,
+.bs-buy-btn:active,
+.gacha-green-btn:active,
+.bs-fr-act-btn:active,
+.bs-set-action-btn:active,
+.ow-res-btn:active,
+.bs-refresh-btn:active,
+.modal-x-btn:active {
+  box-shadow:
+    0 1.5px 0 #071022,
+    inset 0 2px 0 rgba(255, 255, 255, 0.52),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25) !important;
+}

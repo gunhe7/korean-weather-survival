@@ -3630,100 +3630,136 @@ window.RunRenderer = (function () {
     // Obstacles
     run.obstacles.forEach((ob) => drawObstacle(ctx, ob, t));
 
-    // Competitive 1v1 / 2v2 Live Translucent Ghosts (Teammate Green Outline / Opponent Red Outline in 2v2!)
-    if (Array.isArray(run.compGhosts) && run.compGhosts.length > 0 && window.RUN_DATA) {
+    // Helper to draw a competitive 1v1 / 2v2 ghost (or full-opacity spectated teammate in 2v2!)
+    const drawCompGhost = (g) => {
+      if (!g || g.hidden || !window.RUN_DATA) return;
       const chars = window.RUN_DATA.CHARACTERS || [];
-      run.compGhosts.forEach((g) => {
-        if (!g || g.hidden) return;
-        const gChar = chars.find((c) => c.id === g.charId) || chars[0];
-        if (!gChar) return;
-        const gSkin = g.skinId && window.RUN_DATA.getSkinById ? window.RUN_DATA.getSkinById(g.skinId) : null;
-        const gx = g.x;
-        const gy = g.y;
-        const gFloorY = g.floorY !== undefined ? g.floorY : GROUND_Y;
-        const isDead = Boolean(g.dead);
-        drawCharacter(ctx, gChar, gx, gy, {
-          sliding: Boolean(g.sliding && !isDead),
-          inAir: !isDead && gy < gFloorY - 1,
-          floorY: gFloorY,
-          vy: g.vy || 0,
-          gliding: false,
-          invulnTimer: 0,
-          shield: false,
-          feverTimer: g.fever ? 1 : 0,
-          speedBoostTimer: 0,
-          dead: isDead,
-          deathProgress: 1,
-          umbrellaOn: Boolean(g.umbrellaOn && !isDead),
-          maskOn: Boolean(g.maskOn && !isDead),
-          maskParryTimer: 0,
-          umbrellaBrokenTimer: 0,
-          gustWarning: false,
-          hitPoseTimer: g.hitPoseTimer || 0,
-          itemPoseTimer: 0,
-          winPoseTimer: 0,
-          running: !isDead,
-          skinDef: gSkin || null,
-          scaleHeight: 60,
-          ghostAlpha: g.alpha !== undefined ? g.alpha : 0.56,
-          teamOutlineColor: g.outlineColor || ''
-        }, t + (g.phaseOffset || 0));
+      const gChar = chars.find((c) => c.id === g.charId) || chars[0];
+      if (!gChar) return;
+      const gSkin = g.skinId && window.RUN_DATA.getSkinById ? window.RUN_DATA.getSkinById(g.skinId) : null;
+      const gx = g.x;
+      const gy = g.y;
+      const gFloorY = g.floorY !== undefined ? g.floorY : GROUND_Y;
+      const isDead = Boolean(g.dead);
+      const isSpec = Boolean(run.spectatingAlly && g.isSpectated);
 
-        // Clean mini floating tag above each ghost player so teammate (green) vs opponent (red) is unmistakable!
-        if (g.label) {
-          ctx.save();
-          ctx.globalAlpha = 0.86;
-          ctx.font = '900 8.5px "Noto Sans KR", sans-serif';
-          const txt = g.label;
-          const tw = Math.ceil(ctx.measureText(txt).width);
-          const pw = tw + 10;
-          const ph = 13;
-          const px = Math.floor(gx - pw / 2);
-          const py = Math.floor(gy - (g.sliding || isDead ? 44 : 74));
-          drawRoundRect(ctx, px, py, pw, ph, 6);
-          ctx.fillStyle = g.isAlly
-            ? 'rgba(8, 56, 28, 0.86)'
-            : (g.outlineColor ? 'rgba(72, 12, 22, 0.86)' : 'rgba(12, 24, 52, 0.84)');
-          ctx.fill();
-          ctx.lineWidth = 1.4;
-          ctx.strokeStyle = g.isAlly ? '#35f57b' : (g.outlineColor ? '#ff465c' : '#8fd4ff');
-          ctx.stroke();
-          ctx.fillStyle = g.isAlly ? '#b8ffd0' : (g.outlineColor ? '#ffd0d6' : '#ffffff');
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(txt, px + pw / 2, py + ph / 2 + 0.5);
-          ctx.restore();
+      if (isSpec && !isDead) {
+        // Live camera emerald spotlight ring beneath the spectated teammate!
+        ctx.save();
+        const pulse = 0.88 + 0.12 * Math.sin(t * 7);
+        ctx.strokeStyle = 'rgba(56, 255, 136, 0.85)';
+        ctx.fillStyle = 'rgba(36, 245, 106, 0.22)';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.ellipse(gx, gFloorY + 2, 26 * pulse, 7.5 * pulse, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      drawCharacter(ctx, gChar, gx, gy, {
+        sliding: Boolean(g.sliding && !isDead),
+        inAir: !isDead && gy < gFloorY - 1,
+        floorY: gFloorY,
+        vy: g.vy || 0,
+        gliding: false,
+        invulnTimer: 0,
+        shield: false,
+        feverTimer: g.fever ? 1 : 0,
+        speedBoostTimer: 0,
+        dead: isDead,
+        deathProgress: 1,
+        umbrellaOn: Boolean(g.umbrellaOn && !isDead),
+        maskOn: Boolean(g.maskOn && !isDead),
+        maskParryTimer: 0,
+        umbrellaBrokenTimer: 0,
+        gustWarning: false,
+        hitPoseTimer: g.hitPoseTimer || 0,
+        itemPoseTimer: 0,
+        winPoseTimer: 0,
+        running: !isDead,
+        skinDef: gSkin || null,
+        scaleHeight: isSpec ? 64 : 60,
+        ghostAlpha: isSpec ? 1.0 : (g.alpha !== undefined ? g.alpha : 0.56),
+        teamOutlineColor: g.outlineColor || ''
+      }, t + (g.phaseOffset || 0));
+
+      // Clean mini floating tag above each ghost player so teammate (green) vs opponent (red) is unmistakable!
+      const tagTxt = isSpec ? `관전 중 · ${g.nickname || '팀원'}` : g.label;
+      if (tagTxt) {
+        ctx.save();
+        ctx.globalAlpha = isSpec ? 0.96 : 0.86;
+        ctx.font = isSpec ? '900 9.5px "Noto Sans KR", sans-serif' : '900 8.5px "Noto Sans KR", sans-serif';
+        const tw = Math.ceil(ctx.measureText(tagTxt).width);
+        const pw = tw + (isSpec ? 14 : 10);
+        const ph = isSpec ? 15 : 13;
+        const px = Math.floor(gx - pw / 2);
+        const py = Math.floor(gy - (g.sliding || isDead ? 46 : (isSpec ? 78 : 74)));
+        drawRoundRect(ctx, px, py, pw, ph, 7);
+        ctx.fillStyle = g.isAlly
+          ? (isSpec ? 'rgba(6, 78, 36, 0.94)' : 'rgba(8, 56, 28, 0.86)')
+          : (g.outlineColor ? 'rgba(72, 12, 22, 0.86)' : 'rgba(12, 24, 52, 0.84)');
+        ctx.fill();
+        ctx.lineWidth = isSpec ? 1.8 : 1.4;
+        ctx.strokeStyle = g.isAlly ? '#35f57b' : (g.outlineColor ? '#ff465c' : '#8fd4ff');
+        ctx.stroke();
+        ctx.fillStyle = g.isAlly ? '#d2ffe2' : (g.outlineColor ? '#ffd0d6' : '#ffffff');
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tagTxt, px + pw / 2, py + ph / 2 + 0.5);
+        ctx.restore();
+      }
+    };
+
+    let spectatedGhost = null;
+    if (Array.isArray(run.compGhosts) && run.compGhosts.length > 0 && window.RUN_DATA) {
+      run.compGhosts.forEach((g) => {
+        if (run.spectatingAlly && g && g.isSpectated) {
+          spectatedGhost = g;
+          return;
         }
+        drawCompGhost(g);
       });
     }
 
-    // Runner Character (Full 7-State Animation: Idle, Run, Jump, Fall, Slide, Hurt, Die!)
-    drawCharacter(ctx, charDef, run.playerX, run.playerY, {
-      sliding: run.sliding,
-      inAir: run.playerY < (run.currentFloorY || GROUND_Y) - 1,
-      floorY: run.currentFloorY || GROUND_Y,
-      vy: run.vy || 0,
-      gliding: run.gliding,
-      invulnTimer: run.invulnTimer,
-      shield: run.shield,
-      feverTimer: run.feverTimer,
-      speedBoostTimer: run.speedBoostTimer || 0,
-      dead: Boolean(run.dead),
-      deathProgress: run.dying ? (1 - Math.max(0, run.deathAnimTimer || 0) / 0.58) : 1,
-      umbrellaOn: run.umbrellaOn,
-      maskOn: run.maskOn,
-      maskParryTimer: run.maskParryTimer || 0,
-      umbrellaBrokenTimer: run.umbrellaBrokenTimer || 0,
-      gustWarning: Boolean(run.weatherEvent === 'gust' && run.umbrellaOn && run.feverTimer <= 0),
-      hitPoseTimer: run.hitPoseTimer || 0,
-      itemPoseTimer: run.itemPoseTimer || 0,
-      winPoseTimer: run.winPoseTimer || 0,
-      running: !run.dead && !run.dying,
-      skinDef: run.skinDef || null,
-      squashX: run.squashX !== undefined ? run.squashX : 1,
-      squashY: run.squashY !== undefined ? run.squashY : 1,
-      scaleHeight: 62
-    }, t);
+    // Runner Character (Hidden/faded once scrolled off-screen during 2v2 teammate spectate!)
+    if (!run.spectatingAlly || run.playerX > -60) {
+      const fallenAlpha = run.spectatingAlly
+        ? Math.max(0.15, Math.min(0.65, (run.playerX + 60) / 200))
+        : 1.0;
+      drawCharacter(ctx, charDef, run.playerX, run.playerY, {
+        sliding: run.sliding,
+        inAir: run.playerY < (run.currentFloorY || GROUND_Y) - 1,
+        floorY: run.currentFloorY || GROUND_Y,
+        vy: run.vy || 0,
+        gliding: run.gliding,
+        invulnTimer: run.invulnTimer,
+        shield: run.shield,
+        feverTimer: run.feverTimer,
+        speedBoostTimer: run.speedBoostTimer || 0,
+        dead: Boolean(run.dead),
+        deathProgress: run.dying ? (1 - Math.max(0, run.deathAnimTimer || 0) / 0.58) : 1,
+        umbrellaOn: run.umbrellaOn,
+        maskOn: run.maskOn,
+        maskParryTimer: run.maskParryTimer || 0,
+        umbrellaBrokenTimer: run.umbrellaBrokenTimer || 0,
+        gustWarning: Boolean(run.weatherEvent === 'gust' && run.umbrellaOn && run.feverTimer <= 0),
+        hitPoseTimer: run.hitPoseTimer || 0,
+        itemPoseTimer: run.itemPoseTimer || 0,
+        winPoseTimer: run.winPoseTimer || 0,
+        running: !run.dead && !run.dying,
+        skinDef: run.skinDef || null,
+        squashX: run.squashX !== undefined ? run.squashX : 1,
+        squashY: run.squashY !== undefined ? run.squashY : 1,
+        scaleHeight: 62,
+        ghostAlpha: fallenAlpha
+      }, t);
+    }
+
+    // Draw spectated teammate crisp on top!
+    if (spectatedGhost) {
+      drawCompGhost(spectatedGhost);
+    }
 
     // Foreground Translucent Flooded Rainwater (submerges lower legs & obstacle bases with ripples & splashes!)
     if (floodLevel > 0.01) {

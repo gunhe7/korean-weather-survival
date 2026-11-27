@@ -798,6 +798,25 @@
     compLobbyStatBest: document.getElementById('comp-lobby-stat-best'),
     btnCompLobbyChars: document.getElementById('btn-comp-lobby-chars'),
     btnCompLobbyStart: document.getElementById('btn-comp-lobby-start'),
+    viewComp: document.getElementById('view-comp'),
+    compPartnerStage: document.getElementById('comp-partner-stage'),
+    compPartnerEmpty: document.getElementById('comp-partner-empty'),
+    compPartnerFilled: document.getElementById('comp-partner-filled'),
+    btnCompStageInvite: document.getElementById('btn-comp-stage-invite'),
+    compPartnerStatusPill: document.getElementById('comp-partner-status-pill'),
+    compPartnerName: document.getElementById('comp-partner-name'),
+    compPartnerHeroAura: document.getElementById('comp-partner-hero-aura'),
+    compPartnerHeroImg: document.getElementById('comp-partner-hero-img'),
+    btnCompPartnerLeave: document.getElementById('btn-comp-partner-leave'),
+    compMode1v1Lock: document.getElementById('comp-mode-1v1-lock'),
+    compWaitTeamBanner: document.getElementById('comp-wait-team-banner'),
+    compResOwTeamLine: document.getElementById('comp-res-ow-team-line'),
+    compSpectateHud: document.getElementById('comp-spectate-hud'),
+    compSpecAvatar: document.getElementById('comp-spec-avatar'),
+    compSpecTitle: document.getElementById('comp-spec-title'),
+    compSpecSub: document.getElementById('comp-spec-sub'),
+    btnCompSpectateLeave: document.getElementById('btn-comp-spectate-leave'),
+    mobileControls: document.getElementById('mobile-controls'),
     compLobbyStartMain: document.getElementById('comp-lobby-start-main'),
     compLobbyStartSub: document.getElementById('comp-lobby-start-sub'),
     compLobbySeasonTimer: document.getElementById('comp-lobby-season-timer'),
@@ -6352,6 +6371,13 @@
         renderCompetitiveLobby();
         renderProfileUI();
         renderCompCharModal();
+        if ((compDuoState.status === 'ready' || compDuoState.status === 'inviting') && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
+          ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+            status: compDuoState.status,
+            targetUid: compDuoState.partnerUid,
+            partyId: compDuoState.partyId
+          }).catch(() => {});
+        }
       });
       el.compCharGrid.appendChild(card);
     });
@@ -6395,6 +6421,13 @@
           renderProfileUI();
           renderCharList();
           renderCompCharModal();
+          if ((compDuoState.status === 'ready' || compDuoState.status === 'inviting') && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
+            ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
+              status: compDuoState.status,
+              targetUid: compDuoState.partnerUid,
+              partyId: compDuoState.partyId
+            }).catch(() => {});
+          }
         });
         return btn;
       };
@@ -6555,12 +6588,16 @@
     '빗방울', '여우비', '찬바람', '따뜻한차'
   ];
   let selectedCompMode = '1v1'; // '1v1' | '2v2' (트로피·티어 완전 공유!)
+  let lastCompPartnerHeroSrc = '';
   let compDuoState = {
     status: 'idle', // 'idle' | 'inviting' | 'ready'
     partnerUid: '',
     partnerNick: '',
+    partnerCharId: 'umbrella_master',
+    partnerSkinId: null,
+    partnerTrophies: 0,
     partyId: '',
-    incomingInvite: null // { uid, nickname, trophies, partyId }
+    incomingInvite: null // { uid, nickname, charId, skinId, trophies, partyId }
   };
   let compQueueState = null;
 
@@ -6590,43 +6627,99 @@
       showToast('매칭 중에는 모드를 바꿀 수 없습니다. 먼저 매칭을 취소해 주세요.');
       return;
     }
-    selectedCompMode = next;
-    if (next === '1v1' && compDuoState.status !== 'idle') {
-      leaveCompDuoParty(true);
+    if (next === '1v1' && (compDuoState.status === 'ready' || compDuoState.status === 'inviting')) {
+      SFX.error();
+      showToast('2대2 파티에 친구가 있어 1대1로 전환할 수 없습니다. [파티 나가기] 후 변경해 주세요.');
+      return;
     }
+    selectedCompMode = next;
     renderCompModeAndDuoUI();
     updateCompLobbyMatchStateUI();
   }
 
   function renderCompModeAndDuoUI() {
     const is2v2 = selectedCompMode === '2v2';
+    const inParty = compDuoState.status === 'ready' || compDuoState.status === 'inviting';
+    if (el.viewComp) {
+      el.viewComp.classList.toggle('is-2v2-mode', is2v2);
+      el.viewComp.classList.toggle('has-duo-partner', is2v2 && inParty);
+    }
     if (el.btnCompMode1v1) {
       el.btnCompMode1v1.classList.toggle('active', !is2v2);
+      el.btnCompMode1v1.classList.toggle('is-locked', inParty);
       el.btnCompMode1v1.setAttribute('aria-selected', String(!is2v2));
+      el.btnCompMode1v1.setAttribute('aria-disabled', String(inParty));
+    }
+    if (el.compMode1v1Lock) {
+      el.compMode1v1Lock.classList.toggle('hidden', !inParty);
     }
     if (el.btnCompMode2v2) {
       el.btnCompMode2v2.classList.toggle('active', is2v2);
       el.btnCompMode2v2.setAttribute('aria-selected', String(is2v2));
     }
+    // Footer duo panel shows compact party status + Leave Party button ONLY when in a 2v2 party
     if (el.compDuoPanel) {
-      el.compDuoPanel.classList.toggle('hidden', !is2v2);
+      el.compDuoPanel.classList.toggle('hidden', !(is2v2 && inParty));
     }
     if (el.compDuoPartnerName) {
       if (compDuoState.status === 'ready' && compDuoState.partnerNick) {
-        el.compDuoPartnerName.textContent = `팀원: ${compDuoState.partnerNick}`;
+        el.compDuoPartnerName.textContent = compDuoState.partnerNick;
       } else if (compDuoState.status === 'inviting' && compDuoState.partnerNick) {
-        el.compDuoPartnerName.textContent = `초대 대기: ${compDuoState.partnerNick}`;
+        el.compDuoPartnerName.textContent = `${compDuoState.partnerNick} 대기 중`;
       } else {
         el.compDuoPartnerName.textContent = '솔로 대기';
       }
     }
     if (el.btnCompDuoInvite) {
-      el.btnCompDuoInvite.classList.toggle('hidden', compDuoState.status === 'ready');
-      el.btnCompDuoInvite.textContent = compDuoState.status === 'inviting' ? '다시 초대' : '친구 초대';
+      el.btnCompDuoInvite.classList.add('hidden');
     }
     if (el.btnCompDuoLeave) {
-      el.btnCompDuoLeave.classList.toggle('hidden', compDuoState.status === 'idle');
+      el.btnCompDuoLeave.classList.toggle('hidden', !inParty);
+      el.btnCompDuoLeave.textContent = compDuoState.status === 'inviting' ? '초대 취소' : '파티 나가기';
     }
+
+    // Brawl Stars 2v2 Hero Stage Partner Pedestal (+ Invite Button OR Live Friend Character!)
+    if (el.compPartnerStage) {
+      el.compPartnerStage.classList.toggle('hidden', !is2v2);
+      if (is2v2) {
+        if (el.compPartnerEmpty) el.compPartnerEmpty.classList.toggle('hidden', inParty);
+        if (el.compPartnerFilled) {
+          el.compPartnerFilled.classList.toggle('hidden', !inParty);
+          el.compPartnerFilled.classList.toggle('is-inviting', compDuoState.status === 'inviting');
+        }
+        if (inParty) {
+          const pChar = getCharDef(compDuoState.partnerCharId || 'umbrella_master');
+          const pSkin = compDuoState.partnerSkinId && DATA.getSkinById ? DATA.getSkinById(compDuoState.partnerSkinId) : null;
+          if (el.compPartnerStatusPill) {
+            el.compPartnerStatusPill.textContent = compDuoState.status === 'ready' ? '2대2 팀원' : '초대 대기 중';
+            el.compPartnerStatusPill.classList.toggle('waiting', compDuoState.status === 'inviting');
+          }
+          if (el.compPartnerName) {
+            el.compPartnerName.textContent = compDuoState.partnerNick || '팀원';
+          }
+          if (el.btnCompPartnerLeave) {
+            el.btnCompPartnerLeave.textContent = compDuoState.status === 'inviting' ? '초대 취소' : '파티 나가기';
+          }
+          if (el.compPartnerHeroImg && pChar) {
+            const src = getCharShowcaseFrameSrc(pChar, pSkin, performance.now() / 1000, true);
+            const readySrc = getPreloadedHomeHeroSrc(src, pSkin);
+            lastCompPartnerHeroSrc = readySrc;
+            el.compPartnerHeroImg.src = readySrc;
+            el.compPartnerHeroImg.style.filter = getSkinFilter(pSkin);
+          }
+          if (el.compPartnerHeroAura) {
+            if (pSkin && pSkin.customAuraPrefix) {
+              el.compPartnerHeroAura.classList.remove('hidden');
+              el.compPartnerHeroAura.src = `assets/chars/${pSkin.customAuraPrefix}_0.png?v=${getCharSpriteVer(getCharAnimSpec(pChar, pSkin).skin)}`;
+            } else {
+              el.compPartnerHeroAura.classList.add('hidden');
+              el.compPartnerHeroAura.removeAttribute('src');
+            }
+          }
+        }
+      }
+    }
+
     if (el.compDuoReqBanner) {
       const inc = compDuoState.incomingInvite;
       const showReq = Boolean(inc && (!run || !run.active));
@@ -6642,7 +6735,11 @@
     compDuoState.status = 'idle';
     compDuoState.partnerUid = '';
     compDuoState.partnerNick = '';
+    compDuoState.partnerCharId = 'umbrella_master';
+    compDuoState.partnerSkinId = null;
+    compDuoState.partnerTrophies = 0;
     compDuoState.partyId = '';
+    lastCompPartnerHeroSrc = '';
     if (had && ONLINE && ONLINE.publishCompDuoState && isMyAccountLinkedForFriends()) {
       ONLINE.publishCompDuoState(buildMyCompBasicMeta(), { status: 'idle', targetUid: '', partyId: '', keepalive: silent }).catch(() => {});
     }
@@ -6650,7 +6747,7 @@
     updateCompLobbyMatchStateUI();
     if (!silent && had) {
       SFX.click();
-      showToast('2대2 팀 파티를 해제했습니다.');
+      showToast('2대2 파티에서 나갔습니다. 이제 1대1로도 전환할 수 있습니다.');
     }
   }
 
@@ -6667,6 +6764,9 @@
     compDuoState.status = 'inviting';
     compDuoState.partnerUid = String(friendUser.uid);
     compDuoState.partnerNick = friendUser.nickname || '친구';
+    compDuoState.partnerCharId = friendUser.charId || 'umbrella_master';
+    compDuoState.partnerSkinId = friendUser.skinId || null;
+    compDuoState.partnerTrophies = friendUser.trophies || 0;
     compDuoState.partyId = partyId;
     closeCompDuoInviteModal();
     renderCompModeAndDuoUI();
@@ -6684,6 +6784,9 @@
     compDuoState.status = 'ready';
     compDuoState.partnerUid = String(inc.uid);
     compDuoState.partnerNick = inc.nickname || '친구';
+    compDuoState.partnerCharId = inc.charId || 'umbrella_master';
+    compDuoState.partnerSkinId = inc.skinId || null;
+    compDuoState.partnerTrophies = inc.trophies || 0;
     compDuoState.partyId = inc.partyId || ONLINE.makeCompDuoPartyId(getMyFriendUid(), inc.uid);
     compDuoState.incomingInvite = null;
     SFX.chestJackpot();
@@ -6808,9 +6911,15 @@
           renderCompModeAndDuoUI();
           updateCompLobbyMatchStateUI();
         } else if ((partnerNode.status === 'ready' || partnerNode.status === 'queueing') && partnerNode.partyId === compDuoState.partyId) {
+          const charChanged = (partnerNode.charId && partnerNode.charId !== compDuoState.partnerCharId)
+            || ((partnerNode.skinId || null) !== (compDuoState.partnerSkinId || null))
+            || (partnerNode.nickname && partnerNode.nickname !== compDuoState.partnerNick);
+          if (partnerNode.charId) compDuoState.partnerCharId = partnerNode.charId;
+          compDuoState.partnerSkinId = partnerNode.skinId || null;
+          if (Number.isFinite(Number(partnerNode.trophies))) compDuoState.partnerTrophies = Number(partnerNode.trophies);
+          if (partnerNode.nickname) compDuoState.partnerNick = partnerNode.nickname;
           if (compDuoState.status !== 'ready') {
             compDuoState.status = 'ready';
-            compDuoState.partnerNick = partnerNode.nickname || compDuoState.partnerNick;
             SFX.chestJackpot();
             showToast(`[${compDuoState.partnerNick}] 님이 2대2 팀 초대를 수락했습니다!`);
             await ONLINE.publishCompDuoState(buildMyCompBasicMeta(), {
@@ -6820,6 +6929,8 @@
             });
             renderCompModeAndDuoUI();
             updateCompLobbyMatchStateUI();
+          } else if (charChanged) {
+            renderCompModeAndDuoUI();
           }
           // If partner started 2v2 matchmaking, auto-join the exact same 2v2 queue seamlessly!
           if (partnerNode.status === 'queueing' && (!compQueueState || compQueueState.cancelled) && !getActiveCompPendingMatch()) {
@@ -6849,6 +6960,8 @@
         compDuoState.incomingInvite = {
           uid: String(inviter.uid),
           nickname: inviter.nickname || '친구',
+          charId: inviter.charId || 'umbrella_master',
+          skinId: inviter.skinId || null,
           trophies: inviter.trophies || 0,
           partyId: inviter.partyId || ONLINE.makeCompDuoPartyId(myUid, inviter.uid)
         };
@@ -7691,10 +7804,12 @@
 
     let leadLabel = '잠정 동점';
     let leadTop = false;
+    let allySum = 0;
+    let enemySum = 0;
     if (is2v2) {
-      const allySum = list.filter((p) => (Number(p.team) === 1 ? 1 : 0) === myTeam).reduce((s, p) => s + Math.floor(p.score || 0), 0);
-      const enemySum = list.filter((p) => (Number(p.team) === 1 ? 1 : 0) !== myTeam).reduce((s, p) => s + Math.floor(p.score || 0), 0);
-      leadLabel = allySum > enemySum ? '팀 우세' : (allySum < enemySum ? '팀 열세' : '팀 동점');
+      allySum = list.filter((p) => (Number(p.team) === 1 ? 1 : 0) === myTeam).reduce((s, p) => s + Math.floor(p.score || 0), 0);
+      enemySum = list.filter((p) => (Number(p.team) === 1 ? 1 : 0) !== myTeam).reduce((s, p) => s + Math.floor(p.score || 0), 0);
+      leadLabel = allySum > enemySum ? '팀 합산 우세' : (allySum < enemySum ? '팀 합산 열세' : '팀 합산 동점');
       leadTop = allySum >= enemySum;
     } else {
       const opp = list.find((p) => !p.isMe);
@@ -7702,6 +7817,23 @@
       const oppSc = Math.floor((opp && opp.score) || 0);
       leadLabel = mySc > oppSc ? '잠정 우세' : (mySc < oppSc ? '잠정 열세' : '잠정 동점');
       leadTop = mySc >= oppSc;
+    }
+
+    if (el.compWaitTeamBanner) {
+      el.compWaitTeamBanner.classList.toggle('hidden', !is2v2);
+      if (is2v2) {
+        el.compWaitTeamBanner.innerHTML = `
+          <div class="comp-res-tb-side ally">
+            <span>우리팀 합산 (초록)</span>
+            <strong>${allySum.toLocaleString('ko-KR')}점</strong>
+          </div>
+          <div class="comp-vs-badge">VS</div>
+          <div class="comp-res-tb-side enemy">
+            <span>상대팀 합산 (빨강)</span>
+            <strong>${enemySum.toLocaleString('ko-KR')}점</strong>
+          </div>
+        `;
+      }
     }
 
     if (el.compWaitBarTitle) {
@@ -7715,7 +7847,9 @@
     if (el.compWaitRuleNote) {
       el.compWaitRuleNote.textContent = m.leftEarly
         ? '나간 시점의 점수가 반영되었습니다. 모든 참가자가 끝나야 최종 결과가 확정됩니다.'
-        : '모든 참가자가 경기를 마칠 때까지 기다리는 동안 다른 콘텐츠를 즐길 수 있습니다.';
+        : (is2v2
+          ? '2대2는 팀원과 합산 점수가 더 높은 팀이 승리합니다. 대기하는 동안 다른 콘텐츠를 즐길 수 있습니다.'
+          : '모든 참가자가 경기를 마칠 때까지 기다리는 동안 다른 콘텐츠를 즐길 수 있습니다.');
     }
     if (el.compWaitTimerPill) el.compWaitTimerPill.textContent = `${remSec}s`;
     if (el.compWaitMyScore) el.compWaitMyScore.textContent = `${Math.floor(m.myScore || 0).toLocaleString('ko-KR')}점`;
@@ -8277,7 +8411,21 @@
       el.compResDelta.className = `comp-res-delta ow-res-delta-big ${actualDelta > 0 ? 'up' : (actualDelta < 0 ? 'down' : 'flat')}`;
     }
     if (el.compResGold) el.compResGold.textContent = `+${totalGold.toLocaleString('ko-KR')}G`;
-    if (el.compResMyScore) el.compResMyScore.textContent = `${Math.floor(m.myScore || 0).toLocaleString('ko-KR')}점`;
+    if (el.compResMyScore) {
+      el.compResMyScore.textContent = is2v2
+        ? `팀 합산 ${allyTotal.toLocaleString('ko-KR')}점`
+        : `${Math.floor(m.myScore || 0).toLocaleString('ko-KR')}점`;
+    }
+    if (el.compResOwTeamLine) {
+      el.compResOwTeamLine.classList.toggle('hidden', !is2v2);
+      if (is2v2) {
+        el.compResOwTeamLine.innerHTML = `
+          <span class="ow-tl-ally">우리팀 합산 <strong>${allyTotal.toLocaleString('ko-KR')}점</strong></span>
+          <span class="ow-tl-vs">VS</span>
+          <span class="ow-tl-enemy">상대팀 합산 <strong>${enemyTotal.toLocaleString('ko-KR')}점</strong></span>
+        `;
+      }
+    }
     if (el.compResBoardTitle) {
       el.compResBoardTitle.textContent = is2v2 ? '2대2 팀 경쟁전 최종 결과' : '1대1 경쟁전 최종 결과';
     }
@@ -8412,14 +8560,17 @@
   function updateCompMatchSimulation(dt) {
     if (!run || !run.compMatch || run.compMatch.finished) return;
     const cm = run.compMatch;
-    const myScoreNow = Math.max(0, Math.floor(run.score || 0));
+    const isSpec = Boolean(run.spectatingAlly);
+    const myScoreNow = isSpec
+      ? Math.max(0, Math.floor(run.spectateLockedScore || run.score || 0))
+      : Math.max(0, Math.floor(run.score || 0));
     const groundY = Renderer.GROUND_Y;
 
     // 1. Update each participant's live score
     for (let i = 0; i < cm.participants.length; i++) {
       const p = cm.participants[i];
       if (p.isMe) {
-        p.score = myScoreNow;
+        if (!isSpec) p.score = myScoreNow;
       } else if (!p.isHuman && !p.finished) {
         if (run.elapsed >= (p.diedAt || 60)) {
           p.finished = true;
@@ -8437,7 +8588,12 @@
       }
     }
 
-    // 2. Update translucent in-world ghosts (1v1 opponent & 2v2 green teammate / red opponents!)
+    const specAllyPart = isSpec && run.spectateAllyUid
+      ? cm.participants.find((x) => x.uid === run.spectateAllyUid)
+      : null;
+    const refScoreNow = (isSpec && specAllyPart) ? Math.floor(specAllyPart.score || 0) : myScoreNow;
+
+    // 2. Update translucent in-world ghosts (1v1 opponent & 2v2 green teammate / red opponents; full opacity when spectating ally!)
     if (Array.isArray(run.compGhosts) && run.compGhosts.length > 0) {
       const baseX = run.basePlayerX || 144;
       const obstacles = run.obstacles || [];
@@ -8447,11 +8603,20 @@
         const p = cm.participants.find((x) => x.uid === g.uid);
         if (!p) continue;
 
-        const scoreDiff = (p.score || 0) - myScoreNow;
-        const targetX = p.finished
-          ? Math.max(22, baseX - 95)
-          : Math.max(baseX - 48, Math.min(baseX + 148, baseX + scoreDiff * 0.042 + (g.slotOffsetX || 0)));
-        g.x += (targetX - g.x) * Math.min(1, dt * 4.5);
+        const isThisSpec = Boolean(isSpec && g.uid === run.spectateAllyUid);
+        g.isSpectated = isThisSpec;
+        g.alpha = isThisSpec ? 1.0 : 0.56;
+
+        let targetX;
+        if (isThisSpec) {
+          targetX = p.finished ? Math.max(40, baseX - 50) : (baseX + 14);
+        } else {
+          const scoreDiff = (p.score || 0) - refScoreNow;
+          targetX = p.finished
+            ? Math.max(22, baseX - 95)
+            : Math.max(baseX - 48, Math.min(baseX + 148, baseX + scoreDiff * 0.042 + (g.slotOffsetX || 0)));
+        }
+        g.x += (targetX - g.x) * Math.min(1, dt * (isThisSpec ? 6.5 : 4.5));
 
         if (p.isHuman) {
           // Smoothly interpolate real human player's live pose (jump, slide, umbrella, mask, hurt, dead)
@@ -8521,24 +8686,27 @@
 
     // 3. Real-time pose + score telemetry sync with human PC / Android / iOS players (~2Hz!)
     if (cm.online && ONLINE && ONLINE.pushCompLiveScore) {
-      cm.syncTimer = (cm.syncTimer || 0) + dt;
-      if (cm.syncTimer >= 0.45) {
-        cm.syncTimer = 0;
-        const livePose = {
-          y: run.playerY,
-          vy: run.vy,
-          sl: run.sliding ? 1 : 0,
-          um: run.umbrellaOn ? 1 : 0,
-          mk: run.maskOn ? 1 : 0,
-          ht: (run.hitPoseTimer || 0) > 0 ? 1 : 0,
-          dd: (run.dead || run.dying) ? 1 : 0,
-          fv: (run.feverTimer || 0) > 0 ? 1 : 0,
-          distM: run.distanceM || 0
-        };
-        ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, myScoreNow, false, cm.myMeta, livePose);
+      if (!isSpec) {
+        cm.syncTimer = (cm.syncTimer || 0) + dt;
+        if (cm.syncTimer >= 0.45) {
+          cm.syncTimer = 0;
+          const livePose = {
+            y: run.playerY,
+            vy: run.vy,
+            sl: run.sliding ? 1 : 0,
+            um: run.umbrellaOn ? 1 : 0,
+            mk: run.maskOn ? 1 : 0,
+            ht: (run.hitPoseTimer || 0) > 0 ? 1 : 0,
+            dd: (run.dead || run.dying) ? 1 : 0,
+            fv: (run.feverTimer || 0) > 0 ? 1 : 0,
+            distM: run.distanceM || 0
+          };
+          ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, myScoreNow, false, cm.myMeta, livePose);
+        }
       }
       cm.pollTimer = (cm.pollTimer || 0) + dt;
-      if (cm.pollTimer >= 0.55 && ONLINE.pollCompMatchRoom) {
+      const pollInterval = isSpec ? 0.38 : 0.55;
+      if (cm.pollTimer >= pollInterval && ONLINE.pollCompMatchRoom) {
         cm.pollTimer = 0;
         ONLINE.pollCompMatchRoom(cm.roomId).then((remote) => {
           if (!run || run.compMatch !== cm || !Array.isArray(remote)) return;
@@ -8565,6 +8733,19 @@
       }
     }
 
+    // While spectating teammate in 2v2: end spectate cleanly when teammate finishes OR match clock hits 60s!
+    if (isSpec) {
+      if ((specAllyPart && specAllyPart.finished) || run.elapsed >= (cm.duration || 60)) {
+        const allyDoneEarly = Boolean(specAllyPart && specAllyPart.finished && run.elapsed < (cm.duration || 60) - 0.8);
+        if (allyDoneEarly) {
+          showToast(`팀원 [${specAllyPart.nickname}] 경기가 종료되었습니다!`);
+        }
+        SFX.yearUp();
+        finishCompAllySpectate(false);
+      }
+      return;
+    }
+
     // Complete 60-second sprint!
     if (run.elapsed >= (cm.duration || 60)) {
       cm.finished = true;
@@ -8573,11 +8754,129 @@
     }
   }
 
+  function enterCompAllySpectate(ally) {
+    if (!run || !run.compMatch || !ally) return;
+    const cm = run.compMatch;
+    const myLockedScore = Math.max(0, Math.floor(run.score || 0));
+    const distGoldBonus = Math.floor((run.elapsed || 0) * 0.25);
+    const totalGoldEarned = Math.floor((run.gold || 0) + distGoldBonus);
+
+    ensureTodayMissions();
+    commitRunMissionProgress();
+
+    // Immediately lock & publish my death score so teammate and opponents see my final score
+    (cm.participants || []).forEach((p) => {
+      if (p.isMe) {
+        p.score = myLockedScore;
+        p.finished = true;
+      }
+    });
+    if (cm.online && ONLINE && ONLINE.pushCompLiveScore) {
+      ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, myLockedScore, true, cm.myMeta, {
+        y: Renderer.GROUND_Y,
+        vy: 0,
+        sl: 0,
+        um: 0,
+        mk: 0,
+        ht: 0,
+        dd: 1,
+        fv: 0,
+        distM: run.distanceM || 0
+      });
+    }
+
+    run.active = true;
+    run.dying = false;
+    run.dead = true;
+    run.hp = 0;
+    run.spectatingAlly = true;
+    run.spectateAllyUid = ally.uid;
+    run.spectateAllyNick = ally.nickname || '팀원';
+    run.spectateLockedScore = myLockedScore;
+    run.spectateLockedGold = totalGoldEarned;
+    run.sliding = false;
+    run.umbrellaOn = false;
+    run.maskOn = false;
+    run.covidAttack = null;
+    run.hailAttack = null;
+    run.passingCar = null;
+    run.feverTimer = 0;
+    run.mudBlindTimer = 0;
+
+    releaseAllControlButtons();
+    el.mudOverlay.classList.add('hidden');
+    hideWeatherCenterAlert();
+    if (el.runWeatherBar) el.runWeatherBar.classList.add('hidden');
+    if (el.weatherEdgeVignette) el.weatherEdgeVignette.className = 'weather-edge-vignette hidden';
+    if (el.ctrlCenterOrbs) el.ctrlCenterOrbs.classList.add('hidden');
+    if (el.mobileControls) el.mobileControls.classList.add('hidden');
+    el.runCanvasWrap.classList.remove('fever-active');
+
+    // Promote teammate ghost to full-opacity center spectate camera target!
+    const allyChar = getCharDef(ally.charId);
+    const allySkin = ally.skinId && DATA.getSkinById ? DATA.getSkinById(ally.skinId) : null;
+    if (Renderer && Renderer.preloadGhostChar && allyChar) {
+      Renderer.preloadGhostChar(allyChar, allySkin);
+    }
+    (run.compGhosts || []).forEach((g) => {
+      if (g && g.uid === ally.uid) {
+        g.isSpectated = true;
+        g.alpha = 1.0;
+      }
+    });
+
+    if (el.runPortraitImg && allyChar) {
+      el.runPortraitImg.src = getSkinAvatar(allyChar, allySkin);
+      el.runPortraitImg.style.filter = getSkinFilter(allySkin);
+    }
+    if (el.compSpecAvatar && allyChar) {
+      el.compSpecAvatar.src = getSkinAvatar(allyChar, allySkin);
+      el.compSpecAvatar.style.filter = getSkinFilter(allySkin);
+    }
+    if (el.compSpecTitle) {
+      el.compSpecTitle.textContent = `팀원 ${run.spectateAllyNick} 관전 중`;
+    }
+    if (el.compSpectateHud) {
+      el.compSpectateHud.classList.remove('hidden');
+    }
+
+    SFX.setWeatherAmbient('clear');
+    SFX.setBgmMode('run');
+    showRunBanner(`팀원 [${run.spectateAllyNick}]의 점수가 합산됩니다!`, 2600, 'sky', '2대2 팀원 관전');
+    updateRunHud(true);
+  }
+
+  function finishCompAllySpectate(manualLeave = false) {
+    if (!run || !run.compMatch) return;
+    const lockedScore = Math.max(0, Math.floor(run.spectateLockedScore !== undefined ? run.spectateLockedScore : (run.score || 0)));
+    const lockedGold = Math.max(0, Math.floor(run.spectateLockedGold !== undefined ? run.spectateLockedGold : (run.gold || 0)));
+    run.active = false;
+    run.dying = false;
+    run.dead = true;
+    run.spectatingAlly = false;
+    paused = false;
+    releaseAllControlButtons();
+    if (el.compSpectateHud) el.compSpectateHud.classList.add('hidden');
+    if (el.mobileControls) el.mobileControls.classList.remove('hidden');
+    if (el.compRunHud) el.compRunHud.classList.add('hidden');
+    if (el.runWeatherBar) el.runWeatherBar.classList.add('hidden');
+    if (el.ctrlCenterOrbs) el.ctrlCenterOrbs.classList.add('hidden');
+    el.mudOverlay.classList.add('hidden');
+    hideWeatherCenterAlert();
+    el.runCanvasWrap.classList.remove('fever-active');
+    SFX.setWeatherAmbient('clear');
+    SFX.setAmbientPaused(false);
+    SFX.setBgmMode('menu');
+
+    settleCompetitiveMatch(lockedScore, lockedGold, { leftEarly: false, fromSpectateLeave: Boolean(manualLeave) });
+  }
+
   function settleCompetitiveMatch(finalScore, baseGoldEarned, opts = {}) {
     const cm = run && run.compMatch;
     if (!cm) return;
     cm.finished = true;
     const leftEarly = Boolean(opts && opts.leftEarly);
+    const fromSpectateLeave = Boolean(opts && opts.fromSpectateLeave);
     const silentPageHide = Boolean(opts && opts.silentPageHide);
     const lockedScore = Math.max(0, Math.floor(Number(finalScore) || 0));
 
@@ -8630,10 +8929,12 @@
       return;
     }
 
-    // If player explicitly left mid-match, tear down gameplay canvas immediately so they return cleanly to lobby/wait UI
-    if (leftEarly) {
+    // If player explicitly left mid-match or exited 2v2 spectate early, return cleanly to comp lobby behind wait/result UI
+    if (leftEarly || fromSpectateLeave) {
       run = null;
       paused = false;
+      if (el.compSpectateHud) el.compSpectateHud.classList.add('hidden');
+      if (el.mobileControls) el.mobileControls.classList.remove('hidden');
       el.pauseOverlay.classList.add('hidden');
       el.gameoverOverlay.classList.add('hidden');
       el.viewRun.classList.add('hidden');
@@ -8698,6 +8999,10 @@
     if (!el.btnQuitHome) return;
     const span = el.btnQuitHome.querySelector('span');
     if (!span) return;
+    if (run && run.spectatingAlly) {
+      span.textContent = '관전 종료 · 대기실';
+      return;
+    }
     const isActiveComp = Boolean(run && run.gameMode === 'competitive' && run.compMatch && !run.compMatch.finished);
     span.textContent = isActiveComp ? '나가기 (현재 점수 반영)' : '나가기';
   }
@@ -9501,6 +9806,27 @@
         const readyAura = getPreloadedHomeHeroSrc(auraSrc);
         if (readyAura && el.compLobbyHeroAura.getAttribute('src') !== readyAura) {
           el.compLobbyHeroAura.src = readyAura;
+        }
+      }
+      // Animate 2v2 friend partner's character running live right next to mine!
+      if (selectedCompMode === '2v2' && (compDuoState.status === 'ready' || compDuoState.status === 'inviting') && el.compPartnerHeroImg) {
+        const pChar = getCharDef(compDuoState.partnerCharId || 'umbrella_master');
+        const pSkin = compDuoState.partnerSkinId && DATA.getSkinById ? DATA.getSkinById(compDuoState.partnerSkinId) : null;
+        if (pChar) {
+          const pSrc = getCharShowcaseFrameSrc(pChar, pSkin, t + 0.35, true);
+          const pReady = getPreloadedHomeHeroSrc(pSrc, pSkin);
+          if (pReady && pReady !== lastCompPartnerHeroSrc) {
+            lastCompPartnerHeroSrc = pReady;
+            el.compPartnerHeroImg.src = pReady;
+          }
+          if (el.compPartnerHeroAura && pSkin && pSkin.customAuraPrefix) {
+            const paf = Math.floor((t + 0.25) * 9) % (pSkin.customAuraFrames || 6);
+            const pAuraSrc = `assets/chars/${pSkin.customAuraPrefix}_${paf}.png?v=${getCharSpriteVer(getCharAnimSpec(pChar, pSkin).skin)}`;
+            const pReadyAura = getPreloadedHomeHeroSrc(pAuraSrc);
+            if (pReadyAura && el.compPartnerHeroAura.getAttribute('src') !== pReadyAura) {
+              el.compPartnerHeroAura.src = pReadyAura;
+            }
+          }
         }
       }
       return;
@@ -10726,6 +11052,8 @@
     if (el.compResultOverlay) el.compResultOverlay.classList.add('hidden');
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
     if (el.compDuoReqBanner) el.compDuoReqBanner.classList.add('hidden');
+    if (el.compSpectateHud) el.compSpectateHud.classList.add('hidden');
+    if (el.mobileControls) el.mobileControls.classList.remove('hidden');
     if (el.compRunHud) el.compRunHud.classList.toggle('hidden', !run.compMatch);
     updateCompPendingPill();
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
@@ -11499,6 +11827,79 @@
   // ===================== MAIN RUN UPDATE =====================
   function updateRun(dt) {
     if (!run || !run.active || paused) return;
+
+    // 2v2 Live Teammate Spectate Mode: keep world scrolling, seasons & ghosts live without player controls/damage!
+    if (run.spectatingAlly) {
+      const diff = DATA.getYearDifficulty(run.year, run.elapsed);
+      run.elapsed += dt;
+      if (run.compMatch) {
+        updateCompMatchSimulation(dt);
+        if (!run || !run.active) return;
+      }
+      const newYear = Math.floor(run.elapsed / DATA.YEAR_DURATION) + 1;
+      const yearTime = run.elapsed % DATA.YEAR_DURATION;
+      const newSeasonIdx = Math.floor(yearTime / DATA.SEASON_DURATION);
+      if (newYear > run.year) {
+        run.prevSeasonId = run.seasonId;
+        run.seasonTransition = 0;
+        run.year = newYear;
+        run.seasonIdx = 0;
+        run.seasonId = DATA.SEASONS[0].id;
+      } else if (newSeasonIdx !== run.seasonIdx) {
+        run.prevSeasonId = run.seasonId;
+        run.seasonTransition = 0;
+        run.seasonIdx = newSeasonIdx;
+        run.seasonId = DATA.SEASONS[run.seasonIdx].id;
+      }
+      if (run.seasonTransition < 1) {
+        run.seasonTransition = Math.min(1, run.seasonTransition + dt / 3.2);
+        if (run.seasonTransition >= 1) run.prevSeasonId = null;
+      }
+      run.speed = run.baseSpeed * diff.speedMult;
+      run.scroll += run.speed * dt;
+      if (run.playerX > -80) {
+        run.playerX -= run.speed * 0.72 * dt;
+      }
+      // Keep scenic obstacles & items scrolling smoothly for the live teammate runner!
+      run.obstacleCd = (run.obstacleCd || 1.2) - dt;
+      if (run.obstacleCd <= 0) {
+        const pool = (DATA.OBSTACLES_BY_SEASON && DATA.OBSTACLES_BY_SEASON[run.seasonId]) || [];
+        const preset = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+        run.obstacleCd = 1.15 + Math.random() * 0.75;
+        if (preset) {
+          const spawnX = getSpawnRight() + 18;
+          const spawnY = preset.lane === 'air'
+            ? (Renderer.GROUND_Y - 34 - preset.h)
+            : (Renderer.GROUND_Y - preset.h);
+          run.obstacles.push({
+            ...preset,
+            x: spawnX,
+            y: spawnY,
+            passed: true,
+            nearMissed: true,
+            stepSeed: Math.random() * Math.PI * 2,
+            extraSpeed: 0
+          });
+        }
+      }
+      for (let i = run.obstacles.length - 1; i >= 0; i--) {
+        const ob = run.obstacles[i];
+        ob.x -= (run.speed + (ob.extraSpeed || 0)) * dt;
+        if (ob.x + (ob.w || 40) < -60) run.obstacles.splice(i, 1);
+      }
+      for (let i = run.items.length - 1; i >= 0; i--) {
+        const it = run.items[i];
+        it.x -= run.speed * dt;
+        if (it.x < -40) run.items.splice(i, 1);
+      }
+      for (let i = run.features.length - 1; i >= 0; i--) {
+        const ft = run.features[i];
+        ft.x -= run.speed * dt;
+        if (ft.x + (ft.w || 120) < -80) run.features.splice(i, 1);
+      }
+      updateRunHud(false, dt);
+      return;
+    }
 
     // 55ms Micro Hit-Stop (Supercell tactile impact freeze!)
     if (run.hitStopTimer > 0) {
@@ -12678,7 +13079,7 @@
     const isTodayWeather = run.gameMode === 'today_weather' && Boolean(run.todayWeather);
     const isCompRun = run.gameMode === 'competitive' && Boolean(run.compMatch);
     if (isCompRun) {
-      hudText('yr', el.runYearNum, run.compMatch.compMode === '2v2' ? '2v2' : '1v1');
+      hudText('yr', el.runYearNum, run.spectatingAlly ? '관전' : (run.compMatch.compMode === '2v2' ? '2v2' : '1v1'));
       hudClass('yrCls', el.runYearNum, 'portrait-yr-badge yr-comp');
     } else if (isTodayWeather) {
       hudText('yr', el.runYearNum, 'LIVE');
@@ -12936,6 +13337,17 @@
           hudText('compRk', el.compRunRank, stateLbl);
           hudClass('compRkCls', el.compRunRank, `comp-run-rank${allySum >= enemySum ? ' top1' : ''}`);
 
+          if (run.spectatingAlly && el.compSpectateHud) {
+            const specP = list.find((p) => p.uid === run.spectateAllyUid);
+            const specSc = Math.floor((specP && specP.score) || 0);
+            if (el.compSpecTitle) {
+              hudText('specT', el.compSpecTitle, `팀원 ${run.spectateAllyNick || '팀원'} 관전 중 (${specSc.toLocaleString('ko-KR')}점)`);
+            }
+            if (el.compSpecSub) {
+              hudText('specS', el.compSpecSub, `우리팀 합산 ${allySum.toLocaleString('ko-KR')}점 VS 상대팀 ${enemySum.toLocaleString('ko-KR')}점 · ${remSec}s`);
+            }
+          }
+
           allies.sort((a, b) => (a.isMe ? -1 : (b.isMe ? 1 : (b.score - a.score))));
           enemies.sort((a, b) => (b.score - a.score));
           const ordered = [...allies, ...enemies];
@@ -13031,15 +13443,30 @@
   }
 
   function finishRunGameOver() {
+    // In 2v2 Competitive: if I die before the match ends while my teammate is STILL running, seamlessly enter Live Teammate Spectate Mode!
+    if (run && run.gameMode === 'competitive' && run.compMatch && run.compMatch.compMode === '2v2' && !run.spectatingAlly && !run.compMatch.finished) {
+      const cm = run.compMatch;
+      const myTeam = Number(cm.myTeam) === 1 ? 1 : 0;
+      const remSec = Math.max(0, (cm.duration || 60) - (run.elapsed || 0));
+      const aliveAlly = (cm.participants || []).find((p) => p && !p.isMe && (Number(p.team) === 1 ? 1 : 0) === myTeam && !p.finished);
+      if (remSec > 1.2 && aliveAlly) {
+        enterCompAllySpectate(aliveAlly);
+        return;
+      }
+    }
+
     run.active = false;
     run.dying = false;
     run.dead = true;
+    run.spectatingAlly = false;
     releaseAllControlButtons();
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
     if (el.runWeatherBar) el.runWeatherBar.classList.add('hidden');
     if (el.ctrlCenterOrbs) el.ctrlCenterOrbs.classList.add('hidden');
     if (el.compRunHud) el.compRunHud.classList.add('hidden');
+    if (el.compSpectateHud) el.compSpectateHud.classList.add('hidden');
+    if (el.mobileControls) el.mobileControls.classList.remove('hidden');
     el.runCanvasWrap.classList.remove('fever-active');
     SFX.setWeatherAmbient('clear');
     SFX.setAmbientPaused(false);
@@ -13156,6 +13583,8 @@
     if (el.runWeatherBar) el.runWeatherBar.classList.add('hidden');
     if (el.ctrlCenterOrbs) el.ctrlCenterOrbs.classList.add('hidden');
     if (el.compRunHud) el.compRunHud.classList.add('hidden');
+    if (el.compSpectateHud) el.compSpectateHud.classList.add('hidden');
+    if (el.mobileControls) el.mobileControls.classList.remove('hidden');
     if (el.compResultOverlay) el.compResultOverlay.classList.add('hidden');
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
     activeWaitMatchId = null;
@@ -13663,9 +14092,25 @@
         openCompDuoInviteModal();
       });
     }
+    if (el.btnCompStageInvite) {
+      el.btnCompStageInvite.addEventListener('click', () => {
+        openCompDuoInviteModal();
+      });
+    }
     if (el.btnCompDuoLeave) {
       el.btnCompDuoLeave.addEventListener('click', () => {
         leaveCompDuoParty(false);
+      });
+    }
+    if (el.btnCompPartnerLeave) {
+      el.btnCompPartnerLeave.addEventListener('click', () => {
+        leaveCompDuoParty(false);
+      });
+    }
+    if (el.btnCompSpectateLeave) {
+      el.btnCompSpectateLeave.addEventListener('click', () => {
+        SFX.click();
+        finishCompAllySpectate(true);
       });
     }
     if (el.btnCloseDuoInvite) {
@@ -13730,10 +14175,14 @@
         ONLINE.leaveCompQueue(compQueueState.myQueueInfo);
       }
       if (run && run.active && run.gameMode === 'competitive' && run.compMatch && !run.compMatch.finished) {
-        const leaveScore = Math.max(0, Math.floor(run.score || 0));
-        const distGoldBonus = Math.floor((run.elapsed || 0) * 0.25);
-        const totalGoldEarned = Math.floor((run.gold || 0) + distGoldBonus);
-        settleCompetitiveMatch(leaveScore, totalGoldEarned, { leftEarly: true, silentPageHide: true });
+        if (run.spectatingAlly) {
+          settleCompetitiveMatch(run.spectateLockedScore || Math.floor(run.score || 0), run.spectateLockedGold || Math.floor(run.gold || 0), { leftEarly: false, silentPageHide: true });
+        } else {
+          const leaveScore = Math.max(0, Math.floor(run.score || 0));
+          const distGoldBonus = Math.floor((run.elapsed || 0) * 0.25);
+          const totalGoldEarned = Math.floor((run.gold || 0) + distGoldBonus);
+          settleCompetitiveMatch(leaveScore, totalGoldEarned, { leftEarly: true, silentPageHide: true });
+        }
       }
     });
     if (el.btnCompResToggleBoard) {
@@ -14818,7 +15267,10 @@
     });
 
     el.btnQuitHome.addEventListener('click', () => {
-      if (run && run.gameMode === 'competitive' && run.compMatch && !run.compMatch.finished) {
+      if (run && run.spectatingAlly) {
+        SFX.click();
+        finishCompAllySpectate(true);
+      } else if (run && run.gameMode === 'competitive' && run.compMatch && !run.compMatch.finished) {
         leaveCompetitiveRunEarly();
       } else {
         exitRunToHome();
@@ -14893,6 +15345,15 @@
       }
       if (!run || !run.active) return;
       if (e.repeat) return;
+      if (run.spectatingAlly) {
+        if (e.code === 'Escape') {
+          paused = !paused;
+          SFX.setAmbientPaused(paused);
+          if (paused) syncPauseModalForMode();
+          el.pauseOverlay.classList.toggle('hidden', !paused);
+        }
+        return;
+      }
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         e.preventDefault();
         el.btnJump.classList.add('pressed');
