@@ -232,7 +232,8 @@
       compBestScore: 0,
       compSeasonId: (DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo().seasonId : 's1'),
       compSeasonMatches: 0,
-      pendingCompMatches: []
+      pendingCompMatches: [],
+      friends: { links: {}, rev: 0 }
     };
 
     if (!raw || typeof raw !== 'object') return def;
@@ -382,6 +383,14 @@
           cityName: sameDay && dr.cityName ? String(dr.cityName) : '서울',
           weatherTag: sameDay && dr.weatherTag ? String(dr.weatherTag) : ''
         };
+      })(),
+      friends: (() => {
+        const fr = raw.friends && typeof raw.friends === 'object' ? raw.friends : {};
+        const cleanLinks = (ONLINE && ONLINE.sanitizeFriendLinks) ? ONLINE.sanitizeFriendLinks(fr.links) : {};
+        return {
+          links: cleanLinks,
+          rev: Math.max(0, Math.floor(Number(fr.rev) || 0))
+        };
       })()
     };
   }
@@ -525,6 +534,8 @@
     profPrevRank: document.getElementById('prof-prev-rank'),
     profPrevNameWrap: document.getElementById('prof-prev-name-wrap'),
     profPrevStats: document.getElementById('prof-prev-stats'),
+    btnProfCopyTag: document.getElementById('btn-prof-copy-tag'),
+    profPrevBattletag: document.getElementById('prof-prev-battletag'),
     profNicknameInput: document.getElementById('prof-nickname-input'),
     btnProfSaveNick: document.getElementById('btn-prof-save-nick'),
     btnProfOpenAccount: document.getElementById('btn-prof-open-account'),
@@ -601,6 +612,27 @@
     btnHomeWeather: document.getElementById('btn-home-weather'),
     homeWeatherBtnIco: document.getElementById('home-weather-btn-ico'),
     homeWeatherBtnTemp: document.getElementById('home-weather-btn-temp'),
+    btnHomeFriends: document.getElementById('btn-home-friends'),
+    homeFriendsBtnCount: document.getElementById('home-friends-btn-count'),
+    homeFriendsDot: document.getElementById('home-friends-dot'),
+    friendsOverlay: document.getElementById('friends-overlay'),
+    friendsLivePill: document.getElementById('friends-live-pill'),
+    btnFriendsRefresh: document.getElementById('btn-friends-refresh'),
+    btnCloseFriends: document.getElementById('btn-close-friends'),
+    friendsMyNick: document.getElementById('friends-my-nick'),
+    friendsMyKey: document.getElementById('friends-my-key'),
+    btnFriendsCopyTag: document.getElementById('btn-friends-copy-tag'),
+    btnFriendsShareInvite: document.getElementById('btn-friends-share-invite'),
+    friendsInviteCard: document.getElementById('friends-invite-card'),
+    friendsGuestBanner: document.getElementById('friends-guest-banner'),
+    btnFriendsLogin: document.getElementById('btn-friends-login'),
+    friendsAddForm: document.getElementById('friends-add-form'),
+    friendsAddInput: document.getElementById('friends-add-input'),
+    btnFriendsAddSubmit: document.getElementById('btn-friends-add-submit'),
+    friendsTabListCnt: document.getElementById('friends-tab-list-cnt'),
+    friendsTabInCnt: document.getElementById('friends-tab-in-cnt'),
+    friendsTabOutCnt: document.getElementById('friends-tab-out-cnt'),
+    friendsListBody: document.getElementById('friends-list-body'),
     modeSelectOverlay: document.getElementById('mode-select-overlay'),
     btnCloseModeSelect: document.getElementById('btn-close-mode-select'),
     btnSelectModeNormal: document.getElementById('btn-select-mode-normal'),
@@ -3452,6 +3484,7 @@
     if (ONLINE && save.auth && ONLINE.isRankedProvider(save.auth.provider)) {
       try { await syncMyWeeklyScore(); } catch {}
       try { await syncMyDailyWeatherScore(); } catch {}
+      try { await syncMyFriendProfile({ silent: true }); } catch {}
       if (currentTab === 'rank') renderRankingTab();
     }
   }
@@ -3580,6 +3613,9 @@
     }
     if (el.profPrevStats) {
       el.profPrevStats.textContent = `최고 ${(save.bestScore || 0).toLocaleString('ko-KR')}점 · ${save.bestYear || 1}년 차 · 캐릭터 ${save.unlockedChars.length}/${DATA.CHARACTERS.length}`;
+    }
+    if (el.profPrevBattletag) {
+      el.profPrevBattletag.textContent = getMyBattleTag();
     }
 
     document.querySelectorAll('.prof-tab-btn').forEach((btn) => {
@@ -3856,7 +3892,13 @@
         history: { ...((secondary.weeklyRank && secondary.weeklyRank.history) || {}), ...((primary.weeklyRank && primary.weeklyRank.history) || {}) },
         claimedWeeks: Array.from(new Set([...((c.weeklyRank && c.weeklyRank.claimedWeeks) || []), ...((l.weeklyRank && l.weeklyRank.claimedWeeks) || [])]))
       },
-      dailyWeatherRank: bestDayObj || { dateKey: curDayKey, bestScore: 0, bestDist: 0, bestYear: 1, cityName: '서울', weatherTag: '' }
+      dailyWeatherRank: bestDayObj || { dateKey: curDayKey, bestScore: 0, bestDist: 0, bestYear: 1, cityName: '서울', weatherTag: '' },
+      friends: {
+        links: (ONLINE && ONLINE.mergeFriendLinks)
+          ? ONLINE.mergeFriendLinks(c.friends && c.friends.links, l.friends && l.friends.links)
+          : { ...((c.friends && c.friends.links) || {}), ...((l.friends && l.friends.links) || {}) },
+        rev: Math.max((c.friends && c.friends.rev) || 0, (l.friends && l.friends.rev) || 0)
+      }
     };
   }
 
@@ -4378,8 +4420,12 @@
       el.introOverlay.classList.remove('playing', 'leaving');
       try { syncMyWeeklyScore(); } catch {}
       try { checkAndAwardWeeklyChampion(); } catch {}
+      try { syncMyFriendProfile({ silent: true }); } catch {}
+      try { refreshFriendsDirectory({ silent: true }); } catch {}
       if (!save.tutorialDone) {
         startTutorialRun();
+      } else {
+        try { maybeConsumePendingFriendInvite(); } catch {}
       }
     }, 340);
   }
@@ -4449,6 +4495,8 @@
         renderProfileUI();
         refreshAllMenus();
         try { syncMyWeeklyScore(); } catch {}
+        try { syncMyFriendProfile({ silent: true }); } catch {}
+        try { refreshFriendsDirectory({ silent: true }); } catch {}
 
         if (opts.manual) {
           showToast('클라우드 최신 데이터 동기화 완료!');
@@ -4543,6 +4591,10 @@
     if (isLinked) {
       try { await syncMyWeeklyScore(); } catch {}
       try { checkAndAwardWeeklyChampion(); } catch {}
+      try { await syncMyFriendProfile({ silent: true, pullBeforeWrite: true }); } catch {}
+      try { await refreshFriendsDirectory({ silent: true }); } catch {}
+    } else {
+      updateHomeFriendsButton();
     }
 
     if (isLinked) {
@@ -4552,6 +4604,9 @@
         : `[${save.auth.nickname}] 계정 연동 완료!`);
     } else {
       showToast('게스트 모드로 시작합니다.');
+    }
+    if (el.introOverlay && el.introOverlay.classList.contains('hidden')) {
+      try { maybeConsumePendingFriendInvite(); } catch {}
     }
   }
 
@@ -4894,6 +4949,666 @@
     if (el.weatherOverlay) el.weatherOverlay.classList.add('hidden');
   }
 
+  // ===================== OVERWATCH-STYLE BATTLETAG & FRIENDS SYSTEM =====================
+  const PENDING_FRIEND_INVITE_KEY = 'kws_pending_friend_invite_v1';
+  const PUBLIC_GAME_BASE_URL = 'https://gunhe7.github.io/korean-weather-survival/';
+  let currentFriendsTab = 'friends';
+  let friendsDirCache = { byUid: {}, byKey: {}, list: [], syncedOnline: false, fetchedAt: 0 };
+  let friendsSummaryCache = { friends: [], incoming: [], outgoing: [] };
+  let friendsBusy = false;
+  let pendingFriendInviteKey = '';
+  let activeInviteCardKey = '';
+
+  function ensureSaveFriends() {
+    if (!save.friends || typeof save.friends !== 'object') {
+      save.friends = { links: {}, rev: 0 };
+    }
+    if (!save.friends.links || typeof save.friends.links !== 'object') {
+      save.friends.links = {};
+    }
+    save.friends.rev = Math.max(0, Math.floor(Number(save.friends.rev) || 0));
+    return save.friends;
+  }
+
+  function getMyFriendUid() {
+    if (save && save.auth && save.auth.uid) return String(save.auth.uid);
+    if (activeAuth && activeAuth.uid) return String(activeAuth.uid);
+    return 'guest_local';
+  }
+
+  function getMyFriendKey() {
+    const uid = getMyFriendUid();
+    if (ONLINE && ONLINE.generateFriendKey) return ONLINE.generateFriendKey(uid);
+    return 'GUEST0';
+  }
+
+  function getMyBattleTag() {
+    const nick = (save && save.auth && save.auth.nickname) || '날씨러너';
+    const key = getMyFriendKey();
+    if (ONLINE && ONLINE.formatBattleTag) return ONLINE.formatBattleTag(nick, key);
+    return `${nick}#${key}`;
+  }
+
+  function isMyAccountLinkedForFriends() {
+    return Boolean(
+      ONLINE &&
+      save &&
+      save.auth &&
+      save.auth.uid &&
+      ONLINE.isRankedProvider(save.auth.provider)
+    );
+  }
+
+  function getMyFriendShareUrl() {
+    const key = getMyFriendKey();
+    let base = PUBLIC_GAME_BASE_URL;
+    try {
+      const proto = window.location.protocol;
+      const host = window.location.hostname;
+      if ((proto === 'https:' || proto === 'http:') && host && host !== 'localhost' && host !== '127.0.0.1') {
+        base = `${window.location.origin}${window.location.pathname}`;
+      }
+    } catch {}
+    const sep = base.includes('?') ? '&' : '?';
+    return `${base}${sep}addFriend=${encodeURIComponent(key)}`;
+  }
+
+  async function copyTextToClipboard(text) {
+    const str = String(text || '');
+    if (!str) return false;
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(str);
+        return true;
+      }
+    } catch {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = str;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Boolean(ok);
+    } catch {
+      return false;
+    }
+  }
+
+  async function copyMyBattleTag() {
+    SFX.click();
+    const tag = getMyBattleTag();
+    const ok = await copyTextToClipboard(tag);
+    showToast(ok ? `배틀태그 [${tag}] 복사 완료!` : `내 배틀태그: ${tag}`);
+  }
+
+  async function shareMyFriendInvite() {
+    SFX.click();
+    if (isMyAccountLinkedForFriends()) {
+      try { await syncMyFriendProfile({ silent: true }); } catch {}
+    }
+    const tag = getMyBattleTag();
+    const shareUrl = getMyFriendShareUrl();
+    const shareText = `[한국 날씨 서바이벌] ${tag} 님이 친구로 초대했습니다! 링크를 눌러 바로 친구 추가하세요.`;
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: '한국 날씨 서바이벌 친구 초대',
+          text: shareText,
+          url: shareUrl
+        });
+        showToast('친구 초대 링크를 공유했습니다!');
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+
+    const ok = await copyTextToClipboard(`${shareText}\n${shareUrl}`);
+    if (ok) {
+      showToast('친구 초대 링크가 복사되었습니다! 메신저에 붙여넣어 공유하세요.');
+    } else {
+      showToast(`초대 링크: ${shareUrl}`);
+    }
+  }
+
+  function capturePendingFriendInviteFromUrl() {
+    let rawParam = '';
+    try {
+      const qs = new URLSearchParams(window.location.search || '');
+      rawParam = qs.get('addFriend') || qs.get('friend') || '';
+      if (!rawParam && window.location.hash) {
+        const m = window.location.hash.match(/addFriend=([^&#]+)/i);
+        if (m && m[1]) rawParam = decodeURIComponent(m[1]);
+      }
+      if (rawParam) {
+        qs.delete('addFriend');
+        qs.delete('friend');
+        const nextSearch = qs.toString();
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash || ''}`;
+        try { window.history.replaceState(null, '', nextUrl); } catch {}
+      }
+    } catch {}
+
+    if (!rawParam) {
+      try { rawParam = sessionStorage.getItem(PENDING_FRIEND_INVITE_KEY) || ''; } catch {}
+    }
+    if (!rawParam) return '';
+    const parsed = (ONLINE && ONLINE.parseFriendSearchInput)
+      ? ONLINE.parseFriendSearchInput(rawParam)
+      : { key: String(rawParam).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') };
+    const cleanKey = (parsed && parsed.key) || String(rawParam).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (cleanKey) {
+      pendingFriendInviteKey = cleanKey;
+      try { sessionStorage.setItem(PENDING_FRIEND_INVITE_KEY, cleanKey); } catch {}
+    }
+    return cleanKey;
+  }
+
+  function clearPendingFriendInvite() {
+    pendingFriendInviteKey = '';
+    activeInviteCardKey = '';
+    try { sessionStorage.removeItem(PENDING_FRIEND_INVITE_KEY); } catch {}
+  }
+
+  function maybeConsumePendingFriendInvite() {
+    if (!pendingFriendInviteKey) return;
+    if (run && run.active) return;
+    const key = pendingFriendInviteKey;
+    activeInviteCardKey = key;
+    if (isMyAccountLinkedForFriends()) {
+      pendingFriendInviteKey = '';
+      try { sessionStorage.removeItem(PENDING_FRIEND_INVITE_KEY); } catch {}
+    }
+    openFriendsModal({ inviteKey: key, silentClick: true });
+  }
+
+  async function syncMyFriendProfile(opts = {}) {
+    if (!ONLINE || !ONLINE.publishFriendProfile) return { ok: false };
+    const myAuth = save.auth || { provider: 'guest', uid: 'guest_local', nickname: '게스트' };
+    const myChar = getCharDef(save.selectedChar);
+    const mySkin = getEquippedSkin(myChar.id);
+    const fr = ensureSaveFriends();
+    const res = await ONLINE.publishFriendProfile({
+      uid: myAuth.uid || 'guest_local',
+      friendKey: getMyFriendKey(),
+      nickname: myAuth.nickname || `러너 (${myChar.name})`,
+      provider: myAuth.provider || 'guest',
+      charId: myChar.id,
+      skinId: mySkin ? mySkin.id : null,
+      ...buildMyBoardProfileMeta(myChar, mySkin),
+      bestScore: Math.max(0, Math.floor(save.bestScore || 0)),
+      trophies: Math.max(0, Math.floor(save.trophies || 0)),
+      wins: Math.max(0, Math.floor(save.compWins || 0)),
+      links: fr.links,
+      rev: fr.rev || 0,
+      pullBeforeWrite: Boolean(opts.pullBeforeWrite)
+    });
+    if (res && res.node) {
+      fr.rev = Math.max(fr.rev || 0, res.rev || 0);
+      if (res.node.links && ONLINE.mergeFriendLinks) {
+        fr.links = ONLINE.mergeFriendLinks(fr.links, res.node.links);
+      }
+      persistSave(false, { localOnly: true, keepTimestamp: true });
+    }
+    return res;
+  }
+
+  function recomputeFriendsSummary() {
+    const fr = ensureSaveFriends();
+    if (!ONLINE || !ONLINE.computeFriendLists) {
+      friendsSummaryCache = { friends: [], incoming: [], outgoing: [] };
+      return friendsSummaryCache;
+    }
+    const myUid = getMyFriendUid();
+    const comp = ONLINE.computeFriendLists(myUid, fr.links, friendsDirCache);
+    if (comp.mergedMyLinks && Object.keys(comp.mergedMyLinks).length > Object.keys(fr.links).length) {
+      fr.links = comp.mergedMyLinks;
+    }
+    if (comp.remoteRev > (fr.rev || 0)) {
+      fr.rev = comp.remoteRev;
+    }
+    friendsSummaryCache = {
+      friends: comp.friends || [],
+      incoming: comp.incoming || [],
+      outgoing: comp.outgoing || []
+    };
+    return friendsSummaryCache;
+  }
+
+  function updateHomeFriendsButton() {
+    recomputeFriendsSummary();
+    const friendCnt = friendsSummaryCache.friends.length;
+    const inCnt = friendsSummaryCache.incoming.length;
+    if (el.homeFriendsBtnCount) {
+      el.homeFriendsBtnCount.textContent = `${friendCnt}명`;
+    }
+    if (el.homeFriendsDot) {
+      el.homeFriendsDot.classList.toggle('hidden', inCnt <= 0);
+      el.homeFriendsDot.textContent = inCnt > 9 ? '9+' : String(inCnt);
+    }
+  }
+
+  async function refreshFriendsDirectory(opts = {}) {
+    if (!ONLINE || !ONLINE.fetchFriendsDirectory) return friendsDirCache;
+    try {
+      friendsDirCache = await ONLINE.fetchFriendsDirectory();
+    } catch {}
+    updateHomeFriendsButton();
+    if (el.friendsOverlay && !el.friendsOverlay.classList.contains('hidden')) {
+      renderFriendsModal();
+    }
+    if (!opts.silent && opts.toast) {
+      showToast(friendsDirCache.syncedOnline ? '친구 목록이 갱신되었습니다!' : '오프라인 캐시 목록을 표시 중입니다.');
+    }
+    return friendsDirCache;
+  }
+
+  async function setFriendLinkAction(targetUser, action) {
+    if (!targetUser || !targetUser.uid) return false;
+    if (friendsBusy) return false;
+    if (!isMyAccountLinkedForFriends()) {
+      SFX.error();
+      showToast('Google 또는 Apple 로그인 후 친구 추가를 이용할 수 있습니다!');
+      return false;
+    }
+    const myUid = getMyFriendUid();
+    if (targetUser.uid === myUid) {
+      SFX.error();
+      showToast('본인의 배틀태그는 추가할 수 없습니다!');
+      return false;
+    }
+
+    friendsBusy = true;
+    try {
+      const fr = ensureSaveFriends();
+      fr.links[targetUser.uid] = { s: action, t: Date.now() };
+      persistSave(true);
+
+      const pubRes = await syncMyFriendProfile({ pullBeforeWrite: true, silent: true });
+      await refreshFriendsDirectory({ silent: true });
+
+      const tagLabel = targetUser.battleTag || `${targetUser.nickname}#${targetUser.friendKey || ''}`;
+      if (!pubRes || !pubRes.syncedOnline) {
+        showToast('네트워크 연결을 확인한 뒤 다시 시도해 주세요.');
+        return false;
+      }
+
+      if (action === 'acc') {
+        SFX.chestJackpot();
+        showToast(`[${tagLabel}] 님과 친구가 되었습니다!`);
+      } else if (action === 'req') {
+        const nowFriend = friendsSummaryCache.friends.some((f) => f.uid === targetUser.uid);
+        if (nowFriend) {
+          SFX.chestJackpot();
+          showToast(`[${tagLabel}] 님과 서로 친구가 되었습니다!`);
+        } else {
+          SFX.click();
+          showToast(`[${tagLabel}] 님에게 친구 요청을 보냈습니다!`);
+        }
+      } else if (action === 'del') {
+        SFX.click();
+        showToast(`[${tagLabel}] 님과 연결을 해제했습니다.`);
+      }
+      return true;
+    } finally {
+      friendsBusy = false;
+      renderFriendsModal();
+    }
+  }
+
+  async function handleAddFriendSubmit(rawInput) {
+    const text = String(rawInput || '').trim();
+    if (!text) {
+      SFX.error();
+      showToast('배틀태그 또는 6자리 고유 키를 입력해 주세요!');
+      return;
+    }
+    if (!isMyAccountLinkedForFriends()) {
+      SFX.error();
+      showToast('먼저 Google 또는 Apple 계정으로 로그인해 주세요!');
+      return;
+    }
+    if (friendsBusy) return;
+
+    if (el.btnFriendsAddSubmit) {
+      el.btnFriendsAddSubmit.disabled = true;
+      el.btnFriendsAddSubmit.textContent = '검색 중...';
+    }
+    try {
+      await refreshFriendsDirectory({ silent: true });
+      const res = ONLINE.findUserInFriendsDir(text, friendsDirCache);
+      if (!res || !res.found) {
+        SFX.error();
+        if (res && res.reason === 'ambiguous') {
+          showToast('같은 닉네임 유저가 여러 명 있습니다. #고유키를 포함해 입력해 주세요!');
+        } else {
+          showToast('해당 배틀태그(고유 키)를 찾을 수 없습니다. 상대방이 로그인 후 1회 접속해야 검색됩니다.');
+        }
+        return;
+      }
+
+      const target = res.found;
+      const myUid = getMyFriendUid();
+      if (target.uid === myUid) {
+        SFX.error();
+        showToast('본인의 배틀태그는 추가할 수 없습니다!');
+        return;
+      }
+
+      const fr = ensureSaveFriends();
+      const rel = ONLINE.deriveFriendRelation(fr.links, target.links, myUid, target.uid);
+      if (rel === 'friend') {
+        SFX.click();
+        showToast(`[${target.battleTag}] 님은 이미 친구입니다!`);
+        return;
+      }
+      if (rel === 'outgoing') {
+        SFX.click();
+        showToast(`[${target.battleTag}] 님에게 이미 친구 요청을 보냈습니다.`);
+        currentFriendsTab = 'outgoing';
+        renderFriendsModal();
+        return;
+      }
+      if (rel === 'incoming') {
+        const ok = await setFriendLinkAction(target, 'acc');
+        if (ok) {
+          if (el.friendsAddInput) el.friendsAddInput.value = '';
+          currentFriendsTab = 'friends';
+          renderFriendsModal();
+        }
+        return;
+      }
+
+      const ok = await setFriendLinkAction(target, 'req');
+      if (ok) {
+        if (el.friendsAddInput) el.friendsAddInput.value = '';
+        currentFriendsTab = 'outgoing';
+        renderFriendsModal();
+      }
+    } finally {
+      if (el.btnFriendsAddSubmit) {
+        el.btnFriendsAddSubmit.disabled = false;
+        el.btnFriendsAddSubmit.textContent = '친구 추가';
+      }
+    }
+  }
+
+  function renderFriendsInviteCard() {
+    if (!el.friendsInviteCard) return;
+    if (!activeInviteCardKey) {
+      el.friendsInviteCard.classList.add('hidden');
+      el.friendsInviteCard.innerHTML = '';
+      return;
+    }
+
+    const key = activeInviteCardKey;
+    const inviter = (friendsDirCache.byKey && friendsDirCache.byKey[key]) || null;
+    const myKey = getMyFriendKey();
+    const isLinked = isMyAccountLinkedForFriends();
+
+    el.friendsInviteCard.classList.remove('hidden');
+    if (key === myKey) {
+      el.friendsInviteCard.innerHTML = `
+        <div class="bs-inv-left">
+          <div class="bs-fr-meta">
+            <span class="bs-inv-kicker">초대 링크 확인</span>
+            <div class="bs-fr-stats-line">내 계정 배틀태그(${escapeNickHtml(getMyBattleTag())}) 초대 링크입니다.</div>
+          </div>
+        </div>
+        <div class="bs-inv-actions">
+          <button type="button" class="bs-fr-act-btn neutral" data-inv-act="dismiss">닫기</button>
+        </div>
+      `;
+    } else if (!inviter) {
+      el.friendsInviteCard.innerHTML = `
+        <div class="bs-inv-left">
+          <div class="bs-fr-meta">
+            <span class="bs-inv-kicker">공유 링크 친구 초대 · #${escapeNickHtml(key)}</span>
+            <div class="bs-fr-stats-line">초대한 플레이어 정보를 불러오는 중이거나 아직 로그인 기록이 없습니다.</div>
+          </div>
+        </div>
+        <div class="bs-inv-actions">
+          <button type="button" class="bs-fr-act-btn accept" data-inv-act="retry">다시 확인</button>
+          <button type="button" class="bs-fr-act-btn neutral" data-inv-act="dismiss">닫기</button>
+        </div>
+      `;
+    } else {
+      const avInfo = getProfileAvatarInfo({ avatarCharId: inviter.profileCharId || inviter.charId, avatarSkinId: inviter.profileSkinId !== undefined ? inviter.profileSkinId : inviter.skinId }, inviter.charId, inviter.skinId, false);
+      const tInfo = DATA.getCompTier(inviter.trophies || 0);
+      const fr = ensureSaveFriends();
+      const rel = ONLINE.deriveFriendRelation(fr.links, inviter.links, getMyFriendUid(), inviter.uid);
+      let primaryBtn = '<button type="button" class="bs-fr-act-btn accept" data-inv-act="send">친구 요청 보내기</button>';
+      if (!isLinked) {
+        primaryBtn = '<button type="button" class="bs-fr-act-btn accept" data-inv-act="login">로그인 후 추가</button>';
+      } else if (rel === 'friend') {
+        primaryBtn = '<button type="button" class="bs-fr-act-btn neutral" disabled>이미 친구</button>';
+      } else if (rel === 'incoming') {
+        primaryBtn = '<button type="button" class="bs-fr-act-btn accept" data-inv-act="accept">친구 수락</button>';
+      } else if (rel === 'outgoing') {
+        primaryBtn = '<button type="button" class="bs-fr-act-btn neutral" disabled>요청 보냄</button>';
+      }
+
+      el.friendsInviteCard.innerHTML = `
+        <div class="bs-inv-left">
+          <div class="bs-fr-avatar-wrap">
+            <img src="${avInfo.src}" alt="" class="bs-fr-avatar-img" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
+          </div>
+          <div class="bs-fr-meta">
+            <span class="bs-inv-kicker">공유 링크로 친구 초대가 도착했습니다!</span>
+            <div class="bs-fr-name-line">
+              <img src="${getTierImgUrl(tInfo)}" alt="${tInfo.name}" class="bs-fr-tier-ico" />
+              ${renderNameplateHtml(inviter.nickname, inviter.nameFrame, inviter.nameColor, 'sm')}
+              <span class="bs-fr-tag-chip">#${escapeNickHtml(inviter.friendKey)}</span>
+            </div>
+            <div class="bs-fr-stats-line">
+              <span class="bs-fr-stat-trophy">${tInfo.name} · ${(inviter.trophies || 0).toLocaleString('ko-KR')} 트로피</span>
+              <span>최고 ${(inviter.bestScore || 0).toLocaleString('ko-KR')}점</span>
+            </div>
+          </div>
+        </div>
+        <div class="bs-inv-actions">
+          ${primaryBtn}
+          <button type="button" class="bs-fr-act-btn neutral" data-inv-act="dismiss">닫기</button>
+        </div>
+      `;
+    }
+
+    el.friendsInviteCard.querySelectorAll('[data-inv-act]').forEach((btn) => {
+      btn.onclick = async () => {
+        const act = btn.dataset.invAct;
+        if (act === 'dismiss') {
+          SFX.click();
+          clearPendingFriendInvite();
+          renderFriendsInviteCard();
+        } else if (act === 'retry') {
+          SFX.click();
+          await refreshFriendsDirectory({ silent: true });
+        } else if (act === 'login') {
+          SFX.click();
+          pendingFriendInviteKey = key;
+          try { sessionStorage.setItem(PENDING_FRIEND_INVITE_KEY, key); } catch {}
+          closeFriendsModal();
+          openLoginOverlay();
+        } else if (act === 'send' && inviter) {
+          const ok = await setFriendLinkAction(inviter, 'req');
+          if (ok) {
+            clearPendingFriendInvite();
+            currentFriendsTab = friendsSummaryCache.friends.some((f) => f.uid === inviter.uid) ? 'friends' : 'outgoing';
+            renderFriendsModal();
+          }
+        } else if (act === 'accept' && inviter) {
+          const ok = await setFriendLinkAction(inviter, 'acc');
+          if (ok) {
+            clearPendingFriendInvite();
+            currentFriendsTab = 'friends';
+            renderFriendsModal();
+          }
+        }
+      };
+    });
+  }
+
+  function renderFriendsModal() {
+    if (!el.friendsListBody) return;
+    recomputeFriendsSummary();
+    updateHomeFriendsButton();
+
+    const nick = (save && save.auth && save.auth.nickname) || '날씨러너';
+    const key = getMyFriendKey();
+    const isLinked = isMyAccountLinkedForFriends();
+
+    if (el.friendsMyNick) el.friendsMyNick.textContent = nick;
+    if (el.friendsMyKey) el.friendsMyKey.textContent = `#${key}`;
+    if (el.friendsLivePill) {
+      el.friendsLivePill.textContent = friendsDirCache.syncedOnline ? 'LIVE' : 'LOCAL';
+      el.friendsLivePill.classList.toggle('offline', !friendsDirCache.syncedOnline);
+    }
+    if (el.friendsGuestBanner) {
+      el.friendsGuestBanner.classList.toggle('hidden', isLinked);
+    }
+
+    renderFriendsInviteCard();
+
+    const fCnt = friendsSummaryCache.friends.length;
+    const inCnt = friendsSummaryCache.incoming.length;
+    const outCnt = friendsSummaryCache.outgoing.length;
+    if (el.friendsTabListCnt) el.friendsTabListCnt.textContent = String(fCnt);
+    if (el.friendsTabInCnt) {
+      el.friendsTabInCnt.textContent = String(inCnt);
+      el.friendsTabInCnt.classList.toggle('has-alert', inCnt > 0);
+    }
+    if (el.friendsTabOutCnt) el.friendsTabOutCnt.textContent = String(outCnt);
+
+    document.querySelectorAll('.bs-ftab-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.ftab === currentFriendsTab);
+    });
+
+    const items = currentFriendsTab === 'incoming'
+      ? friendsSummaryCache.incoming
+      : (currentFriendsTab === 'outgoing' ? friendsSummaryCache.outgoing : friendsSummaryCache.friends);
+
+    el.friendsListBody.innerHTML = '';
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'bs-friend-empty';
+      if (currentFriendsTab === 'incoming') {
+        empty.innerHTML = '<strong>받은 친구 요청이 없습니다</strong><span>내 배틀태그나 공유 초대 링크를 친구에게 보내보세요!</span>';
+      } else if (currentFriendsTab === 'outgoing') {
+        empty.innerHTML = '<strong>보낸 친구 요청이 없습니다</strong><span>상단 입력창에 친구의 배틀태그(예: 닉네임#7K4M9P)나 고유 키를 입력해 추가할 수 있습니다.</span>';
+      } else {
+        empty.innerHTML = '<strong>아직 등록된 친구가 없습니다</strong><span>배틀태그(고유 키)를 입력하거나 [공유 초대] 버튼으로 친구를 초대해 보세요!</span>';
+      }
+      el.friendsListBody.appendChild(empty);
+      return;
+    }
+
+    const nowMs = Date.now();
+    items.forEach((u) => {
+      const avInfo = getProfileAvatarInfo(
+        { avatarCharId: u.profileCharId || u.charId, avatarSkinId: u.profileSkinId !== undefined ? u.profileSkinId : u.skinId },
+        u.charId,
+        u.skinId,
+        false
+      );
+      const tInfo = DATA.getCompTier(u.trophies || 0);
+      const isOnline = (nowMs - (u.updatedAt || 0)) < 10 * 60 * 1000;
+      const minsAgo = Math.max(1, Math.floor((nowMs - (u.updatedAt || nowMs)) / 60000));
+      const statusTxt = isOnline
+        ? '최근 접속'
+        : (minsAgo < 60 ? `${minsAgo}분 전` : (minsAgo < 1440 ? `${Math.floor(minsAgo / 60)}시간 전` : `${Math.floor(minsAgo / 1440)}일 전`));
+
+      const row = document.createElement('div');
+      row.className = 'bs-friend-row';
+      row.innerHTML = `
+        <div class="bs-friend-row-left">
+          <div class="bs-fr-avatar-wrap">
+            <img src="${avInfo.src}" alt="" class="bs-fr-avatar-img" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
+            <span class="bs-fr-online-dot${isOnline ? ' online' : ''}" aria-hidden="true"></span>
+          </div>
+          <div class="bs-fr-meta">
+            <div class="bs-fr-name-line">
+              <img src="${getTierImgUrl(tInfo)}" alt="${tInfo.name}" class="bs-fr-tier-ico" title="${tInfo.name}" />
+              ${renderNameplateHtml(u.nickname, u.nameFrame, u.nameColor, 'sm')}
+              <span class="bs-fr-tag-chip">#${escapeNickHtml(u.friendKey)}</span>
+            </div>
+            <div class="bs-fr-stats-line">
+              <span class="bs-fr-stat-trophy">${tInfo.name} · ${(u.trophies || 0).toLocaleString('ko-KR')} 트로피</span>
+              <span>최고 ${(u.bestScore || 0).toLocaleString('ko-KR')}점</span>
+              <span class="bs-fr-stat-status${isOnline ? ' online' : ''}">${statusTxt}</span>
+            </div>
+          </div>
+        </div>
+        <div class="bs-friend-row-actions"></div>
+      `;
+
+      const actWrap = row.querySelector('.bs-friend-row-actions');
+      if (currentFriendsTab === 'incoming') {
+        const accBtn = document.createElement('button');
+        accBtn.type = 'button';
+        accBtn.className = 'bs-fr-act-btn accept';
+        accBtn.textContent = '수락';
+        accBtn.onclick = () => setFriendLinkAction(u, 'acc');
+
+        const decBtn = document.createElement('button');
+        decBtn.type = 'button';
+        decBtn.className = 'bs-fr-act-btn decline';
+        decBtn.textContent = '거절';
+        decBtn.onclick = () => setFriendLinkAction(u, 'del');
+
+        actWrap.appendChild(accBtn);
+        actWrap.appendChild(decBtn);
+      } else if (currentFriendsTab === 'outgoing') {
+        const canBtn = document.createElement('button');
+        canBtn.type = 'button';
+        canBtn.className = 'bs-fr-act-btn cancel';
+        canBtn.textContent = '취소';
+        canBtn.onclick = () => setFriendLinkAction(u, 'del');
+        actWrap.appendChild(canBtn);
+      } else {
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'bs-fr-act-btn remove';
+        delBtn.textContent = '삭제';
+        delBtn.onclick = () => {
+          if (!window.confirm(`[${u.battleTag}] 님을 친구 목록에서 삭제할까요?`)) return;
+          setFriendLinkAction(u, 'del');
+        };
+        actWrap.appendChild(delBtn);
+      }
+
+      el.friendsListBody.appendChild(row);
+    });
+  }
+
+  async function openFriendsModal(opts = {}) {
+    if (!opts.silentClick) SFX.click();
+    if (opts.inviteKey) {
+      activeInviteCardKey = opts.inviteKey;
+    }
+    if (opts.tab) {
+      currentFriendsTab = opts.tab;
+    } else if (!opts.inviteKey && friendsSummaryCache.incoming.length > 0 && friendsSummaryCache.friends.length === 0) {
+      currentFriendsTab = 'incoming';
+    }
+    renderFriendsModal();
+    if (el.friendsOverlay) el.friendsOverlay.classList.remove('hidden');
+    if (isMyAccountLinkedForFriends()) {
+      try { await syncMyFriendProfile({ silent: true }); } catch {}
+    }
+    await refreshFriendsDirectory({ silent: true });
+  }
+
+  function closeFriendsModal() {
+    if (el.friendsOverlay) el.friendsOverlay.classList.add('hidden');
+  }
+
   function getWeatherHeroSvg(mods) {
     const lbl = (mods && mods.desc && mods.desc.label) || '';
     const pw = (mods && mods.primaryWeather) || '';
@@ -5029,6 +5744,7 @@
     // Render ONLY the currently visible tab (eliminates hidden-tab DOM churn, image downloads & extra Firebase fetches!)
     if (currentTab === 'home') {
       updateHomeWeatherMiniSummary();
+      updateHomeFriendsButton();
       renderHomeCharStage();
     }
     else if (currentTab === 'shop') renderShopList();
@@ -5046,6 +5762,7 @@
     if (el.seasonPassOverlay && !el.seasonPassOverlay.classList.contains('hidden')) renderSeasonPassModal();
     if (el.vaultOverlay && !el.vaultOverlay.classList.contains('hidden')) renderVaultModal();
     if (el.weatherOverlay && !el.weatherOverlay.classList.contains('hidden')) renderHomeWeatherTab();
+    if (el.friendsOverlay && !el.friendsOverlay.classList.contains('hidden')) renderFriendsModal();
     if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) renderModeSelectModal();
     if (el.skinExchangeOverlay && !el.skinExchangeOverlay.classList.contains('hidden')) renderSkinExchangeModal();
     if (el.charSkinsOverlay && !el.charSkinsOverlay.classList.contains('hidden')) renderCharSkinsModal();
@@ -5763,6 +6480,7 @@
         matches: Math.max(0, Math.floor(save.compMatches || 0)),
         bestCompScore: Math.max(0, Math.floor(save.compBestScore || 0))
       });
+      await syncMyFriendProfile({ silent: true });
     } catch {}
   }
 
@@ -7657,6 +8375,7 @@
     if (!isHome && !isComp) return;
     if (el.modeSelectOverlay && !el.modeSelectOverlay.classList.contains('hidden')) return;
     if (el.weatherOverlay && !el.weatherOverlay.classList.contains('hidden')) return;
+    if (el.friendsOverlay && !el.friendsOverlay.classList.contains('hidden')) return;
     if (el.compMatchOverlay && !el.compMatchOverlay.classList.contains('hidden')) return;
     if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
     if (el.loginOverlay && !el.loginOverlay.classList.contains('hidden')) return;
@@ -11832,6 +12551,65 @@
     if (el.btnHomeWeather) {
       el.btnHomeWeather.addEventListener('click', openWeatherModal);
     }
+    if (el.btnProfCopyTag) {
+      el.btnProfCopyTag.addEventListener('click', copyMyBattleTag);
+    }
+    if (el.btnHomeFriends) {
+      el.btnHomeFriends.addEventListener('click', () => openFriendsModal());
+    }
+    if (el.btnCloseFriends) {
+      el.btnCloseFriends.addEventListener('click', () => {
+        SFX.click();
+        closeFriendsModal();
+      });
+    }
+    if (el.friendsOverlay) {
+      el.friendsOverlay.addEventListener('click', (e) => {
+        if (e.target === el.friendsOverlay) closeFriendsModal();
+      });
+    }
+    if (el.btnFriendsRefresh) {
+      el.btnFriendsRefresh.addEventListener('click', async () => {
+        SFX.click();
+        if (isMyAccountLinkedForFriends()) {
+          try { await syncMyFriendProfile({ silent: true, pullBeforeWrite: true }); } catch {}
+        }
+        await refreshFriendsDirectory({ silent: false, toast: true });
+      });
+    }
+    if (el.btnFriendsCopyTag) {
+      el.btnFriendsCopyTag.addEventListener('click', copyMyBattleTag);
+    }
+    if (el.btnFriendsShareInvite) {
+      el.btnFriendsShareInvite.addEventListener('click', shareMyFriendInvite);
+    }
+    if (el.btnFriendsLogin) {
+      el.btnFriendsLogin.addEventListener('click', () => {
+        SFX.click();
+        closeFriendsModal();
+        openLoginOverlay();
+      });
+    }
+    if (el.friendsAddForm) {
+      el.friendsAddForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleAddFriendSubmit(el.friendsAddInput ? el.friendsAddInput.value : '');
+      });
+    }
+    document.querySelectorAll('.bs-ftab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        SFX.click();
+        currentFriendsTab = btn.dataset.ftab || 'friends';
+        renderFriendsModal();
+      });
+    });
+    setInterval(() => {
+      if (run && run.active) return;
+      const friendsOpen = el.friendsOverlay && !el.friendsOverlay.classList.contains('hidden');
+      if (friendsOpen || (currentTab === 'home' && isMyAccountLinkedForFriends())) {
+        refreshFriendsDirectory({ silent: true });
+      }
+    }, 20000);
     if (el.btnCloseWeather) {
       el.btnCloseWeather.addEventListener('click', () => {
         SFX.click();
@@ -12896,12 +13674,14 @@
       if (ev && ev.message) showToast(`오류: ${ev.message}`);
     } catch {}
   });
+  capturePendingFriendInviteFromUrl();
   setupEvents();
   initHomePetals();
   checkAndAwardCompSeasonReward();
   refreshAllMenus();
   renderIntroAuthState();
   refreshLiveWeatherUI(false);
+  refreshFriendsDirectory({ silent: true });
   if (window.StudioIntro && typeof window.StudioIntro.play === 'function') {
     window.StudioIntro.play(() => {
       // If OAuth redirect already bypassed title screen into lobby, start menu BGM cleanly after studio splash ends

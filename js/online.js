@@ -1194,6 +1194,381 @@ window.OnlineService = (function () {
     return null;
   }
 
+  // ===================== OVERWATCH-STYLE BATTLETAG KEYS & ONLINE FRIENDS SYSTEM =====================
+  const FRIENDS_DIR_STORE_KEY = 'kr_weather_friends_dir_v1';
+  const RTDB_FRIENDS_BUCKET = 'friends_v1';
+  const FRIEND_KEY_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+  function fnv1a32(str, seed = 0x811c9dc5) {
+    let h = seed >>> 0;
+    const s = String(str || '');
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h >>> 0;
+  }
+
+  function generateFriendKey(uid) {
+    const cleanUid = String(uid || 'guest_local').trim() || 'guest_local';
+    let h1 = fnv1a32(`KWS_BT1:${cleanUid}`, 0x811c9dc5);
+    let h2 = fnv1a32(`KWS_BT2:${cleanUid}`, 0x9e3779b1);
+    let out = '';
+    for (let i = 0; i < 3; i++) {
+      out += FRIEND_KEY_ALPHABET[h1 & 31];
+      h1 >>>= 5;
+    }
+    for (let i = 0; i < 3; i++) {
+      out += FRIEND_KEY_ALPHABET[h2 & 31];
+      h2 >>>= 5;
+    }
+    return out;
+  }
+
+  function formatBattleTag(nickname, friendKey) {
+    const nick = sanitizeNickname(nickname, '날씨러너');
+    const key = String(friendKey || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return key ? `${nick}#${key}` : nick;
+  }
+
+  function parseFriendSearchInput(raw) {
+    let str = String(raw || '').trim();
+    if (!str) return { raw: '', key: '', nickPart: '' };
+    // Support pasting a full invite URL (?addFriend=KEY) directly into the input box!
+    const urlMatch = str.match(/[?&#]addFriend=([^&#\s]+)/i);
+    if (urlMatch && urlMatch[1]) {
+      try {
+        str = decodeURIComponent(urlMatch[1]).trim();
+      } catch {
+        str = urlMatch[1].trim();
+      }
+    }
+    const hashIdx = str.lastIndexOf('#');
+    if (hashIdx >= 0) {
+      const nickPart = str.slice(0, hashIdx).trim();
+      const keyPart = str.slice(hashIdx + 1).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      return { raw: str, key: keyPart, nickPart };
+    }
+    const compact = str.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const isPureKey = /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/.test(compact) && compact.length === str.replace(/\s+/g, '').length;
+    return {
+      raw: str,
+      key: isPureKey ? compact : '',
+      nickPart: isPureKey ? '' : str
+    };
+  }
+
+  function sanitizeFriendLinks(rawLinks) {
+    const out = {};
+    if (!rawLinks || typeof rawLinks !== 'object') return out;
+    Object.keys(rawLinks).forEach((k) => {
+      const v = rawLinks[k];
+      if (!v || typeof v !== 'object') return;
+      const st = v.s === 'acc' || v.s === 'del' ? v.s : (v.s === 'req' ? 'req' : '');
+      const ts = Math.max(0, Math.floor(Number(v.t) || 0));
+      if (st && ts > 0) out[String(k)] = { s: st, t: ts };
+    });
+    return out;
+  }
+
+  function mergeFriendLinks(a, b) {
+    const ca = sanitizeFriendLinks(a);
+    const cb = sanitizeFriendLinks(b);
+    const out = { ...ca };
+    Object.keys(cb).forEach((uid) => {
+      if (!out[uid] || cb[uid].t >= out[uid].t) {
+        out[uid] = cb[uid];
+      }
+    });
+    return out;
+  }
+
+  function deriveFriendRelation(myLinks, theirLinks, myUid, otherUid) {
+    if (!myUid || !otherUid || myUid === otherUid) return 'self';
+    const m = myLinks && myLinks[otherUid];
+    const o = theirLinks && theirLinks[myUid];
+    const mActive = Boolean(m && (m.s === 'req' || m.s === 'acc'));
+    const oActive = Boolean(o && (o.s === 'req' || o.s === 'acc'));
+
+    if (m && m.s === 'del') {
+      if (o && o.s === 'req' && o.t > m.t) return 'incoming';
+      return 'none';
+    }
+    if (o && o.s === 'del') {
+      if (m && m.s === 'req' && m.t > o.t) return 'outgoing';
+      return 'none';
+    }
+    if (mActive && oActive) return 'friend';
+    if (o && o.s === 'req') return 'incoming';
+    if (m && m.s === 'req') return 'outgoing';
+    return 'none';
+  }
+
+  function readLocalFriendsDir() {
+    try {
+      const raw = localStorage.getItem(FRIENDS_DIR_STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeLocalFriendsDir(mapObj) {
+    try {
+      localStorage.setItem(FRIENDS_DIR_STORE_KEY, JSON.stringify(mapObj || {}));
+    } catch {}
+  }
+
+  function normalizeFriendNode(raw) {
+    if (!raw || typeof raw !== 'object' || !raw.uid) return null;
+    const uid = String(raw.uid);
+    const friendKey = String(raw.friendKey || generateFriendKey(uid)).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || generateFriendKey(uid);
+    const nickname = sanitizeNickname(raw.nickname, '날씨러너');
+    return {
+      uid,
+      friendKey,
+      battleTag: formatBattleTag(nickname, friendKey),
+      nickname,
+      provider: raw.provider || 'google',
+      score: Math.max(1, Math.floor(Number(raw.score) || 1)),
+      bestScore: Math.max(0, Math.floor(Number(raw.bestScore) || 0)),
+      trophies: Math.max(0, Math.floor(Number(raw.trophies) || 0)),
+      wins: Math.max(0, Math.floor(Number(raw.wins) || 0)),
+      charId: raw.charId || 'umbrella_master',
+      skinId: raw.skinId || null,
+      profileCharId: raw.profileCharId || raw.charId || 'umbrella_master',
+      profileSkinId: raw.profileSkinId !== undefined ? raw.profileSkinId : (raw.skinId || null),
+      nameColor: typeof raw.nameColor === 'string' ? raw.nameColor.slice(0, 24) : '#ffffff',
+      nameFrame: typeof raw.nameFrame === 'string' ? raw.nameFrame.slice(0, 16) : 'none',
+      links: sanitizeFriendLinks(raw.links),
+      updatedAt: Math.max(0, Math.floor(Number(raw.updatedAt) || 0))
+    };
+  }
+
+  async function fetchSingleFriendNodeRemote(uid) {
+    if (!uid || !hasRemoteDb()) return null;
+    const roots = [RTDB_BOARD_ROOT, '/weekly_boards_v2'];
+    let best = null;
+    for (const root of roots) {
+      try {
+        const res = await fetch(`${getDbUrl()}${root}/${RTDB_FRIENDS_BUCKET}/${encodeURIComponent(uid)}.json`, { cache: 'no-store' });
+        if (res && res.ok) {
+          const raw = await res.json();
+          const norm = normalizeFriendNode(raw);
+          if (norm && (!best || norm.score >= best.score)) best = norm;
+        }
+      } catch {}
+    }
+    return best;
+  }
+
+  async function fetchFriendsDirectory() {
+    const localMap = readLocalFriendsDir();
+    const merged = {};
+    Object.values(localMap).forEach((raw) => {
+      const n = normalizeFriendNode(raw);
+      if (n && isRankedProvider(n.provider) && !isLegacyUnverifiedUid(n.uid)) {
+        merged[n.uid] = n;
+      }
+    });
+
+    let syncedOnline = false;
+    if (hasRemoteDb()) {
+      const roots = [RTDB_BOARD_ROOT, '/weekly_boards_v2'];
+      for (const root of roots) {
+        try {
+          const res = await fetch(`${getDbUrl()}${root}/${RTDB_FRIENDS_BUCKET}.json`, { cache: 'no-store' });
+          if (res && res.ok) {
+            syncedOnline = true;
+            const data = await res.json();
+            if (data && typeof data === 'object') {
+              Object.values(data).forEach((raw) => {
+                const n = normalizeFriendNode(raw);
+                if (!n || !isRankedProvider(n.provider) || isLegacyUnverifiedUid(n.uid)) return;
+                const prev = merged[n.uid];
+                if (!prev || n.score > prev.score || (n.score === prev.score && n.updatedAt >= prev.updatedAt)) {
+                  merged[n.uid] = {
+                    ...n,
+                    links: mergeFriendLinks(prev ? prev.links : null, n.links)
+                  };
+                }
+              });
+            }
+          }
+        } catch {}
+      }
+    }
+
+    writeLocalFriendsDir(merged);
+    const byUid = merged;
+    const byKey = {};
+    const list = Object.values(merged);
+    list.forEach((n) => {
+      if (n.friendKey) byKey[n.friendKey] = n;
+    });
+    return { byUid, byKey, list, syncedOnline, fetchedAt: Date.now() };
+  }
+
+  async function publishFriendProfile(entry) {
+    if (!entry || !entry.uid) return { ok: false, syncedOnline: false, reason: 'missing_uid' };
+    const uid = String(entry.uid);
+    const friendKey = entry.friendKey || generateFriendKey(uid);
+    const localDir = readLocalFriendsDir();
+    const cachedSelf = normalizeFriendNode(localDir[uid]);
+    let mergedLinks = mergeFriendLinks(cachedSelf ? cachedSelf.links : null, entry.links);
+    let baseRev = Math.max(
+      Number(entry.rev) || 0,
+      cachedSelf ? cachedSelf.score : 0
+    );
+
+    const canRemote = hasRemoteDb() && isRankedProvider(entry.provider) && !isLegacyUnverifiedUid(uid);
+    if (canRemote && (baseRev <= 0 || entry.pullBeforeWrite)) {
+      const remoteSelf = await fetchSingleFriendNodeRemote(uid);
+      if (remoteSelf) {
+        baseRev = Math.max(baseRev, remoteSelf.score || 0);
+        mergedLinks = mergeFriendLinks(remoteSelf.links, mergedLinks);
+      }
+    }
+
+    const buildNode = (revScore) => ({
+      uid,
+      friendKey,
+      nickname: sanitizeNickname(entry.nickname, '날씨러너'),
+      provider: entry.provider || 'guest',
+      score: Math.min(4999990, Math.max(1, Math.floor(revScore))),
+      bestScore: Math.max(0, Math.floor(Number(entry.bestScore) || 0)),
+      trophies: Math.max(0, Math.floor(Number(entry.trophies) || 0)),
+      wins: Math.max(0, Math.floor(Number(entry.wins) || 0)),
+      charId: entry.charId || 'umbrella_master',
+      skinId: entry.skinId || null,
+      profileCharId: entry.profileCharId || entry.charId || 'umbrella_master',
+      profileSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : (entry.skinId || null),
+      nameColor: typeof entry.nameColor === 'string' ? entry.nameColor.slice(0, 24) : '#ffffff',
+      nameFrame: typeof entry.nameFrame === 'string' ? entry.nameFrame.slice(0, 16) : 'none',
+      links: mergedLinks,
+      updatedAt: Date.now()
+    });
+
+    let node = buildNode(baseRev + 1);
+    if (isRankedProvider(node.provider) && !isLegacyUnverifiedUid(uid)) {
+      localDir[uid] = normalizeFriendNode(node);
+      writeLocalFriendsDir(localDir);
+    }
+
+    if (!canRemote) {
+      return { ok: true, syncedOnline: false, node: normalizeFriendNode(node), rev: node.score, reason: 'local_only' };
+    }
+
+    const targets = [
+      `${RTDB_BOARD_ROOT}/${RTDB_FRIENDS_BUCKET}/${encodeURIComponent(uid)}.json`,
+      `/weekly_boards_v2/${RTDB_FRIENDS_BUCKET}/${encodeURIComponent(uid)}.json`
+    ];
+
+    let lastStatus = 0;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const bodyStr = JSON.stringify(node);
+      let wrote = false;
+      for (const path of targets) {
+        try {
+          const { url, hasToken } = await buildAuthedUrl(path, attempt === 1, true);
+          if (!hasToken) continue;
+          const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyStr
+          });
+          lastStatus = res ? res.status : 0;
+          if (res && res.ok) {
+            wrote = true;
+            break;
+          }
+        } catch {}
+      }
+      if (wrote) {
+        const norm = normalizeFriendNode(node);
+        localDir[uid] = norm;
+        writeLocalFriendsDir(localDir);
+        return { ok: true, syncedOnline: true, node: norm, rev: norm.score, status: 200 };
+      }
+      // On conflict/403 (e.g. another device had higher monotonic rev score), refresh server node once and bump rev!
+      if (attempt === 0) {
+        const remoteSelf = await fetchSingleFriendNodeRemote(uid);
+        if (remoteSelf) {
+          mergedLinks = mergeFriendLinks(remoteSelf.links, mergedLinks);
+          node = buildNode(Math.max(node.score, remoteSelf.score || 0) + 1);
+        }
+      }
+    }
+    return { ok: false, syncedOnline: false, node: normalizeFriendNode(node), rev: node.score, status: lastStatus };
+  }
+
+  function findUserInFriendsDir(rawInput, dir) {
+    const parsed = parseFriendSearchInput(rawInput);
+    if (!parsed.raw) return { found: null, parsed, reason: 'empty' };
+    const list = (dir && Array.isArray(dir.list)) ? dir.list : [];
+    const byKey = (dir && dir.byKey) || {};
+
+    // 1. Exact unique BattleTag key match (e.g. #7K4M9P or 닉네임#7K4M9P or 7K4M9P)
+    if (parsed.key && byKey[parsed.key]) {
+      return { found: byKey[parsed.key], parsed, matchType: 'key' };
+    }
+    // 2. Fallback scan by key suffix / full battleTag case-insensitive
+    const lowRaw = parsed.raw.toLowerCase().replace(/\s+/g, '');
+    const exactTag = list.find((u) => u && u.battleTag && u.battleTag.toLowerCase().replace(/\s+/g, '') === lowRaw);
+    if (exactTag) return { found: exactTag, parsed, matchType: 'battleTag' };
+
+    if (parsed.key) {
+      const keyHit = list.find((u) => u && u.friendKey === parsed.key);
+      if (keyHit) return { found: keyHit, parsed, matchType: 'key' };
+      return { found: null, parsed, reason: 'not_found' };
+    }
+
+    // 3. Nickname-only lookup (works cleanly when unique; prompts for #KEY if duplicate nicknames exist!)
+    const lowNick = parsed.nickPart.toLowerCase();
+    const nickMatches = list.filter((u) => u && u.nickname && u.nickname.toLowerCase() === lowNick);
+    if (nickMatches.length === 1) {
+      return { found: nickMatches[0], parsed, matchType: 'nickname' };
+    }
+    if (nickMatches.length > 1) {
+      return { found: null, parsed, reason: 'ambiguous', matches: nickMatches };
+    }
+    return { found: null, parsed, reason: 'not_found' };
+  }
+
+  function computeFriendLists(myUid, myLocalLinks, dir) {
+    const byUid = (dir && dir.byUid) || {};
+    const remoteSelf = myUid ? byUid[myUid] : null;
+    const mergedMyLinks = mergeFriendLinks(remoteSelf ? remoteSelf.links : null, myLocalLinks);
+    const friends = [];
+    const incoming = [];
+    const outgoing = [];
+
+    Object.values(byUid).forEach((u) => {
+      if (!u || !u.uid || u.uid === myUid) return;
+      const rel = deriveFriendRelation(mergedMyLinks, u.links, myUid, u.uid);
+      if (rel === 'friend') {
+        const myT = (mergedMyLinks[u.uid] && mergedMyLinks[u.uid].t) || 0;
+        const thT = (u.links && u.links[myUid] && u.links[myUid].t) || 0;
+        friends.push({ ...u, relation: 'friend', sinceAt: Math.max(myT, thT) });
+      } else if (rel === 'incoming') {
+        const reqAt = (u.links && u.links[myUid] && u.links[myUid].t) || u.updatedAt || 0;
+        incoming.push({ ...u, relation: 'incoming', requestAt: reqAt });
+      } else if (rel === 'outgoing') {
+        const reqAt = (mergedMyLinks[u.uid] && mergedMyLinks[u.uid].t) || 0;
+        outgoing.push({ ...u, relation: 'outgoing', requestAt: reqAt });
+      }
+    });
+
+    const now = Date.now();
+    const isRecent = (u) => (now - (u.updatedAt || 0)) < 10 * 60 * 1000;
+    friends.sort((a, b) => (Number(isRecent(b)) - Number(isRecent(a))) || ((b.trophies || 0) - (a.trophies || 0)) || ((b.bestScore || 0) - (a.bestScore || 0)));
+    incoming.sort((a, b) => (b.requestAt || 0) - (a.requestAt || 0));
+    outgoing.sort((a, b) => (b.requestAt || 0) - (a.requestAt || 0));
+
+    return { friends, incoming, outgoing, mergedMyLinks, remoteRev: remoteSelf ? (remoteSelf.score || 0) : 0 };
+  }
+
   return {
     WEEKLY_REWARD_GEMS,
     FIREBASE_CONFIG,
@@ -1226,6 +1601,16 @@ window.OnlineService = (function () {
     leaveCompMatchRoom,
     pushCompLiveScore,
     checkWeeklyChampionPayout,
+    generateFriendKey,
+    formatBattleTag,
+    parseFriendSearchInput,
+    sanitizeFriendLinks,
+    mergeFriendLinks,
+    deriveFriendRelation,
+    fetchFriendsDirectory,
+    publishFriendProfile,
+    findUserInFriendsDir,
+    computeFriendLists,
     onBoardUpdate
   };
 })();

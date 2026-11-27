@@ -24823,3 +24823,726 @@ input:focus-visible {
     height: 13px;
   }
 }
+
+/* =========================================================================
+   BRAWL STARS FRIENDS DOCK BUTTON, OVERWATCH BATTLETAG & FRIENDS MODAL
+   ========================================================================= */
+.bs-right-dock-btn {
+  position: relative;
+}
+
+.bs-right-dock-btn.friends-dock-btn {
+  background: linear-gradient(180deg, #43e87d 0%, #43e87d 48%, #1bb858 50%, #118a3f 100%);
+  box-shadow:
+    0 4px 0 #081226,
+    inset 0 2px 0 rgba(215, 255, 228, 0.55),
+    inset 0 -3px 0 rgba(6, 56, 24, 0.35);
+}
+
+.bs-right-dock-btn.friends-dock-btn .bs-rd-temp.friends-cnt {
+  color: #b8ffd2;
+  border-color: rgba(154, 255, 192, 0.48);
+}
+
+.bs-rd-dot {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 2.2px solid #081226;
+  background: linear-gradient(180deg, #ff5468 0%, #d91c36 100%);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 16px;
+  text-align: center;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 2px 0 #081226;
+  pointer-events: none;
+}
+
+.bs-rd-dot.hidden {
+  display: none !important;
+}
+
+/* Profile Modal BattleTag Chip */
+.prof-battletag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #1b3868 0%, #102447 100%);
+  color: #8be8ff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #071022, inset 0 1px 0 rgba(160, 232, 255, 0.32);
+  transition: transform 0.08s ease, filter 0.1s ease;
+}
+
+.prof-battletag-pill:hover {
+  filter: brightness(1.1);
+}
+
+.prof-battletag-pill:active {
+  transform: translateY(1.5px);
+}
+
+.prof-bt-lbl {
+  color: #ffd954;
+  font-size: 10px;
+}
+
+.prof-bt-val {
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+/* Friends Modal Container */
+.bs-friends-modal {
+  width: min(580px, 95vw);
+  max-height: min(88vh, 660px);
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-friends-bar {
+  background: linear-gradient(180deg, #214e94 0%, #133163 100%) !important;
+}
+
+.bs-friends-live-pill {
+  margin-left: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1.8px solid #071022;
+  background: linear-gradient(180deg, #35e073 0%, #149644 100%);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-shadow: var(--bs-outline-sm);
+}
+
+.bs-friends-live-pill.offline {
+  background: linear-gradient(180deg, #7488a8 0%, #4b5d7a 100%);
+}
+
+.bs-friends-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+}
+
+/* My Overwatch-Style BattleTag Card */
+.bs-my-tag-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 3px solid #071022;
+  background: linear-gradient(180deg, #1b3b72 0%, #10244a 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(160, 224, 255, 0.28);
+  flex-shrink: 0;
+}
+
+.bs-my-tag-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bs-my-tag-kicker {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #8fd9ff;
+  letter-spacing: 0.02em;
+}
+
+.bs-my-tag-display {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bs-my-tag-nick {
+  font-size: 17px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 190px;
+}
+
+.bs-my-tag-key {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #ffd84a 0%, #f09c14 100%);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 2px 0 #071022, inset 0 1.5px 0 rgba(255, 250, 210, 0.65);
+}
+
+.bs-my-tag-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.bs-tag-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 11px;
+  border-radius: 11px;
+  border: 2.5px solid #071022;
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: var(--bs-outline-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.08s ease, filter 0.1s ease;
+}
+
+.bs-tag-act-btn svg {
+  flex-shrink: 0;
+  filter: drop-shadow(0 1.5px 0 #071022);
+}
+
+.bs-tag-act-btn.copy {
+  background: linear-gradient(180deg, #43abff 0%, #43abff 48%, #1f78eb 50%, #155ac4 100%);
+  box-shadow: 0 3.5px 0 #071022, inset 0 2px 0 rgba(215, 242, 255, 0.55);
+}
+
+.bs-tag-act-btn.share {
+  background: linear-gradient(180deg, #43e87d 0%, #43e87d 48%, #1bb858 50%, #128e42 100%);
+  box-shadow: 0 3.5px 0 #071022, inset 0 2px 0 rgba(215, 255, 228, 0.55);
+}
+
+.bs-tag-act-btn:hover {
+  filter: brightness(1.07);
+}
+
+.bs-tag-act-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+/* Share Link Invite Arrival Card */
+.bs-friend-invite-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 13px;
+  border: 3px solid #071022;
+  background: linear-gradient(180deg, #3b2d0a 0%, #241904 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 1.5px 0 rgba(255, 225, 102, 0.45);
+  flex-shrink: 0;
+}
+
+.bs-friend-invite-card.hidden {
+  display: none !important;
+}
+
+.bs-inv-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bs-inv-kicker {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #ffe266;
+}
+
+.bs-inv-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Guest Notice Banner */
+.bs-friend-guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 11px;
+  border-radius: 12px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #2b3e63 0%, #1c2b47 100%);
+  box-shadow: 0 3px 0 #071022;
+  flex-shrink: 0;
+}
+
+.bs-friend-guest-banner.hidden {
+  display: none !important;
+}
+
+.bs-fgb-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bs-fgb-txt strong {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffe36e;
+}
+
+.bs-fgb-txt span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #cde0ff;
+}
+
+.bs-fgb-btn {
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #ffe24a 0%, #f2a010 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 3px 0 #071022, inset 0 1.5px 0 rgba(255, 252, 224, 0.7);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bs-fgb-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #071022;
+}
+
+/* BattleTag Add Form */
+.bs-friend-add-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bs-friend-add-input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 11px;
+  border: 2.5px solid #071022;
+  background: #0b1933;
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 800;
+  outline: none;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55);
+}
+
+.bs-friend-add-input::placeholder {
+  color: #7c97c4;
+  font-weight: 700;
+}
+
+.bs-friend-add-input:focus {
+  border-color: #46c2ff;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(70, 194, 255, 0.3);
+}
+
+.bs-friend-add-btn {
+  padding: 0 16px;
+  border-radius: 11px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #ffe24a 0%, #ffe24a 48%, #f4a412 50%, #d48206 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 900;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 3.5px 0 #071022, inset 0 2px 0 rgba(255, 252, 224, 0.72);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.08s ease, filter 0.1s ease;
+}
+
+.bs-friend-add-btn:hover {
+  filter: brightness(1.06);
+}
+
+.bs-friend-add-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+/* 3 Friends Tabs */
+.bs-friends-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.bs-ftab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 8px;
+  border-radius: 11px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #1b3461 0%, #122447 100%);
+  color: #b4cdf5;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #071022;
+  transition: transform 0.08s ease, background 0.12s ease;
+}
+
+.bs-ftab-btn.active {
+  background: linear-gradient(180deg, #3ea8ff 0%, #1b6fe0 100%);
+  color: #ffffff;
+  text-shadow: var(--bs-outline-sm);
+  box-shadow: 0 3px 0 #071022, inset 0 2px 0 rgba(210, 240, 255, 0.55);
+}
+
+.bs-ftab-btn:active {
+  transform: translateY(1.5px);
+}
+
+.bs-ftab-cnt {
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(7, 16, 34, 0.65);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 18px;
+  text-align: center;
+}
+
+.bs-ftab-cnt.has-alert {
+  background: linear-gradient(180deg, #ff5468 0%, #d91c36 100%);
+  box-shadow: 0 0 0 1.5px #071022;
+}
+
+/* Scrollable Friends List */
+.bs-friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 6px;
+}
+
+.bs-friend-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 28px 16px;
+  border-radius: 13px;
+  border: 2px dashed rgba(140, 185, 255, 0.3);
+  background: rgba(8, 20, 44, 0.45);
+  text-align: center;
+}
+
+.bs-friend-empty strong {
+  font-size: 14px;
+  font-weight: 900;
+  color: #dceaff;
+}
+
+.bs-friend-empty span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #93b0df;
+  line-height: 1.45;
+}
+
+.bs-friend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 13px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #1d396b 0%, #12254a 100%);
+  box-shadow: 0 3.5px 0 #071022, inset 0 1.5px 0 rgba(178, 218, 255, 0.25);
+}
+
+.bs-friend-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.bs-fr-avatar-wrap {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #2a5aa6 0%, #132d5e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.bs-fr-avatar-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+}
+
+.bs-fr-online-dot {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #071022;
+  background: #6f84a6;
+}
+
+.bs-fr-online-dot.online {
+  background: #3bf07b;
+  box-shadow: 0 0 6px rgba(59, 240, 123, 0.75);
+}
+
+.bs-fr-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.bs-fr-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.bs-fr-tier-ico {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.55));
+}
+
+.bs-fr-tag-chip {
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1.5px solid #071022;
+  background: rgba(8, 22, 48, 0.82);
+  color: #8ee8ff;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.bs-fr-stats-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  font-weight: 800;
+  color: #b5cff7;
+}
+
+.bs-fr-stat-trophy {
+  color: #ffe266;
+}
+
+.bs-fr-stat-status.online {
+  color: #5bf28f;
+}
+
+.bs-friend-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.bs-fr-act-btn {
+  padding: 7px 11px;
+  border-radius: 9px;
+  border: 2.2px solid #071022;
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: var(--bs-outline-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 #071022;
+  transition: transform 0.08s ease, filter 0.1s ease;
+}
+
+.bs-fr-act-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+.bs-fr-act-btn.accept {
+  background: linear-gradient(180deg, #43e87d 0%, #149e49 100%);
+}
+
+.bs-fr-act-btn.decline,
+.bs-fr-act-btn.remove {
+  background: linear-gradient(180deg, #ff5e72 0%, #c92038 100%);
+}
+
+.bs-fr-act-btn.cancel,
+.bs-fr-act-btn.neutral {
+  background: linear-gradient(180deg, #52688f 0%, #344769 100%);
+}
+
+/* Compact Landscape Mobile Adjustments for Friends Dock & Modal */
+@media (max-height: 500px) {
+  .bs-home-right-dock {
+    gap: 5px;
+  }
+
+  .bs-rd-dot {
+    top: -5px;
+    right: -5px;
+    min-width: 17px;
+    height: 17px;
+    font-size: 9.5px;
+    line-height: 13px;
+  }
+
+  .bs-friends-modal {
+    max-height: 94vh;
+  }
+
+  .bs-friends-body {
+    gap: 7px;
+    padding: 8px 10px;
+  }
+
+  .bs-my-tag-card {
+    padding: 7px 10px;
+  }
+
+  .bs-my-tag-nick {
+    font-size: 14.5px;
+  }
+
+  .bs-my-tag-key {
+    font-size: 12px;
+    padding: 1px 7px;
+  }
+
+  .bs-tag-act-btn {
+    padding: 6px 9px;
+    font-size: 11px;
+  }
+
+  .bs-friend-add-input {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .bs-friend-add-btn {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .bs-ftab-btn {
+    padding: 6px 6px;
+    font-size: 11.5px;
+  }
+
+  .bs-friend-row {
+    padding: 7px 9px;
+  }
+
+  .bs-fr-avatar-wrap {
+    width: 38px;
+    height: 38px;
+  }
+
+  .bs-fr-avatar-img {
+    width: 33px;
+    height: 33px;
+  }
+}
+
+@media (max-width: 520px) {
+  .bs-my-tag-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .bs-my-tag-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bs-friend-invite-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bs-inv-actions {
+    justify-content: flex-end;
+  }
+}
