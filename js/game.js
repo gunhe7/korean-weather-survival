@@ -8395,10 +8395,12 @@
       if (m.hadFriendDuo && is2v2) {
         mods.push({ cls: 'up', txt: '친구 듀오 팀전' });
       }
+      if (m.earlyVictory && outcome === 'win') {
+        mods.push({ cls: 'gold', txt: '상대 점수 돌파 · 즉시 승리' });
+      }
       if (m.leftEarly) {
         mods.push({ cls: 'warn', txt: '중도 퇴장 시점 점수 반영' });
       }
-      mods.push({ cls: 'info', txt: '1대1 · 2대2 트로피 공유' });
       el.compResModifiers.innerHTML = mods.map((md) => `<span class="ow-mod-chip ${md.cls}">${md.txt}</span>`).join('');
     }
 
@@ -8484,6 +8486,33 @@
     runCompResultProgressionAnim(prevTrophies, newTrophies, actualDelta);
   }
 
+  function getCompKnockoutState(participants, compMode, myTeam) {
+    const list = Array.isArray(participants) ? participants : [];
+    const is2v2 = compMode === '2v2';
+    const mt = Number(myTeam) === 1 ? 1 : 0;
+    const allies = is2v2
+      ? list.filter((p) => p && (Number(p.team) === 1 ? 1 : 0) === mt)
+      : list.filter((p) => p && p.isMe);
+    const enemies = is2v2
+      ? list.filter((p) => p && (Number(p.team) === 1 ? 1 : 0) !== mt)
+      : list.filter((p) => p && !p.isMe);
+    if (!allies.length || !enemies.length) {
+      return { mySideWonEarly: false, enemySideWonEarly: false, allyTotal: 0, enemyTotal: 0 };
+    }
+    const allyTotal = allies.reduce((s, p) => s + Math.floor(p.score || 0), 0);
+    const enemyTotal = enemies.reduce((s, p) => s + Math.floor(p.score || 0), 0);
+    const allEnemiesDone = enemies.every((p) => Boolean(p.finished));
+    const allAlliesDone = allies.every((p) => Boolean(p.finished));
+    const anyAllyAlive = allies.some((p) => !p.finished);
+    const anyEnemyAlive = enemies.some((p) => !p.finished);
+    return {
+      mySideWonEarly: allEnemiesDone && anyAllyAlive && allyTotal > enemyTotal,
+      enemySideWonEarly: allAlliesDone && anyEnemyAlive && enemyTotal > allyTotal,
+      allyTotal,
+      enemyTotal
+    };
+  }
+
   async function tickPendingCompMatches() {
     const list = ensurePendingCompMatches();
     if (!list.length) {
@@ -8536,7 +8565,10 @@
       }
 
       const allFinished = (m.participants || []).every((p) => p.finished);
-      if (allFinished || now >= m.endsAt) {
+      const ko = getCompKnockoutState(m.participants, m.compMode || '1v1', m.myTeam);
+      const knockoutDecided = matchElapsed >= 0.8 && (ko.mySideWonEarly || ko.enemySideWonEarly);
+      if (allFinished || knockoutDecided || now >= m.endsAt) {
+        if (ko.mySideWonEarly) m.earlyVictory = true;
         (m.participants || []).forEach((p) => { p.finished = true; });
         m.settled = true;
         dirty = true;
@@ -8733,6 +8765,24 @@
       }
     }
 
+    // Instant Knockout Win: when opponent (1v1) or BOTH enemies (2v2) are dead/finished and our score exceeds theirs -> WIN IMMEDIATELY!
+    if ((run.elapsed || 0) >= 0.8) {
+      const ko = getCompKnockoutState(cm.participants, cm.compMode || '1v1', cm.myTeam);
+      if (ko.mySideWonEarly) {
+        cm.finished = true;
+        cm.earlyVictory = true;
+        (cm.participants || []).forEach((p) => { p.finished = true; });
+        SFX.yearUp();
+        showToast(cm.compMode === '2v2' ? '상대 팀 점수 돌파! 즉시 승리 확정!' : '상대 점수 돌파! 즉시 승리 확정!');
+        if (isSpec) {
+          finishCompAllySpectate(false);
+        } else {
+          finishRunGameOver();
+        }
+        return;
+      }
+    }
+
     // While spectating teammate in 2v2: end spectate cleanly when teammate finishes OR match clock hits 60s!
     if (isSpec) {
       if ((specAllyPart && specAllyPart.finished) || run.elapsed >= (cm.duration || 60)) {
@@ -8902,6 +8952,7 @@
       compMode: cm.compMode || '1v1',
       myTeam: Number(cm.myTeam) === 1 ? 1 : 0,
       hadFriendDuo: Boolean(cm.hadFriendDuo),
+      earlyVictory: Boolean(cm.earlyVictory),
       roomId: cm.roomId,
       safeUid: cm.safeUid,
       online: Boolean(cm.online),
