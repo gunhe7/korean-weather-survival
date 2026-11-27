@@ -4543,6 +4543,7 @@
         renderProfileUI();
         refreshAllMenus();
         try { syncMyWeeklyScore(); } catch {}
+        try { syncMyTrophyProfile({ skipFriendSync: true }); } catch {}
         try { syncMyFriendProfile({ silent: true }); } catch {}
         try { refreshFriendsDirectory({ silent: true }); } catch {}
 
@@ -4640,6 +4641,7 @@
 
     if (isLinked) {
       try { await syncMyWeeklyScore(); } catch {}
+      try { await syncMyTrophyProfile({ skipFriendSync: true }); } catch {}
       try { checkAndAwardWeeklyChampion(); } catch {}
       try { await syncMyFriendProfile({ silent: true, pullBeforeWrite: true }); } catch {}
       try { await refreshFriendsDirectory({ silent: true }); } catch {}
@@ -6471,8 +6473,8 @@
     if (seq !== compRkModalSeq) return;
 
     let tBoard = (tRes.board || []).slice();
-    if (!tBoard.some((r) => r.isMe) && ((save.compMatches || 0) > 0 || myTrophies > 0)) {
-      tBoard.push({
+    if (ONLINE && ONLINE.isRankedProvider && ONLINE.isRankedProvider(myAuth.provider)) {
+      const myLiveRow = {
         uid: myUid,
         nickname: myAuth.nickname || `나 (${myChar.name})`,
         provider: myAuth.provider || 'guest',
@@ -6483,9 +6485,19 @@
         wins: save.compWins || 0,
         matches: save.compMatches || 0,
         bestCompScore: save.compBestScore || 0,
+        bestScore: save.bestScore || 0,
         isMe: true
-      });
-      tBoard.sort((a, b) => (b.trophies - a.trophies) || ((b.wins || 0) - (a.wins || 0)));
+      };
+      const exIdx = tBoard.findIndex((r) => r.isMe || r.uid === myUid);
+      if (exIdx >= 0) tBoard[exIdx] = { ...tBoard[exIdx], ...myLiveRow };
+      else tBoard.push(myLiveRow);
+      tBoard.sort(
+        (a, b) =>
+          (b.trophies - a.trophies)
+          || ((b.wins || 0) - (a.wins || 0))
+          || ((b.bestCompScore || 0) - (a.bestCompScore || 0))
+          || ((b.bestScore || 0) - (a.bestScore || 0))
+      );
       tBoard = tBoard.map((e, i) => ({ ...e, rank: i + 1 }));
     }
 
@@ -6536,6 +6548,11 @@
       const rowNameHtml = renderNameplateHtml(entry.nickname, entry.nameFrame, entry.nameColor, 'sm');
       const row = document.createElement('div');
       row.className = `rank-row comp-trophy-row${topClass}${entry.isMe ? ' me' : ''}`;
+      const subLine = (entry.matches || 0) > 0
+        ? `${entry.wins || 0}승 / ${entry.matches || 0}전 · 최고 ${(entry.bestCompScore || 0).toLocaleString('ko-KR')}점`
+        : ((entry.bestScore || 0) > 0
+          ? `최고 점수 ${(entry.bestScore || 0).toLocaleString('ko-KR')}점`
+          : `${eTier.name} 티어`);
       row.innerHTML = `
         <div class="rank-medal">${rank}</div>
         <img src="${avInfo.src}" alt="" class="rank-row-avatar" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
@@ -6546,7 +6563,7 @@
             ${rowNameHtml}
             ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
           </div>
-          <div class="rank-row-sub">${entry.wins || 0}승 / ${entry.matches || 0}전 · 최고 ${(entry.bestCompScore || 0).toLocaleString('ko-KR')}점</div>
+          <div class="rank-row-sub">${subLine}</div>
         </div>
         <div class="rank-row-score comp-trophy-score">${(entry.trophies || 0).toLocaleString('ko-KR')}<span>트로피</span></div>
       `;
@@ -6554,7 +6571,7 @@
     });
   }
 
-  async function syncMyTrophyProfile() {
+  async function syncMyTrophyProfile(opts = {}) {
     if (!ONLINE || !ONLINE.submitTrophyProfile) return;
     const myAuth = save.auth || { provider: 'guest', uid: 'guest_local', nickname: '게스트' };
     const myChar = getCharDef(save.selectedChar);
@@ -6572,9 +6589,12 @@
         trophies: Math.max(0, Math.floor(save.trophies || 0)),
         wins: Math.max(0, Math.floor(save.compWins || 0)),
         matches: Math.max(0, Math.floor(save.compMatches || 0)),
-        bestCompScore: Math.max(0, Math.floor(save.compBestScore || 0))
+        bestCompScore: Math.max(0, Math.floor(save.compBestScore || 0)),
+        bestScore: Math.max(0, Math.floor(save.bestScore || 0))
       });
-      await syncMyFriendProfile({ silent: true });
+      if (!opts || !opts.skipFriendSync) {
+        await syncMyFriendProfile({ silent: true });
+      }
     } catch {}
   }
 
@@ -9137,8 +9157,8 @@
       if (seq !== rankRenderSeq || !tRes) return;
 
       let tBoard = (tRes.board || []).filter((r) => !ONLINE.isRankedProvider || ONLINE.isRankedProvider(r.provider) || r.isMe);
-      if (isLinkedUser && !tBoard.some((r) => r.isMe) && ((save.compMatches || 0) > 0 || myTrophies > 0)) {
-        tBoard.push({
+      if (isLinkedUser) {
+        const myLiveRow = {
           uid: myUid,
           nickname: myNick,
           provider: myAuth.provider,
@@ -9149,9 +9169,22 @@
           wins: save.compWins || 0,
           matches: save.compMatches || 0,
           bestCompScore: save.compBestScore || 0,
+          bestScore: save.bestScore || 0,
           isMe: true
-        });
-        tBoard.sort((a, b) => (b.trophies - a.trophies) || ((b.wins || 0) - (a.wins || 0)));
+        };
+        const existingIdx = tBoard.findIndex((r) => r.isMe || r.uid === myUid);
+        if (existingIdx >= 0) {
+          tBoard[existingIdx] = { ...tBoard[existingIdx], ...myLiveRow };
+        } else {
+          tBoard.push(myLiveRow);
+        }
+        tBoard.sort(
+          (a, b) =>
+            (b.trophies - a.trophies)
+            || ((b.wins || 0) - (a.wins || 0))
+            || ((b.bestCompScore || 0) - (a.bestCompScore || 0))
+            || ((b.bestScore || 0) - (a.bestScore || 0))
+        );
         tBoard = tBoard.map((e, i) => ({ ...e, rank: i + 1 }));
       }
 
@@ -9162,9 +9195,9 @@
         el.rankLivePill.innerHTML = tRes.syncedOnline ? '<span class="live-dot"></span>LIVE' : '로컬';
       }
       if (el.rankOnlineCount) {
-        const showCnt = tBoard.length >= 2;
+        const showCnt = tBoard.length >= 1;
         el.rankOnlineCount.classList.toggle('hidden', !showCnt);
-        if (showCnt) el.rankOnlineCount.textContent = `경쟁 러너 ${tBoard.length.toLocaleString('ko-KR')}명`;
+        if (showCnt) el.rankOnlineCount.textContent = `전체 러너 ${tBoard.length.toLocaleString('ko-KR')}명`;
       }
 
       renderRankPodium(tBoard, true);
@@ -9196,6 +9229,11 @@
         const rowNameHtml = renderNameplateHtml(entry.nickname, entry.nameFrame, entry.nameColor, 'sm');
         const row = document.createElement('div');
         row.className = `rank-row comp-trophy-row${topClass}${entry.isMe ? ' me' : ''}`;
+        const subLine = (entry.matches || 0) > 0
+          ? `${entry.wins || 0}승 / ${entry.matches || 0}전 · 최고 ${(entry.bestCompScore || 0).toLocaleString('ko-KR')}점`
+          : ((entry.bestScore || 0) > 0
+            ? `최고 점수 ${(entry.bestScore || 0).toLocaleString('ko-KR')}점`
+            : `${eTier.name} 티어`);
         row.innerHTML = `
           <div class="rank-medal">${rank}</div>
           <img src="${avInfo.src}" alt="" class="rank-row-avatar" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
@@ -9206,7 +9244,7 @@
               ${rowNameHtml}
               ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
             </div>
-            <div class="rank-row-sub">${entry.wins || 0}승 / ${entry.matches || 0}전 · 최고 ${(entry.bestCompScore || 0).toLocaleString('ko-KR')}점</div>
+            <div class="rank-row-sub">${subLine}</div>
           </div>
           <div class="rank-row-score comp-trophy-score">${(entry.trophies || 0).toLocaleString('ko-KR')}<span>트로피</span></div>
         `;
@@ -15488,6 +15526,9 @@
   renderIntroAuthState();
   refreshLiveWeatherUI(false);
   refreshFriendsDirectory({ silent: true });
+  if (save && save.auth && save.auth.loggedIn && ONLINE && ONLINE.isRankedProvider && ONLINE.isRankedProvider(save.auth.provider)) {
+    syncMyTrophyProfile({ skipFriendSync: true });
+  }
   if (window.StudioIntro && typeof window.StudioIntro.play === 'function') {
     window.StudioIntro.play(() => {
       // If OAuth redirect already bypassed title screen into lobby, start menu BGM cleanly after studio splash ends

@@ -950,9 +950,10 @@ window.OnlineService = (function () {
     };
   }
 
-  // ===================== 8-PLAYER COMPETITIVE TROPHY BOARD & REALTIME ROOMS =====================
+  // ===================== COMPETITIVE TROPHY BOARD (STRICT-RULE-SAFE & ALL-USER MERGE) =====================
   const TROPHY_BOARD_STORE_KEY = 'kr_weather_trophy_board_v1';
-  const RTDB_TROPHY_PATH = `${RTDB_BOARD_ROOT}/trophy_season_v1`;
+  const RTDB_TROPHY_BUCKET = 'trophy_season_v1';
+  const RTDB_TROPHY_PATH = `${RTDB_BOARD_ROOT}/${RTDB_TROPHY_BUCKET}`;
   const RTDB_COMP_ROOMS_PATH = `${RTDB_BOARD_ROOT}/comp_rooms`;
 
   function readLocalTrophyBoard() {
@@ -987,6 +988,7 @@ window.OnlineService = (function () {
       wins: Math.max(0, Math.floor(Number(entry.wins) || 0)),
       matches: Math.max(0, Math.floor(Number(entry.matches) || 0)),
       bestCompScore: Math.max(0, Math.floor(Number(entry.bestCompScore) || 0)),
+      bestScore: Math.max(0, Math.floor(Number(entry.bestScore) || 0)),
       updatedAt: Date.now()
     };
 
@@ -994,52 +996,178 @@ window.OnlineService = (function () {
     local[clean.uid] = clean;
     writeLocalTrophyBoard(local);
 
+    // Use strict-rule-safe writeCompBoardNode (monotonic revision `score >= 1` + server timestamp + 403 retry)
+    // so Firebase RTDB NEVER rejects writes and `trophies` can freely rise OR fall after every match!
     if (hasRemoteDb() && isRankedProvider(clean.provider) && !isLegacyUnverifiedUid(clean.uid)) {
       try {
-        const path = `${RTDB_TROPHY_PATH}/${encodeURIComponent(clean.uid)}.json`;
-        const { url } = await buildAuthedUrl(path, false, true);
-        await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(clean)
-        });
+        const res = await writeCompBoardNode(RTDB_TROPHY_BUCKET, clean.uid, () => ({
+          nickname: clean.nickname,
+          provider: clean.provider,
+          charId: clean.charId,
+          skinId: clean.skinId,
+          profileCharId: clean.profileCharId,
+          profileSkinId: clean.profileSkinId,
+          nameColor: clean.nameColor,
+          nameFrame: clean.nameFrame,
+          trophies: clean.trophies,
+          wins: clean.wins,
+          matches: clean.matches,
+          bestCompScore: clean.bestCompScore,
+          bestScore: clean.bestScore
+        }));
+        if (res && res.ok && res.data && Number(res.data.updatedAt) > 0) {
+          clean.updatedAt = Number(res.data.updatedAt);
+          local[clean.uid] = clean;
+          writeLocalTrophyBoard(local);
+        }
       } catch {}
     }
     return clean;
   }
 
   async function fetchTrophyBoard(myUid = null) {
-    let remoteEntries = [];
     let syncedOnline = false;
-    if (hasRemoteDb()) {
-      try {
-        const res = await fetch(`${getDbUrl()}${RTDB_TROPHY_PATH}.json`, { cache: 'no-store' });
-        if (res && res.ok) {
-          syncedOnline = true;
-          const data = await res.json();
-          if (data && typeof data === 'object') {
-            remoteEntries = Object.values(data).filter(
-              (x) => x && x.uid && typeof x.trophies === 'number'
-            );
-          }
+    const byUid = new Map();
+
+    const mergeRecord = (raw, source) => {
+      if (!raw || !raw.uid) return;
+      const uid = String(raw.uid);
+      if (isLegacyUnverifiedUid(uid)) return;
+      const isMeRec = Boolean(myUid && uid === myUid);
+      if (!isMeRec && !isRankedProvider(raw.provider)) return;
+
+      const hasTrophyField = typeof raw.trophies === 'number' && Number.isFinite(raw.trophies);
+      const rawTrophies = hasTrophyField ? Math.max(0, Math.floor(raw.trophies)) : 0;
+      const rawTs = Math.max(0, Math.floor(Number(raw.updatedAt) || Number(raw.updatedClientAt) || 0));
+      const isTrophySrc = source === 'trophy' || source === 'local_trophy';
+      const isLiveTrophySrc = isTrophySrc || source === 'friends' || source === 'queue' || source === 'duo';
+
+      const prev = byUid.get(uid);
+      if (!prev) {
+        byUid.set(uid, {
+          uid,
+          nickname: sanitizeNickname(raw.nickname, '날씨러너'),
+          provider: raw.provider || 'google',
+          charId: raw.charId || 'umbrella_master',
+          skinId: raw.skinId || null,
+          profileCharId: raw.profileCharId || raw.charId || 'umbrella_master',
+          profileSkinId: raw.profileSkinId !== undefined ? raw.profileSkinId : (raw.skinId || null),
+          nameColor: typeof raw.nameColor === 'string' && raw.nameColor ? raw.nameColor : '#ffffff',
+          nameFrame: typeof raw.nameFrame === 'string' && raw.nameFrame ? raw.nameFrame : 'none',
+          trophies: hasTrophyField ? rawTrophies : 0,
+          wins: Math.max(0, Math.floor(Number(raw.wins) || 0)),
+          matches: Math.max(0, Math.floor(Number(raw.matches) || 0)),
+          bestCompScore: Math.max(0, Math.floor(Number(raw.bestCompScore) || 0)),
+          bestScore: Math.max(0, Math.floor(Number(raw.bestScore) || (!hasTrophyField ? Number(raw.score) || 0 : 0))),
+          updatedAt: rawTs,
+          _trophyTs: (hasTrophyField && isLiveTrophySrc) ? rawTs : -1,
+          _hasTrophySrc: isTrophySrc,
+          _profileTs: rawTs
+        });
+        return;
+      }
+
+      // 1. Merge trophy value: prefer trophy_season_v1 when fresh, or whichever trophy-carrying source has the newest timestamp!
+      if (hasTrophyField && isLiveTrophySrc) {
+        const shouldAdoptTrophies =
+          prev._trophyTs < 0
+          || (isTrophySrc && (!prev._hasTrophySrc || rawTs >= prev._trophyTs - 5000))
+          || (!prev._hasTrophySrc && rawTs >= prev._trophyTs)
+          || (rawTs > prev._trophyTs + 5000);
+        if (shouldAdoptTrophies) {
+          prev.trophies = rawTrophies;
+          prev._trophyTs = rawTs;
+          if (isTrophySrc) prev._hasTrophySrc = true;
         }
-      } catch {}
+      }
+
+      // 2. Preserve competitive match stats & best scores across sources
+      prev.wins = Math.max(prev.wins || 0, Math.floor(Number(raw.wins) || 0));
+      prev.matches = Math.max(prev.matches || 0, Math.floor(Number(raw.matches) || 0));
+      prev.bestCompScore = Math.max(prev.bestCompScore || 0, Math.floor(Number(raw.bestCompScore) || 0));
+      const candidateBest = Math.floor(Number(raw.bestScore) || (!hasTrophyField ? Number(raw.score) || 0 : 0));
+      prev.bestScore = Math.max(prev.bestScore || 0, candidateBest);
+
+      // 3. Keep freshest display profile (nickname, avatar, skin, custom nameplate!)
+      if (rawTs >= prev._profileTs) {
+        prev._profileTs = rawTs;
+        if (raw.nickname) prev.nickname = sanitizeNickname(raw.nickname, prev.nickname);
+        if (raw.charId) prev.charId = raw.charId;
+        if (raw.skinId !== undefined) prev.skinId = raw.skinId || null;
+        if (raw.profileCharId) prev.profileCharId = raw.profileCharId;
+        if (raw.profileSkinId !== undefined) prev.profileSkinId = raw.profileSkinId;
+        if (typeof raw.nameColor === 'string' && raw.nameColor && raw.nameColor !== '#ffffff') {
+          prev.nameColor = raw.nameColor;
+        }
+        if (typeof raw.nameFrame === 'string' && raw.nameFrame && raw.nameFrame !== 'none') {
+          prev.nameFrame = raw.nameFrame;
+        }
+      } else {
+        if ((!prev.nameColor || prev.nameColor === '#ffffff') && typeof raw.nameColor === 'string' && raw.nameColor) {
+          prev.nameColor = raw.nameColor;
+        }
+        if ((!prev.nameFrame || prev.nameFrame === 'none') && typeof raw.nameFrame === 'string' && raw.nameFrame) {
+          prev.nameFrame = raw.nameFrame;
+        }
+      }
+      if (rawTs > prev.updatedAt) prev.updatedAt = rawTs;
+    };
+
+    // Seed from local caches first (offline-resilient)
+    Object.values(readLocalTrophyBoard()).forEach((e) => mergeRecord(e, 'local_trophy'));
+    try {
+      const localFrRaw = localStorage.getItem('kr_weather_friends_dir_v1');
+      if (localFrRaw) {
+        const localFr = JSON.parse(localFrRaw);
+        if (localFr && typeof localFr === 'object') {
+          Object.values(localFr).forEach((e) => mergeRecord(e, 'friends'));
+        }
+      }
+    } catch {}
+
+    // Fetch ALL remote verified user buckets in parallel so NO user is ever missing from the trophy ranking!
+    if (hasRemoteDb()) {
+      const wInfo = getWeekInfo();
+      const dInfo = getKstDayInfo();
+      const bucketJobs = [
+        { bucket: RTDB_TROPHY_BUCKET, source: 'trophy', dualRoot: true },
+        { bucket: 'friends_v1', source: 'friends', dualRoot: true },
+        { bucket: 'comp_queue_v2', source: 'queue', dualRoot: false },
+        { bucket: 'comp_duo_v1', source: 'duo', dualRoot: false },
+        { bucket: wInfo.weekKey, source: 'weekly', dualRoot: false },
+        ...(wInfo.prevWeekKey ? [{ bucket: wInfo.prevWeekKey, source: 'weekly', dualRoot: false }] : []),
+        { bucket: `daily_${dInfo.dateKey}`, source: 'daily', dualRoot: false }
+      ];
+
+      await Promise.all(bucketJobs.map(async (job) => {
+        const roots = job.dualRoot ? [RTDB_BOARD_ROOT, '/weekly_boards_v2'] : [RTDB_BOARD_ROOT];
+        for (const root of roots) {
+          try {
+            const res = await fetch(`${getDbUrl()}${root}/${encodeURIComponent(job.bucket)}.json`, { cache: 'no-store' });
+            if (res && res.ok) {
+              syncedOnline = true;
+              const data = await res.json();
+              if (data && typeof data === 'object') {
+                Object.values(data).forEach((entry) => mergeRecord(entry, job.source));
+              }
+            }
+          } catch {}
+        }
+      }));
     }
 
-    const localEntries = Object.values(readLocalTrophyBoard()).filter(
-      (x) => x && x.uid && typeof x.trophies === 'number'
-    );
-    const map = new Map();
-    localEntries.forEach((e) => map.set(e.uid, e));
-    remoteEntries.forEach((e) => {
-      const prev = map.get(e.uid);
-      if (!prev || (e.updatedAt || 0) >= (prev.updatedAt || 0)) map.set(e.uid, e);
-    });
+    const sorted = Array.from(byUid.values())
+      .map(({ _trophyTs, _hasTrophySrc, _profileTs, ...clean }) => clean)
+      .sort(
+        (a, b) =>
+          (b.trophies - a.trophies)
+          || ((b.wins || 0) - (a.wins || 0))
+          || ((b.bestCompScore || 0) - (a.bestCompScore || 0))
+          || ((b.bestScore || 0) - (a.bestScore || 0))
+          || ((a.updatedAt || 0) - (b.updatedAt || 0))
+      );
 
-    const sorted = Array.from(map.values()).sort(
-      (a, b) => (b.trophies - a.trophies) || ((b.wins || 0) - (a.wins || 0)) || ((b.bestCompScore || 0) - (a.bestCompScore || 0))
-    );
-    const board = sorted.slice(0, 100).map((e, i) => ({
+    const board = sorted.map((e, i) => ({
       ...e,
       rank: i + 1,
       isMe: Boolean(myUid && e.uid === myUid)
