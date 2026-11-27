@@ -127,6 +127,20 @@ window.RunRenderer = (function () {
   NEW_OBS_SPRITES.forEach((key) => {
     SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${NEW_OBS_VER}`;
   });
+  const SEASON_BG_VER = '20261121hd116';
+  const SEASON_SKY_SPRITES = ['bg_sky_spring', 'bg_sky_summer', 'bg_sky_autumn', 'bg_sky_winter'];
+  SEASON_SKY_SPRITES.forEach((key) => {
+    SPRITE_URL_MAP[key] = `assets/world/${key}.jpg?v=${SEASON_BG_VER}`;
+  });
+  const SEASON_NATURE_SPRITES = [
+    'nat_sp_tree1', 'nat_sp_tree2', 'nat_sp_bush', 'nat_sp_tuft1', 'nat_sp_tuft2', 'nat_sp_petal',
+    'nat_su_tree1', 'nat_su_tree2', 'nat_su_bush', 'nat_su_tuft1', 'nat_su_tuft2', 'nat_su_leaf',
+    'nat_au_tree1', 'nat_au_tree2', 'nat_au_bush', 'nat_au_tuft1', 'nat_au_tuft2', 'nat_au_leaf',
+    'nat_wi_tree1', 'nat_wi_tree2', 'nat_wi_bush', 'nat_wi_tuft1', 'nat_wi_tuft2', 'nat_wi_prop'
+  ];
+  SEASON_NATURE_SPRITES.forEach((key) => {
+    SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${SEASON_BG_VER}`;
+  });
 
   function requestSprite(key) {
     if (!key) return null;
@@ -166,12 +180,13 @@ window.RunRenderer = (function () {
     return img && img.complete && img.naturalWidth > 0 ? img : null;
   }
 
-  // Only preload lightweight core run HUD/item sprites on startup (cuts startup load from 320+ PNGs / 34MB to <1.2MB!)
+  // Only preload lightweight core run HUD/item sprites & 4 seasonal skies on startup
   const CORE_BOOT_KEYS = [
     'item_coin', 'item_coin_1', 'item_coin_2', 'item_coin_side', 'item_star',
     'orb_bolt', 'orb_magnet', 'orb_potion', 'spr_umbrella', 'spr_mask', 'spr_shield',
     'ui_fever', 'fx_booster_0', 'fx_booster_1', 'fx_booster_2', 'fx_booster_3', 'fx_booster_4', 'fx_booster_5', 'fx_shield_ring',
     'chest_wood_0', 'chest_silver_0', 'chest_gold_0', 'chest_diamond_0',
+    'bg_sky_spring', 'bg_sky_summer', 'bg_sky_autumn', 'bg_sky_winter',
     'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'
   ];
   const preloadedSeasons = new Set();
@@ -183,12 +198,12 @@ window.RunRenderer = (function () {
     if (!data) return;
     const s = (data.SEASONS || []).find((x) => x.id === seasonId);
     if (s) {
-      [s.tree, s.treeAlt, s.bush, s.prop, s.tile, 'sp_smog_city', 'sp_spring_pad'].forEach(requestSprite);
+      [s.skyBg, s.tree, s.treeAlt, s.bush, s.tuft1, s.tuft2, s.prop, s.particleSprite, s.tile, 'sp_smog_city', 'sp_spring_pad'].forEach(requestSprite);
       if (seasonId === 'summer') {
-        ['sp_sun', 'sp_flood_wave1', 'sp_flood_wave2', 'sp_red_car', 'sp_crate', 'sp_metal_box'].forEach(requestSprite);
+        ['sp_red_car', 'sp_crate', 'sp_metal_box'].forEach(requestSprite);
       }
       if (seasonId === 'spring') {
-        ['sp_red_car', 'sp_flood_wave1', 'sp_flood_wave2'].forEach(requestSprite);
+        ['sp_red_car'].forEach(requestSprite);
       }
     }
     const obsList = (data.OBSTACLES_BY_SEASON && data.OBSTACLES_BY_SEASON[seasonId]) || [];
@@ -387,6 +402,8 @@ window.RunRenderer = (function () {
     ];
     const gameplayKeys = [
       ...NEW_OBS_SPRITES,
+      ...SEASON_SKY_SPRITES,
+      ...SEASON_NATURE_SPRITES,
       'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter',
       ...WORLD_SPRITES,
       ...DESIGN_SPRITES,
@@ -432,9 +449,9 @@ window.RunRenderer = (function () {
       {
         id: 'gameplay',
         name: '장애물 · 계절 배경 · 이펙트',
-        desc: '32종 장애물(테두리 사전 최적화), 4계절 배경/지형, 아이템·부스터·보호막',
+        desc: '32종 장애물, 4계절 하늘 배경·자연물 24종, 지형, 아이템·부스터·보호막',
         badge: '필수 추천',
-        estMb: 12.5,
+        estMb: 13.6,
         urls: gameplayUrls,
         bakeOutlines: true
       },
@@ -739,9 +756,9 @@ window.RunRenderer = (function () {
       return { cancelled: true, done, total, failed, bytesDownloaded };
     }
 
-    // Phase 2: Decode all 32 rim-baked obstacle PNGs & ground strips into RAM so first spawn has ZERO hitch!
+    // Phase 2: Decode all 32 rim-baked obstacle PNGs, 4 seasonal sky backdrops, 24 nature props & ground strips into RAM!
     if (wantedIds.has('gameplay')) {
-      const bakeKeys = [...NEW_OBS_SPRITES, 'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'];
+      const bakeKeys = [...NEW_OBS_SPRITES, ...SEASON_SKY_SPRITES, ...SEASON_NATURE_SPRITES, 'ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'];
       const bakeTotal = bakeKeys.length;
       for (let i = 0; i < bakeTotal; i++) {
         if (signal && signal.aborted) {
@@ -1149,23 +1166,64 @@ window.RunRenderer = (function () {
     ctx.fillStyle = cachedSkyGrad;
     ctx.fillRect(minX - 10, minY - 10, spanW + 20, groundY - minY + 12);
 
-    // Cached glossy cartoon clouds (5 fast drawImage blits instead of 40 arc paths/frame!)
-    const cloudSpr = getCloudSprite(isCovid ? 'covid' : (isStormy ? 'storm' : 'clear'));
-    const cloudWrap = spanW + 150;
-    const cloudCount = Math.max(4, Math.ceil(spanW / 145));
-    for (let i = 0; i < cloudCount; i++) {
-      const cx = minX + (((i * 155 - scroll * 0.055 + t * 5.5) % cloudWrap + cloudWrap) % cloudWrap) - 75;
-      const cy = Math.max(minY + 16, 26 + (i % 2) * 20);
-      const sc = i % 2 === 0 ? 1.0 : 0.84;
-      ctx.drawImage(cloudSpr, Math.floor(cx - 6 * sc), Math.floor(cy - 15 * sc), Math.round(76 * sc), Math.round(42 * sc));
+    // Uploaded 4-Season Panoramic Sky Backdrops (Seamless Mirror-Tiled Parallax + Smooth Season Crossfade!)
+    const drawSeamlessSkyPanorama = (img, alpha) => {
+      if (!img || !img.complete || img.naturalWidth <= 0 || img.naturalHeight <= 0) return false;
+      const drawH = Math.min(315, Math.max(264, Math.ceil(groundY - minY + 6)));
+      const drawW = Math.max(320, Math.round(drawH * (img.naturalWidth / img.naturalHeight)));
+      const drawY = Math.floor(groundY + 6 - drawH);
+      const period = drawW * 2;
+      const shiftMod = ((Math.floor(scroll * 0.08) % period) + period) % period;
+      const kStart = Math.floor((minX + shiftMod) / drawW) - 1;
+      const kEnd = Math.ceil((maxX + shiftMod) / drawW) + 1;
+
+      ctx.save();
+      if (alpha < 1) ctx.globalAlpha = alpha;
+      ctx.imageSmoothingEnabled = true;
+      for (let k = kStart; k <= kEnd; k++) {
+        const ix = Math.floor(k * drawW - shiftMod);
+        if ((k & 1) === 0) {
+          ctx.drawImage(img, ix, drawY, drawW + 1, drawH);
+        } else {
+          ctx.save();
+          ctx.translate(ix + drawW + 1, drawY);
+          ctx.scale(-1, 1);
+          ctx.drawImage(img, 0, 0, drawW + 1, drawH);
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+      return true;
+    };
+
+    const curSkyKey = season.skyBg || `bg_sky_${season.id}`;
+    const prevSkyKey = prevSeason ? (prevSeason.skyBg || `bg_sky_${prevSeason.id}`) : curSkyKey;
+    const curSkyImg = getSprite(curSkyKey);
+    const prevSkyImg = (prevSkyKey !== curSkyKey && f < 0.995) ? getSprite(prevSkyKey) : null;
+    let drewSkyImg = false;
+    if (prevSkyImg && f < 0.995) {
+      drewSkyImg = drawSeamlessSkyPanorama(prevSkyImg, 1) || drewSkyImg;
+      if (curSkyImg) drewSkyImg = drawSeamlessSkyPanorama(curSkyImg, f) || drewSkyImg;
+    } else if (curSkyImg) {
+      drewSkyImg = drawSeamlessSkyPanorama(curSkyImg, 1);
     }
 
-    // Blazing Summer Sun sprite from uploaded sheet!
-    if (seasonId === 'summer' && !isStormy) {
-      const sunSpr = getSprite('sp_sun');
-      if (sunSpr) {
-        const sSz = 42 + Math.round(Math.sin(t * 3) * 2);
-        ctx.drawImage(sunSpr, Math.floor(maxX - 66), Math.max(12, Math.floor(minY + 14)), sSz, sSz);
+    // Atmospheric weather tint over sky panorama during storm / covid events
+    if (drewSkyImg && (isStormy || isCovid)) {
+      ctx.fillStyle = isCovid ? 'rgba(116, 20, 52, 0.36)' : 'rgba(20, 38, 72, 0.42)';
+      ctx.fillRect(minX - 10, minY - 10, spanW + 20, groundY - minY + 14);
+    }
+
+    // Fallback cartoon clouds only while sky panorama is loading
+    if (!drewSkyImg) {
+      const cloudSpr = getCloudSprite(isCovid ? 'covid' : (isStormy ? 'storm' : 'clear'));
+      const cloudWrap = spanW + 150;
+      const cloudCount = Math.max(4, Math.ceil(spanW / 145));
+      for (let i = 0; i < cloudCount; i++) {
+        const cx = minX + (((i * 155 - scroll * 0.055 + t * 5.5) % cloudWrap + cloudWrap) % cloudWrap) - 75;
+        const cy = Math.max(minY + 16, 26 + (i % 2) * 20);
+        const sc = i % 2 === 0 ? 1.0 : 0.84;
+        ctx.drawImage(cloudSpr, Math.floor(cx - 6 * sc), Math.floor(cy - 15 * sc), Math.round(76 * sc), Math.round(42 * sc));
       }
     }
 
@@ -1189,45 +1247,64 @@ window.RunRenderer = (function () {
       );
     }
 
-    // Midground Seasonal Trees, Bushes & Street Props (softened saturation + atmospheric depth for crisp character contrast!)
-    const treeSpr = getSprite(season.tree);
-    const treeAltKey = season.treeAlt || season.tree;
-    const treeAltSpr = getSprite(treeAltKey);
-    const bushSpr = getSprite(season.bush);
-    const propSpr = getSprite(season.prop);
-    const softTree = treeSpr ? getSoftBgSprite(season.tree, treeSpr, seasonId) : null;
-    const softTreeAlt = treeAltSpr ? getSoftBgSprite(treeAltKey, treeAltSpr, seasonId) : null;
-    const softBush = bushSpr ? getSoftBgSprite(season.bush, bushSpr, seasonId) : null;
-    const softProp = propSpr ? getSoftBgSprite(season.prop, propSpr, seasonId) : null;
-    const propOff = Math.floor(scroll * 0.55) % 280;
-    const pStartRep = Math.floor((minX - 280) / 280);
-    const pEndRep = Math.ceil((maxX + 280) / 280);
-    ctx.save();
-    ctx.globalAlpha = 0.88;
-    for (let rep = pStartRep; rep <= pEndRep; rep++) {
-      const px = rep * 280 - propOff;
-      if (softTree && treeSpr) {
-        const th = 58;
-        const tw = Math.round(th * (treeSpr.naturalWidth / treeSpr.naturalHeight));
-        ctx.drawImage(softTree, Math.floor(px + 14), Math.floor(groundY - th + 4), tw, th);
+    // Midground Seasonal Nature Props Behind Obstacles (Direct ctx.drawImage for 100% mobile reliability & crisp HD!)
+    const drawSeasonNatureLayer = (sObj, layerAlpha) => {
+      if (!sObj || layerAlpha <= 0.01) return;
+      const treeSpr = getSprite(sObj.tree);
+      const treeAltSpr = getSprite(sObj.treeAlt || sObj.tree);
+      const bushSpr = getSprite(sObj.bush);
+      const tuft1Spr = getSprite(sObj.tuft1 || sObj.prop);
+      const tuft2Spr = getSprite(sObj.tuft2 || sObj.prop);
+      const propSpr = getSprite(sObj.prop || sObj.tuft1);
+      const cycleW = 360;
+      const propOff = ((Math.floor(scroll * 0.52) % cycleW) + cycleW) % cycleW;
+      const pStartRep = Math.floor((minX - cycleW) / cycleW);
+      const pEndRep = Math.ceil((maxX + cycleW) / cycleW);
+      ctx.save();
+      ctx.globalAlpha = 0.90 * layerAlpha;
+      ctx.imageSmoothingEnabled = true;
+      for (let rep = pStartRep; rep <= pEndRep; rep++) {
+        const px = rep * cycleW - propOff;
+        if (treeSpr) {
+          const th = 68;
+          const tw = Math.round(th * (treeSpr.naturalWidth / treeSpr.naturalHeight));
+          ctx.drawImage(treeSpr, Math.floor(px + 8), Math.floor(groundY - th + 5), tw, th);
+        }
+        if (tuft1Spr) {
+          const fh = 24;
+          const fw = Math.round(fh * (tuft1Spr.naturalWidth / tuft1Spr.naturalHeight));
+          ctx.drawImage(tuft1Spr, Math.floor(px + 92), Math.floor(groundY - fh + 3), fw, fh);
+        }
+        if (bushSpr) {
+          const bh = 30;
+          const bw = Math.round(bh * (bushSpr.naturalWidth / bushSpr.naturalHeight));
+          ctx.drawImage(bushSpr, Math.floor(px + 138), Math.floor(groundY - bh + 3), bw, bh);
+        }
+        if (treeAltSpr) {
+          const th2 = 56;
+          const tw2 = Math.round(th2 * (treeAltSpr.naturalWidth / treeAltSpr.naturalHeight));
+          ctx.drawImage(treeAltSpr, Math.floor(px + 206), Math.floor(groundY - th2 + 5), tw2, th2);
+        }
+        if (tuft2Spr) {
+          const t2h = 26;
+          const t2w = Math.round(t2h * (tuft2Spr.naturalWidth / tuft2Spr.naturalHeight));
+          ctx.drawImage(tuft2Spr, Math.floor(px + 276), Math.floor(groundY - t2h + 3), t2w, t2h);
+        }
+        if (propSpr) {
+          const ph = sObj.id === 'winter' ? 21 : 19;
+          const pw = Math.round(ph * (propSpr.naturalWidth / propSpr.naturalHeight));
+          ctx.drawImage(propSpr, Math.floor(px + 322), Math.floor(groundY - ph + 3), pw, ph);
+        }
       }
-      if (softBush && bushSpr) {
-        const bh = 26;
-        const bw = Math.round(bh * (bushSpr.naturalWidth / bushSpr.naturalHeight));
-        ctx.drawImage(softBush, Math.floor(px + 94), Math.floor(groundY - bh + 3), bw, bh);
-      }
-      if (softTreeAlt && treeAltSpr) {
-        const th2 = 50;
-        const tw2 = Math.round(th2 * (treeAltSpr.naturalWidth / treeAltSpr.naturalHeight));
-        ctx.drawImage(softTreeAlt, Math.floor(px + 154), Math.floor(groundY - th2 + 4), tw2, th2);
-      }
-      if (softProp && propSpr) {
-        const ph = season.prop === 'sp_flower_patch' ? 24 : 44;
-        const pw = Math.round(ph * (propSpr.naturalWidth / propSpr.naturalHeight));
-        ctx.drawImage(softProp, Math.floor(px + 228), Math.floor(groundY - ph + 3), pw, ph);
-      }
+      ctx.restore();
+    };
+
+    if (prevSeason && prevSeason.id !== season.id && f < 0.995) {
+      drawSeasonNatureLayer(prevSeason, 1 - f);
+      drawSeasonNatureLayer(season, f);
+    } else {
+      drawSeasonNatureLayer(season, 1);
     }
-    ctx.restore();
 
     // Seamless Panoramic Seasonal Ground Strip (Spring / Summer / Autumn / Winter)
     const groundKey = season.tile || `ground_${season.id}`;
@@ -1481,7 +1558,8 @@ window.RunRenderer = (function () {
       }
       ctx.fill();
     } else if (seasonId === 'summer' && weatherEvent !== 'gust') {
-      ctx.fillStyle = 'rgba(255, 245, 175, 0.76)';
+      const leafSpr = getSprite('nat_su_leaf');
+      ctx.fillStyle = 'rgba(255, 245, 175, 0.72)';
       ctx.beginPath();
       for (let idx = 0; idx < len; idx++) {
         const p = particles[idx];
@@ -1489,13 +1567,29 @@ window.RunRenderer = (function () {
         p.y += Math.sin(t * 3 + p.p) * 14 * dt;
         if (p.y > maxY) { p.y = minY - 6; p.x = minX + Math.random() * (spanW + 60); }
         if (p.x < minX - 10) { p.x = maxX + 10; p.y = minY + Math.random() * spanH; }
-        ctx.moveTo(p.x + 1.8, p.y);
-        ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+        if (!leafSpr || (idx % 4) !== 0) {
+          ctx.moveTo(p.x + 1.8, p.y);
+          ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+        }
       }
       ctx.fill();
+      if (leafSpr) {
+        const sz = 9;
+        for (let idx = 0; idx < len; idx += 4) {
+          const p = particles[idx];
+          ctx.save();
+          ctx.globalAlpha = 0.82;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(t * 2.2 + p.p);
+          ctx.drawImage(leafSpr, -sz * 0.5, -sz * 0.5, sz, sz);
+          ctx.restore();
+        }
+      }
     } else {
-      // Batched spinning petals (spring) or leaves (autumn/gust) using lightweight rotated diamonds — ZERO ctx.save/restore!
+      // Uploaded seasonal petal (spring) / maple leaf (autumn) sprites + lightweight sparkle accent
       const isAutumnMode = seasonId === 'autumn' || weatherEvent === 'gust';
+      const sprKey = isAutumnMode ? 'nat_au_leaf' : 'nat_sp_petal';
+      const natSpr = getSprite(sprKey);
       const col1 = isAutumnMode ? '#ff7930' : '#ffa8cd';
       const col2 = isAutumnMode ? '#ffcf48' : '#ffe2ef';
       const vxBase = isAutumnMode ? (weatherEvent === 'gust' ? 235 : 115) : 64;
@@ -1509,22 +1603,38 @@ window.RunRenderer = (function () {
         if (p.y > maxY) { p.y = minY - 6; p.x = minX + Math.random() * (spanW + 60); }
         if (p.x < minX - 10) { p.x = maxX + 10; p.y = minY + Math.random() * spanH; }
       }
-      for (let pass = 1; pass <= 2; pass++) {
-        ctx.fillStyle = pass === 1 ? col1 : col2;
-        ctx.beginPath();
-        for (let idx = 0; idx < len; idx++) {
+      if (natSpr) {
+        const step = IS_MOBILE ? 3 : 2;
+        const baseSz = isAutumnMode ? 11 : 9;
+        const aspect = natSpr.naturalWidth / Math.max(1, natSpr.naturalHeight);
+        for (let idx = 0; idx < len; idx += step) {
           const p = particles[idx];
-          if ((p.s === 1 ? 1 : 2) !== pass) continue;
-          const ang = t * 3.5 + p.p;
-          const ca = Math.cos(ang);
-          const sa = Math.sin(ang);
-          ctx.moveTo(p.x + ca * rx, p.y + sa * rx);
-          ctx.lineTo(p.x - sa * ry, p.y + ca * ry);
-          ctx.lineTo(p.x - ca * rx, p.y - sa * rx);
-          ctx.lineTo(p.x + sa * ry, p.y - ca * ry);
-          ctx.closePath();
+          const sz = baseSz * (p.s === 1 ? 0.86 : 1.12);
+          ctx.save();
+          ctx.globalAlpha = 0.88;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(t * 2.8 + p.p);
+          ctx.drawImage(natSpr, -sz * aspect * 0.5, -sz * 0.5, sz * aspect, sz);
+          ctx.restore();
         }
-        ctx.fill();
+      } else {
+        for (let pass = 1; pass <= 2; pass++) {
+          ctx.fillStyle = pass === 1 ? col1 : col2;
+          ctx.beginPath();
+          for (let idx = 0; idx < len; idx++) {
+            const p = particles[idx];
+            if ((p.s === 1 ? 1 : 2) !== pass) continue;
+            const ang = t * 3.5 + p.p;
+            const ca = Math.cos(ang);
+            const sa = Math.sin(ang);
+            ctx.moveTo(p.x + ca * rx, p.y + sa * rx);
+            ctx.lineTo(p.x - sa * ry, p.y + ca * ry);
+            ctx.lineTo(p.x - ca * rx, p.y - sa * rx);
+            ctx.lineTo(p.x + sa * ry, p.y - ca * ry);
+            ctx.closePath();
+          }
+          ctx.fill();
+        }
       }
     }
   }
