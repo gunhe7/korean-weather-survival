@@ -20116,126 +20116,8 @@ input:focus-visible {
 }
 
 /* ==========================================================================
-   v20261121hd121 — BOTTOM BAR GEAR GAUGES + 8-PLAYER COMPETITIVE TROPHY RACE
-   (Matched to Original Game Design)
+   8-PLAYER COMPETITIVE TROPHY RACE UI (Original Game Design)
    ========================================================================== */
-
-/* Keep buff orbs cleanly above bottom gear bars without altering original style */
-.ctrl-center-orbs {
-  bottom: calc(max(10px, var(--safe-bottom)) + 44px) !important;
-}
-
-/* 1. Bottom-Center Horizontal Bar Gauges for Umbrella & Mask */
-.gear-bottom-bars {
-  position: absolute;
-  left: 50%;
-  bottom: calc(max(8px, var(--safe-bottom)) + 6px);
-  transform: translateX(-50%);
-  z-index: 16;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  pointer-events: none;
-  max-width: calc(100% - 210px);
-}
-
-.gear-bottom-bars.hidden {
-  display: none !important;
-}
-
-.gear-hbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 152px;
-  max-width: 210px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(16, 40, 88, 0.9), rgba(8, 20, 48, 0.94));
-  border: 2px solid #071022;
-  box-shadow: 0 3px 0 #071022, inset 0 1px 0 rgba(168, 224, 255, 0.35);
-  transition: border-color 0.16s ease, background 0.16s ease;
-}
-
-.gear-hbar.hidden {
-  display: none !important;
-}
-
-.gear-hbar.umbrella {
-  border-color: #4be3ff;
-}
-
-.gear-hbar.mask {
-  border-color: #48f5a3;
-}
-
-.gear-hbar.warn {
-  border-color: #ffae2b;
-}
-
-.gear-hbar.danger {
-  border-color: #ff4763;
-  background: linear-gradient(180deg, rgba(118, 18, 36, 0.92), rgba(64, 8, 20, 0.95));
-}
-
-.gear-hbar-lbl {
-  font-size: 11px;
-  font-weight: 900;
-  color: #ffffff;
-  text-shadow: 0 1.5px 0 #071022;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.gear-hbar-track {
-  flex: 1;
-  min-width: 56px;
-  height: 7px;
-  border-radius: 999px;
-  background: rgba(5, 12, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  overflow: hidden;
-}
-
-.gear-hbar-fill {
-  display: block;
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  transition: width 0.08s linear, background 0.16s ease;
-}
-
-.gear-hbar-fill.umbrella {
-  background: linear-gradient(90deg, #25b8ff, #7ef2ff);
-}
-
-.gear-hbar-fill.mask {
-  background: linear-gradient(90deg, #1fd97d, #79ffb8);
-}
-
-.gear-hbar-fill.warn {
-  background: linear-gradient(90deg, #ff9918, #ffe047);
-}
-
-.gear-hbar-fill.danger {
-  background: linear-gradient(90deg, #ff2e4d, #ff7a59);
-}
-
-.gear-hbar-val {
-  font-size: 11px;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  color: #ffffff;
-  text-shadow: 0 1.5px 0 #071022;
-  white-space: nowrap;
-  min-width: 36px;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-/* 2. 8-Player Competitive Trophy Race UI (Original Game Style) */
 .rank-mode-tabs.three-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -21647,27 +21529,6 @@ input:focus-visible {
     margin-top: 3px;
   }
 
-  .gear-bottom-bars {
-    bottom: calc(max(6px, var(--safe-bottom)) + 4px);
-    gap: 6px;
-    max-width: calc(100% - 172px);
-  }
-
-  .gear-hbar {
-    min-width: 126px;
-    padding: 4px 8px;
-    gap: 6px;
-  }
-
-  .gear-hbar-lbl,
-  .gear-hbar-val {
-    font-size: 10px;
-  }
-
-  .ctrl-center-orbs {
-    bottom: calc(max(6px, var(--safe-bottom)) + 38px) !important;
-  }
-
   .comp-lobby-arena {
     gap: 6px;
     padding: calc(max(4px, var(--safe-top, 0px)) + 2px) max(10px, var(--safe-right, 10px)) calc(max(6px, var(--safe-bottom, 0px)) + 2px) max(10px, var(--safe-left, 10px));
@@ -22102,5 +21963,150 @@ input:focus-visible {
 
   .comp-rk-modal-list {
     max-height: 44dvh;
+  }
+}
+
+/* ==========================================================================
+   v20261121hd125 — OVENBREAK WAIT OVERLAY + FLOATING PENDING PILL + TOP4 CUTOFF
+   ========================================================================== */
+.comp-pay-cell.top4 {
+  border-color: rgba(106, 255, 176, 0.45);
+}
+
+.comp-wait-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #1b438e 0%, #0e2457 100%);
+  border: 2.5px solid #071022;
+  box-shadow: 0 3.5px 0 #071022, inset 0 1.5px 0 rgba(162, 224, 255, 0.3);
+}
+
+.comp-wait-score-col,
+.comp-wait-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.comp-wait-meta-col {
+  align-items: flex-end;
+}
+
+.comp-wait-lbl {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #9ec8f8;
+}
+
+.comp-wait-score {
+  font-size: 21px;
+  font-weight: 900;
+  color: #ffe554;
+  text-shadow: 0 2px 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-wait-done {
+  font-size: 11px;
+  font-weight: 800;
+  color: #cfe6ff;
+}
+
+.comp-wait-st {
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.comp-wait-st.done {
+  background: rgba(106, 255, 176, 0.2);
+  color: #6affb0;
+}
+
+.comp-wait-st.live {
+  background: rgba(96, 206, 255, 0.2);
+  color: #8ce4ff;
+}
+
+/* Floating Background Match Settlement Pill (Visible Across All Tabs!) */
+.comp-pending-pill {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, var(--safe-bottom, 0px)) + 74px);
+  transform: translateX(-50%);
+  z-index: 95;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #1d499c 0%, #0f2861 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+  text-shadow: 0 1.5px 0 #071022;
+  box-shadow: 0 4px 0 #071022, 0 6px 18px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.comp-pending-pill.hidden {
+  display: none !important;
+}
+
+.comp-pending-pill:hover {
+  filter: brightness(1.08);
+}
+
+.comp-pending-pill:active {
+  transform: translateX(-50%) translateY(2px);
+}
+
+.comp-pending-pill.ready {
+  border-color: #071022;
+  background: linear-gradient(180deg, #ffe857 0%, #f59c1a 100%);
+  color: #1f1100;
+  text-shadow: none;
+  box-shadow: 0 4px 0 #071022, 0 0 20px rgba(255, 224, 71, 0.72);
+  animation: compPendingPulse 1.15s ease-in-out infinite;
+}
+
+#mobile-app.is-comp-lobby .comp-pending-pill {
+  bottom: calc(max(10px, var(--safe-bottom, 0px)) + 10px);
+}
+
+.comp-pp-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #62ecff;
+  box-shadow: 0 0 8px #62ecff;
+  flex-shrink: 0;
+}
+
+.comp-pending-pill.ready .comp-pp-dot {
+  background: #ff2e4d;
+  box-shadow: 0 0 8px rgba(255, 46, 77, 0.85);
+}
+
+@keyframes compPendingPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.05); }
+}
+
+@media (max-height: 440px) {
+  .comp-pending-pill {
+    bottom: calc(max(6px, var(--safe-bottom, 0px)) + 58px);
+    padding: 5px 12px;
+    font-size: 11px;
   }
 }

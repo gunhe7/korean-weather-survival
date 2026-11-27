@@ -603,8 +603,9 @@ window.RUN_DATA = (function () {
   // ===================== 8-PLAYER COMPETITIVE TROPHY RACE (COOKIE RUN STYLE) =====================
   const COMP_MATCH_PLAYERS = 8;
   const COMP_MATCH_DURATION = 60; // 60-second full 4-season competitive sprint!
-  const COMP_TROPHY_DELTAS = [40, 28, 18, 10, 2, -8, -16, -24];
+  const COMP_TROPHY_DELTAS = [40, 28, 16, 6, -6, -16, -28, -40];
   const COMP_GOLD_REWARDS = [360, 260, 190, 140, 100, 80, 60, 50];
+  const COMP_AI_MAX_TROPHIES = 699; // 실버 구간(0~699)까지만 AI 보충 매칭 허용! 골드(700+) 이상 전원 실제 유저 매칭
   const COMP_TIERS = [
     { id: 'bronze',      name: '브론즈',       minTrophies: 0,    color: '#d98c54', img: 'assets/tiers/tier_bronze.png' },
     { id: 'silver',      name: '실버',         minTrophies: 300,  color: '#b6c8de', img: 'assets/tiers/tier_silver.png' },
@@ -796,6 +797,7 @@ window.RUN_DATA = (function () {
     COMP_MATCH_DURATION,
     COMP_TROPHY_DELTAS,
     COMP_GOLD_REWARDS,
+    COMP_AI_MAX_TROPHIES,
     COMP_TIERS,
     getCompTier,
     PROFILE_NAME_COLORS,
