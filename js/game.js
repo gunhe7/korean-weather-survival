@@ -5352,7 +5352,7 @@
     const gemTileHtml = rw.gems > 0
       ? `
         <div class="comp-sr-item gems">
-          <img src="assets/icons/ico_gem.svg?v=20261121hd135" alt="보석" class="comp-sr-item-ico" />
+          <img src="assets/icons/ico_gem.svg?v=20261121hd136" alt="보석" class="comp-sr-item-ico" />
           <div class="comp-sr-item-txt">
             <span>보석</span>
             <strong>${rw.gems.toLocaleString('ko-KR')}개</strong>
