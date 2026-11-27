@@ -20380,25 +20380,28 @@ input:focus-visible {
   gap: 2px;
   padding: 10px 18px;
   border-radius: 12px;
-  border: 2.5px solid #071022;
+  border: 3px solid #071022;
   background: linear-gradient(180deg, #ffe554 0%, #f59c1a 100%);
   color: #1f1100;
   font-family: var(--font-ui);
   cursor: pointer;
-  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.55);
+  transform: skewX(-5deg);
+  box-shadow: 0 5px 0 #071022, inset 0 2.5px 0 rgba(255, 255, 255, 0.62);
   transition: transform 0.14s ease, filter 0.14s ease;
 }
 
 .comp-match-cta span {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 900;
   line-height: 1.1;
+  transform: skewX(5deg);
 }
 
 .comp-match-cta small {
   font-size: 10px;
   font-weight: 800;
-  opacity: 0.8;
+  opacity: 0.82;
+  transform: skewX(5deg);
 }
 
 .comp-match-cta:hover {
@@ -20406,7 +20409,7 @@ input:focus-visible {
 }
 
 .comp-match-cta:active {
-  transform: translateY(2px);
+  transform: skewX(-5deg) translateY(2px);
   box-shadow: 0 2px 0 #071022;
 }
 

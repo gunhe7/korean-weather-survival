@@ -1,4 +1,4 @@
-const CACHE_NAME = 'k-weather-survival-v20261121hd121';
+const CACHE_NAME = 'k-weather-survival-v20261121hd122';
 const ASSET_CACHE_NAME = 'k-weather-survival-assets-v1';
 const CORE_ASSETS = [
   './',
@@ -49,9 +49,9 @@ self.addEventListener('fetch', (event) => {
     /\.(html|js|css|json)$/i.test(url.pathname);
 
   if (isCodeOrDoc) {
-    // STRICT NETWORK-FIRST (bypass GitHub Pages 10-min HTTP cache!) so mobile phones NEVER run stale HTML/JS!
+    // STRICT NETWORK-FIRST (no-store bypasses HTTP & PWA stale cache immediately!)
     event.respondWith(
-      fetch(event.request, { cache: 'no-cache' })
+      fetch(event.request, { cache: 'no-store' })
         .then((resp) => {
           if (resp && resp.status === 200) {
             const copy = resp.clone();
