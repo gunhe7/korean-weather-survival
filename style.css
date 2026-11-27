@@ -25546,3 +25546,303 @@ input:focus-visible {
     justify-content: flex-end;
   }
 }
+
+/* =========================================================================
+   OVERWATCH-STYLE TOP COMPETITIVE QUEUE BAR & CROSS-PLATFORM MATCHMAKING
+   ========================================================================= */
+@keyframes owQueueScan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
+}
+
+@keyframes owQueueSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes owQueueFoundPulse {
+  0%, 100% { box-shadow: 0 5px 18px rgba(0, 0, 0, 0.55), 0 3px 0 #071022, 0 0 0 2px rgba(255, 226, 82, 0.45); }
+  50% { box-shadow: 0 5px 24px rgba(45, 230, 128, 0.65), 0 3px 0 #071022, 0 0 0 4px rgba(255, 226, 82, 0.85); }
+}
+
+.ow-queue-bar {
+  position: fixed;
+  top: max(6px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 980;
+  display: inline-flex;
+  align-items: stretch;
+  max-width: min(370px, 86vw);
+  border-radius: 13px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #1b315e 0%, #0e1d3d 100%);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.55),
+    0 3.5px 0 #071022,
+    inset 0 1.5px 0 rgba(255, 218, 96, 0.35);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.ow-queue-bar.hidden {
+  display: none !important;
+}
+
+.ow-queue-bar.is-found {
+  border-color: #ffe252;
+  background: linear-gradient(180deg, #177847 0%, #0c4729 100%);
+  animation: owQueueFoundPulse 0.9s ease-in-out infinite;
+}
+
+.ow-qb-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 200, 60, 0.16);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ow-qb-progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, #ffb726 40%, #fff29c 65%, transparent 100%);
+  animation: owQueueScan 1.45s linear infinite;
+}
+
+.ow-queue-bar.is-found .ow-qb-progress::after {
+  width: 100%;
+  animation: none;
+  background: linear-gradient(90deg, #56ff9b 0%, #ffe857 50%, #56ff9b 100%);
+}
+
+.ow-qb-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 11px 6px 11px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  min-width: 0;
+  text-align: left;
+}
+
+.ow-qb-main:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ow-qb-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.8px solid rgba(255, 206, 68, 0.28);
+  border-top-color: #ffd545;
+  border-right-color: #ff9c1a;
+  flex-shrink: 0;
+  animation: owQueueSpin 0.95s linear infinite;
+  box-shadow: 0 0 8px rgba(255, 198, 48, 0.45);
+}
+
+.ow-queue-bar.is-found .ow-qb-spinner {
+  border-color: #ffe857;
+  background: #47f08b;
+  animation: none;
+  box-shadow: 0 0 10px rgba(71, 240, 139, 0.85);
+}
+
+.ow-qb-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ow-qb-title {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #ffdf59;
+  letter-spacing: 0.01em;
+  text-shadow: var(--bs-outline-sm);
+  white-space: nowrap;
+}
+
+.ow-queue-bar.is-found .ow-qb-title {
+  color: #ffffff;
+}
+
+.ow-qb-sub {
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #bfe0ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ow-qb-timer {
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 2px solid #071022;
+  background: rgba(6, 15, 34, 0.85);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  text-shadow: var(--bs-outline-sm);
+  flex-shrink: 0;
+}
+
+.ow-queue-bar.is-found .ow-qb-timer {
+  background: linear-gradient(180deg, #ffe24a 0%, #f09c10 100%);
+  color: #ffffff;
+}
+
+.ow-qb-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  border: none;
+  border-left: 2px solid #071022;
+  background: linear-gradient(180deg, #e84558 0%, #b5182d 100%);
+  color: #ffffff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: filter 0.1s ease;
+}
+
+.ow-qb-cancel:hover {
+  filter: brightness(1.1);
+}
+
+.ow-qb-cancel:active {
+  filter: brightness(0.92);
+}
+
+.ow-qb-cancel:disabled,
+.ow-queue-bar.is-found .ow-qb-cancel {
+  display: none;
+}
+
+/* Cross-Platform Pills & Matchmaking Footer */
+.comp-bar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.comp-crossplay-pill {
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1.8px solid #071022;
+  background: linear-gradient(180deg, #3da4ff 0%, #1a66cc 100%);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-shadow: var(--bs-outline-sm);
+}
+
+.comp-footer-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.comp-min-btn {
+  background: linear-gradient(180deg, #3ea8ff 0%, #1d6ee0 100%) !important;
+  color: #ffffff !important;
+  text-shadow: var(--bs-outline-sm);
+}
+
+.comp-plat-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1.4px solid #071022;
+  background: #21407a;
+  color: #9ce6ff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 15px;
+  vertical-align: middle;
+}
+
+.comp-plat-badge.android {
+  background: #175c36;
+  color: #8cffb8;
+}
+
+.comp-plat-badge.ios,
+.comp-plat-badge.ipad {
+  background: #3d2c70;
+  color: #e0c7ff;
+}
+
+.comp-plat-badge.ai {
+  background: #3d485e;
+  color: #c7d2e6;
+}
+
+.bs-play-btn.comp-play-btn.is-queueing {
+  background: linear-gradient(180deg, #43abff 0%, #43abff 48%, #1d74e8 50%, #1353b8 100%) !important;
+  box-shadow: 0 5px 0 #071022, 0 0 18px rgba(67, 171, 255, 0.55), inset 0 2px 0 rgba(215, 242, 255, 0.65) !important;
+}
+
+@media (max-height: 500px), (max-width: 720px) {
+  .ow-queue-bar {
+    top: max(3px, env(safe-area-inset-top, 0px));
+    max-width: min(290px, 72vw);
+    border-radius: 10px;
+    border-width: 2px;
+  }
+
+  .ow-qb-main {
+    gap: 6px;
+    padding: 5px 8px 4px 8px;
+  }
+
+  .ow-qb-spinner {
+    width: 14px;
+    height: 14px;
+    border-width: 2.2px;
+  }
+
+  .ow-qb-title {
+    font-size: 10.5px;
+  }
+
+  .ow-qb-sub {
+    font-size: 9.5px;
+  }
+
+  .ow-qb-timer {
+    padding: 2px 6px;
+    font-size: 11px;
+    border-radius: 6px;
+  }
+
+  .ow-qb-cancel {
+    width: 28px;
+  }
+
+  .comp-footer-btns {
+    gap: 5px;
+  }
+}

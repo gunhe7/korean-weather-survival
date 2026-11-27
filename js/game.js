@@ -716,7 +716,14 @@
     compMatchCountPill: document.getElementById('comp-match-count-pill'),
     compMatchStatus: document.getElementById('comp-match-status'),
     compMatchGrid: document.getElementById('comp-match-grid'),
+    btnCompMatchMinimize: document.getElementById('btn-comp-match-minimize'),
     btnCompMatchCancel: document.getElementById('btn-comp-match-cancel'),
+    compOwQueueBar: document.getElementById('comp-ow-queue-bar'),
+    btnOwQueueOpen: document.getElementById('btn-ow-queue-open'),
+    owQueueTitle: document.getElementById('ow-queue-title'),
+    owQueueSub: document.getElementById('ow-queue-sub'),
+    owQueueTimer: document.getElementById('ow-queue-timer'),
+    btnOwQueueCancel: document.getElementById('btn-ow-queue-cancel'),
     compResultOverlay: document.getElementById('comp-result-overlay'),
     compResultModalBox: document.getElementById('comp-result-modal-box'),
     compResOwCard: document.getElementById('comp-res-ow-card'),
@@ -4530,6 +4537,7 @@
     if (!profile) return;
     // 1. Flush previous different account locally only (Firebase Auth currentUser may already be the newly signed-in account!)
     if (save && save.auth && save.auth.loggedIn && save.auth.uid && save.auth.uid !== profile.uid) {
+      cancelCompetitiveMatchmaking(true);
       persistSave(false, { localOnly: true });
     }
 
@@ -5961,12 +5969,32 @@
       return;
     }
 
+    if (compQueueState && !compQueueState.cancelled) {
+      const qCnt = (compQueueState.players || []).length || 1;
+      const qTotal = DATA.COMP_MATCH_PLAYERS || 8;
+      const qMm = String(Math.floor((compQueueState.waitSec || 0) / 60)).padStart(2, '0');
+      const qSs = String((compQueueState.waitSec || 0) % 60).padStart(2, '0');
+      if (el.btnCompLobbyStart) {
+        el.btnCompLobbyStart.classList.remove('is-locked', 'is-result-ready');
+        el.btnCompLobbyStart.classList.add('is-queueing');
+      }
+      if (el.compLobbyStartMain) {
+        el.compLobbyStartMain.textContent = compQueueState.launching ? '매칭 완료!' : `매칭 중 (${qCnt}/${qTotal})`;
+      }
+      if (el.compLobbyStartSub) {
+        el.compLobbyStartSub.textContent = compQueueState.launching
+          ? '곧 경기가 시작됩니다'
+          : `${qMm}:${qSs} · 눌러서 현황 보기`;
+      }
+      return;
+    }
+
     if (el.btnCompLobbyStart) {
-      el.btnCompLobbyStart.classList.remove('is-locked', 'is-result-ready');
+      el.btnCompLobbyStart.classList.remove('is-locked', 'is-result-ready', 'is-queueing');
     }
     if (el.compLobbyStartMain) el.compLobbyStartMain.textContent = 'PLAY!';
     if (el.compLobbyStartSub) {
-      el.compLobbyStartSub.textContent = isGoogleLinked ? '8인 트로피 매칭' : 'Google 연동 전용';
+      el.compLobbyStartSub.textContent = isGoogleLinked ? '8인 크로스 플레이 매칭' : '계정 연동 전용';
     }
     if (el.compLobbyLockLabel) {
       el.compLobbyLockLabel.textContent = isGoogleLinked ? '1경기씩 매칭 가능' : 'Google 계정 연동 필요';
@@ -6494,6 +6522,108 @@
   ];
   let compQueueState = null;
 
+  function createSeededRng(seedStr) {
+    let h = 2166136261 >>> 0;
+    const s = String(seedStr || 'kws_seed');
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return () => {
+      h = (h + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(h ^ (h >>> 15), 1 | h);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function formatQueueClock(sec) {
+    const s = Math.max(0, Math.floor(Number(sec) || 0));
+    const mm = String(Math.floor(s / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function updateCompOwQueueBarUI() {
+    const q = compQueueState;
+    if (!q || q.cancelled) {
+      if (el.compOwQueueBar) {
+        el.compOwQueueBar.classList.add('hidden');
+        el.compOwQueueBar.classList.remove('is-found');
+      }
+      if (currentTab === 'comp') updateCompLobbyMatchStateUI();
+      return;
+    }
+    const totalSlots = DATA.COMP_MATCH_PLAYERS || 8;
+    const curCnt = Math.min(totalSlots, (q.players || []).length || 1);
+    if (el.compOwQueueBar) {
+      el.compOwQueueBar.classList.remove('hidden');
+      el.compOwQueueBar.classList.toggle('is-found', Boolean(q.launching));
+    }
+    if (el.owQueueTitle) {
+      el.owQueueTitle.textContent = q.launching ? '경쟁전 매칭 완료!' : '경쟁전 매칭 중';
+    }
+    if (el.owQueueSub) {
+      if (q.launching) {
+        el.owQueueSub.textContent = (run && run.active)
+          ? '잠시 후 경쟁전으로 자동 입장합니다'
+          : `8인 준비 완료 · 크로스 플레이`;
+      } else {
+        const modeTag = q.aiStarted ? 'AI 보충 중' : (q.online ? '크로스 플레이' : '연결 재시도');
+        el.owQueueSub.textContent = `${modeTag} · ${curCnt}/${totalSlots}명`;
+      }
+    }
+    if (el.owQueueTimer) {
+      el.owQueueTimer.textContent = q.launching
+        ? `${Math.max(1, q.launchSecLeft || 1)}초`
+        : formatQueueClock(q.waitSec || 0);
+    }
+    if (el.btnOwQueueCancel) {
+      el.btnOwQueueCancel.disabled = Boolean(q.launching);
+    }
+    if (currentTab === 'comp') updateCompLobbyMatchStateUI();
+  }
+
+  function openCompMatchOverlay() {
+    if (!compQueueState || compQueueState.cancelled) return;
+    renderCompMatchGrid(compQueueState.players || []);
+    if (el.btnCompMatchMinimize) {
+      el.btnCompMatchMinimize.classList.toggle('hidden', Boolean(compQueueState.launching));
+    }
+    if (el.compMatchOverlay) el.compMatchOverlay.classList.remove('hidden');
+  }
+
+  function minimizeCompMatchOverlay() {
+    if (compQueueState && compQueueState.launching) return;
+    if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
+    updateCompOwQueueBarUI();
+  }
+
+  function closeBrowsingModalsForCompLaunch() {
+    [
+      el.modeSelectOverlay,
+      el.weatherOverlay,
+      el.friendsOverlay,
+      el.profileEditOverlay,
+      el.settingsOverlay,
+      el.seasonPassOverlay,
+      el.scoreRoadOverlay,
+      el.vaultOverlay,
+      el.skinExchangeOverlay,
+      el.charSkinsOverlay,
+      el.charDetailOverlay,
+      el.attendanceOverlay,
+      el.achievementsOverlay,
+      el.probOverlay,
+      el.gachaHistoryOverlay,
+      el.compRankOverlay,
+      el.compTierOverlay,
+      el.compCharOverlay
+    ].forEach((ov) => {
+      if (ov) ov.classList.add('hidden');
+    });
+  }
+
   function renderCompMatchGrid(players) {
     if (!el.compMatchGrid) return;
     const totalSlots = DATA.COMP_MATCH_PLAYERS || 8;
@@ -6509,13 +6639,15 @@
             <div class="comp-slot-av-empty"></div>
             <div class="comp-slot-meta">
               <div class="comp-slot-name">대기 중...</div>
-              <div class="comp-slot-sub">매칭 탐색</div>
+              <div class="comp-slot-sub">PC·모바일 매칭 탐색</div>
             </div>
           </div>
         `;
       } else {
-        const avInfo = getProfileAvatarInfo({ avatarCharId: p.charId, avatarSkinId: p.skinId }, p.charId, p.skinId, p.isMe);
+        const avInfo = getProfileAvatarInfo({ avatarCharId: p.profileCharId || p.charId, avatarSkinId: p.profileSkinId !== undefined ? p.profileSkinId : p.skinId }, p.charId, p.skinId, p.isMe);
         const tInfo = DATA.getCompTier(p.trophies || 0);
+        const platCls = !p.isHuman ? 'ai' : (p.platform || 'pc');
+        const platLbl = !p.isHuman ? 'AI' : (p.platformLabel || 'PC');
         html += `
           <div class="comp-slot ready${p.isMe ? ' me' : ''}">
             <div class="comp-slot-av-wrap">
@@ -6523,7 +6655,7 @@
               <img src="${getTierImgUrl(tInfo)}" alt="${tInfo.name}" class="comp-slot-tier-img" />
             </div>
             <div class="comp-slot-meta">
-              <div class="comp-slot-name">${escapeNickHtml(p.nickname)}${p.isMe ? ' <span class="comp-me-tag">나</span>' : ''}</div>
+              <div class="comp-slot-name">${escapeNickHtml(p.nickname)}${p.isMe ? ' <span class="comp-me-tag">나</span>' : ''}<span class="comp-plat-badge ${platCls}">${platLbl}</span></div>
               <div class="comp-slot-sub" style="color:${tInfo.color}">${tInfo.name} · ${(p.trophies || 0).toLocaleString('ko-KR')}</div>
             </div>
           </div>
@@ -6536,6 +6668,7 @@
   function clearCompQueueTimers(q) {
     if (!q) return;
     if (q.pollTimer) { clearInterval(q.pollTimer); q.pollTimer = null; }
+    if (q.hbTimer) { clearInterval(q.hbTimer); q.hbTimer = null; }
     if (q.fillTimer) { clearInterval(q.fillTimer); q.fillTimer = null; }
     if (q.waitTimer) { clearInterval(q.waitTimer); q.waitTimer = null; }
     if (q.startTimer) { clearInterval(q.startTimer); q.startTimer = null; }
@@ -6547,56 +6680,71 @@
       prev.cancelled = true;
       clearCompQueueTimers(prev);
       compQueueState = null;
-      if (prev.online && ONLINE && ONLINE.leaveCompMatchRoom) {
-        ONLINE.leaveCompMatchRoom(prev.roomId, prev.safeUid);
+      if (prev.online && ONLINE && ONLINE.leaveCompQueue && prev.myQueueInfo) {
+        ONLINE.leaveCompQueue(prev.myQueueInfo);
       }
     }
     if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
-    if (!silent) SFX.click();
+    updateCompOwQueueBarUI();
+    if (!silent) {
+      SFX.click();
+      showToast('경쟁전 매칭이 취소되었습니다.');
+    }
   }
 
-  function createCompRival(index, myTrophies, myScoreMult, usedNames, rateMult) {
+  function createCompRival(index, myTrophies, myScoreMult, usedNames, rateMult, rngFn = Math.random) {
+    const rnd = typeof rngFn === 'function' ? rngFn : Math.random;
     const pool = COMP_RIVAL_NAMES.filter((n) => !usedNames.has(n));
-    const nickname = pool.length ? pool[Math.floor(Math.random() * pool.length)] : `러너${100 + index}`;
+    const nickname = pool.length ? pool[Math.floor(rnd() * pool.length)] : `러너${100 + index}`;
     usedNames.add(nickname);
 
     const chars = DATA.CHARACTERS || [];
-    const ch = chars[Math.floor(Math.random() * chars.length)] || DATA.CHARACTERS[0];
+    const ch = chars[Math.floor(rnd() * chars.length)] || DATA.CHARACTERS[0];
     const skins = DATA.getSkinsForChar ? DATA.getSkinsForChar(ch.id) : [];
-    const pickSkin = (skins.length > 0 && Math.random() < 0.35) ? skins[Math.floor(Math.random() * skins.length)] : null;
+    const pickSkin = (skins.length > 0 && rnd() < 0.35) ? skins[Math.floor(rnd() * skins.length)] : null;
     const cappedMax = DATA.COMP_AI_MAX_TROPHIES ?? 2999;
-    const jitterT = Math.round((Math.random() - 0.48) * 220);
+    const jitterT = Math.round((rnd() - 0.48) * 220);
     const trophies = Math.max(0, Math.min(cappedMax, Math.floor((myTrophies || 0) + jitterT)));
     const tier = DATA.getCompTier(trophies);
     const tierFactor = 1 + Math.min(0.45, (trophies / 2400) * 0.45);
     const baseMid = 104 * Math.max(1, (myScoreMult || 1) * 0.92) * tierFactor;
-    const baseRate = baseMid * rateMult * (0.94 + Math.random() * 0.12);
-    const earlyFinish = Math.random() < 0.28 ? (36 + Math.random() * 20) : 60;
+    const baseRate = baseMid * rateMult * (0.94 + rnd() * 0.12);
+    const earlyFinish = rnd() < 0.28 ? (36 + rnd() * 20) : 60;
 
     return {
-      uid: `rv_${Date.now()}_${index}_${Math.floor(Math.random() * 9999)}`,
+      uid: `rv_${index}_${Math.floor(rnd() * 999999)}`,
       nickname,
       charId: ch.id,
       skinId: pickSkin ? pickSkin.id : null,
       trophies,
       tierName: tier.name,
       tierColor: tier.color,
+      platform: 'ai',
+      platformLabel: 'AI',
       isMe: false,
       isHuman: false,
       score: 0,
       finished: false,
       baseRate,
-      burstPhase: Math.random() * Math.PI * 2,
-      burstFreq: 0.38 + Math.random() * 0.28,
-      burstAmp: 0.18 + Math.random() * 0.14,
+      burstPhase: rnd() * Math.PI * 2,
+      burstFreq: 0.38 + rnd() * 0.28,
+      burstAmp: 0.18 + rnd() * 0.14,
       stumbleTimer: 0,
       diedAt: earlyFinish
     };
   }
 
-  async function startCompetitiveMatchmaking() {
-    if (run && run.active) return;
-    if (compQueueState && !compQueueState.cancelled) return;
+  async function startCompetitiveMatchmaking(opts = {}) {
+    if (run && run.active) {
+      SFX.hit();
+      showToast('진행 중인 경기가 끝난 뒤 경쟁전 매칭을 시작할 수 있습니다.');
+      return;
+    }
+    if (compQueueState && !compQueueState.cancelled) {
+      SFX.click();
+      openCompMatchOverlay();
+      return;
+    }
 
     // STRICT SINGLE-MATCH RULE: Cannot start another match until current match finishes & is settled!
     const activeMatch = getActiveCompPendingMatch();
@@ -6613,12 +6761,12 @@
       return;
     }
 
-    // STRICT RULE: Only real Google-linked players may enter Competitive Matchmaking!
+    // STRICT RULE: Only real Google/Apple-linked players may enter Competitive Matchmaking!
     const myAuth = save.auth || { provider: 'guest', uid: '', nickname: '게스트' };
-    const isGoogleLinked = Boolean(ONLINE && ONLINE.isRankedProvider(myAuth.provider));
-    if (!isGoogleLinked || !myAuth.uid) {
+    const isLinked = Boolean(ONLINE && ONLINE.isRankedProvider(myAuth.provider));
+    if (!isLinked || !myAuth.uid) {
       SFX.hit();
-      showToast('경쟁전 매칭은 실제 Google 계정 연동 플레이어만 참여할 수 있습니다!');
+      showToast('경쟁전 매칭은 Google 또는 Apple 계정 연동 플레이어만 참여할 수 있습니다!');
       openLoginOverlay();
       return;
     }
@@ -6631,141 +6779,233 @@
     const myChar = getCharDef(save.selectedChar);
     const myStats = getCharStats(myChar);
     const mySkin = getEquippedSkin(myChar.id);
-    const myUid = myAuth.uid;
+    const myProfMeta = buildMyBoardProfileMeta(myChar, mySkin);
+    const myUid = String(myAuth.uid);
     const myNick = myAuth.nickname || `나 (${myChar.name})`;
     const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
     const myTier = DATA.getCompTier(myTrophies);
+    const myPlat = (ONLINE && ONLINE.detectClientPlatform) ? ONLINE.detectClientPlatform() : { id: 'pc', label: 'PC' };
+    const myTierBand = (ONLINE && ONLINE.getCompTierBand) ? ONLINE.getCompTierBand(myTrophies) : (myTrophies < 3000 ? 'bs' : (myTrophies < 6000 ? 'gp' : 'dm'));
     const aiMaxTrophies = DATA.COMP_AI_MAX_TROPHIES ?? 2999;
     const allowAiFallback = myTrophies <= aiMaxTrophies;
 
-    const meEntry = {
-      uid: String(myUid).replace(/[^a-zA-Z0-9_-]/g, '_'),
+    const myQueueInfo = {
+      uid: myUid,
       provider: myAuth.provider,
       nickname: myNick,
       charId: myChar.id,
       skinId: mySkin ? mySkin.id : null,
+      profileCharId: myProfMeta.profileCharId,
+      profileSkinId: myProfMeta.profileSkinId,
+      trophies: myTrophies,
+      tierBand: myTierBand,
+      platform: myPlat,
+      queuedAt: (ONLINE && ONLINE.getCompServerNow) ? ONLINE.getCompServerNow() : Date.now()
+    };
+
+    const meEntry = {
+      uid: myUid,
+      provider: myAuth.provider,
+      nickname: myNick,
+      charId: myChar.id,
+      skinId: mySkin ? mySkin.id : null,
+      profileCharId: myProfMeta.profileCharId,
+      profileSkinId: myProfMeta.profileSkinId,
       trophies: myTrophies,
       tierName: myTier.name,
       tierColor: myTier.color,
+      platform: myPlat.id,
+      platformLabel: myPlat.label,
       isMe: true,
       isHuman: true,
       score: 0,
       finished: false
     };
 
-    const rateSpread = [0.72, 0.81, 0.90, 0.98, 1.06, 1.15, 1.25].sort(() => Math.random() - 0.5);
-    const usedNames = new Set([myNick]);
+    const totalSlots = DATA.COMP_MATCH_PLAYERS || 8;
+    const AI_FALLBACK_DELAY_SEC = 60;
     const token = Date.now() + Math.random();
     const q = {
       token,
       cancelled: false,
       roomId: `local_${Date.now()}`,
-      safeUid: meEntry.uid,
+      safeUid: myUid,
       online: false,
+      myQueueInfo,
+      meEntry,
+      tierBand: myTierBand,
       players: [meEntry],
-      rateSpread,
-      usedNames,
-      rivalCursor: 0,
       waitSec: 0,
+      leaderWaitSec: 0,
+      isLeader: true,
       aiStarted: false,
       allowAiFallback,
       pollTimer: null,
+      hbTimer: null,
       fillTimer: null,
       waitTimer: null,
       startTimer: null,
-      launching: false
+      launching: false,
+      launchSecLeft: 3,
+      fullGroupTicks: 0
     };
     compQueueState = q;
 
-    if (el.compMatchRuleNote) {
-      el.compMatchRuleNote.textContent = allowAiFallback
-        ? '실제 Google 유저 우선 매칭 · 1분 이상 대기 시 실버 이하 구간 AI 보충 · 1~4위 +트로피 / 5~8위 -트로피'
-        : '골드 이상 구간은 실제 Google 연동 플레이어만 매칭됩니다 (AI 보충 없음 · 1~4위 +트로피 / 5~8위 -트로피)';
-    }
-    if (el.compMatchStatus) {
-      el.compMatchStatus.textContent = allowAiFallback
-        ? '실제 Google 연동 러너를 찾는 중... (1 / 8 · 0초 / 60초 후 AI 보충)'
-        : '골드+ 구간: 실제 Google 연동 러너 대기 중... (1 / 8 · 0초)';
-    }
+    const updateQueueStatusText = () => {
+      if (!compQueueState || compQueueState !== q || q.cancelled) return;
+      if (el.compMatchRuleNote) {
+        el.compMatchRuleNote.textContent = allowAiFallback
+          ? 'PC · Android · iOS 크로스 플레이 · 1분 대기 시 실버 이하 AI 보충 · 대기 중 다른 콘텐츠 이용 가능'
+          : 'PC · Android · iOS 크로스 플레이 · 골드 이상 실제 유저 전용 · 대기 중 다른 콘텐츠 이용 가능';
+      }
+      if (el.compMatchStatus && !q.launching) {
+        const waitDisp = formatQueueClock(q.waitSec);
+        if (q.aiStarted) {
+          el.compMatchStatus.textContent = `1분 경과 · 실버 이하 AI 보충 완료 준비 중 (${q.players.length} / ${totalSlots})`;
+        } else {
+          el.compMatchStatus.textContent = q.allowAiFallback
+            ? `PC · 모바일 실제 러너 탐색 중... (${q.players.length} / ${totalSlots} · ${waitDisp} / 1분 후 AI 보충)`
+            : `골드+ 크로스 플레이 탐색 중... (${q.players.length} / ${totalSlots} · ${waitDisp})`;
+        }
+      }
+      updateCompOwQueueBarUI();
+    };
+
     if (el.btnCompMatchCancel) el.btnCompMatchCancel.disabled = false;
+    if (el.btnCompMatchMinimize) el.btnCompMatchMinimize.classList.remove('hidden');
     renderCompMatchGrid(q.players);
-    if (el.compMatchOverlay) el.compMatchOverlay.classList.remove('hidden');
+    updateQueueStatusText();
 
-    // Join shared 30-second Google-only matchmaking room on Firebase RTDB
-    if (ONLINE && ONLINE.joinCompMatchRoom) {
-      try {
-        const res = await ONLINE.joinCompMatchRoom({
-          uid: myUid,
-          provider: myAuth.provider,
-          nickname: myNick,
-          charId: myChar.id,
-          skinId: mySkin ? mySkin.id : null,
-          trophies: myTrophies
-        });
-        if (q.cancelled || compQueueState !== q) return;
-        if (res && res.rejected === 'google_required') {
-          cancelCompetitiveMatchmaking(true);
-          showToast('Google 계정 연동이 필요합니다.');
-          openLoginOverlay();
-          return;
-        }
-        if (res) {
-          q.roomId = res.roomId || q.roomId;
-          q.safeUid = res.safeUid || q.safeUid;
-          q.online = Boolean(res.online);
-          meEntry.uid = q.safeUid;
-          if (Array.isArray(res.players)) {
-            res.players.forEach((rp) => {
-              if (!rp || !rp.uid || rp.uid === q.safeUid) return;
-              if (q.players.length >= (DATA.COMP_MATCH_PLAYERS || 8)) return;
-              if (q.players.some((x) => x.uid === rp.uid)) return;
-              const t = DATA.getCompTier(rp.trophies || 0);
-              q.usedNames.add(rp.nickname || '');
-              q.players.push({
-                uid: rp.uid,
-                provider: rp.provider || 'google',
-                nickname: rp.nickname || '날씨러너',
-                charId: rp.charId || 'umbrella_master',
-                skinId: rp.skinId || null,
-                trophies: Math.max(0, Math.floor(rp.trophies || 0)),
-                tierName: t.name,
-                tierColor: t.color,
-                isMe: false,
-                isHuman: true,
-                score: Math.max(0, Math.floor(rp.score || 0)),
-                finished: Boolean(rp.finished)
-              });
-            });
-            renderCompMatchGrid(q.players);
-          }
-        }
-      } catch {}
+    // Overwatch-style non-blocking matchmaking: float top bar immediately so player can enjoy other content!
+    if (opts && opts.openModal) {
+      openCompMatchOverlay();
+    } else {
+      if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
+      showToast('경쟁전 매칭 시작! 상단 배너를 보며 다른 콘텐츠를 자유롭게 즐길 수 있습니다.');
     }
-    if (q.cancelled || compQueueState !== q) return;
 
-    const totalSlots = DATA.COMP_MATCH_PLAYERS || 8;
-    const launchCountdown = () => {
+    const toHumanEntry = (rp) => {
+      const t = DATA.getCompTier(rp.trophies || 0);
+      return {
+        uid: String(rp.uid),
+        provider: rp.provider || 'google',
+        nickname: rp.nickname || '날씨러너',
+        charId: rp.charId || 'umbrella_master',
+        skinId: rp.skinId || null,
+        profileCharId: rp.profileCharId || rp.charId || 'umbrella_master',
+        profileSkinId: rp.profileSkinId !== undefined ? rp.profileSkinId : (rp.skinId || null),
+        trophies: Math.max(0, Math.floor(rp.trophies || 0)),
+        tierName: t.name,
+        tierColor: t.color,
+        platform: rp.platform || 'pc',
+        platformLabel: rp.platformLabel || (rp.platform === 'android' ? 'Android' : (rp.platform === 'ios' ? 'iOS' : (rp.platform === 'ipad' ? 'iPad' : 'PC'))),
+        isMe: String(rp.uid) === myUid,
+        isHuman: true,
+        score: 0,
+        finished: false
+      };
+    };
+
+    const launchSyncedMatch = async (roomId, humanRoster) => {
       if (q.launching || q.cancelled || compQueueState !== q) return;
       q.launching = true;
+      q.roomId = roomId || `local_${Date.now()}`;
       clearCompQueueTimers(q);
       if (el.btnCompMatchCancel) el.btnCompMatchCancel.disabled = true;
+      if (el.btnCompMatchMinimize) el.btnCompMatchMinimize.classList.add('hidden');
+
+      // Build deterministic 8-player roster (same humans + seeded AI rivals across PC, Android, iOS!)
+      const finalPlayers = [];
+      const seenUids = new Set();
+      const usedNames = new Set();
+      (humanRoster || [meEntry]).forEach((hp) => {
+        if (!hp || !hp.uid || seenUids.has(hp.uid) || finalPlayers.length >= totalSlots) return;
+        seenUids.add(hp.uid);
+        usedNames.add(hp.nickname || '');
+        finalPlayers.push({ ...hp, score: 0, finished: false });
+      });
+      if (!seenUids.has(myUid)) {
+        finalPlayers.unshift({ ...meEntry, score: 0, finished: false });
+        seenUids.add(myUid);
+        usedNames.add(meEntry.nickname);
+      }
+      if (finalPlayers.length < totalSlots) {
+        const rng = createSeededRng(q.roomId);
+        const rateSpread = [0.72, 0.81, 0.90, 0.98, 1.06, 1.15, 1.25];
+        for (let i = rateSpread.length - 1; i > 0; i--) {
+          const j = Math.floor(rng() * (i + 1));
+          const tmp = rateSpread[i]; rateSpread[i] = rateSpread[j]; rateSpread[j] = tmp;
+        }
+        let cursor = 0;
+        while (finalPlayers.length < totalSlots) {
+          const mult = rateSpread[cursor % rateSpread.length] || 1.0;
+          cursor += 1;
+          finalPlayers.push(createCompRival(cursor, myTrophies, myStats.scoreMult, usedNames, mult, rng));
+        }
+      }
+      q.players = finalPlayers;
+      renderCompMatchGrid(q.players);
+
+      // Register our live match room entry on RTDB (2-level strict-rule-safe path!)
+      if (q.online && !q.roomId.startsWith('local_') && ONLINE && ONLINE.joinCompActiveRoom) {
+        ONLINE.joinCompActiveRoom(q.roomId, q.myQueueInfo).catch(() => {});
+      }
+
+      SFX.seasonUp();
+      const inSkirmishRun = Boolean(run && run.active);
+      if (!inSkirmishRun) {
+        closeBrowsingModalsForCompLaunch();
+        openCompMatchOverlay();
+      } else {
+        showToast('경쟁전 매칭 완료! 3초 후 경쟁전으로 입장합니다 (획득 코인 자동 저장)');
+      }
+
       let sec = 3;
       const tick = () => {
         if (q.cancelled || compQueueState !== q) return;
+        q.launchSecLeft = sec;
+        updateCompOwQueueBarUI();
         if (sec > 0) {
-          if (el.compMatchStatus) el.compMatchStatus.textContent = `8인 매칭 완료! ${sec}초 후 경기를 시작합니다`;
+          if (el.compMatchStatus) el.compMatchStatus.textContent = `8인 크로스 플레이 매칭 완료! ${sec}초 후 경기 시작`;
           SFX.click();
           sec -= 1;
         } else {
           clearCompQueueTimers(q);
           compQueueState = null;
           if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
+          updateCompOwQueueBarUI();
+
+          // If player was running Normal / Today's Weather skirmish while waiting, safely bank coins first!
+          if (run && run.active && run.mode !== 'competitive') {
+            const bankedCoins = Math.max(0, Math.floor(run.coinsCollected || 0));
+            if (bankedCoins > 0) {
+              save.gold += bankedCoins;
+              save.totalCoinsEver = (save.totalCoinsEver || 0) + bankedCoins;
+              persistSave(false);
+            }
+            run.active = false;
+            run = null;
+            paused = false;
+            releaseAllControlButtons();
+            if (el.pauseOverlay) el.pauseOverlay.classList.add('hidden');
+            if (el.gameoverOverlay) el.gameoverOverlay.classList.add('hidden');
+          }
+
           const dur = DATA.COMP_MATCH_DURATION || 60;
           const nowMs = Date.now();
           const matchCfg = {
             roomId: q.roomId,
             safeUid: q.safeUid,
             online: q.online,
+            myMeta: {
+              provider: myAuth.provider,
+              nickname: myNick,
+              charId: myChar.id,
+              skinId: mySkin ? mySkin.id : null,
+              trophies: myTrophies,
+              platform: myPlat.id,
+              platformLabel: myPlat.label
+            },
             duration: dur,
             startedAt: nowMs,
             endsAt: nowMs + dur * 1000,
@@ -6779,92 +7019,162 @@
         }
       };
       tick();
-      q.startTimer = setInterval(tick, 750);
+      q.startTimer = setInterval(tick, 900);
     };
 
-    if (q.players.length >= totalSlots) {
-      launchCountdown();
-      return;
-    }
-
-    // Poll real RTDB room every 1s for real Google-linked players
-    if (q.online && ONLINE && ONLINE.pollCompMatchRoom) {
-      q.pollTimer = setInterval(async () => {
-        if (q.cancelled || q.launching || compQueueState !== q) return;
-        const remote = await ONLINE.pollCompMatchRoom(q.roomId);
-        if (!Array.isArray(remote) || q.cancelled || q.launching || compQueueState !== q) return;
-        let changed = false;
-        remote.forEach((rp) => {
-          if (!rp || !rp.uid || rp.uid === q.safeUid) return;
-          if (q.players.length >= totalSlots) return;
-          if (q.players.some((x) => x.uid === rp.uid)) return;
-          const t = DATA.getCompTier(rp.trophies || 0);
-          q.usedNames.add(rp.nickname || '');
-          q.players.push({
-            uid: rp.uid,
-            provider: rp.provider || 'google',
-            nickname: rp.nickname || '날씨러너',
-            charId: rp.charId || 'umbrella_master',
-            skinId: rp.skinId || null,
-            trophies: Math.max(0, Math.floor(rp.trophies || 0)),
-            tierName: t.name,
-            tierColor: t.color,
-            isMe: false,
-            isHuman: true,
-            score: 0,
-            finished: false
-          });
-          changed = true;
-        });
-        if (changed) {
-          SFX.click();
-          renderCompMatchGrid(q.players);
-          if (q.players.length >= totalSlots) launchCountdown();
-        }
-      }, 1000);
-    }
-
-    // 1-second live wait clock: after 60s (1 minute) without full 8 real players, ONLY Bronze/Silver (0~699) allows AI fill!
-    const AI_FALLBACK_DELAY_SEC = 60;
-    q.waitTimer = setInterval(() => {
+    const applyQueueSnapshot = async (entries, serverNow) => {
       if (q.cancelled || q.launching || compQueueState !== q) return;
-      q.waitSec += 1;
-      if (q.players.length >= totalSlots) {
-        launchCountdown();
+      const list = Array.isArray(entries) ? entries : [];
+
+      // 1. Check if ANY group leader already launched a match that includes me!
+      const launcher = list.find(
+        (p) => p && p.state === 'launching' && p.matchRoomId && Array.isArray(p.rosterUids) && p.rosterUids.includes(myUid)
+      );
+      if (launcher) {
+        const rosterMap = new Map();
+        list.forEach((p) => { if (p && p.uid) rosterMap.set(String(p.uid), p); });
+        const matchedHumans = launcher.rosterUids
+          .map((uid) => (String(uid) === myUid ? meEntry : (rosterMap.get(String(uid)) ? toHumanEntry(rosterMap.get(String(uid))) : null)))
+          .filter(Boolean);
+        await launchSyncedMatch(launcher.matchRoomId, matchedHumans);
         return;
       }
-      if (q.allowAiFallback && !q.aiStarted && q.waitSec >= AI_FALLBACK_DELAY_SEC) {
-        q.aiStarted = true;
-        if (el.compMatchStatus) {
-          el.compMatchStatus.textContent = `1분 경과 · 실버 이하 구간 AI 보충 중... (${q.players.length} / ${totalSlots})`;
+
+      // 2. Gather compatible searching humans across ALL platforms (PC, Android, iOS, iPad)
+      const widenHighTier = q.waitSec >= 20 && (q.tierBand === 'gp' || q.tierBand === 'dm');
+      const compatible = list.filter((p) => {
+        if (!p || !p.uid || p.state !== 'searching') return false;
+        const pb = p.tierBand || ((Number(p.trophies) || 0) < 3000 ? 'bs' : ((Number(p.trophies) || 0) < 6000 ? 'gp' : 'dm'));
+        if (pb === q.tierBand) return true;
+        if (widenHighTier && (pb === 'gp' || pb === 'dm')) return true;
+        return false;
+      });
+      if (!compatible.some((p) => String(p.uid) === myUid)) {
+        compatible.push({
+          ...myQueueInfo,
+          platform: myPlat.id,
+          platformLabel: myPlat.label,
+          state: 'searching',
+          updatedAt: serverNow
+        });
+      }
+
+      compatible.sort((a, b) => {
+        const qa = Number(a.queuedAt) || Number(a.updatedAt) || 0;
+        const qb = Number(b.queuedAt) || Number(b.updatedAt) || 0;
+        return (qa - qb) || String(a.uid).localeCompare(String(b.uid));
+      });
+
+      const myIdx = Math.max(0, compatible.findIndex((p) => String(p.uid) === myUid));
+      const chunkStart = Math.floor(myIdx / totalSlots) * totalSlots;
+      const myPool = compatible.slice(chunkStart, chunkStart + totalSlots);
+      const leader = myPool[0] || null;
+      q.isLeader = Boolean(leader && String(leader.uid) === myUid);
+      const leaderQueued = leader ? (Number(leader.queuedAt) || Number(leader.updatedAt) || serverNow) : serverNow;
+      q.leaderWaitSec = Math.max(q.waitSec, Math.floor(Math.max(0, serverNow - leaderQueued) / 1000));
+
+      const prevCount = q.players.length;
+      const nextPlayers = myPool.map((rp) => (String(rp.uid) === myUid ? meEntry : toHumanEntry(rp)));
+      q.players = nextPlayers;
+      if (nextPlayers.length !== prevCount) {
+        if (nextPlayers.length > prevCount) SFX.click();
+        renderCompMatchGrid(q.players);
+      }
+      updateQueueStatusText();
+
+      // 3. Full 8 real players across platforms -> launch immediately!
+      if (myPool.length >= totalSlots) {
+        q.fullGroupTicks += 1;
+        const deterministicRoomId = `cm_${String((leader && leader.uid) || myUid).slice(0, 8)}_${Math.floor(leaderQueued / 1000)}`;
+        if (q.isLeader || q.fullGroupTicks >= 3) {
+          const rosterUids = myPool.map((p) => String(p.uid));
+          if (q.online && ONLINE && ONLINE.heartbeatCompQueue) {
+            await ONLINE.heartbeatCompQueue(q.myQueueInfo, {
+              state: 'launching',
+              matchRoomId: deterministicRoomId,
+              rosterUids,
+              launchAt: serverNow + 3500
+            });
+          }
+          await launchSyncedMatch(deterministicRoomId, nextPlayers);
         }
-        q.fillTimer = setInterval(() => {
-          if (q.cancelled || q.launching || compQueueState !== q) return;
-          if (q.players.length >= totalSlots) {
-            launchCountdown();
-            return;
+      } else {
+        q.fullGroupTicks = 0;
+      }
+    };
+
+    // Join shared cross-platform RTDB queue (strict 2-level path + server timestamp!)
+    if (ONLINE && ONLINE.joinCompQueue) {
+      try {
+        const res = await ONLINE.joinCompQueue(myQueueInfo);
+        if (q.cancelled || compQueueState !== q) return;
+        if (res && res.rejected === 'google_required') {
+          cancelCompetitiveMatchmaking(true);
+          showToast('Google 또는 Apple 계정 연동이 필요합니다.');
+          openLoginOverlay();
+          return;
+        }
+        if (res) {
+          q.online = Boolean(res.online);
+          if (res.queuedAt) q.myQueueInfo.queuedAt = res.queuedAt;
+          await applyQueueSnapshot(res.entries || [], res.serverNow || Date.now());
+        }
+      } catch {}
+    }
+    if (q.cancelled || q.launching || compQueueState !== q) return;
+
+    // Poll cross-platform RTDB queue every 1.5s
+    if (ONLINE && ONLINE.pollCompQueue) {
+      q.pollTimer = setInterval(async () => {
+        if (q.cancelled || q.launching || compQueueState !== q) return;
+        try {
+          const polled = await ONLINE.pollCompQueue();
+          if (!polled || q.cancelled || q.launching || compQueueState !== q) return;
+          if (polled.online) q.online = true;
+          await applyQueueSnapshot(polled.entries || [], polled.serverNow || Date.now());
+        } catch {}
+      }, 1500);
+    }
+
+    // Send live server-timestamp heartbeat every 4s so PC / Android / iOS stay visible & synced!
+    if (ONLINE && ONLINE.heartbeatCompQueue) {
+      q.hbTimer = setInterval(async () => {
+        if (q.cancelled || q.launching || compQueueState !== q) return;
+        try {
+          const hbRes = await ONLINE.heartbeatCompQueue(q.myQueueInfo, { state: 'searching' });
+          if (hbRes && hbRes.ok) q.online = true;
+        } catch {}
+      }, 4000);
+    }
+
+    // 1-second live wait clock: updates Overwatch top bar & triggers Bronze/Silver AI fill at 60s
+    q.waitTimer = setInterval(async () => {
+      if (q.cancelled || q.launching || compQueueState !== q) return;
+      q.waitSec += 1;
+      updateQueueStatusText();
+
+      if (q.allowAiFallback && !q.aiStarted) {
+        const readyForLeaderFill = q.isLeader && (q.waitSec >= AI_FALLBACK_DELAY_SEC || q.leaderWaitSec >= AI_FALLBACK_DELAY_SEC);
+        const readyForFallbackFill = !q.online ? (q.waitSec >= AI_FALLBACK_DELAY_SEC) : (q.waitSec >= AI_FALLBACK_DELAY_SEC + 5);
+        if (readyForLeaderFill || readyForFallbackFill) {
+          q.aiStarted = true;
+          updateQueueStatusText();
+          const serverNow = (ONLINE && ONLINE.getCompServerNow) ? ONLINE.getCompServerNow() : Date.now();
+          const roomId = q.online
+            ? `cm_${myUid.slice(0, 8)}_${Math.floor(serverNow / 1000)}`
+            : `local_${Date.now()}`;
+          const rosterUids = q.players.map((p) => String(p.uid));
+          if (q.online && ONLINE && ONLINE.heartbeatCompQueue) {
+            try {
+              await ONLINE.heartbeatCompQueue(q.myQueueInfo, {
+                state: 'launching',
+                matchRoomId: roomId,
+                rosterUids,
+                launchAt: serverNow + 3500
+              });
+            } catch {}
           }
-          const addCount = (q.players.length < 5 && Math.random() < 0.45) ? 2 : 1;
-          for (let k = 0; k < addCount && q.players.length < totalSlots; k++) {
-            const mult = q.rateSpread[q.rivalCursor % q.rateSpread.length] || 1.0;
-            q.rivalCursor += 1;
-            q.players.push(createCompRival(q.rivalCursor, myTrophies, myStats.scoreMult, q.usedNames, mult));
-          }
-          SFX.click();
-          renderCompMatchGrid(q.players);
-          if (el.compMatchStatus) {
-            el.compMatchStatus.textContent = `1분 경과 · 실버 이하 구간 AI 보충 중... (${q.players.length} / ${totalSlots})`;
-          }
-          if (q.players.length >= totalSlots) launchCountdown();
-        }, 550);
-      } else if (!q.aiStarted) {
-        if (el.compMatchStatus) {
-          const mm = Math.floor(q.waitSec / 60);
-          const ss = String(q.waitSec % 60).padStart(2, '0');
-          const waitDisp = mm > 0 ? `${mm}분 ${ss}초` : `${q.waitSec}초`;
-          el.compMatchStatus.textContent = q.allowAiFallback
-            ? `실제 Google 연동 러너 찾는 중... (${q.players.length} / ${totalSlots} · ${waitDisp} / 1분 후 AI 보충)`
-            : `골드+ 구간: 실제 Google 연동 러너 대기 중... (${q.players.length} / ${totalSlots} · ${waitDisp})`;
+          await launchSyncedMatch(roomId, q.players);
         }
       }
     }, 1000);
@@ -7518,7 +7828,7 @@
       cm.syncTimer = (cm.syncTimer || 0) + dt;
       if (cm.syncTimer >= 2.2) {
         cm.syncTimer = 0;
-        ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, myScoreNow, false);
+        ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, myScoreNow, false, cm.myMeta);
         if (ONLINE.pollCompMatchRoom) {
           ONLINE.pollCompMatchRoom(cm.roomId).then((remote) => {
             if (!run || run.compMatch !== cm || !Array.isArray(remote)) return;
@@ -7556,7 +7866,7 @@
       }
     });
     if (cm.online && ONLINE && ONLINE.pushCompLiveScore) {
-      ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, finalScore, true);
+      ONLINE.pushCompLiveScore(cm.roomId, cm.safeUid, finalScore, true, cm.myMeta);
     }
 
     const dur = cm.duration || 60;
@@ -11952,6 +12262,7 @@
     } else if (run) {
       commitRunMissionProgress();
     }
+    const wasCompRun = Boolean(run && run.mode === 'competitive');
     run = null;
     paused = false;
     if (dockAutoHideTimer) {
@@ -11970,13 +12281,16 @@
     if (el.compResultOverlay) el.compResultOverlay.classList.add('hidden');
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
     activeWaitMatchId = null;
-    cancelCompetitiveMatchmaking(true);
+    if (wasCompRun) {
+      cancelCompetitiveMatchmaking(true);
+    }
     el.runCanvasWrap.classList.remove('fever-active');
     el.pauseOverlay.classList.add('hidden');
     el.gameoverOverlay.classList.add('hidden');
     el.viewRun.classList.add('hidden');
     switchTab('home');
     updateCompPendingPill();
+    updateCompOwQueueBarUI();
   }
 
   // ===================== MAIN LOOP =====================
@@ -12453,6 +12767,36 @@
         startCompetitiveMatchmaking();
       });
     }
+    if (el.btnCompMatchMinimize) {
+      el.btnCompMatchMinimize.addEventListener('click', () => {
+        SFX.click();
+        minimizeCompMatchOverlay();
+      });
+    }
+    if (el.compMatchOverlay) {
+      el.compMatchOverlay.addEventListener('click', (e) => {
+        if (e.target === el.compMatchOverlay && compQueueState && !compQueueState.launching) {
+          SFX.click();
+          minimizeCompMatchOverlay();
+        }
+      });
+    }
+    if (el.btnOwQueueOpen) {
+      el.btnOwQueueOpen.addEventListener('click', () => {
+        SFX.click();
+        openCompMatchOverlay();
+      });
+    }
+    if (el.btnOwQueueCancel) {
+      el.btnOwQueueCancel.addEventListener('click', () => {
+        cancelCompetitiveMatchmaking();
+      });
+    }
+    window.addEventListener('pagehide', () => {
+      if (compQueueState && !compQueueState.cancelled && compQueueState.online && ONLINE && ONLINE.leaveCompQueue && compQueueState.myQueueInfo) {
+        ONLINE.leaveCompQueue(compQueueState.myQueueInfo);
+      }
+    });
     if (el.btnCompMatchCancel) {
       el.btnCompMatchCancel.addEventListener('click', () => {
         cancelCompetitiveMatchmaking();

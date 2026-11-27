@@ -1047,109 +1047,367 @@ window.OnlineService = (function () {
     return { board, syncedOnline, totalParticipants: sorted.length, fetchedAt: Date.now() };
   }
 
-  async function joinCompMatchRoom(playerInfo) {
-    if (!playerInfo || !playerInfo.uid || !isRankedProvider(playerInfo.provider) || isLegacyUnverifiedUid(playerInfo.uid)) {
-      return { rejected: 'google_required', roomId: null, safeUid: null, players: [], online: false };
-    }
-    const now = Date.now();
-    // 120-second shared matchmaking bucket per tier band so real Google players waiting 60s+ match reliably!
-    const bucket = Math.floor(now / 120000);
-    const tr = Math.max(0, Math.floor(Number(playerInfo.trophies) || 0));
-    const tierBand = tr < 3000 ? 'bs' : (tr < 6000 ? 'gp' : 'dm');
-    const roomId = `r_${tierBand}_${bucket}`;
-    const safeUid = String(playerInfo.uid).replace(/[^a-zA-Z0-9_-]/g, '_');
-    const entry = {
-      uid: safeUid,
-      provider: playerInfo.provider,
-      nickname: sanitizeNickname(playerInfo.nickname, '날씨러너'),
-      charId: playerInfo.charId || 'umbrella_master',
-      skinId: playerInfo.skinId || null,
-      trophies: tr,
-      score: 0,
-      finished: false,
-      cancelled: false,
-      joinedAt: now,
-      updatedAt: now
-    };
+  // ===================== CROSS-PLATFORM 8-PLAYER COMPETITIVE QUEUE & MATCH ROOMS =====================
+  // Uses strict-rule-safe 2-level paths (/weekly_boards/{bucket}/{uid}.json) + Firebase server timestamps
+  // so PC (Windows/Mac), Android, iPhone, and iPad players match seamlessly with zero clock skew!
+  const RTDB_COMP_QUEUE_BUCKET = 'comp_queue_v2';
+  const COMP_QUEUE_REV_CACHE = {};
+  const COMP_ROOM_META_CACHE = {};
+  let compServerClockOffsetMs = 0;
+  let compServerClockSynced = false;
 
-    let online = false;
-    let players = [entry];
-    if (hasRemoteDb()) {
+  function detectClientPlatform() {
+    try {
+      const ua = String((typeof navigator !== 'undefined' && navigator.userAgent) || '');
+      const plat = String((typeof navigator !== 'undefined' && navigator.platform) || '');
+      const touchPts = (typeof navigator !== 'undefined' && Number(navigator.maxTouchPoints)) || 0;
+      if (/iPad/i.test(ua) || (plat === 'MacIntel' && touchPts > 1)) {
+        return { id: 'ipad', label: 'iPad' };
+      }
+      if (/iPhone|iPod/i.test(ua)) {
+        return { id: 'ios', label: 'iOS' };
+      }
+      if (/Android/i.test(ua)) {
+        return { id: 'android', label: 'Android' };
+      }
+      return { id: 'pc', label: 'PC' };
+    } catch {
+      return { id: 'pc', label: 'PC' };
+    }
+  }
+
+  function getCompServerNow() {
+    return Date.now() + (compServerClockSynced ? compServerClockOffsetMs : 0);
+  }
+
+  function calibrateServerClock(serverTs) {
+    const num = Number(serverTs);
+    if (Number.isFinite(num) && num > 1700000000000) {
+      compServerClockOffsetMs = num - Date.now();
+      compServerClockSynced = true;
+    }
+  }
+
+  async function fetchBoardNodeRemote(bucket, uid) {
+    if (!bucket || !uid || !hasRemoteDb()) return null;
+    const roots = [RTDB_BOARD_ROOT, '/weekly_boards_v2'];
+    let best = null;
+    for (const root of roots) {
       try {
-        const putPath = `${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}/${encodeURIComponent(safeUid)}.json`;
-        const { url } = await buildAuthedUrl(putPath, false, true);
-        const putRes = await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(entry)
-        });
-        if (putRes && putRes.ok) {
-          online = true;
-          const listRes = await fetch(`${getDbUrl()}${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}.json`, { cache: 'no-store' });
-          if (listRes && listRes.ok) {
-            const data = await listRes.json();
-            if (data && typeof data === 'object') {
-              players = Object.values(data)
-                .filter((p) => p && p.uid && !p.cancelled && isRankedProvider(p.provider) && (now - (p.joinedAt || 0)) < 180000)
-                .slice(0, 8);
-            }
+        const res = await fetch(`${getDbUrl()}${root}/${encodeURIComponent(bucket)}/${encodeURIComponent(uid)}.json`, { cache: 'no-store' });
+        if (res && res.ok) {
+          const d = await res.json();
+          if (d && typeof d === 'object' && (!best || (Number(d.score) || 0) >= (Number(best.score) || 0))) {
+            best = d;
           }
         }
       } catch {}
     }
-    return { rejected: null, roomId, safeUid, players, online };
+    return best;
+  }
+
+  async function writeCompBoardNode(bucket, uid, payloadBuilder, opts = {}) {
+    if (!bucket || !uid || !hasRemoteDb()) return { ok: false, data: null, status: 0 };
+    const cacheKey = `${bucket}:${uid}`;
+    let curScore = Math.max(Number(COMP_QUEUE_REV_CACHE[cacheKey]) || 0, Number(opts.minScore) || 0);
+    if (curScore <= 0 && !opts.keepalive) {
+      const prev = await fetchBoardNodeRemote(bucket, uid);
+      if (prev && Number(prev.score) > 0) curScore = Number(prev.score);
+    }
+
+    const targets = [
+      `${RTDB_BOARD_ROOT}/${encodeURIComponent(bucket)}/${encodeURIComponent(uid)}.json`,
+      `/weekly_boards_v2/${encodeURIComponent(bucket)}/${encodeURIComponent(uid)}.json`
+    ];
+
+    const maxAttempts = opts.keepalive ? 1 : 2;
+    let lastStatus = 0;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const nextScore = opts.exactMinScore
+        ? Math.min(4999990, Math.max(1, curScore, Math.floor(opts.exactMinScore)))
+        : Math.min(4999990, Math.max(1, curScore + 1));
+      const payload = {
+        ...payloadBuilder(nextScore),
+        uid: String(uid),
+        score: nextScore,
+        updatedAt: { '.sv': 'timestamp' }
+      };
+      const bodyStr = JSON.stringify(payload);
+
+      // Fast keepalive path for pagehide/cancel/finish so mobile browsers never drop the write
+      if (opts.keepalive && cachedIdToken && cachedIdTokenUid === uid && (Date.now() - cachedIdTokenAt) < 50 * 60 * 1000) {
+        try {
+          const fastUrl = `${getDbUrl()}${targets[0]}?auth=${encodeURIComponent(cachedIdToken)}`;
+          fetch(fastUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyStr,
+            keepalive: true
+          }).catch(() => {});
+          COMP_QUEUE_REV_CACHE[cacheKey] = nextScore;
+          return { ok: true, data: payload, status: 200 };
+        } catch {}
+      }
+
+      for (const path of targets) {
+        try {
+          const { url, hasToken } = await buildAuthedUrl(path, attempt === 1, !opts.keepalive);
+          if (!hasToken) continue;
+          const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyStr,
+            keepalive: Boolean(opts.keepalive)
+          });
+          lastStatus = res ? res.status : 0;
+          if (res && res.ok) {
+            let written = null;
+            try { written = await res.json(); } catch {}
+            COMP_QUEUE_REV_CACHE[cacheKey] = nextScore;
+            if (written && written.updatedAt) calibrateServerClock(written.updatedAt);
+            return { ok: true, data: written || payload, status: res.status };
+          }
+        } catch {}
+      }
+
+      if (attempt === 0 && !opts.keepalive) {
+        const remotePrev = await fetchBoardNodeRemote(bucket, uid);
+        if (remotePrev && Number(remotePrev.score) >= curScore) {
+          curScore = Number(remotePrev.score);
+        } else {
+          curScore = nextScore;
+        }
+      }
+    }
+    return { ok: false, data: null, status: lastStatus };
+  }
+
+  function getCompTierBand(trophies) {
+    const tr = Math.max(0, Math.floor(Number(trophies) || 0));
+    return tr < 3000 ? 'bs' : (tr < 6000 ? 'gp' : 'dm');
+  }
+
+  async function pollCompQueue() {
+    if (!hasRemoteDb()) return { online: false, serverNow: getCompServerNow(), entries: [] };
+    const roots = [RTDB_BOARD_ROOT, '/weekly_boards_v2'];
+    let online = false;
+    const byUid = {};
+
+    for (const root of roots) {
+      try {
+        const res = await fetch(`${getDbUrl()}${root}/${RTDB_COMP_QUEUE_BUCKET}.json`, { cache: 'no-store' });
+        if (res && res.ok) {
+          online = true;
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            Object.values(data).forEach((p) => {
+              if (!p || !p.uid || !isRankedProvider(p.provider) || isLegacyUnverifiedUid(p.uid)) return;
+              const prev = byUid[p.uid];
+              if (!prev || (Number(p.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
+                byUid[p.uid] = p;
+              }
+            });
+          }
+          break;
+        }
+      } catch {}
+    }
+
+    const serverNow = getCompServerNow();
+    // Prune stale entries (>28s without heartbeat) and cancelled entries
+    const entries = Object.values(byUid).filter((p) => {
+      if (!p || p.state === 'cancelled') return false;
+      const ts = Number(p.updatedAt) || 0;
+      if (!ts) return false;
+      const age = serverNow - ts;
+      return age <= 28000 && age >= -30000;
+    });
+
+    return { online, serverNow, entries };
+  }
+
+  async function joinCompQueue(playerInfo) {
+    if (!playerInfo || !playerInfo.uid || !isRankedProvider(playerInfo.provider) || isLegacyUnverifiedUid(playerInfo.uid)) {
+      return { rejected: 'google_required', online: false, uid: null, entries: [] };
+    }
+    const uid = String(playerInfo.uid);
+    const plat = detectClientPlatform();
+    const tr = Math.max(0, Math.floor(Number(playerInfo.trophies) || 0));
+    const tierBand = getCompTierBand(tr);
+    const nick = sanitizeNickname(playerInfo.nickname, '날씨러너');
+
+    const writeRes = await writeCompBoardNode(RTDB_COMP_QUEUE_BUCKET, uid, () => ({
+      provider: playerInfo.provider,
+      nickname: nick,
+      charId: playerInfo.charId || 'umbrella_master',
+      skinId: playerInfo.skinId || null,
+      profileCharId: playerInfo.profileCharId || playerInfo.charId || 'umbrella_master',
+      profileSkinId: playerInfo.profileSkinId !== undefined ? playerInfo.profileSkinId : (playerInfo.skinId || null),
+      trophies: tr,
+      tierBand,
+      platform: plat.id,
+      platformLabel: plat.label,
+      state: 'searching',
+      queuedAt: 0,
+      matchRoomId: '',
+      rosterUids: [],
+      launchAt: 0
+    }));
+
+    const serverNow = (writeRes && writeRes.data && Number(writeRes.data.updatedAt)) || getCompServerNow();
+    const queuedAt = serverNow;
+    // Stamp server-synchronized queuedAt on second quick update only if needed? Even cleaner: write queuedAt = serverNow immediately if calibrated, or update on first heartbeat!
+    if (writeRes && writeRes.ok) {
+      await writeCompBoardNode(RTDB_COMP_QUEUE_BUCKET, uid, () => ({
+        provider: playerInfo.provider,
+        nickname: nick,
+        charId: playerInfo.charId || 'umbrella_master',
+        skinId: playerInfo.skinId || null,
+        profileCharId: playerInfo.profileCharId || playerInfo.charId || 'umbrella_master',
+        profileSkinId: playerInfo.profileSkinId !== undefined ? playerInfo.profileSkinId : (playerInfo.skinId || null),
+        trophies: tr,
+        tierBand,
+        platform: plat.id,
+        platformLabel: plat.label,
+        state: 'searching',
+        queuedAt,
+        matchRoomId: '',
+        rosterUids: [],
+        launchAt: 0
+      }));
+    }
+
+    const polled = await pollCompQueue();
+    return {
+      rejected: null,
+      online: Boolean(writeRes && writeRes.ok),
+      uid,
+      tierBand,
+      platform: plat,
+      queuedAt,
+      serverNow: polled.serverNow,
+      entries: polled.entries
+    };
+  }
+
+  async function heartbeatCompQueue(playerInfo, statePatch = {}) {
+    if (!playerInfo || !playerInfo.uid || !isRankedProvider(playerInfo.provider) || isLegacyUnverifiedUid(playerInfo.uid)) {
+      return { ok: false };
+    }
+    const uid = String(playerInfo.uid);
+    const plat = playerInfo.platform || detectClientPlatform();
+    const tr = Math.max(0, Math.floor(Number(playerInfo.trophies) || 0));
+    const tierBand = playerInfo.tierBand || getCompTierBand(tr);
+    const nick = sanitizeNickname(playerInfo.nickname, '날씨러너');
+
+    return writeCompBoardNode(RTDB_COMP_QUEUE_BUCKET, uid, () => ({
+      provider: playerInfo.provider,
+      nickname: nick,
+      charId: playerInfo.charId || 'umbrella_master',
+      skinId: playerInfo.skinId || null,
+      profileCharId: playerInfo.profileCharId || playerInfo.charId || 'umbrella_master',
+      profileSkinId: playerInfo.profileSkinId !== undefined ? playerInfo.profileSkinId : (playerInfo.skinId || null),
+      trophies: tr,
+      tierBand,
+      platform: plat.id || 'pc',
+      platformLabel: plat.label || 'PC',
+      state: statePatch.state || 'searching',
+      queuedAt: Number(playerInfo.queuedAt) || getCompServerNow(),
+      matchRoomId: statePatch.matchRoomId || '',
+      rosterUids: Array.isArray(statePatch.rosterUids) ? statePatch.rosterUids : [],
+      launchAt: Number(statePatch.launchAt) || 0
+    }), { keepalive: Boolean(statePatch.keepalive) });
+  }
+
+  async function leaveCompQueue(playerInfo) {
+    if (!playerInfo || !playerInfo.uid || !isRankedProvider(playerInfo.provider) || isLegacyUnverifiedUid(playerInfo.uid)) {
+      return false;
+    }
+    const res = await heartbeatCompQueue(playerInfo, { state: 'cancelled', keepalive: true });
+    return Boolean(res && res.ok);
+  }
+
+  async function joinCompActiveRoom(roomId, playerInfo) {
+    if (!roomId || roomId.startsWith('local_') || !playerInfo || !playerInfo.uid) return false;
+    if (!isRankedProvider(playerInfo.provider) || isLegacyUnverifiedUid(playerInfo.uid)) return false;
+    const uid = String(playerInfo.uid);
+    const nick = sanitizeNickname(playerInfo.nickname, '날씨러너');
+    const plat = playerInfo.platform || detectClientPlatform();
+    const meta = {
+      uid,
+      provider: playerInfo.provider,
+      nickname: nick,
+      charId: playerInfo.charId || 'umbrella_master',
+      skinId: playerInfo.skinId || null,
+      trophies: Math.max(0, Math.floor(Number(playerInfo.trophies) || 0)),
+      platform: plat.id || 'pc',
+      platformLabel: plat.label || 'PC'
+    };
+    COMP_ROOM_META_CACHE[`${roomId}:${uid}`] = meta;
+    const res = await writeCompBoardNode(roomId, uid, () => ({
+      ...meta,
+      realScore: 0,
+      finished: false
+    }), { exactMinScore: 1 });
+    return Boolean(res && res.ok);
   }
 
   async function pollCompMatchRoom(roomId) {
     if (!roomId || roomId.startsWith('local_') || !hasRemoteDb()) return null;
-    try {
-      const res = await fetch(`${getDbUrl()}${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}.json`, { cache: 'no-store' });
-      if (!res || !res.ok) return null;
-      const data = await res.json();
-      if (!data || typeof data !== 'object') return [];
-      const now = Date.now();
-      return Object.values(data)
-        .filter((p) => p && p.uid && !p.cancelled && isRankedProvider(p.provider) && (now - (p.joinedAt || 0)) < 240000)
-        .slice(0, 8);
-    } catch {
-      return null;
+    const roots = [RTDB_BOARD_ROOT, '/weekly_boards_v2'];
+    for (const root of roots) {
+      try {
+        const res = await fetch(`${getDbUrl()}${root}/${encodeURIComponent(roomId)}.json`, { cache: 'no-store' });
+        if (!res || !res.ok) continue;
+        const data = await res.json();
+        if (!data || typeof data !== 'object') return [];
+        return Object.values(data)
+          .filter((p) => p && p.uid && !p.cancelled && isRankedProvider(p.provider))
+          .map((p) => ({
+            ...p,
+            score: typeof p.realScore === 'number'
+              ? Math.max(0, Math.floor(p.realScore))
+              : Math.max(0, Math.floor(Number(p.score) || 0))
+          }))
+          .slice(0, 8);
+      } catch {}
     }
+    return null;
   }
 
-  async function leaveCompMatchRoom(roomId, safeUid) {
-    if (!roomId || roomId.startsWith('local_') || !safeUid || !hasRemoteDb()) return false;
-    try {
-      const path = `${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}/${encodeURIComponent(safeUid)}.json`;
-      const { url } = await buildAuthedUrl(path, false, true);
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cancelled: true, updatedAt: Date.now() })
-      });
-      return Boolean(res && res.ok);
-    } catch {
-      return false;
-    }
+  async function pushCompLiveScore(roomId, uid, score, finished = false, playerMeta = null) {
+    if (!roomId || roomId.startsWith('local_') || !uid || !hasRemoteDb()) return false;
+    const cleanUid = String(uid);
+    const cached = COMP_ROOM_META_CACHE[`${roomId}:${cleanUid}`] || {};
+    const meta = {
+      provider: (playerMeta && playerMeta.provider) || cached.provider || 'google',
+      nickname: sanitizeNickname((playerMeta && playerMeta.nickname) || cached.nickname || '날씨러너', '날씨러너'),
+      charId: (playerMeta && playerMeta.charId) || cached.charId || 'umbrella_master',
+      skinId: (playerMeta && playerMeta.skinId !== undefined) ? playerMeta.skinId : (cached.skinId || null),
+      trophies: Math.max(0, Math.floor(Number((playerMeta && playerMeta.trophies) ?? cached.trophies) || 0)),
+      platform: (playerMeta && playerMeta.platform) || cached.platform || detectClientPlatform().id,
+      platformLabel: (playerMeta && playerMeta.platformLabel) || cached.platformLabel || detectClientPlatform().label
+    };
+    COMP_ROOM_META_CACHE[`${roomId}:${cleanUid}`] = { uid: cleanUid, ...meta };
+    const cleanScore = Math.max(0, Math.floor(Number(score) || 0));
+    const res = await writeCompBoardNode(roomId, cleanUid, () => ({
+      ...meta,
+      realScore: cleanScore,
+      finished: Boolean(finished)
+    }), {
+      exactMinScore: Math.max(1, Math.min(4999990, cleanScore)),
+      keepalive: Boolean(finished)
+    });
+    return Boolean(res && res.ok);
   }
 
-  async function pushCompLiveScore(roomId, safeUid, score, finished = false) {
-    if (!roomId || roomId.startsWith('local_') || !safeUid || !hasRemoteDb()) return false;
-    try {
-      const path = `${RTDB_COMP_ROOMS_PATH}/${encodeURIComponent(roomId)}/${encodeURIComponent(safeUid)}.json`;
-      const { url } = await buildAuthedUrl(path, false, true);
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          score: Math.max(0, Math.floor(Number(score) || 0)),
-          finished: Boolean(finished),
-          updatedAt: Date.now()
-        })
-      });
-      return Boolean(res && res.ok);
-    } catch {
-      return false;
-    }
+  // Backward-compatible shims for any legacy callers
+  async function joinCompMatchRoom(playerInfo) {
+    const q = await joinCompQueue(playerInfo);
+    return { rejected: q.rejected, roomId: RTDB_COMP_QUEUE_BUCKET, safeUid: q.uid, players: q.entries, online: q.online };
+  }
+  async function leaveCompMatchRoom(_roomId, uid, playerInfo) {
+    return leaveCompQueue(playerInfo || { uid, provider: 'google', nickname: '날씨러너' });
   }
 
   // ===================== WEEKLY TOP 1/2/3 CHAMPION REWARD PAYOUT (LINKED USERS ONLY) =====================
@@ -1596,6 +1854,14 @@ window.OnlineService = (function () {
     fetchDailyWeatherBoard,
     submitTrophyProfile,
     fetchTrophyBoard,
+    detectClientPlatform,
+    getCompServerNow,
+    getCompTierBand,
+    joinCompQueue,
+    heartbeatCompQueue,
+    pollCompQueue,
+    leaveCompQueue,
+    joinCompActiveRoom,
     joinCompMatchRoom,
     pollCompMatchRoom,
     leaveCompMatchRoom,
