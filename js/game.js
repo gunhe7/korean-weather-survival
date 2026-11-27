@@ -910,7 +910,8 @@
   }
 
   function getSkinFilter(skinDef) {
-    return (skinDef && skinDef.filter && skinDef.filter !== 'none') ? skinDef.filter : '';
+    if (!skinDef || skinDef.outfitColor) return '';
+    return (skinDef.filter && skinDef.filter !== 'none') ? skinDef.filter : '';
   }
 
   function getCharAnimSpec(charDef, skinDef) {
@@ -5514,10 +5515,13 @@
     const tierCls = `tier-${ch.auraType || 'basic'}`;
 
     el.homeHeroStage.className = `bs-home-stage ${tierCls}${unlocked ? '' : ' locked'}`;
-    lastHomeHeroSrc = '';
     const homePose = (skin && skin.customIdleFrames) ? 'idle' : 'run';
     const charSprVer = getCharSpriteVer(anim.skin);
-    el.homeHeroImg.src = `assets/chars/${anim.skin}_${homePose}_0.png?v=${charSprVer}`;
+    const initHomeFrame = `assets/chars/${anim.skin}_${homePose}_0.png?v=${charSprVer}`;
+    const readyHomeInit = getPreloadedHomeHeroSrc(initHomeFrame, skin);
+    const initialHomeSrc = readyHomeInit || (skin && skin.outfitColor ? getSkinAvatar(ch, skin) : initHomeFrame);
+    lastHomeHeroSrc = initialHomeSrc;
+    el.homeHeroImg.src = initialHomeSrc;
     el.homeHeroImg.alt = skin ? `${ch.name} (${skin.name})` : ch.name;
     el.homeHeroImg.style.filter = getSkinFilter(skin);
     el.homeHeroImg.style.setProperty('--skin-glow', skin ? skin.glow : '');
@@ -5556,14 +5560,18 @@
 
   const homeHeroPreloadCache = {};
 
-  function getPreloadedHomeHeroSrc(src) {
+  function getPreloadedHomeHeroSrc(src, skinDef = null) {
     let img = homeHeroPreloadCache[src];
     if (!img) {
       img = new Image();
       img.src = src;
       homeHeroPreloadCache[src] = img;
     }
-    return img.complete && img.naturalWidth > 0 ? src : null;
+    if (!img.complete || img.naturalWidth <= 0) return null;
+    if (skinDef && skinDef.outfitColor && Renderer && Renderer.getRecoloredDataUrl) {
+      return Renderer.getRecoloredDataUrl(img, skinDef) || src;
+    }
+    return src;
   }
 
   function getCharShowcaseFrameSrc(ch, skin, t, forceRun = false) {
@@ -5588,7 +5596,7 @@
     const ch = DATA.CHARACTERS[previewCharIdx] || DATA.CHARACTERS[0];
     const skin = getEquippedSkin(ch.id);
     const src = getCharShowcaseFrameSrc(ch, skin, t, false);
-    const readySrc = getPreloadedHomeHeroSrc(src);
+    const readySrc = getPreloadedHomeHeroSrc(src, skin);
     if (readySrc && readySrc !== lastHomeHeroSrc) {
       lastHomeHeroSrc = readySrc;
       el.homeHeroImg.src = readySrc;
@@ -5612,7 +5620,7 @@
     const ch = DATA.CHARACTERS[detailCharIdx] || DATA.CHARACTERS[0];
     const skin = getEquippedSkin(ch.id);
     const src = getCharShowcaseFrameSrc(ch, skin, t, true);
-    const readySrc = getPreloadedHomeHeroSrc(src);
+    const readySrc = getPreloadedHomeHeroSrc(src, skin);
     if (readySrc && readySrc !== lastDetailHeroSrc) {
       lastDetailHeroSrc = readySrc;
       el.detailCharImg.src = readySrc;
@@ -5807,7 +5815,9 @@
     el.detailCharTier.textContent = equippedSkin ? equippedSkin.name : ch.tier;
     el.detailCharName.textContent = ch.name;
     el.detailEquippedPill.classList.toggle('hidden', !selected);
-    lastDetailHeroSrc = `assets/chars/${anim.skin}_run_0.png?v=${charSprVer}`;
+    const initDetailFrame = `assets/chars/${anim.skin}_run_0.png?v=${charSprVer}`;
+    const readyDetailInit = getPreloadedHomeHeroSrc(initDetailFrame, equippedSkin);
+    lastDetailHeroSrc = readyDetailInit || (equippedSkin && equippedSkin.outfitColor ? getSkinAvatar(ch, equippedSkin) : initDetailFrame);
     el.detailCharImg.src = lastDetailHeroSrc;
     el.detailCharImg.style.filter = getSkinFilter(equippedSkin);
     el.detailCharDesc.textContent = ch.desc;

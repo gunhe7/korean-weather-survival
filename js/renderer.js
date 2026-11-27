@@ -1519,30 +1519,211 @@ window.RunRenderer = (function () {
   }
 
   // ===================== UPLOADED 7-STATE PIXEL K-CHARACTER SPRITE RENDERER =====================
-  // ===================== CACHED FILTERED SKIN SPRITES (ZERO PER-FRAME ctx.filter LAG!) =====================
+  // ===================== CACHED OUTFIT-ONLY SKIN SPRITES (ZERO PER-FRAME LAG & NATURAL SKIN/HAIR!) =====================
   const filteredSkinCache = {};
+  const filteredDataUrlCache = {};
+
+  function rgbToHsl(r, g, b) {
+    const rf = r / 255, gf = g / 255, bf = b / 255;
+    const max = Math.max(rf, gf, bf);
+    const min = Math.min(rf, gf, bf);
+    const l = (max + min) * 0.5;
+    const d = max - min;
+    if (d === 0) return [0, 0, l];
+    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    let h;
+    if (max === rf) h = ((gf - bf) / d) + (gf < bf ? 6 : 0);
+    else if (max === gf) h = ((bf - rf) / d) + 2;
+    else h = ((rf - gf) / d) + 4;
+    return [h * 60, s, l];
+  }
+
+  function hslToRgb(h, s, l) {
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    let hp = (h % 360) / 60;
+    if (hp < 0) hp += 6;
+    const x = c * (1 - Math.abs((hp % 2) - 1));
+    const m = l - c * 0.5;
+    let r1 = 0, g1 = 0, b1 = 0;
+    if (hp < 1) { r1 = c; g1 = x; }
+    else if (hp < 2) { r1 = x; g1 = c; }
+    else if (hp < 3) { g1 = c; b1 = x; }
+    else if (hp < 4) { g1 = x; b1 = c; }
+    else if (hp < 5) { r1 = x; b1 = c; }
+    else { r1 = c; b1 = x; }
+    return [
+      Math.max(0, Math.min(255, Math.round((r1 + m) * 255))),
+      Math.max(0, Math.min(255, Math.round((g1 + m) * 255))),
+      Math.max(0, Math.min(255, Math.round((b1 + m) * 255)))
+    ];
+  }
+
+  function applyOutfitColorRecolor(octx, cw, ch, oc) {
+    let imgData;
+    try {
+      imgData = octx.getImageData(0, 0, cw, ch);
+    } catch (_) {
+      return false;
+    }
+    const d = imgData.data;
+    const mode = oc.mode;
+    const targetH = oc.h;
+    const targetS = oc.s;
+    const lumMult = oc.lm || 1.0;
+
+    // For white-puffer padding skins, build exact per-row & per-column pale-peach face hull
+    // so white eye sclera inside the face stay 100% pure white in every pose (run/jump/slide/die)!
+    let rowMinX = null, rowMaxX = null, colMaxY = null;
+    let skinCount = 0, faceMinY = ch;
+    const padTop = Math.max(4, Math.round(ch * 0.05));
+    const padSide = Math.max(3, Math.round(cw * 0.02));
+
+    if (mode === 'padding') {
+      rowMinX = new Int16Array(ch);
+      rowMaxX = new Int16Array(ch);
+      colMaxY = new Int16Array(cw);
+      rowMinX.fill(cw);
+      rowMaxX.fill(-1);
+      colMaxY.fill(-1);
+      for (let y = 0; y < ch; y++) {
+        const rowOff = y * cw * 4;
+        for (let x = 0; x < cw; x++) {
+          const i = rowOff + x * 4;
+          if (d[i + 3] < 160) continue;
+          const pr = d[i], pg = d[i + 1], pb = d[i + 2];
+          const rb = pr - pb;
+          if (pr >= 205 && pg >= 170 && pb >= 140 && pr >= pg && pg >= pb && rb >= 14 && rb <= 82) {
+            skinCount++;
+            if (x < rowMinX[y]) rowMinX[y] = x;
+            if (x > rowMaxX[y]) rowMaxX[y] = x;
+            if (y > colMaxY[x]) colMaxY[x] = y;
+            if (y < faceMinY) faceMinY = y;
+          }
+        }
+      }
+    }
+
+    for (let y = 0; y < ch; y++) {
+      let rMin = cw, rMax = -1;
+      if (mode === 'padding' && skinCount > 10) {
+        rMin = rowMinX[y];
+        rMax = rowMaxX[y];
+        for (let dy = 1; dy <= padTop; dy++) {
+          const yy = y + dy;
+          if (yy < ch && rowMaxX[yy] >= 0) {
+            if (rowMinX[yy] < rMin) rMin = rowMinX[yy];
+            if (rowMaxX[yy] > rMax) rMax = rowMaxX[yy];
+          }
+        }
+      }
+      const rowOff = y * cw * 4;
+      for (let x = 0; x < cw; x++) {
+        const i = rowOff + x * 4;
+        if (d[i + 3] < 20) continue;
+        const pr = d[i], pg = d[i + 1], pb = d[i + 2];
+        const hsl = rgbToHsl(pr, pg, pb);
+        const hue = hsl[0], sat = hsl[1], lum = hsl[2];
+        let blend = 0;
+        let newL = lum;
+
+        if (mode === 'yellow') {
+          const gb = pg - pb;
+          if (hue >= 30 && hue <= 68 && sat >= 0.36 && lum >= 0.24 && gb >= 34) {
+            blend = Math.min(1, (gb - 30) / 36);
+            newL = Math.max(0.12, Math.min(0.90, lum * lumMult));
+          }
+        } else if (mode === 'blue') {
+          const br = pb - pr;
+          if (hue >= 176 && hue <= 256 && sat >= 0.18 && lum >= 0.16 && br >= 14) {
+            blend = Math.min(1, (br - 10) / 26);
+            newL = Math.max(0.12, Math.min(0.88, lum * lumMult));
+          }
+        } else if (mode === 'red') {
+          const rg = pr - pg;
+          if ((hue >= 334 || hue <= 16) && sat >= 0.36 && lum >= 0.16 && lum <= 0.68 && rg >= 36) {
+            blend = Math.min(1, (rg - 32) / 32);
+            newL = Math.max(0.12, Math.min(0.86, lum * lumMult));
+          }
+        } else if (mode === 'padding') {
+          const maxC = Math.max(pr, pg, pb);
+          const minC = Math.min(pr, pg, pb);
+          const chroma = maxC - minC;
+          const hasSkinBelow = colMaxY[x] >= 0 && y <= colMaxY[x] + 2;
+          const inFaceHull = (skinCount > 10) && hasSkinBelow && (y >= faceMinY - padTop) && (x >= rMin + 1) && (x <= rMax + padSide);
+          const isCoolAccent = !inFaceHull && hue >= 186 && hue <= 256 && chroma >= 18 && lum >= 0.24 && (pb - pr) >= 14;
+          const isWhitePuff = !inFaceHull && lum >= 0.56 && chroma <= 34 && (pr - pb) <= 12;
+          if (isCoolAccent || isWhitePuff) {
+            if (isCoolAccent) {
+              blend = 1;
+            } else {
+              const b1 = Math.min(1, (lum - 0.52) / 0.12);
+              const b2 = Math.min(1, (14 - (pr - pb)) / 8);
+              const b3 = Math.min(1, (36 - chroma) / 14);
+              blend = Math.max(0, Math.min(b1, b2, b3));
+            }
+            newL = Math.max(0.16, Math.min(0.76, 0.06 + lum * lumMult));
+          }
+        }
+
+        if (blend > 0) {
+          const rgb = hslToRgb(targetH, targetS, newL);
+          d[i]     = Math.round(pr * (1 - blend) + rgb[0] * blend);
+          d[i + 1] = Math.round(pg * (1 - blend) + rgb[1] * blend);
+          d[i + 2] = Math.round(pb * (1 - blend) + rgb[2] * blend);
+        }
+      }
+    }
+    octx.putImageData(imgData, 0, 0);
+    return true;
+  }
 
   function getFilteredCharSprite(spr, skinDef) {
-    if (!spr || !skinDef || !skinDef.filter || skinDef.filter === 'none') return spr;
+    if (!spr || !skinDef) return spr;
+    const hasOutfit = Boolean(skinDef.outfitColor);
+    const hasFilter = Boolean(skinDef.filter && skinDef.filter !== 'none');
+    if (!hasOutfit && !hasFilter) return spr;
     const key = `${skinDef.id}|${spr.src}`;
     if (filteredSkinCache[key]) return filteredSkinCache[key];
     const sw = spr.naturalWidth || 64;
     const sh = spr.naturalHeight || 64;
-    const maxDim = IS_MOBILE ? 180 : 220;
+    const maxDim = IS_MOBILE ? 200 : 256;
     const scale = Math.min(1, maxDim / Math.max(sw, sh));
     const cw = Math.max(1, Math.round(sw * scale));
     const ch = Math.max(1, Math.round(sh * scale));
     const off = document.createElement('canvas');
     off.width = cw;
     off.height = ch;
-    const octx = off.getContext('2d');
-    if ('filter' in octx) {
-      octx.filter = skinDef.filter;
+    const octx = off.getContext('2d', hasOutfit ? { willReadFrequently: true } : undefined);
+    if (hasOutfit) {
+      octx.drawImage(spr, 0, 0, cw, ch);
+      if (!applyOutfitColorRecolor(octx, cw, ch, skinDef.outfitColor)) {
+        return spr;
+      }
+    } else {
+      if ('filter' in octx) {
+        octx.filter = skinDef.filter;
+      }
+      octx.drawImage(spr, 0, 0, cw, ch);
+      if ('filter' in octx) octx.filter = 'none';
     }
-    octx.drawImage(spr, 0, 0, cw, ch);
-    if ('filter' in octx) octx.filter = 'none';
     filteredSkinCache[key] = off;
     return off;
+  }
+
+  function getRecoloredDataUrl(spr, skinDef) {
+    if (!spr || !spr.complete || !spr.naturalWidth) return null;
+    if (!skinDef || !skinDef.outfitColor) return spr.src;
+    const key = `${skinDef.id}|${spr.src}`;
+    if (filteredDataUrlCache[key]) return filteredDataUrlCache[key];
+    const off = getFilteredCharSprite(spr, skinDef);
+    if (!off || off === spr) return spr.src;
+    try {
+      const url = off.toDataURL('image/png');
+      filteredDataUrlCache[key] = url;
+      return url;
+    } catch (_) {
+      return spr.src;
+    }
   }
 
   function pickCharacterSprite(charDef, opts, t) {
@@ -1872,7 +2053,7 @@ window.RunRenderer = (function () {
       ctx.save();
       ctx.translate(cx, Math.floor(cy - bob));
       if (sx !== 1 || sy !== 1) ctx.scale(sx, sy);
-      const drawSpr = (skinDef && skinDef.filter && skinDef.filter !== 'none')
+      const drawSpr = (skinDef && (skinDef.outfitColor || (skinDef.filter && skinDef.filter !== 'none')))
         ? getFilteredCharSprite(spr, skinDef)
         : spr;
       ctx.drawImage(drawSpr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
@@ -2688,6 +2869,7 @@ window.RunRenderer = (function () {
     spawnDust,
     spawnLandDust,
     spawnPickupEffect,
+    getRecoloredDataUrl,
     renderRunFrame,
     renderHomePreview
   };
