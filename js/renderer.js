@@ -133,6 +133,7 @@ window.RunRenderer = (function () {
     if (sprites[key]) return sprites[key];
     const url = SPRITE_URL_MAP[key];
     if (!url) return null;
+    const absUrl = toAbsUrl(url);
     const img = new Image();
     img.decoding = 'async';
     img.onload = () => {
@@ -141,7 +142,7 @@ window.RunRenderer = (function () {
         setTimeout(() => { getOutlinedObstacleSprite(key, img); }, 0);
       }
     };
-    img.src = url;
+    img.src = deviceBlobUrlMap[absUrl] || url;
     sprites[key] = img;
     return img;
   }
@@ -220,9 +221,14 @@ window.RunRenderer = (function () {
     for (let f = 0; f < 8; f++) requestSprite(`chest_${tierId}_${f}`);
   }
 
-  // ===================== USER-TRIGGERED HEAVY ASSET PRE-DOWNLOADER (ZERO GAMEPLAY LAG!) =====================
+  // ===================== USER-TRIGGERED ON-DEVICE ASSET PRE-DOWNLOADER (INDEXEDDB + CACHE STORAGE) =====================
   const ASSET_CACHE_NAME = 'k-weather-survival-assets-v1';
+  const DEVICE_IDB_NAME = 'kws_device_assets_v1';
+  const DEVICE_IDB_STORE = 'files';
   const memPreloadedUrls = new Set();
+  const deviceBlobUrlMap = {};
+  let deviceDbPromise = null;
+  let deviceStoragePersisted = false;
 
   function toAbsUrl(relUrl) {
     try {
@@ -230,6 +236,134 @@ window.RunRenderer = (function () {
     } catch (_) {
       return relUrl;
     }
+  }
+
+  function guessMimeType(url) {
+    const clean = String(url || '').split('?')[0].toLowerCase();
+    if (clean.endsWith('.png')) return 'image/png';
+    if (clean.endsWith('.jpg') || clean.endsWith('.jpeg')) return 'image/jpeg';
+    if (clean.endsWith('.webp')) return 'image/webp';
+    if (clean.endsWith('.svg')) return 'image/svg+xml';
+    if (clean.endsWith('.m4a') || clean.endsWith('.mp4')) return 'audio/mp4';
+    if (clean.endsWith('.mp3')) return 'audio/mpeg';
+    return 'application/octet-stream';
+  }
+
+  function openDeviceAssetDb() {
+    if (deviceDbPromise) return deviceDbPromise;
+    if (typeof indexedDB === 'undefined' || !indexedDB) return Promise.resolve(null);
+    deviceDbPromise = new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(DEVICE_IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(DEVICE_IDB_STORE)) {
+            db.createObjectStore(DEVICE_IDB_STORE, { keyPath: 'url' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+        req.onblocked = () => resolve(null);
+      } catch (_) {
+        resolve(null);
+      }
+    });
+    return deviceDbPromise;
+  }
+
+  async function idbPutFile(absUrl, blob) {
+    const db = await openDeviceAssetDb();
+    if (!db || !blob) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(DEVICE_IDB_STORE, 'readwrite');
+        tx.objectStore(DEVICE_IDB_STORE).put({
+          url: absUrl,
+          blob,
+          size: blob.size || 0,
+          savedAt: Date.now()
+        });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+      } catch (_) {
+        resolve(false);
+      }
+    });
+  }
+
+  async function idbGetKeyStats() {
+    const db = await openDeviceAssetDb();
+    const keySet = new Set();
+    let totalBytes = 0;
+    if (!db) return { keySet, totalBytes };
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(DEVICE_IDB_STORE, 'readonly');
+        const store = tx.objectStore(DEVICE_IDB_STORE);
+        const req = store.openCursor();
+        req.onsuccess = (ev) => {
+          const cur = ev.target.result;
+          if (cur) {
+            if (cur.key) keySet.add(String(cur.key));
+            if (cur.value && typeof cur.value.size === 'number') totalBytes += cur.value.size;
+            cur.continue();
+          } else {
+            resolve({ keySet, totalBytes });
+          }
+        };
+        req.onerror = () => resolve({ keySet, totalBytes });
+      } catch (_) {
+        resolve({ keySet, totalBytes });
+      }
+    });
+  }
+
+  async function idbGetBlob(absUrl) {
+    const db = await openDeviceAssetDb();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(DEVICE_IDB_STORE, 'readonly');
+        const req = tx.objectStore(DEVICE_IDB_STORE).get(absUrl);
+        req.onsuccess = () => resolve(req.result && req.result.blob ? req.result.blob : null);
+        req.onerror = () => resolve(null);
+      } catch (_) {
+        resolve(null);
+      }
+    });
+  }
+
+  async function idbClearAll() {
+    const db = await openDeviceAssetDb();
+    if (!db) return;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(DEVICE_IDB_STORE, 'readwrite');
+        tx.objectStore(DEVICE_IDB_STORE).clear();
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch (_) {
+        resolve();
+      }
+    });
+  }
+
+  async function requestDevicePersistentStorage() {
+    try {
+      if (navigator.storage && typeof navigator.storage.persisted === 'function') {
+        const already = await navigator.storage.persisted();
+        if (already) {
+          deviceStoragePersisted = true;
+          return true;
+        }
+      }
+      if (navigator.storage && typeof navigator.storage.persist === 'function') {
+        deviceStoragePersisted = Boolean(await navigator.storage.persist());
+        return deviceStoragePersisted;
+      }
+    } catch (_) {}
+    return deviceStoragePersisted;
   }
 
   function buildPreloadPacks() {
@@ -314,7 +448,11 @@ window.RunRenderer = (function () {
   async function inspectPreloadCacheStatus() {
     const packs = buildPreloadPacks();
     const hasCacheApi = typeof caches !== 'undefined' && caches && typeof caches.open === 'function';
-    let cachedUrlSet = new Set(memPreloadedUrls);
+    const hasIdb = typeof indexedDB !== 'undefined' && Boolean(indexedDB);
+    const cachedUrlSet = new Set(memPreloadedUrls);
+
+    const idbStats = await idbGetKeyStats();
+    idbStats.keySet.forEach((u) => cachedUrlSet.add(u));
 
     if (hasCacheApi) {
       try {
@@ -325,6 +463,12 @@ window.RunRenderer = (function () {
         });
       } catch (_) {}
     }
+
+    try {
+      if (navigator.storage && typeof navigator.storage.persisted === 'function') {
+        deviceStoragePersisted = Boolean(await navigator.storage.persisted());
+      }
+    } catch (_) {}
 
     let totalFiles = 0;
     let cachedFiles = 0;
@@ -350,7 +494,12 @@ window.RunRenderer = (function () {
 
     const gp = packStates.find((x) => x.id === 'gameplay');
     return {
-      supported: hasCacheApi,
+      supported: hasCacheApi || hasIdb,
+      hasIdb,
+      hasCacheApi,
+      persisted: deviceStoragePersisted,
+      deviceBytes: idbStats.totalBytes,
+      deviceFiles: idbStats.keySet.size,
       packs: packStates,
       totalFiles,
       cachedFiles,
@@ -361,31 +510,59 @@ window.RunRenderer = (function () {
 
   function loadAndDecodeImageKey(key) {
     return new Promise((resolve) => {
-      const img = requestSprite(key);
-      if (!img) { resolve(null); return; }
-      const finish = () => {
+      const url = SPRITE_URL_MAP[key];
+      if (!url) { resolve(null); return; }
+      const absUrl = toAbsUrl(url);
+      const existing = sprites[key];
+      const finishImg = (img) => {
         if (img.decode) {
           img.decode().catch(() => {}).finally(() => resolve(img));
         } else {
           resolve(img);
         }
       };
-      if (img.complete && img.naturalWidth > 0) {
-        finish();
+      if (existing && existing.complete && existing.naturalWidth > 0) {
+        finishImg(existing);
         return;
       }
-      const onDone = () => {
-        img.removeEventListener('load', onDone);
-        img.removeEventListener('error', onErr);
-        finish();
+
+      const startWithSrc = (srcToUse) => {
+        const img = existing || new Image();
+        img.decoding = 'async';
+        sprites[key] = img;
+        let settled = false;
+        const done = (val) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          img.removeEventListener('load', onLoad);
+          img.removeEventListener('error', onErr);
+          resolve(val);
+        };
+        const onLoad = () => {
+          if (img.decode) img.decode().catch(() => {}).finally(() => done(img));
+          else done(img);
+        };
+        const onErr = () => done(null);
+        const timer = setTimeout(() => done(null), 8000);
+        img.addEventListener('load', onLoad, { once: true });
+        img.addEventListener('error', onErr, { once: true });
+        if (!existing || img.src !== srcToUse) img.src = srcToUse;
       };
-      const onErr = () => {
-        img.removeEventListener('load', onDone);
-        img.removeEventListener('error', onErr);
-        resolve(null);
-      };
-      img.addEventListener('load', onDone, { once: true });
-      img.addEventListener('error', onErr, { once: true });
+
+      if (deviceBlobUrlMap[absUrl]) {
+        startWithSrc(deviceBlobUrlMap[absUrl]);
+        return;
+      }
+      idbGetBlob(absUrl).then((blob) => {
+        if (blob && typeof URL !== 'undefined' && URL.createObjectURL) {
+          const bUrl = URL.createObjectURL(blob);
+          deviceBlobUrlMap[absUrl] = bUrl;
+          startWithSrc(bUrl);
+        } else {
+          startWithSrc(url);
+        }
+      }).catch(() => startWithSrc(url));
     });
   }
 
@@ -396,7 +573,38 @@ window.RunRenderer = (function () {
     });
   }
 
+  async function fetchBlobWithTimeout(absUrl, userSignal, timeoutMs = 15000) {
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    let onUserAbort = null;
+    if (userSignal && ctrl) {
+      if (userSignal.aborted) {
+        ctrl.abort();
+      } else {
+        onUserAbort = () => ctrl.abort();
+        userSignal.addEventListener('abort', onUserAbort, { once: true });
+      }
+    }
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+    try {
+      const resp = await fetch(absUrl, {
+        cache: 'default',
+        credentials: 'same-origin',
+        signal: ctrl ? ctrl.signal : undefined
+      });
+      if (!resp || !resp.ok) return null;
+      const blob = await resp.blob();
+      return blob && blob.size > 0 ? blob : null;
+    } catch (_) {
+      return null;
+    } finally {
+      if (timer) clearTimeout(timer);
+      if (userSignal && onUserAbort) userSignal.removeEventListener('abort', onUserAbort);
+    }
+  }
+
   async function downloadPreloadPacks(packIds, onProgress, opts = {}) {
+    await requestDevicePersistentStorage();
+
     const allPacks = buildPreloadPacks();
     const wantedIds = Array.isArray(packIds) && packIds.length > 0
       ? new Set(packIds)
@@ -418,15 +626,19 @@ window.RunRenderer = (function () {
     const total = queue.length;
     let done = 0;
     let failed = 0;
+    let bytesDownloaded = 0;
+
     const hasCacheApi = typeof caches !== 'undefined' && caches && typeof caches.open === 'function';
     let cache = null;
-    const existingSet = new Set(memPreloadedUrls);
+    const cacheSet = new Set();
+    const idbStats = await idbGetKeyStats();
+    const idbSet = idbStats.keySet;
 
     if (hasCacheApi) {
       try {
         cache = await caches.open(ASSET_CACHE_NAME);
         const keys = await cache.keys();
-        keys.forEach((req) => { if (req && req.url) existingSet.add(req.url); });
+        keys.forEach((req) => { if (req && req.url) cacheSet.add(req.url); });
       } catch (_) {
         cache = null;
       }
@@ -435,10 +647,12 @@ window.RunRenderer = (function () {
     const pending = [];
     for (let i = 0; i < queue.length; i++) {
       const item = queue[i];
-      if (existingSet.has(item.absUrl) || existingSet.has(item.url)) {
+      const inIdb = idbSet.has(item.absUrl);
+      const inCache = cacheSet.has(item.absUrl) || cacheSet.has(item.url);
+      if (inIdb && (!hasCacheApi || inCache)) {
         done++;
       } else {
-        pending.push(item);
+        pending.push({ ...item, inCache, inIdb });
       }
     }
 
@@ -448,6 +662,7 @@ window.RunRenderer = (function () {
         done,
         total,
         failed,
+        bytesDownloaded,
         packName: targetPacks[0] ? targetPacks[0].name : ''
       });
     }
@@ -455,34 +670,55 @@ window.RunRenderer = (function () {
     let cursor = 0;
     const concurrency = IS_MOBILE ? 4 : 6;
 
-    async function fetchOne(item) {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        if (signal && signal.aborted) return false;
+    async function saveItemToDevice(item) {
+      let blob = null;
+      // Fast path: if already in Service Worker CacheStorage, copy blob directly into device IndexedDB with ZERO network!
+      if (cache && item.inCache) {
         try {
-          const resp = await fetch(item.absUrl, { cache: 'force-cache', signal: signal || undefined });
-          if (resp && resp.ok) {
-            if (cache) {
-              try {
-                await cache.put(item.absUrl, resp.clone());
-              } catch (_) {}
-            } else {
-              try { await resp.arrayBuffer(); } catch (_) {}
-            }
-            memPreloadedUrls.add(item.absUrl);
-            return true;
+          const cachedResp = await cache.match(item.absUrl) || await cache.match(item.url);
+          if (cachedResp && cachedResp.ok) {
+            blob = await cachedResp.blob();
           }
-        } catch (err) {
-          if (signal && signal.aborted) return false;
+        } catch (_) {
+          blob = null;
         }
       }
-      return false;
+      // Network fetch if not already cached locally
+      if (!blob) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (signal && signal.aborted) return false;
+          blob = await fetchBlobWithTimeout(item.absUrl, signal, 15000);
+          if (blob) break;
+        }
+      }
+      if (!blob) return false;
+      bytesDownloaded += blob.size || 0;
+
+      // 1. Write binary blob physically to device IndexedDB (survives SW clears & works in all WebViews)
+      if (!item.inIdb) {
+        await idbPutFile(item.absUrl, blob);
+      }
+      // 2. Write clean fresh Response built from Blob into SW CacheStorage (zero Safari stream-clone deadlock!)
+      if (cache && !item.inCache) {
+        try {
+          const mime = blob.type || guessMimeType(item.url);
+          const freshResp = new Response(blob, {
+            status: 200,
+            statusText: 'OK',
+            headers: { 'Content-Type': mime }
+          });
+          await cache.put(item.absUrl, freshResp);
+        } catch (_) {}
+      }
+      memPreloadedUrls.add(item.absUrl);
+      return true;
     }
 
     async function worker() {
       while (cursor < pending.length) {
         if (signal && signal.aborted) return;
         const item = pending[cursor++];
-        const ok = await fetchOne(item);
+        const ok = await saveItemToDevice(item);
         if (signal && signal.aborted) return;
         done++;
         if (!ok) failed++;
@@ -492,6 +728,7 @@ window.RunRenderer = (function () {
             done,
             total,
             failed,
+            bytesDownloaded,
             packName: item.packName
           });
         }
@@ -505,8 +742,8 @@ window.RunRenderer = (function () {
     await Promise.all(workers);
 
     if (signal && signal.aborted) {
-      if (onProgress) onProgress({ phase: 'cancelled', done, total, failed, packName: '' });
-      return { cancelled: true, done, total, failed };
+      if (onProgress) onProgress({ phase: 'cancelled', done, total, failed, bytesDownloaded, packName: '' });
+      return { cancelled: true, done, total, failed, bytesDownloaded };
     }
 
     // Phase 2: Decode & pre-bake all 32 obstacle red-outline canvases so first spawn has ZERO frame hitch!
@@ -515,8 +752,8 @@ window.RunRenderer = (function () {
       const bakeTotal = bakeKeys.length;
       for (let i = 0; i < bakeTotal; i++) {
         if (signal && signal.aborted) {
-          if (onProgress) onProgress({ phase: 'cancelled', done, total, failed, packName: '' });
-          return { cancelled: true, done, total, failed };
+          if (onProgress) onProgress({ phase: 'cancelled', done, total, failed, bytesDownloaded, packName: '' });
+          return { cancelled: true, done, total, failed, bytesDownloaded };
         }
         const k = bakeKeys[i];
         const img = await loadAndDecodeImageKey(k);
@@ -532,12 +769,12 @@ window.RunRenderer = (function () {
             bakeDone: i + 1,
             bakeTotal,
             failed,
+            bytesDownloaded,
             packName: '장애물 테두리 사전 최적화'
           });
         }
         if (i % 2 === 1) await nextFrameTick();
       }
-      // Also decode the 4 seasonal ground strips into memory
       ['ground_spring', 'ground_summer', 'ground_autumn', 'ground_winter'].forEach(requestSprite);
     }
 
@@ -560,13 +797,18 @@ window.RunRenderer = (function () {
     }
 
     if (onProgress) {
-      onProgress({ phase: 'done', done, total, failed, packName: '' });
+      onProgress({ phase: 'done', done, total, failed, bytesDownloaded, packName: '' });
     }
-    return { cancelled: false, done, total, failed };
+    return { cancelled: false, done, total, failed, bytesDownloaded };
   }
 
   async function clearPreloadCache() {
     memPreloadedUrls.clear();
+    Object.keys(deviceBlobUrlMap).forEach((k) => {
+      try { URL.revokeObjectURL(deviceBlobUrlMap[k]); } catch (_) {}
+      delete deviceBlobUrlMap[k];
+    });
+    await idbClearAll();
     if (typeof caches !== 'undefined' && caches && typeof caches.delete === 'function') {
       try {
         await caches.delete(ASSET_CACHE_NAME);

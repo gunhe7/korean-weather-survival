@@ -9649,7 +9649,11 @@
     function renderPreloadModal(status, liveProg = null, progressOnly = false) {
       if (!status || !el.preloadOverlay) return;
       let pct = status.totalFiles > 0 ? Math.round((status.cachedFiles / status.totalFiles) * 100) : 0;
-      let statusMsg = '장애물·계절 배경·캐릭터를 미리 저장하면 게임 중 렉이 크게 줄어듭니다.';
+      const devMb = status.deviceBytes > 0 ? (status.deviceBytes / (1024 * 1024)).toFixed(1) : null;
+      const persistTag = status.persisted ? ' · 영구 보관 활성' : '';
+      let statusMsg = devMb
+        ? `기기 저장소에 ${devMb}MB 저장됨${persistTag} · 나머지를 받으면 렉이 크게 줄어듭니다.`
+        : '장애물·계절 배경·캐릭터를 기기 자체에 미리 저장하면 게임 중 렉이 크게 줄어듭니다.';
 
       if (preloadBusy && liveProg) {
         if (liveProg.phase === 'bake') {
@@ -9659,13 +9663,18 @@
         } else {
           const dRatio = liveProg.total > 0 ? (liveProg.done / liveProg.total) : 0;
           pct = Math.min(95, Math.round(dRatio * 95));
-          statusMsg = `${liveProg.packName || '리소스'} 다운로드 중... (${liveProg.done}/${liveProg.total})`;
+          const dlMb = liveProg.bytesDownloaded > 0 ? ` · ${(liveProg.bytesDownloaded / (1024 * 1024)).toFixed(1)}MB` : '';
+          statusMsg = `${liveProg.packName || '리소스'} 기기 저장 중... (${liveProg.done}/${liveProg.total}${dlMb})`;
         }
       } else if (status.allDone) {
         pct = 100;
-        statusMsg = '모든 리소스 저장 완료! 게임 중 로딩 렉 없이 쾌적하게 플레이할 수 있습니다.';
+        statusMsg = devMb
+          ? `기기 저장 완료 (${devMb}MB${persistTag}) · 로딩 렉 없이 바로 플레이할 수 있습니다.`
+          : `모든 리소스 기기 저장 완료${persistTag}! 로딩 렉 없이 바로 플레이할 수 있습니다.`;
       } else if (status.gameplayDone) {
-        statusMsg = '핵심 장애물·배경 저장 완료! 캐릭터·상자 팩도 미리 받아두면 더욱 부드럽습니다.';
+        statusMsg = devMb
+          ? `핵심 장애물·배경 저장 완료 (${devMb}MB${persistTag}) · 추가 팩도 기기에 저장할 수 있습니다.`
+          : '핵심 장애물·배경 기기 저장 완료! 나머지 팩도 미리 받아두면 더욱 부드럽습니다.';
       }
 
       if (el.preloadStatusText) el.preloadStatusText.textContent = statusMsg;
@@ -9745,7 +9754,7 @@
       preloadBusy = true;
       preloadActivePacks = Array.isArray(packIds) ? packIds.slice() : ['gameplay', 'chars', 'extra'];
       preloadAbortCtrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      preloadLiveProg = { phase: 'download', done: 0, total: 1, failed: 0, packName: '리소스 확인' };
+      preloadLiveProg = { phase: 'download', done: 0, total: 1, failed: 0, bytesDownloaded: 0, packName: '리소스 확인' };
       preloadLastPaintTs = 0;
 
       if (preloadLastStatus) {
@@ -9753,41 +9762,51 @@
         renderPreloadModal(preloadLastStatus, preloadLiveProg);
       }
 
-      const eqChar = DATA.getCharById(save.selectedChar);
-      const eqSkin = getEquippedSkin(eqChar.id);
+      let res = null;
+      let errCaught = null;
+      try {
+        const eqChar = (DATA.CHARACTERS && DATA.CHARACTERS.find((c) => c.id === save.selectedChar))
+          || (DATA.CHARACTERS && DATA.CHARACTERS[0])
+          || null;
+        const eqSkin = eqChar ? getEquippedSkin(eqChar.id) : null;
 
-      const res = await Renderer.downloadPreloadPacks(
-        preloadActivePacks,
-        (prog) => {
-          preloadLiveProg = prog;
-          const now = performance.now();
-          if (prog.phase !== 'download' || prog.done >= prog.total || (now - preloadLastPaintTs) >= 45) {
-            preloadLastPaintTs = now;
-            if (preloadLastStatus && el.preloadOverlay && !el.preloadOverlay.classList.contains('hidden')) {
-              renderPreloadModal(preloadLastStatus, prog, true);
+        res = await Renderer.downloadPreloadPacks(
+          preloadActivePacks,
+          (prog) => {
+            preloadLiveProg = prog;
+            const now = performance.now();
+            if (prog.phase !== 'download' || prog.done >= prog.total || (now - preloadLastPaintTs) >= 45) {
+              preloadLastPaintTs = now;
+              if (preloadLastStatus && el.preloadOverlay && !el.preloadOverlay.classList.contains('hidden')) {
+                renderPreloadModal(preloadLastStatus, prog, true);
+              }
             }
+          },
+          {
+            signal: preloadAbortCtrl ? preloadAbortCtrl.signal : null,
+            equippedChar: eqChar,
+            equippedSkin: eqSkin
           }
-        },
-        {
-          signal: preloadAbortCtrl ? preloadAbortCtrl.signal : null,
-          equippedChar: eqChar,
-          equippedSkin: eqSkin
-        }
-      );
+        );
+      } catch (err) {
+        errCaught = err;
+      } finally {
+        preloadBusy = false;
+        preloadAbortCtrl = null;
+        preloadActivePacks = null;
+        preloadLiveProg = null;
+        try { await refreshPreloadStatus(); } catch (_) {}
+      }
 
-      preloadBusy = false;
-      preloadAbortCtrl = null;
-      preloadActivePacks = null;
-      preloadLiveProg = null;
-      await refreshPreloadStatus();
-
-      if (res && res.cancelled) {
-        showToast('다운로드를 취소했습니다. 이미 받은 리소스는 유지됩니다.');
+      if (errCaught) {
+        showToast('다운로드 중 오류가 발생했습니다. 다시 시도해주세요.');
+      } else if (res && res.cancelled) {
+        showToast('다운로드를 취소했습니다. 이미 기기에 저장된 파일은 유지됩니다.');
       } else if (res && res.failed > 0) {
         showToast(`일부 파일(${res.failed}개)을 받지 못했습니다. 네트워크 확인 후 다시 시도해주세요.`);
       } else {
         if (SFX.coin) SFX.coin();
-        showToast('리소스 다운로드 완료! 게임 중 렉이 크게 줄어듭니다.');
+        showToast('기기에 리소스 저장 완료! 게임 중 렉이 크게 줄어듭니다.');
       }
     }
 
