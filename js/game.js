@@ -5245,7 +5245,12 @@
       const curCh = getCharDef(save.selectedChar);
       const curEqSkin = getEquippedSkin(curCh.id);
       const allSkins = DATA.getSkinsForChar ? DATA.getSkinsForChar(curCh.id) : [];
-      const ownedSkins = allSkins.filter((s) => Array.isArray(save.unlockedSkins) && save.unlockedSkins.includes(s.id));
+      const unlockedSet = new Set(Array.isArray(save.unlockedSkins) ? save.unlockedSkins : []);
+      if (curEqSkin && curEqSkin.id) unlockedSet.add(curEqSkin.id);
+      const rarRank = { mythic: 4, legendary: 3, epic: 2, rare: 1 };
+      const ownedSkins = allSkins
+        .filter((s) => unlockedSet.has(s.id))
+        .sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0));
       if (el.compSkinsLabel) el.compSkinsLabel.textContent = `${curCh.name} 스킨`;
       if (el.compSkinsCount) el.compSkinsCount.textContent = `보유 ${ownedSkins.length}/${allSkins.length}`;
       el.compCharSkinRow.innerHTML = '';
@@ -5254,7 +5259,7 @@
         const isEq = sk ? (curEqSkin && curEqSkin.id === sk.id) : !curEqSkin;
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `comp-skin-chip${isEq ? ' active' : ''}${sk ? ` rar-${sk.rarity}` : ''}`;
+        btn.className = `comp-skin-chip${isEq ? ' active' : ''}${sk ? ` rar-${sk.rarity}` : ' rar-default'}`;
         const avSrc = getSkinAvatar(curCh, sk);
         const flt = getSkinFilter(sk);
         btn.innerHTML = `
@@ -5264,10 +5269,15 @@
         btn.addEventListener('click', () => {
           SFX.click();
           if (!save.equippedSkins) save.equippedSkins = {};
-          save.equippedSkins[curCh.id] = sk ? sk.id : null;
+          if (sk) {
+            save.equippedSkins[curCh.id] = sk.id;
+          } else {
+            delete save.equippedSkins[curCh.id];
+          }
           persistSave();
           renderCompetitiveLobby();
           renderProfileUI();
+          renderCharList();
           renderCompCharModal();
         });
         return btn;

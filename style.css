@@ -21843,10 +21843,14 @@ input:focus-visible {
 
 .comp-char-skin-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  align-content: flex-start;
   gap: 7px;
-  overflow-x: auto;
+  max-height: 122px;
+  overflow-y: auto;
   padding-bottom: 2px;
+  scrollbar-width: thin;
 }
 
 .comp-skin-chip {
@@ -21865,10 +21869,31 @@ input:focus-visible {
   cursor: pointer;
 }
 
+.comp-skin-chip.rar-rare {
+  background: linear-gradient(180deg, #1ca838 0%, #0d6920 100%);
+  border-color: #74ff91;
+}
+
+.comp-skin-chip.rar-epic {
+  background: linear-gradient(180deg, #8b24d9 0%, #4d0d87 100%);
+  border-color: #df94ff;
+}
+
+.comp-skin-chip.rar-legendary {
+  background: linear-gradient(180deg, #d98d0b 0%, #8a4a00 100%);
+  border-color: #ffe76e;
+}
+
+.comp-skin-chip.rar-mythic {
+  background: linear-gradient(180deg, #cf1966 0%, #6e083b 100%);
+  border-color: #ff85c0;
+}
+
 .comp-skin-chip.active {
   border-color: #ffe252;
   background: linear-gradient(180deg, #ffe554 0%, #f59c1a 100%);
   color: #1f1100;
+  box-shadow: 0 0 10px rgba(255, 226, 82, 0.55);
 }
 
 .comp-skin-chip-av {
@@ -21959,6 +21984,22 @@ input:focus-visible {
   .comp-pick-av {
     width: 40px;
     height: 40px;
+  }
+
+  .comp-char-skin-row {
+    max-height: 82px;
+    gap: 5px;
+  }
+
+  .comp-skin-chip {
+    padding: 3px 8px 3px 4px;
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .comp-skin-chip-av {
+    width: 20px;
+    height: 20px;
   }
 
   .comp-rk-modal-list {
