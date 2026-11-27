@@ -7178,6 +7178,37 @@
     }
   }
 
+  let rosterAnimNodes = [];
+  let lastRosterAnimUpdate = 0;
+  function updateRosterRunningChars(t) {
+    if (currentTab !== 'chars' || !rosterAnimNodes.length) return;
+    if (detailCharIdx !== null && el.charDetailOverlay && !el.charDetailOverlay.classList.contains('hidden')) return;
+    if (el.introOverlay && !el.introOverlay.classList.contains('hidden')) return;
+    if (el.loginOverlay && !el.loginOverlay.classList.contains('hidden')) return;
+    if (t - lastRosterAnimUpdate < 0.055) return;
+    lastRosterAnimUpdate = t;
+
+    for (let i = 0; i < rosterAnimNodes.length; i++) {
+      const node = rosterAnimNodes[i];
+      if (!node || !node.img || !node.img.isConnected) continue;
+      const src = getCharShowcaseFrameSrc(node.ch, node.skin, t + node.phase, true);
+      const readySrc = getPreloadedHomeHeroSrc(src, node.skin);
+      if (readySrc && readySrc !== node.lastSrc) {
+        node.lastSrc = readySrc;
+        node.img.src = readySrc;
+      }
+      if (node.auraImg && node.skin && node.skin.customAuraPrefix) {
+        const af = Math.floor((t + node.phase) * 9) % (node.skin.customAuraFrames || 6);
+        const auraSrc = `assets/chars/${node.skin.customAuraPrefix}_${af}.png?v=${getCharSpriteVer(getCharAnimSpec(node.ch, node.skin).skin)}`;
+        const readyAura = getPreloadedHomeHeroSrc(auraSrc);
+        if (readyAura && readyAura !== node.lastAura) {
+          node.lastAura = readyAura;
+          node.auraImg.src = readyAura;
+        }
+      }
+    }
+  }
+
   function renderCharList() {
     const ownedCount = save.unlockedChars.length;
     const totalCount = DATA.CHARACTERS.length;
@@ -7190,6 +7221,7 @@
 
     if (!el.charList) return;
     el.charList.innerHTML = '';
+    rosterAnimNodes = [];
     DATA.CHARACTERS.forEach((ch, idx) => {
       const unlocked = isCharUnlocked(ch.id);
       const selected = save.selectedChar === ch.id;
@@ -7199,6 +7231,14 @@
       const charSkins = DATA.getSkinsForChar(ch.id);
       const ownedCharSkins = charSkins.filter((sk) => save.unlockedSkins.includes(sk.id)).length;
       const hpPct = Math.min(100, Math.round((stats.maxHp / 5) * 100));
+
+      const anim = getCharAnimSpec(ch, eqSkin);
+      const charSprVer = getCharSpriteVer(anim.skin);
+      const rawInitSrc = `assets/chars/${anim.skin}_run_0.png?v=${charSprVer}`;
+      const initRunSrc = getPreloadedHomeHeroSrc(rawInitSrc, eqSkin) || rawInitSrc;
+      const hasAura = Boolean(eqSkin && eqSkin.customAuraPrefix && unlocked);
+      const initAuraSrc = hasAura ? `assets/chars/${eqSkin.customAuraPrefix}_0.png?v=${charSprVer}` : '';
+      const skFilter = getSkinFilter(eqSkin);
 
       const card = document.createElement('button');
       card.type = 'button';
@@ -7210,7 +7250,10 @@
           ${selected ? '<span class="bs-rcard-eq">장착</span>' : ''}
           <span class="bs-rcard-skill">${getCharShortSkill(ch)}</span>
           <span class="bs-rcard-podium" aria-hidden="true"></span>
-          <img src="${getSkinAvatar(ch, eqSkin)}" alt="${ch.name}" class="bs-rcard-img" style="${getSkinFilter(eqSkin) ? `filter:${getSkinFilter(eqSkin)};` : ''}" />
+          <span class="bs-run-dust bs-rcard-dust d1" aria-hidden="true"></span>
+          <span class="bs-run-dust bs-rcard-dust d2" aria-hidden="true"></span>
+          ${hasAura ? `<img src="${initAuraSrc}" alt="" class="bs-rcard-aura" aria-hidden="true" />` : ''}
+          <img src="${initRunSrc}" alt="${ch.name}" class="bs-rcard-img running-roster" style="animation-delay:${-(idx * 0.09).toFixed(2)}s;${skFilter ? `filter:${skFilter};` : ''}" />
           <div class="bs-rcard-foot">
             <div class="bs-rcard-meta">
               <span class="bs-rcard-stat">${unlocked ? `${uiIcon('heart', 'xs')} ${stats.maxHp}` : `${uiIcon('coin', 'xs')} ${ch.price.toLocaleString('ko-KR')}`}</span>
@@ -7231,6 +7274,18 @@
       `;
       card.onclick = () => openCharDetail(idx);
       el.charList.appendChild(card);
+
+      const imgEl = card.querySelector('.bs-rcard-img');
+      const auraEl = card.querySelector('.bs-rcard-aura');
+      rosterAnimNodes.push({
+        img: imgEl,
+        auraImg: auraEl,
+        ch,
+        skin: eqSkin,
+        lastSrc: initRunSrc,
+        lastAura: initAuraSrc,
+        phase: idx * 0.17
+      });
     });
   }
 
@@ -10471,6 +10526,7 @@
       }
     } else {
       if (currentTab === 'home' || currentTab === 'comp') updateHomeRunningHero(t);
+      if (currentTab === 'chars') updateRosterRunningChars(t);
       updateDetailRunningHero(t);
     }
 

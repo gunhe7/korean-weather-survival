@@ -22110,3 +22110,45 @@ input:focus-visible {
     font-size: 11px;
   }
 }
+
+/* ==========================================================================
+   v20261121hd126 — ANIMATED RUNNING CHARACTERS IN CHARACTERS ROSTER TAB
+   ========================================================================== */
+.bs-rcard-img.running-roster {
+  animation: rosterRunBounce 0.34s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes rosterRunBounce {
+  0%, 100% {
+    transform: translateY(-6px) rotate(1.2deg) scale(1.14);
+  }
+  50% {
+    transform: translateY(-11px) rotate(2.8deg) scale(1.16);
+  }
+}
+
+.bs-rcard-aura {
+  position: absolute;
+  width: 96%;
+  height: 96%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 1;
+  transform: translateY(-6px) scale(1.06);
+  opacity: 0.92;
+}
+
+.bs-rcard-dust {
+  bottom: 24px !important;
+  left: calc(50% - 34px) !important;
+  width: 11px !important;
+  height: 8px !important;
+}
+
+.bs-rcard-dust.d2 {
+  bottom: 20px !important;
+  left: calc(50% - 26px) !important;
+  width: 9px !important;
+  height: 6px !important;
+}
