@@ -606,13 +606,14 @@ window.RUN_DATA = (function () {
   const COMP_TROPHY_DELTAS = [40, 28, 18, 10, 2, -8, -16, -24];
   const COMP_GOLD_REWARDS = [360, 260, 190, 140, 100, 80, 60, 50];
   const COMP_TIERS = [
-    { id: 'bronze',      name: '브론즈',       minTrophies: 0,    color: '#d18e58' },
-    { id: 'silver',      name: '실버',         minTrophies: 300,  color: '#a8bacf' },
-    { id: 'gold',        name: '골드',         minTrophies: 700,  color: '#f2bb42' },
-    { id: 'platinum',    name: '플래티넘',     minTrophies: 1200, color: '#4dd6e6' },
-    { id: 'diamond',     name: '다이아',       minTrophies: 1800, color: '#5fa8ff' },
-    { id: 'master',      name: '마스터',       minTrophies: 2600, color: '#b47aff' },
-    { id: 'grandmaster', name: '그랜드마스터', minTrophies: 3600, color: '#ff5d7d' }
+    { id: 'bronze',      name: '브론즈',       minTrophies: 0,    color: '#d98c54', img: 'assets/tiers/tier_bronze.png' },
+    { id: 'silver',      name: '실버',         minTrophies: 300,  color: '#b6c8de', img: 'assets/tiers/tier_silver.png' },
+    { id: 'gold',        name: '골드',         minTrophies: 700,  color: '#ffcf40', img: 'assets/tiers/tier_gold.png' },
+    { id: 'platinum',    name: '플래티넘',     minTrophies: 1200, color: '#3fe6d8', img: 'assets/tiers/tier_platinum.png' },
+    { id: 'diamond',     name: '다이아',       minTrophies: 1800, color: '#4ea8ff', img: 'assets/tiers/tier_diamond.png' },
+    { id: 'master',      name: '마스터',       minTrophies: 2600, color: '#c475ff', img: 'assets/tiers/tier_master.png' },
+    { id: 'grandmaster', name: '그랜드 마스터', minTrophies: 3600, color: '#ff5268', img: 'assets/tiers/tier_grandmaster.png' },
+    { id: 'champion',    name: '챔피언',       minTrophies: 4800, color: '#ffe566', img: 'assets/tiers/tier_champion.png' }
   ];
 
   function getCompTier(trophies = 0) {

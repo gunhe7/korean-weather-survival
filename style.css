@@ -20749,16 +20749,35 @@ input:focus-visible {
 .comp-res-dt.down { color: #ff7c8e; }
 .comp-res-dt.flat { color: #b7d8fa; }
 
-/* Live In-Run 8-Player Competitive Race Ticker */
-.comp-run-hud {
+/* Guaranteed Overlap-Free Below-HUD Row: Weather Chip (Center) + Live 8-Player Ticker (Right) */
+.run-hud-below-row {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  min-height: 0;
+  pointer-events: none;
+}
+
+#run-hud .run-hud-below-row .weather-status-strip {
   position: absolute;
-  top: 84px;
-  right: 12px;
+  left: 50%;
+  top: 2px;
+  transform: translateX(-50%);
+  margin: 0;
+}
+
+/* Live In-Run 8-Player Competitive Race Ticker (Flows cleanly below 70m | 825점, NEVER overlaps!) */
+.comp-run-hud {
+  position: relative;
+  margin-left: auto;
+  margin-top: 4px;
   z-index: 18;
-  width: 158px;
+  width: 162px;
   padding: 7px 9px;
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(16, 40, 88, 0.88), rgba(8, 20, 48, 0.92));
+  background: linear-gradient(180deg, rgba(16, 40, 88, 0.9), rgba(8, 20, 48, 0.94));
   border: 2px solid #071022;
   box-shadow: 0 3px 0 #071022, inset 0 1px 0 rgba(162, 224, 255, 0.3);
   pointer-events: none;
@@ -20852,6 +20871,759 @@ input:focus-visible {
   border-color: #071022 !important;
 }
 
+/* ==========================================================================
+   v20261121hd123 — PLAY MODAL 3-CARD ENTRY + 8 TIER EMBLEMS
+                   + KARTRIDER RUSH+ x BRAWL STARS COMPETITIVE LOBBY TAB
+   ========================================================================== */
+
+/* 3-Mode Play Selection Modal */
+.bs-mode-modal {
+  width: min(740px, 95vw) !important;
+}
+
+.bs-mode-grid.three-modes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bs-event-card.simple.comp {
+  border-color: #071022;
+  background: linear-gradient(180deg, #273f8c 0%, #132258 100%);
+  box-shadow: 0 5px 0 #071022, 0 0 18px rgba(255, 214, 70, 0.25);
+}
+
+.bs-ev-simple-head.comp {
+  background: linear-gradient(180deg, #ff7a2e 0%, #c92a46 100%);
+  border-bottom: 2.5px solid #071022;
+}
+
+.bs-ev-comp-tier-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.bs-ev-tier-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55));
+  flex-shrink: 0;
+}
+
+.bs-ev-comp-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.bs-ev-comp-tname {
+  font-size: 13px;
+  font-weight: 900;
+  text-shadow: 0 1.5px 0 #071022;
+  line-height: 1.1;
+}
+
+.bs-ev-simple-play.comp {
+  background: linear-gradient(180deg, #ffe554 0%, #f59c1a 100%);
+  color: #1f1100;
+  border: 2.5px solid #071022;
+  box-shadow: 0 3.5px 0 #071022, inset 0 2px 0 rgba(255, 255, 255, 0.6);
+  text-shadow: none;
+}
+
+/* Tier Emblem PNG Icons Across Ranking, Matchmaking & Result Modals */
+.rank-my-tier-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55));
+}
+
+.rank-row-tier-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+}
+
+.podium-score-chip.trophy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.podium-tier-ico {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: middle;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+
+.comp-slot-av-wrap {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-slot-tier-img {
+  position: absolute;
+  right: -7px;
+  bottom: -5px;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7));
+}
+
+.comp-res-tier-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55));
+}
+
+.comp-res-tier-mini {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.55));
+}
+
+/* Full-Screen Dedicated Competitive Lobby Tab (KartRider Rush+ Layout x Brawl Stars Design) */
+#mobile-app.is-comp-lobby #app-header,
+#mobile-app.is-comp-lobby #bottom-nav {
+  display: none !important;
+}
+
+#mobile-app.is-comp-lobby #tab-container {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#view-comp.bs-comp-lobby-view {
+  width: 100%;
+  height: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden;
+}
+
+.comp-lobby-arena {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: calc(max(8px, var(--safe-top, 0px)) + 4px) max(14px, var(--safe-right, 14px)) calc(max(10px, var(--safe-bottom, 0px)) + 4px) max(14px, var(--safe-left, 14px));
+  background: radial-gradient(circle at 50% 42%, #2468e6 0%, #113585 52%, #07173d 100%);
+  overflow: hidden;
+  gap: 10px;
+}
+
+.comp-lobby-rays {
+  position: absolute;
+  inset: -40%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(116, 206, 255, 0.08) 0deg 12deg,
+    transparent 12deg 24deg
+  );
+  animation: compLobbySpin 46s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes compLobbySpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.comp-lobby-topbar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.comp-lt-left,
+.comp-lt-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.comp-lt-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: 10px;
+  border: 3px solid #071022;
+  background: linear-gradient(180deg, #1b4394 0%, #0e245c 100%);
+  box-shadow: 0 4px 0 #071022, inset 0 2px 0 rgba(160, 224, 255, 0.35);
+  transform: skewX(-6deg);
+}
+
+.comp-lt-season {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffe554, #f59c1a);
+  border: 1.5px solid #071022;
+  color: #1f1100;
+  font-size: 10.5px;
+  font-weight: 900;
+  transform: skewX(6deg);
+}
+
+.comp-lt-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 #071022;
+  transform: skewX(6deg);
+  white-space: nowrap;
+}
+
+.comp-lt-pill.rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 10px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #35b4ff 0%, #156ad4 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 900;
+  text-shadow: 0 1.5px 0 #071022;
+  box-shadow: 0 3.5px 0 #071022, inset 0 2px 0 rgba(210, 245, 255, 0.5);
+  transform: skewX(-5deg);
+  cursor: pointer;
+}
+
+.comp-lt-pill.rank span,
+.comp-lt-pill.rank img {
+  transform: skewX(5deg);
+}
+
+.comp-lt-pill.rank:active {
+  transform: skewX(-5deg) translateY(2px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+/* 3-Column KartRider Rush+ Stage */
+.comp-lobby-3col {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(245px, 1.15fr) minmax(200px, 0.95fr) minmax(225px, 1.02fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.comp-col-tier,
+.comp-col-match {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 0;
+}
+
+.comp-tier-showcase-card,
+.comp-roadmap-card,
+.comp-payout-card {
+  border-radius: 16px;
+  border: 3px solid #071022;
+  background: linear-gradient(180deg, rgba(25, 62, 134, 0.92) 0%, rgba(12, 32, 78, 0.96) 100%);
+  box-shadow: 0 5px 0 #071022, inset 0 2px 0 rgba(162, 224, 255, 0.3);
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comp-tier-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.comp-tier-emblem-stage {
+  --tier-color: #d98c54;
+  position: relative;
+  width: 92px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.comp-tier-emblem-glow {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--tier-color) 0%, transparent 72%);
+  opacity: 0.42;
+  filter: blur(8px);
+}
+
+.comp-tier-emblem-big {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.62));
+  animation: compTierFloat 2.8s ease-in-out infinite;
+}
+
+@keyframes compTierFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.comp-tier-hero-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.comp-tier-kicker {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #8cc4f8;
+}
+
+.comp-tier-big-name {
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffe566;
+  text-shadow: 0 2.5px 0 #071022;
+  line-height: 1.12;
+}
+
+.comp-tier-trophy-line {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.comp-tier-trophy-line strong {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-tier-trophy-line span {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #b7d8fa;
+}
+
+.comp-lobby-prog-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comp-lobby-prog-track {
+  width: 100%;
+  height: 11px;
+  border-radius: 999px;
+  background: #07122a;
+  border: 2px solid #040914;
+  overflow: hidden;
+  transform: skewX(-6deg);
+}
+
+.comp-lobby-prog-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.comp-lobby-prog-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  color: #cfe6ff;
+}
+
+.comp-card-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.comp-card-title {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071022;
+}
+
+.comp-card-sub {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #8ce4ff;
+}
+
+/* 8-Tier Emblem Roadmap (4x2 Grid) */
+.comp-roadmap-card {
+  flex: 1;
+  min-height: 0;
+  justify-content: center;
+}
+
+.comp-tier-roadmap {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.comp-road-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 5px 3px;
+  border-radius: 10px;
+  background: rgba(7, 18, 42, 0.72);
+  border: 2px solid rgba(120, 190, 255, 0.18);
+  text-align: center;
+}
+
+.comp-road-node.unlocked {
+  background: rgba(18, 46, 102, 0.85);
+  border-color: rgba(154, 214, 255, 0.36);
+}
+
+.comp-road-node.current {
+  background: linear-gradient(180deg, rgba(255, 224, 71, 0.25), rgba(22, 54, 122, 0.94));
+  border-color: #ffe252;
+  box-shadow: 0 0 12px rgba(255, 224, 71, 0.48);
+}
+
+.comp-road-node.locked {
+  opacity: 0.56;
+}
+
+.comp-road-ico {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+}
+
+.comp-road-name {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.comp-road-min {
+  font-size: 9px;
+  font-weight: 800;
+  color: #9ec8f8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* CENTER: Standing Runner Showcase Podium */
+.comp-col-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 2px;
+  min-height: 0;
+}
+
+.comp-hero-overhead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.comp-hero-perk-pill {
+  padding: 3px 11px;
+  border-radius: 999px;
+  border: 2px solid #071022;
+  background: linear-gradient(180deg, #35b4ff, #156ad4);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  text-shadow: 0 1.5px 0 #071022;
+  box-shadow: 0 3px 0 #071022;
+}
+
+.comp-hero-char-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2.5px 0 #071022, 0 0 14px rgba(96, 200, 255, 0.45);
+  text-align: center;
+}
+
+.comp-hero-podium-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-hero-spotlight {
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(96, 214, 255, 0.34) 0%, rgba(255, 224, 84, 0.1) 45%, transparent 72%);
+  pointer-events: none;
+}
+
+.comp-hero-aura {
+  position: absolute;
+  width: clamp(150px, 34vh, 230px);
+  height: clamp(150px, 34vh, 230px);
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.comp-hero-img {
+  position: relative;
+  z-index: 2;
+  width: clamp(128px, 30vh, 210px);
+  height: clamp(128px, 30vh, 210px);
+  object-fit: contain;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.52));
+}
+
+.comp-hero-podium-ring {
+  position: relative;
+  z-index: 1;
+  width: clamp(150px, 34vh, 226px);
+  height: 30px;
+  margin-top: -18px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, #4ec6ff 0%, #1b5fd4 58%, #0d2b70 100%);
+  border: 3px solid #071022;
+  box-shadow: 0 6px 0 #071022, 0 0 22px rgba(78, 198, 255, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-hero-podium-inner {
+  width: 72%;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.comp-hero-bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.comp-hero-stats-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.comp-hstat {
+  padding: 5px 6px;
+  border-radius: 10px;
+  background: rgba(7, 18, 42, 0.78);
+  border: 2px solid #071022;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.comp-hstat span {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #8cc4f8;
+}
+
+.comp-hstat strong {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-char-swap-btn {
+  padding: 6px 18px;
+  border-radius: 10px;
+  border: 2.5px solid #071022;
+  background: linear-gradient(180deg, #3580e8 0%, #17469e 100%);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+  text-shadow: 0 1.5px 0 #071022;
+  box-shadow: 0 3.5px 0 #071022, inset 0 1.5px 0 rgba(190, 232, 255, 0.45);
+  transform: skewX(-5deg);
+  cursor: pointer;
+}
+
+.comp-char-swap-btn span {
+  display: inline-block;
+  transform: skewX(5deg);
+}
+
+.comp-char-swap-btn:active {
+  transform: skewX(-5deg) translateY(2px);
+  box-shadow: 0 1.5px 0 #071022;
+}
+
+/* RIGHT: Payout Table + BIG Brawl Stars Start Match CTA */
+.comp-payout-card {
+  flex: 1;
+  min-height: 0;
+  justify-content: space-between;
+}
+
+.comp-payout-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.comp-pay-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: 9px;
+  background: rgba(7, 18, 42, 0.72);
+  border: 1.5px solid rgba(120, 190, 255, 0.22);
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-pay-cell.top1 { border-color: #ffe252; background: rgba(255, 226, 82, 0.14); }
+.comp-pay-cell.top2 { border-color: #cfe1f5; }
+.comp-pay-cell.top3 { border-color: #e6a36e; }
+
+.comp-pay-cell span {
+  font-size: 11px;
+  font-weight: 900;
+  color: #d6ebff;
+}
+
+.comp-pay-cell.top1 span { color: #ffe554; }
+
+.comp-pay-cell strong {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.comp-pay-cell strong.up { color: #6affb0; }
+.comp-pay-cell strong.dn { color: #ff7c8e; }
+
+.comp-pay-cell small {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffd84a;
+}
+
+.comp-payout-note {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #9ec8f8;
+  text-align: center;
+}
+
+.comp-mega-start-btn {
+  width: 100%;
+  padding: 15px 18px;
+  border-radius: 14px;
+  border: 3.5px solid #071022;
+  background: linear-gradient(180deg, #ffe857 0%, #ffb718 62%, #e67e04 100%);
+  box-shadow: 0 6px 0 #071022, 0 0 24px rgba(255, 212, 48, 0.45), inset 0 3px 0 rgba(255, 255, 255, 0.68);
+  transform: skewX(-6deg);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: transform 0.12s ease, filter 0.12s ease;
+  flex-shrink: 0;
+}
+
+.comp-mega-start-btn:hover {
+  filter: brightness(1.06);
+}
+
+.comp-mega-start-btn:active {
+  transform: skewX(-6deg) translateY(3px);
+  box-shadow: 0 3px 0 #071022;
+}
+
+.comp-mega-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transform: skewX(6deg);
+}
+
+.comp-mega-main {
+  font-size: 22px;
+  font-weight: 900;
+  color: #1f1100;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+
+.comp-mega-sub {
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(31, 17, 0, 0.78);
+}
+
 @media (max-height: 440px), (max-width: 560px) {
   .comp-match-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -20869,29 +21641,10 @@ input:focus-visible {
     height: 30px;
   }
 
-  .comp-hero-card {
-    padding: 9px 11px;
-    gap: 10px;
-  }
-
-  .comp-tier-emblem {
-    width: 38px;
-    height: 38px;
-  }
-
-  .comp-trophy-val {
-    font-size: 17px;
-  }
-
-  .comp-match-cta {
-    padding: 8px 13px;
-  }
-
   .comp-run-hud {
-    top: 66px;
-    right: 8px;
-    width: 138px;
+    width: 140px;
     padding: 5px 7px;
+    margin-top: 3px;
   }
 
   .gear-bottom-bars {
@@ -20914,9 +21667,117 @@ input:focus-visible {
   .ctrl-center-orbs {
     bottom: calc(max(6px, var(--safe-bottom)) + 38px) !important;
   }
+
+  .comp-lobby-arena {
+    gap: 6px;
+    padding: calc(max(4px, var(--safe-top, 0px)) + 2px) max(10px, var(--safe-right, 10px)) calc(max(6px, var(--safe-bottom, 0px)) + 2px) max(10px, var(--safe-left, 10px));
+  }
+
+  .comp-lt-ribbon {
+    padding: 3px 10px;
+  }
+
+  .comp-lt-title {
+    font-size: 13px;
+  }
+
+  .comp-lobby-3col {
+    grid-template-columns: minmax(210px, 1.15fr) minmax(160px, 0.9fr) minmax(195px, 1fr);
+    gap: 8px;
+  }
+
+  .comp-tier-showcase-card,
+  .comp-roadmap-card,
+  .comp-payout-card {
+    padding: 7px 9px;
+    gap: 5px;
+    border-radius: 12px;
+  }
+
+  .comp-tier-emblem-stage {
+    width: 62px;
+    height: 62px;
+  }
+
+  .comp-tier-emblem-big {
+    width: 58px;
+    height: 58px;
+  }
+
+  .comp-tier-big-name {
+    font-size: 16px;
+  }
+
+  .comp-tier-trophy-line strong {
+    font-size: 15px;
+  }
+
+  .comp-road-ico {
+    width: 24px;
+    height: 24px;
+  }
+
+  .comp-road-node {
+    padding: 3px 2px;
+  }
+
+  .comp-road-name {
+    font-size: 8.5px;
+  }
+
+  .comp-road-min {
+    font-size: 8px;
+  }
+
+  .comp-hero-img {
+    width: clamp(92px, 28vh, 130px);
+    height: clamp(92px, 28vh, 130px);
+  }
+
+  .comp-hero-char-name {
+    font-size: 14px;
+  }
+
+  .comp-pay-cell {
+    padding: 3px 6px;
+  }
+
+  .comp-pay-cell span,
+  .comp-pay-cell strong {
+    font-size: 10px;
+  }
+
+  .comp-mega-start-btn {
+    padding: 9px 12px;
+  }
+
+  .comp-mega-main {
+    font-size: 17px;
+  }
+
+  .comp-mega-sub {
+    font-size: 9.5px;
+  }
+
+  .bs-ev-tier-img {
+    width: 32px;
+    height: 32px;
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) and (orientation: portrait) {
+  .bs-mode-grid.three-modes {
+    grid-template-columns: 1fr;
+  }
+
+  .comp-lobby-arena {
+    overflow-y: auto;
+  }
+
+  .comp-lobby-3col {
+    grid-template-columns: 1fr;
+  }
+
   .comp-match-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
