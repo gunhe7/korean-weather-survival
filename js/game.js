@@ -230,6 +230,7 @@
       compMatches: 0,
       compWins: 0,
       compBestScore: 0,
+      compSeasonWeek: week,
       pendingCompMatches: []
     };
 
@@ -272,6 +273,7 @@
       compMatches: typeof raw.compMatches === 'number' && Number.isFinite(raw.compMatches) ? Math.max(0, Math.floor(raw.compMatches)) : 0,
       compWins: typeof raw.compWins === 'number' && Number.isFinite(raw.compWins) ? Math.max(0, Math.floor(raw.compWins)) : 0,
       compBestScore: typeof raw.compBestScore === 'number' && Number.isFinite(raw.compBestScore) ? Math.max(0, Math.floor(raw.compBestScore)) : 0,
+      compSeasonWeek: typeof raw.compSeasonWeek === 'string' && raw.compSeasonWeek ? raw.compSeasonWeek : week,
       pendingCompMatches: Array.isArray(raw.pendingCompMatches) ? raw.pendingCompMatches.filter((m) => m && m.id && !m.claimed).slice(-1) : [],
       bestScore: typeof raw.bestScore === 'number' && Number.isFinite(raw.bestScore) ? Math.max(0, Math.floor(raw.bestScore)) : 0,
       bestYear: typeof raw.bestYear === 'number' && Number.isFinite(raw.bestYear) ? Math.max(1, Math.floor(raw.bestYear)) : 1,
@@ -752,6 +754,8 @@
     compStatusTierImg: document.getElementById('comp-status-tier-img'),
     compRewardsOverlay: document.getElementById('comp-rewards-overlay'),
     btnCloseCompRewards: document.getElementById('btn-close-comp-rewards'),
+    compRewSelectedStatus: document.getElementById('comp-rew-selected-status'),
+    compSeasonRewardCard: document.getElementById('comp-season-reward-card'),
     compMatchRuleNote: document.getElementById('comp-match-rule-note'),
     compWaitOverlay: document.getElementById('comp-wait-overlay'),
     compWaitTimerPill: document.getElementById('comp-wait-timer-pill'),
@@ -5264,6 +5268,139 @@
   }
 
   let lastCompHeroSrc = '';
+  let inspectedCompTierIdx = null;
+
+  function checkAndAwardCompSeasonReward() {
+    const curWeek = getWeekKey();
+    if (!save.compSeasonWeek) {
+      save.compSeasonWeek = curWeek;
+      return;
+    }
+    if (save.compSeasonWeek !== curWeek) {
+      if ((save.compMatches || 0) > 0) {
+        const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
+        const tier = DATA.getCompTier(myTrophies);
+        const rw = tier && tier.seasonReward ? tier.seasonReward : { gems: 0, diamondChests: 5 };
+        const addGems = Math.max(0, Math.floor(rw.gems || 0));
+        const addDia = Math.max(0, Math.floor(rw.diamondChests || 0));
+        if (!save.chestBag) save.chestBag = { wood: 0, silver: 0, gold: 0, diamond: 0 };
+        save.gems = (save.gems || 0) + addGems;
+        save.chestBag.diamond = (save.chestBag.diamond || 0) + addDia;
+        const parts = [];
+        if (addGems > 0) parts.push(`보석 ${addGems.toLocaleString('ko-KR')}개`);
+        if (addDia > 0) parts.push(`다이아 상자 ${addDia.toLocaleString('ko-KR')}개`);
+        showToast(`경쟁전 시즌 종료 보상 (${tier.majorName}): ${parts.join(' · ')} 지급 완료!`);
+      }
+      save.compSeasonWeek = curWeek;
+      persistSave(true);
+      renderProfileUI();
+    }
+  }
+
+  function renderCompSeasonRewardDetail(majorIdx) {
+    const tiers = DATA.COMP_TIERS || [];
+    if (!tiers.length || !el.compSeasonRewardCard) return;
+    const idx = Math.max(0, Math.min(tiers.length - 1, Math.floor(majorIdx || 0)));
+    const t = tiers[idx];
+    const myTier = DATA.getCompTier(Math.max(0, Math.floor(save.trophies || 0)));
+    const isCurrent = idx === myTier.index;
+    const isReached = idx <= myTier.index;
+    const rw = t.seasonReward || { gems: 0, diamondChests: 5 };
+    const deltas = t.trophyDeltas || DATA.COMP_TROPHY_DELTAS;
+    const divSpan = DATA.COMP_DIV_STEP || 300;
+    const majorSpan = divSpan * (DATA.COMP_DIVS_PER_TIER || 5);
+    const rangeEnd = idx < tiers.length - 1 ? (t.minTrophies + majorSpan - 1) : null;
+    const rangeTxt = rangeEnd !== null
+      ? `${t.minTrophies.toLocaleString('ko-KR')} ~ ${rangeEnd.toLocaleString('ko-KR')} 트로피`
+      : `${t.minTrophies.toLocaleString('ko-KR')}+ 트로피`;
+
+    if (el.compRewSelectedStatus) {
+      el.compRewSelectedStatus.textContent = isCurrent
+        ? `현재 내 티어 (${myTier.name})`
+        : (isReached ? `${t.name} 달성 완료` : `${t.name} 달성 시 보상`);
+      el.compRewSelectedStatus.style.color = isCurrent ? '#ffe866' : t.color;
+    }
+
+    const gemTileHtml = rw.gems > 0
+      ? `
+        <div class="comp-sr-item gems">
+          <img src="assets/icons/ico_gem.svg?v=20261121hd132" alt="보석" class="comp-sr-item-ico" />
+          <div class="comp-sr-item-txt">
+            <span>보석</span>
+            <strong>${rw.gems.toLocaleString('ko-KR')}개</strong>
+          </div>
+        </div>
+      `
+      : '';
+
+    const chestTileHtml = `
+      <div class="comp-sr-item diamond">
+        <img src="assets/chests/chest_diamond_0.png" alt="다이아 상자" class="comp-sr-item-ico" />
+        <div class="comp-sr-item-txt">
+          <span>다이아 상자</span>
+          <strong>${(rw.diamondChests || 0).toLocaleString('ko-KR')}개</strong>
+        </div>
+      </div>
+    `;
+
+    el.compSeasonRewardCard.style.setProperty('--tcol', t.color);
+    el.compSeasonRewardCard.innerHTML = `
+      <div class="comp-sr-top">
+        <div class="comp-sr-emblem-box">
+          <img src="${getTierImgUrl(t)}" alt="${t.name}" class="comp-sr-emblem" />
+        </div>
+        <div class="comp-sr-head-meta">
+          <div class="comp-sr-title-row">
+            <strong class="comp-sr-tier-name" style="color:${t.color}">${t.name}</strong>
+            <span class="comp-sr-div-pill">${t.name} 5 → ${t.name} 1</span>
+          </div>
+          <div class="comp-sr-range">${rangeTxt} · 세부티어당 ${divSpan}</div>
+          <div class="comp-sr-deltas">
+            <span class="up">1~4위 +${deltas[0]} / +${deltas[1]} / +${deltas[2]} / +${deltas[3]}</span>
+            <span class="dn">5~8위 ${deltas[4]} / ${deltas[5]} / ${deltas[6]} / ${deltas[7]}</span>
+          </div>
+        </div>
+      </div>
+      <div class="comp-sr-rewards-grid${rw.gems > 0 ? ' two' : ' one'}">
+        ${gemTileHtml}
+        ${chestTileHtml}
+      </div>
+    `;
+  }
+
+  function renderCompTierRoadmap() {
+    if (!el.compTierRoadmap || !Array.isArray(DATA.COMP_TIERS)) return;
+    const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
+    const tier = DATA.getCompTier(myTrophies);
+    if (inspectedCompTierIdx === null || inspectedCompTierIdx < 0 || inspectedCompTierIdx >= DATA.COMP_TIERS.length) {
+      inspectedCompTierIdx = tier.index;
+    }
+    el.compTierRoadmap.innerHTML = DATA.COMP_TIERS.map((t, idx) => {
+      const isCurrent = idx === tier.index;
+      const isUnlocked = idx <= tier.index;
+      const isInspected = idx === inspectedCompTierIdx;
+      return `
+        <button type="button" class="comp-road-node${isCurrent ? ' current' : ''}${isUnlocked ? ' unlocked' : ' locked'}${isInspected ? ' inspected' : ''}" data-tier-idx="${idx}" style="--tcol:${t.color}" title="${t.name} 시즌 종료 보상 보기">
+          <img src="${getTierImgUrl(t)}" alt="${t.name}" class="comp-road-ico" />
+          <span class="comp-road-name">${t.name}</span>
+          <span class="comp-road-min">${t.minTrophies.toLocaleString('ko-KR')}</span>
+        </button>
+      `;
+    }).join('');
+
+    el.compTierRoadmap.querySelectorAll('.comp-road-node').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.getAttribute('data-tier-idx'));
+        if (!Number.isFinite(idx)) return;
+        SFX.click();
+        inspectedCompTierIdx = idx;
+        renderCompTierRoadmap();
+      });
+    });
+
+    renderCompSeasonRewardDetail(inspectedCompTierIdx);
+  }
+
   function renderCompetitiveLobby() {
     const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
     const tier = DATA.getCompTier(myTrophies);
@@ -5300,7 +5437,7 @@
       el.compOwPct.style.color = tier.color;
     }
     if (el.compOwNextLabel) {
-      el.compOwNextLabel.textContent = tier.next ? tier.next.name : '챔피언';
+      el.compOwNextLabel.textContent = tier.next ? tier.next.name : '챔피언 1';
     }
     if (el.compOwNextIco) {
       const nextT = tier.next || tier;
@@ -5309,7 +5446,7 @@
     }
     if (el.compLobbyTrophyVal) {
       el.compLobbyTrophyVal.textContent = tier.next
-        ? `${myTrophies.toLocaleString('ko-KR')} / ${tier.next.minTrophies.toLocaleString('ko-KR')}`
+        ? `${(tier.inDivTrophies || 0).toLocaleString('ko-KR')} / ${tier.divSpan || 300}`
         : `${myTrophies.toLocaleString('ko-KR')} MAX`;
     }
     if (el.compLobbyProgFill) {
@@ -5318,24 +5455,12 @@
     }
     if (el.compOwRemainTxt) {
       el.compOwRemainTxt.textContent = tier.next
-        ? `${tier.next.name} 승급까지 ${Math.max(0, tier.next.minTrophies - myTrophies).toLocaleString('ko-KR')} 트로피 남음`
-        : '최고 티어 챔피언 달성!';
+        ? `${tier.next.name} 승급까지 ${Math.max(0, (tier.divSpan || 300) - (tier.inDivTrophies || 0)).toLocaleString('ko-KR')} 트로피 남음`
+        : '최고 티어 챔피언 1 달성!';
     }
 
-    // 8-Tier Emblem Roadmap (Bronze ~ Champion inside #comp-rewards-overlay)
-    if (el.compTierRoadmap && Array.isArray(DATA.COMP_TIERS)) {
-      el.compTierRoadmap.innerHTML = DATA.COMP_TIERS.map((t, idx) => {
-        const isCurrent = t.id === tier.id;
-        const isUnlocked = idx <= tier.index;
-        return `
-          <div class="comp-road-node${isCurrent ? ' current' : ''}${isUnlocked ? ' unlocked' : ' locked'}" style="--tcol:${t.color}" title="${t.name} (${t.minTrophies.toLocaleString('ko-KR')} 트로피)">
-            <img src="${getTierImgUrl(t)}" alt="${t.name}" class="comp-road-ico" />
-            <span class="comp-road-name">${t.name}</span>
-            <span class="comp-road-min">${t.minTrophies.toLocaleString('ko-KR')}</span>
-          </div>
-        `;
-      }).join('');
-    }
+    // 8-Tier Emblem Roadmap (Bronze ~ Champion inside #comp-rewards-overlay, all clickable!)
+    renderCompTierRoadmap();
 
     // Scenic Running Character Showcase
     if (el.compLobbyCharPerk) el.compLobbyCharPerk.textContent = ch.perkLabel || ch.tierLabel || '특화 러너';
@@ -5366,7 +5491,9 @@
 
   function openCompRewardsModal() {
     SFX.click();
-    renderCompetitiveLobby();
+    const myTier = DATA.getCompTier(Math.max(0, Math.floor(save.trophies || 0)));
+    inspectedCompTierIdx = myTier.index;
+    renderCompTierRoadmap();
     if (el.compRewardsOverlay) el.compRewardsOverlay.classList.remove('hidden');
   }
 
@@ -5691,7 +5818,7 @@
     const ch = chars[Math.floor(Math.random() * chars.length)] || DATA.CHARACTERS[0];
     const skins = DATA.getSkinsForChar ? DATA.getSkinsForChar(ch.id) : [];
     const pickSkin = (skins.length > 0 && Math.random() < 0.35) ? skins[Math.floor(Math.random() * skins.length)] : null;
-    const cappedMax = DATA.COMP_AI_MAX_TROPHIES ?? 699;
+    const cappedMax = DATA.COMP_AI_MAX_TROPHIES ?? 2999;
     const jitterT = Math.round((Math.random() - 0.48) * 220);
     const trophies = Math.max(0, Math.min(cappedMax, Math.floor((myTrophies || 0) + jitterT)));
     const tier = DATA.getCompTier(trophies);
@@ -5762,7 +5889,7 @@
     const myNick = myAuth.nickname || `나 (${myChar.name})`;
     const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
     const myTier = DATA.getCompTier(myTrophies);
-    const aiMaxTrophies = DATA.COMP_AI_MAX_TROPHIES ?? 699;
+    const aiMaxTrophies = DATA.COMP_AI_MAX_TROPHIES ?? 2999;
     const allowAiFallback = myTrophies <= aiMaxTrophies;
 
     const meEntry = {
@@ -6240,7 +6367,7 @@
       el.compResNextIco.src = getTierImgUrl(nextT);
       el.compResNextIco.alt = nextT.name;
     }
-    if (el.compResNextLabel) el.compResNextLabel.textContent = tierObj.next ? tierObj.next.name : '챔피언';
+    if (el.compResNextLabel) el.compResNextLabel.textContent = tierObj.next ? tierObj.next.name : '챔피언 1';
 
     const curPct = Math.max(0, Math.min(100, deltaMode === 'up' ? (basePct + deltaWidthPct) : basePct));
     if (el.compResOwPct) {
@@ -6258,8 +6385,11 @@
     }
     if (el.compResBarVal) {
       const disp = Math.max(0, Math.round(displayTrophies));
+      const divSpan = tierObj.divSpan || DATA.COMP_DIV_STEP || 300;
+      const divMin = tierObj.divMinTrophies || 0;
+      const inDiv = Math.max(0, Math.min(divSpan, disp - divMin));
       el.compResBarVal.textContent = tierObj.next
-        ? `${disp.toLocaleString('ko-KR')} / ${tierObj.next.minTrophies.toLocaleString('ko-KR')}`
+        ? `${inDiv.toLocaleString('ko-KR')} / ${divSpan}`
         : `${disp.toLocaleString('ko-KR')} MAX`;
     }
   }
@@ -6267,21 +6397,19 @@
   function runCompResultProgressionAnim(prevTrophies, newTrophies, actualDelta) {
     stopCompResultAnim();
     const seq = compResAnimSeq;
-    const tiers = DATA.COMP_TIERS || [];
     const prevTier = DATA.getCompTier(prevTrophies);
     const newTier = DATA.getCompTier(newTrophies);
+    const divStep = DATA.COMP_DIV_STEP || 300;
 
-    const getTierObjByIdx = (idx) => {
-      const clamped = Math.max(0, Math.min(tiers.length - 1, idx));
-      const cur = tiers[clamped] || prevTier;
-      const next = tiers[clamped + 1] || null;
-      return { ...cur, index: clamped, next };
-    };
+    const getTierObjByDiv = (divIdx) => (
+      DATA.getCompTierByDivIndex ? DATA.getCompTierByDivIndex(divIdx) : prevTier
+    );
 
     const pctInTier = (tierObj, val) => {
       if (!tierObj.next) return 100;
-      const span = Math.max(1, tierObj.next.minTrophies - tierObj.minTrophies);
-      return Math.max(0, Math.min(100, ((val - tierObj.minTrophies) / span) * 100));
+      const baseMin = tierObj.divMinTrophies || 0;
+      const span = tierObj.divSpan || divStep;
+      return Math.max(0, Math.min(100, ((val - baseMin) / span) * 100));
     };
 
     // Reset promotion/demotion classes
@@ -6322,7 +6450,6 @@
         if (dir > 0) {
           applyCompResultTierVisual(tierObj, curVal, p0, p0, Math.max(0, curPct - p0), 'up');
         } else {
-          // Overwatch loss: base drops to curPct while crimson loss segment shrinks from p0 down to curPct!
           applyCompResultTierVisual(tierObj, curVal, curPct, curPct, Math.max(0, p0 - curPct), 'down');
         }
 
@@ -6346,26 +6473,26 @@
       if (compResAnimSeq !== seq) return;
 
       if (actualDelta > 0) {
-        if (newTier.index === prevTier.index) {
-          // Same-tier trophy rise!
+        if (newTier.divIndex === prevTier.divIndex) {
+          // Same sub-tier trophy rise!
           const ok = await sweepSegment(prevTier, prevTrophies, newTrophies, 1, 1150);
           if (!ok || compResAnimSeq !== seq) return;
           spawnCompResultBurst(newTier.color, false);
           try { SFX.coin(3); } catch {}
         } else {
-          // SPECTACULAR OVERWATCH TIER PROMOTION!!
-          let curIdx = prevTier.index;
+          // SPECTACULAR OVERWATCH SUB-TIER / MAJOR-TIER PROMOTION!!
+          let curDivIdx = prevTier.divIndex;
           let curVal = prevTrophies;
-          while (curIdx < newTier.index) {
-            const curT = getTierObjByIdx(curIdx);
-            const nextT = getTierObjByIdx(curIdx + 1);
-            const boundary = nextT.minTrophies;
+          while (curDivIdx < newTier.divIndex) {
+            const curT = getTierObjByDiv(curDivIdx);
+            const nextT = getTierObjByDiv(curDivIdx + 1);
+            const boundary = nextT.divMinTrophies;
 
-            // Phase 1: Charge bar smoothly to 100% of old tier!
+            // Phase 1: Charge bar smoothly to 100% (300/300) of current sub-tier!
             const ok1 = await sweepSegment(curT, curVal, boundary, 1, 720);
             if (!ok1 || compResAnimSeq !== seq) return;
 
-            // Phase 2: Spin-flash morph into the NEW tier emblem + fireworks + fanfare!
+            // Phase 2: Spin-flash morph into the NEW tier/sub-tier + fireworks + fanfare!
             if (el.compResEmblemWrap) {
               el.compResEmblemWrap.classList.remove('is-promoted', 'is-demoted');
               void el.compResEmblemWrap.offsetWidth;
@@ -6374,7 +6501,6 @@
             await sleep(210);
             if (compResAnimSeq !== seq) return;
 
-            // Swap to NEW tier at peak flash!
             applyCompResultTierVisual(nextT, boundary, 0, 0, 0, '');
             if (el.compResEmblemWrap) {
               el.compResEmblemWrap.classList.remove('is-morphing-out');
@@ -6390,7 +6516,10 @@
               el.compResultModalBox.classList.add('is-promo-shake');
             }
             if (el.compResPromoBanner) {
-              el.compResPromoBanner.textContent = `TIER UP! ${nextT.name} 승급!`;
+              const isMajorUp = nextT.index > curT.index;
+              el.compResPromoBanner.textContent = isMajorUp
+                ? `RANK UP! ${nextT.name} 승급!`
+                : `TIER UP! ${nextT.name} 승급!`;
               el.compResPromoBanner.className = 'comp-res-promo-banner up';
             }
             try { SFX.tierPromote(); } catch {}
@@ -6400,11 +6529,11 @@
             await sleep(620);
             if (compResAnimSeq !== seq) return;
 
-            curIdx += 1;
+            curDivIdx += 1;
             curVal = boundary;
           }
 
-          // Phase 3: Sweep remaining trophies into the NEW tier bar!
+          // Phase 3: Sweep remaining trophies into the NEW sub-tier bar!
           if (newTrophies > curVal) {
             await sweepSegment(newTier, curVal, newTrophies, 1, 820);
           } else {
@@ -6413,21 +6542,19 @@
         }
       } else {
         // Trophy drop (Overwatch-style red loss drain!)
-        if (newTier.index === prevTier.index) {
-          // Brief red highlight preview of exact lost chunk before draining!
+        if (newTier.divIndex === prevTier.divIndex) {
           const pNew = pctInTier(prevTier, newTrophies);
           applyCompResultTierVisual(prevTier, prevTrophies, pNew, pNew, Math.max(0, startPct - pNew), 'down');
           await sleep(280);
           if (compResAnimSeq !== seq) return;
           await sweepSegment(prevTier, prevTrophies, newTrophies, -1, 1050);
         } else {
-          // Tier demotion
-          let curIdx = prevTier.index;
+          let curDivIdx = prevTier.divIndex;
           let curVal = prevTrophies;
-          while (curIdx > newTier.index) {
-            const curT = getTierObjByIdx(curIdx);
-            const lowerT = getTierObjByIdx(curIdx - 1);
-            const boundary = curT.minTrophies;
+          while (curDivIdx > newTier.divIndex) {
+            const curT = getTierObjByDiv(curDivIdx);
+            const lowerT = getTierObjByDiv(curDivIdx - 1);
+            const boundary = curT.divMinTrophies;
 
             const ok1 = await sweepSegment(curT, curVal, boundary, -1, 650);
             if (!ok1 || compResAnimSeq !== seq) return;
@@ -6440,14 +6567,14 @@
             }
             if (el.compResOwCard) el.compResOwCard.classList.add('is-tier-down');
             if (el.compResPromoBanner) {
-              el.compResPromoBanner.textContent = `${lowerT.name} 티어 하락`;
+              el.compResPromoBanner.textContent = `${lowerT.name} 하락`;
               el.compResPromoBanner.className = 'comp-res-promo-banner down';
             }
             try { SFX.tierDemote(); } catch {}
             await sleep(460);
             if (compResAnimSeq !== seq) return;
 
-            curIdx -= 1;
+            curDivIdx -= 1;
             curVal = boundary;
           }
           if (newTrophies < curVal) {
@@ -6469,18 +6596,19 @@
 
     const myRankIdx = Math.max(0, finalList.findIndex((p) => p.isMe));
     const myRank = myRankIdx + 1;
-    const deltas = DATA.COMP_TROPHY_DELTAS || [40, 28, 16, 6, -6, -16, -28, -40];
-    const goldRewards = DATA.COMP_GOLD_REWARDS || [360, 260, 190, 140, 100, 80, 60, 50];
-    const trophyDelta = deltas[Math.min(deltas.length - 1, myRankIdx)] ?? 0;
-    const rankGold = goldRewards[Math.min(goldRewards.length - 1, myRankIdx)] ?? 50;
-    const totalGold = (m.baseGoldEarned || 0) + rankGold;
-
     const prevTrophies = Math.max(0, Math.floor(save.trophies || 0));
+    const deltas = DATA.getCompTrophyDeltas
+      ? DATA.getCompTrophyDeltas(prevTrophies)
+      : (DATA.COMP_TROPHY_DELTAS || [40, 28, 16, 6, -6, -16, -28, -40]);
+    const trophyDelta = deltas[Math.min(deltas.length - 1, myRankIdx)] ?? 0;
+    const totalGold = m.baseGoldEarned || 0;
+
     const newTrophies = Math.max(0, prevTrophies + trophyDelta);
     const actualDelta = newTrophies - prevTrophies;
 
     save.trophies = newTrophies;
     save.compMatches = (save.compMatches || 0) + 1;
+    save.compSeasonWeek = getWeekKey();
     if (myRank === 1) save.compWins = (save.compWins || 0) + 1;
     if ((m.myScore || 0) > (save.compBestScore || 0)) save.compBestScore = m.myScore || 0;
     save.gold += totalGold;
@@ -12739,6 +12867,7 @@
   });
   setupEvents();
   initHomePetals();
+  checkAndAwardCompSeasonReward();
   refreshAllMenus();
   renderIntroAuthState();
   refreshLiveWeatherUI(false);

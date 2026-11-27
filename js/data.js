@@ -600,34 +600,109 @@ window.RUN_DATA = (function () {
     3: { rank: 3, gems: 1000, frameId: 'rank_3', frameName: '3위 닉네임 장식' }
   };
 
-  // ===================== 8-PLAYER COMPETITIVE TROPHY RACE (COOKIE RUN STYLE) =====================
+  // ===================== 8-PLAYER COMPETITIVE TROPHY RACE (OVERWATCH 5-DIVISION TIERS) =====================
   const COMP_MATCH_PLAYERS = 8;
   const COMP_MATCH_DURATION = 60; // 60-second full 4-season competitive sprint!
+  const COMP_DIVS_PER_TIER = 5;   // 오버워치식 세부 티어 5단계 (5 → 4 → 3 → 2 → 1)
+  const COMP_DIV_STEP = 300;      // 모든 티어 공통: 세부 티어당 300 트로피 (일반 티어당 1,500)
   const COMP_TROPHY_DELTAS = [40, 28, 16, 6, -6, -16, -28, -40];
-  const COMP_GOLD_REWARDS = [360, 260, 190, 140, 100, 80, 60, 50];
-  const COMP_AI_MAX_TROPHIES = 699; // 실버 구간(0~699)까지만 AI 보충 매칭 허용! 골드(700+) 이상 전원 실제 유저 매칭
+  const COMP_GOLD_REWARDS = [0, 0, 0, 0, 0, 0, 0, 0]; // 트로피 골드 보상 삭제 -> 티어별 시즌 종료 보상으로 전환!
+  const COMP_AI_MAX_TROPHIES = 2999; // 브론즈~실버 구간(0~2,999)까지만 1분 대기 후 AI 보충 허용! 골드(3,000+) 전원 실제 유저
   const COMP_TIERS = [
-    { id: 'bronze',      name: '브론즈',       minTrophies: 0,    color: '#d98c54', img: 'assets/tiers/tier_bronze.png' },
-    { id: 'silver',      name: '실버',         minTrophies: 300,  color: '#b6c8de', img: 'assets/tiers/tier_silver.png' },
-    { id: 'gold',        name: '골드',         minTrophies: 700,  color: '#ffcf40', img: 'assets/tiers/tier_gold.png' },
-    { id: 'platinum',    name: '플래티넘',     minTrophies: 1200, color: '#3fe6d8', img: 'assets/tiers/tier_platinum.png' },
-    { id: 'diamond',     name: '다이아',       minTrophies: 1800, color: '#4ea8ff', img: 'assets/tiers/tier_diamond.png' },
-    { id: 'master',      name: '마스터',       minTrophies: 2600, color: '#c475ff', img: 'assets/tiers/tier_master.png' },
-    { id: 'grandmaster', name: '그랜드 마스터', minTrophies: 3600, color: '#ff5268', img: 'assets/tiers/tier_grandmaster.png' },
-    { id: 'champion',    name: '챔피언',       minTrophies: 4800, color: '#ffe566', img: 'assets/tiers/tier_champion.png' }
+    {
+      id: 'bronze', name: '브론즈', minTrophies: 0, color: '#d98c54', img: 'assets/tiers/tier_bronze.png',
+      seasonReward: { gems: 0, diamondChests: 5 },
+      trophyDeltas: [40, 28, 16, 6, -6, -16, -28, -40]
+    },
+    {
+      id: 'silver', name: '실버', minTrophies: 1500, color: '#b6c8de', img: 'assets/tiers/tier_silver.png',
+      seasonReward: { gems: 500, diamondChests: 10 },
+      trophyDeltas: [36, 25, 14, 6, -6, -14, -25, -36]
+    },
+    {
+      id: 'gold', name: '골드', minTrophies: 3000, color: '#ffcf40', img: 'assets/tiers/tier_gold.png',
+      seasonReward: { gems: 1000, diamondChests: 15 },
+      trophyDeltas: [32, 22, 13, 5, -5, -13, -22, -32]
+    },
+    {
+      id: 'platinum', name: '플래티넘', minTrophies: 4500, color: '#3fe6d8', img: 'assets/tiers/tier_platinum.png',
+      seasonReward: { gems: 1500, diamondChests: 18 },
+      trophyDeltas: [28, 20, 12, 5, -5, -12, -20, -28]
+    },
+    {
+      id: 'diamond', name: '다이아', minTrophies: 6000, color: '#4ea8ff', img: 'assets/tiers/tier_diamond.png',
+      seasonReward: { gems: 2000, diamondChests: 20 },
+      trophyDeltas: [25, 18, 10, 4, -4, -10, -18, -25]
+    },
+    {
+      id: 'master', name: '마스터', minTrophies: 7500, color: '#c475ff', img: 'assets/tiers/tier_master.png',
+      seasonReward: { gems: 4000, diamondChests: 30 },
+      trophyDeltas: [22, 15, 9, 4, -4, -9, -15, -22]
+    },
+    {
+      id: 'grandmaster', name: '그랜드 마스터', minTrophies: 9000, color: '#ff5268', img: 'assets/tiers/tier_grandmaster.png',
+      seasonReward: { gems: 6000, diamondChests: 40 },
+      trophyDeltas: [19, 13, 8, 3, -3, -8, -13, -19]
+    },
+    {
+      id: 'champion', name: '챔피언', minTrophies: 10500, color: '#ffe566', img: 'assets/tiers/tier_champion.png',
+      seasonReward: { gems: 10000, diamondChests: 100 },
+      trophyDeltas: [16, 11, 7, 3, -3, -7, -11, -16]
+    }
   ];
+
+  function getCompTierByDivIndex(divIndex) {
+    const totalDivs = COMP_TIERS.length * COMP_DIVS_PER_TIER;
+    const di = Math.max(0, Math.min(totalDivs - 1, Math.floor(Number(divIndex) || 0)));
+    const majorIdx = Math.floor(di / COMP_DIVS_PER_TIER);
+    const stepInMajor = di % COMP_DIVS_PER_TIER;
+    const division = COMP_DIVS_PER_TIER - stepInMajor; // 5 → 4 → 3 → 2 → 1
+    const cur = COMP_TIERS[majorIdx];
+    const isMaxDiv = di >= totalDivs - 1;
+    let next = null;
+    if (!isMaxDiv) {
+      const nextDi = di + 1;
+      const nextMajorIdx = Math.floor(nextDi / COMP_DIVS_PER_TIER);
+      const nextDiv = COMP_DIVS_PER_TIER - (nextDi % COMP_DIVS_PER_TIER);
+      const nextMajor = COMP_TIERS[nextMajorIdx];
+      next = {
+        ...nextMajor,
+        majorName: nextMajor.name,
+        name: `${nextMajor.name} ${nextDiv}`,
+        division: nextDiv,
+        index: nextMajorIdx,
+        divIndex: nextDi,
+        minTrophies: nextDi * COMP_DIV_STEP
+      };
+    }
+    return {
+      ...cur,
+      majorName: cur.name,
+      name: `${cur.name} ${division}`,
+      division,
+      index: majorIdx,
+      divIndex: di,
+      divMinTrophies: di * COMP_DIV_STEP,
+      divMaxTrophies: isMaxDiv ? null : (di + 1) * COMP_DIV_STEP,
+      divSpan: COMP_DIV_STEP,
+      next
+    };
+  }
 
   function getCompTier(trophies = 0) {
     const t = Math.max(0, Math.floor(Number(trophies) || 0));
-    let idx = 0;
-    for (let i = 0; i < COMP_TIERS.length; i++) {
-      if (t >= COMP_TIERS[i].minTrophies) idx = i;
-    }
-    const cur = COMP_TIERS[idx];
-    const next = COMP_TIERS[idx + 1] || null;
-    const span = next ? Math.max(1, next.minTrophies - cur.minTrophies) : 1;
-    const pct = next ? Math.max(0, Math.min(100, Math.round(((t - cur.minTrophies) / span) * 100))) : 100;
-    return { ...cur, index: idx, next, progressPct: pct, trophies: t };
+    const totalDivs = COMP_TIERS.length * COMP_DIVS_PER_TIER;
+    const di = Math.min(totalDivs - 1, Math.floor(t / COMP_DIV_STEP));
+    const info = getCompTierByDivIndex(di);
+    const isMaxDiv = !info.next;
+    const inDivTrophies = isMaxDiv ? COMP_DIV_STEP : Math.max(0, Math.min(COMP_DIV_STEP, t - info.divMinTrophies));
+    const pct = isMaxDiv ? 100 : Math.max(0, Math.min(100, Math.round((inDivTrophies / COMP_DIV_STEP) * 100)));
+    return { ...info, inDivTrophies, progressPct: pct, trophies: t };
+  }
+
+  function getCompTrophyDeltas(trophies = 0) {
+    const tier = getCompTier(trophies);
+    return (tier && Array.isArray(tier.trophyDeltas)) ? tier.trophyDeltas : COMP_TROPHY_DELTAS;
   }
   const PROFILE_NAME_COLORS = [
     { id: '#ffffff', name: '스노우 화이트', color: '#ffffff' },
@@ -795,11 +870,15 @@ window.RUN_DATA = (function () {
     WEEKLY_TOP_REWARDS,
     COMP_MATCH_PLAYERS,
     COMP_MATCH_DURATION,
+    COMP_DIVS_PER_TIER,
+    COMP_DIV_STEP,
     COMP_TROPHY_DELTAS,
     COMP_GOLD_REWARDS,
     COMP_AI_MAX_TROPHIES,
     COMP_TIERS,
+    getCompTierByDivIndex,
     getCompTier,
+    getCompTrophyDeltas,
     PROFILE_NAME_COLORS,
     PROFILE_NAME_FRAMES,
     SCORE_ROAD_STEP,

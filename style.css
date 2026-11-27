@@ -24246,3 +24246,259 @@ input:focus-visible {
     font-size: 10px;
   }
 }
+
+/* ==========================================================================
+   v20261121hd132 — CLEAN COMP FOOTER, IPAD NAMEPLATE POSITIONING,
+   CLICKABLE 8-TIER ROADMAP & SEASON-END REWARD CARD
+   ========================================================================== */
+
+/* 1. Clean Bottom-Right PLAY! Footer (Left Chest & Status Card Removed) */
+.comp-ob-footer.comp-ob-footer-clean {
+  justify-content: flex-end;
+}
+
+/* 2. Remove Any Tick Overlay Lines Completely */
+.comp-ow-bar-ticks {
+  display: none !important;
+}
+
+/* 3. iPad / Tablet / Desktop: Tuck Nameplate Close Above Running Hero (No Huge Sky Gap!) */
+@media (min-width: 740px) and (min-height: 540px) {
+  .comp-ob-stage-col {
+    justify-content: center;
+    gap: 10px;
+    padding-top: 12px;
+  }
+
+  .comp-ob-overhead {
+    margin-bottom: -4px;
+    padding-top: 0;
+  }
+
+  .comp-ob-runner-btn {
+    flex: 0 0 auto;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .comp-ob-slots-row {
+    margin-top: 8px;
+  }
+}
+
+/* 4. Interactive Clickable 8-Tier Nodes (All 8 Tiers Inspectable Including Locked!) */
+#comp-tier-roadmap .comp-road-node {
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: transform 0.1s ease, border-color 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+}
+
+#comp-tier-roadmap .comp-road-node.locked {
+  opacity: 0.76;
+}
+
+#comp-tier-roadmap .comp-road-node:hover {
+  opacity: 1;
+  transform: translateY(-1.5px);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+#comp-tier-roadmap .comp-road-node:active {
+  transform: translateY(1px);
+}
+
+#comp-tier-roadmap .comp-road-node.inspected {
+  opacity: 1;
+  border-color: var(--tcol, #ffe252);
+  background: linear-gradient(180deg, rgba(44, 96, 198, 0.94), rgba(14, 34, 82, 0.98));
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22), 0 0 14px color-mix(in srgb, var(--tcol, #ffe252) 55%, transparent);
+}
+
+#comp-tier-roadmap .comp-road-node.current {
+  border-color: #ffe252;
+}
+
+/* 5. Selected Tier Season-End Reward Showcase Card */
+.comp-season-reward-card {
+  --tcol: #d98c54;
+  border-radius: 13px;
+  border: 2.5px solid var(--tcol);
+  background:
+    radial-gradient(ellipse 75% 75% at 14% 35%, color-mix(in srgb, var(--tcol) 28%, transparent) 0%, transparent 72%),
+    linear-gradient(180deg, rgba(20, 48, 108, 0.94) 0%, rgba(9, 22, 54, 0.98) 100%);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  box-shadow: 0 3px 0 #071022, inset 0 1.5px 0 rgba(255, 255, 255, 0.24);
+}
+
+.comp-sr-top {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.comp-sr-emblem-box {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  background: rgba(6, 15, 36, 0.72);
+  border: 2px solid color-mix(in srgb, var(--tcol) 65%, #071022);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.comp-sr-emblem {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.6));
+}
+
+.comp-sr-head-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.comp-sr-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.comp-sr-tier-name {
+  font-size: 16px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 #071022;
+}
+
+.comp-sr-div-pill {
+  padding: 1.5px 8px;
+  border-radius: 999px;
+  background: rgba(6, 15, 36, 0.78);
+  border: 1.5px solid rgba(154, 214, 255, 0.35);
+  color: #dff2ff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.comp-sr-range {
+  font-size: 11px;
+  font-weight: 800;
+  color: #b7d8fa;
+}
+
+.comp-sr-deltas {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-sr-deltas .up { color: #6affb0; }
+.comp-sr-deltas .dn { color: #ff8093; }
+
+.comp-sr-rewards-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.comp-sr-rewards-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.comp-sr-rewards-grid.one {
+  grid-template-columns: 1fr;
+}
+
+.comp-sr-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border-radius: 11px;
+  border: 2px solid #071022;
+  background: rgba(6, 15, 36, 0.84);
+  box-shadow: 0 2.5px 0 #071022, inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.comp-sr-item.gems {
+  border-color: rgba(114, 224, 255, 0.55);
+  background: linear-gradient(180deg, rgba(19, 64, 134, 0.88), rgba(8, 28, 72, 0.94));
+}
+
+.comp-sr-item.diamond {
+  border-color: rgba(176, 146, 255, 0.62);
+  background: linear-gradient(180deg, rgba(44, 46, 136, 0.88), rgba(18, 22, 74, 0.94));
+}
+
+.comp-sr-item-ico {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
+}
+
+.comp-sr-item-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.comp-sr-item-txt span {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #b7dcff;
+}
+
+.comp-sr-item-txt strong {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #071022;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-height: 460px) {
+  .comp-season-reward-card {
+    padding: 7px 9px;
+    gap: 6px;
+  }
+
+  .comp-sr-emblem-box {
+    width: 44px;
+    height: 44px;
+  }
+
+  .comp-sr-emblem {
+    width: 38px;
+    height: 38px;
+  }
+
+  .comp-sr-tier-name { font-size: 13.5px; }
+  .comp-sr-range, .comp-sr-deltas { font-size: 9px; }
+
+  .comp-sr-item {
+    padding: 5px 8px;
+    gap: 7px;
+  }
+
+  .comp-sr-item-ico {
+    width: 26px;
+    height: 26px;
+  }
+
+  .comp-sr-item-txt strong { font-size: 12.5px; }
+}

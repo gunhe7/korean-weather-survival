@@ -1055,7 +1055,7 @@ window.OnlineService = (function () {
     // 120-second shared matchmaking bucket per tier band so real Google players waiting 60s+ match reliably!
     const bucket = Math.floor(now / 120000);
     const tr = Math.max(0, Math.floor(Number(playerInfo.trophies) || 0));
-    const tierBand = tr < 700 ? 'bs' : (tr < 1800 ? 'gp' : 'dm');
+    const tierBand = tr < 3000 ? 'bs' : (tr < 6000 ? 'gp' : 'dm');
     const roomId = `r_${tierBand}_${bucket}`;
     const safeUid = String(playerInfo.uid).replace(/[^a-zA-Z0-9_-]/g, '_');
     const entry = {
