@@ -230,7 +230,8 @@
       compMatches: 0,
       compWins: 0,
       compBestScore: 0,
-      compSeasonWeek: week,
+      compSeasonId: (DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo().seasonId : 's1'),
+      compSeasonMatches: 0,
       pendingCompMatches: []
     };
 
@@ -273,7 +274,8 @@
       compMatches: typeof raw.compMatches === 'number' && Number.isFinite(raw.compMatches) ? Math.max(0, Math.floor(raw.compMatches)) : 0,
       compWins: typeof raw.compWins === 'number' && Number.isFinite(raw.compWins) ? Math.max(0, Math.floor(raw.compWins)) : 0,
       compBestScore: typeof raw.compBestScore === 'number' && Number.isFinite(raw.compBestScore) ? Math.max(0, Math.floor(raw.compBestScore)) : 0,
-      compSeasonWeek: typeof raw.compSeasonWeek === 'string' && raw.compSeasonWeek ? raw.compSeasonWeek : week,
+      compSeasonId: typeof raw.compSeasonId === 'string' && raw.compSeasonId ? raw.compSeasonId : (DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo().seasonId : 's1'),
+      compSeasonMatches: typeof raw.compSeasonMatches === 'number' && Number.isFinite(raw.compSeasonMatches) ? Math.max(0, Math.floor(raw.compSeasonMatches)) : Math.max(0, Math.floor(Number(raw.compMatches) || 0)),
       pendingCompMatches: Array.isArray(raw.pendingCompMatches) ? raw.pendingCompMatches.filter((m) => m && m.id && !m.claimed).slice(-1) : [],
       bestScore: typeof raw.bestScore === 'number' && Number.isFinite(raw.bestScore) ? Math.max(0, Math.floor(raw.bestScore)) : 0,
       bestYear: typeof raw.bestYear === 'number' && Number.isFinite(raw.bestYear) ? Math.max(1, Math.floor(raw.bestYear)) : 1,
@@ -715,6 +717,7 @@
     btnCompLobbyBack: document.getElementById('btn-comp-lobby-back'),
     btnCompLobbyRank: document.getElementById('btn-comp-lobby-rank'),
     btnCompLobbyHome: document.getElementById('btn-comp-lobby-home'),
+    compLobbySeasonTag: document.getElementById('comp-lobby-season-tag'),
     compLobbyTitle: document.getElementById('comp-lobby-title'),
     compLobbyGems: document.getElementById('comp-lobby-gems'),
     compLobbyGold: document.getElementById('comp-lobby-gold'),
@@ -2491,11 +2494,12 @@
   let currentSpTab = 'rewards';
 
   function ensureSeasonPass() {
-    const spCfg = DATA.SEASON_PASS || { seasonId: 's1', xpPerTier: 100, maxTier: 80, bonusXpStep: 500, tiers: [] };
+    const sInfo = DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo() : { seasonId: 's1' };
+    const activeSeasonId = sInfo.seasonId || 's1';
     const today = getTodayKey();
-    if (!save.seasonPass || typeof save.seasonPass !== 'object') {
+    if (!save.seasonPass || typeof save.seasonPass !== 'object' || save.seasonPass.seasonId !== activeSeasonId) {
       save.seasonPass = {
-        seasonId: spCfg.seasonId,
+        seasonId: activeSeasonId,
         xp: 0,
         goldUnlocked: false,
         claimedFree: {},
@@ -2604,6 +2608,7 @@
   }
 
   function getSeasonDaysLeft() {
+    if (DATA.getGameSeasonInfo) return DATA.getGameSeasonInfo().daysLeft;
     const endsAt = (DATA.SEASON_PASS && DATA.SEASON_PASS.endsAt) || 0;
     return Math.max(0, Math.ceil((endsAt - Date.now()) / 86400000));
   }
@@ -5180,11 +5185,11 @@
     const isGoogleLinked = Boolean(ONLINE && save.auth && ONLINE.isRankedProvider(save.auth.provider));
     const activeMatch = getActiveCompPendingMatch();
 
-    if (ONLINE && ONLINE.getWeekInfo) {
-      const wInfo = ONLINE.getWeekInfo();
-      const shortTxt = (wInfo && wInfo.countdownText) ? wInfo.countdownText : '주간 정산 진행 중';
-      if (el.compLobbySeasonTimer) el.compLobbySeasonTimer.textContent = shortTxt;
-      if (el.compLobbySettleTimer) el.compLobbySettleTimer.textContent = shortTxt;
+    const sInfo = DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo() : null;
+    if (sInfo) {
+      if (el.compLobbySeasonTag) el.compLobbySeasonTag.textContent = `SEASON ${sInfo.seasonNo}`;
+      if (el.compLobbySeasonTimer) el.compLobbySeasonTimer.textContent = sInfo.countdownText;
+      if (el.compLobbySettleTimer) el.compLobbySettleTimer.textContent = sInfo.countdownText;
     }
 
     if (activeMatch && !activeMatch.settled) {
@@ -5271,29 +5276,52 @@
   let inspectedCompTierIdx = null;
 
   function checkAndAwardCompSeasonReward() {
-    const curWeek = getWeekKey();
-    if (!save.compSeasonWeek) {
-      save.compSeasonWeek = curWeek;
+    const sInfo = DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo() : { seasonNo: 1, seasonId: 's1' };
+    const curSeasonId = sInfo.seasonId || 's1';
+    if (!save.compSeasonId) {
+      save.compSeasonId = curSeasonId;
       return;
     }
-    if (save.compSeasonWeek !== curWeek) {
-      if ((save.compMatches || 0) > 0) {
-        const myTrophies = Math.max(0, Math.floor(save.trophies || 0));
-        const tier = DATA.getCompTier(myTrophies);
-        const rw = tier && tier.seasonReward ? tier.seasonReward : { gems: 0, diamondChests: 5 };
+    if (save.compSeasonId !== curSeasonId) {
+      const prevTrophies = Math.max(0, Math.floor(save.trophies || 0));
+      const prevTier = DATA.getCompTier(prevTrophies);
+      const participated = (save.compSeasonMatches || save.compMatches || 0) > 0;
+      const rewardParts = [];
+
+      // 1. Grant previous season's Tier Season-End Reward (Gems + Diamond Chests)
+      if (participated) {
+        const rw = prevTier && prevTier.seasonReward ? prevTier.seasonReward : { gems: 0, diamondChests: 5 };
         const addGems = Math.max(0, Math.floor(rw.gems || 0));
         const addDia = Math.max(0, Math.floor(rw.diamondChests || 0));
         if (!save.chestBag) save.chestBag = { wood: 0, silver: 0, gold: 0, diamond: 0 };
         save.gems = (save.gems || 0) + addGems;
         save.chestBag.diamond = (save.chestBag.diamond || 0) + addDia;
-        const parts = [];
-        if (addGems > 0) parts.push(`보석 ${addGems.toLocaleString('ko-KR')}개`);
-        if (addDia > 0) parts.push(`다이아 상자 ${addDia.toLocaleString('ko-KR')}개`);
-        showToast(`경쟁전 시즌 종료 보상 (${tier.majorName}): ${parts.join(' · ')} 지급 완료!`);
+        if (addGems > 0) rewardParts.push(`보석 ${addGems.toLocaleString('ko-KR')}개`);
+        if (addDia > 0) rewardParts.push(`다이아 상자 ${addDia.toLocaleString('ko-KR')}개`);
       }
-      save.compSeasonWeek = curWeek;
+
+      // 2. Soft-reset competitive tier:
+      //    - Grand Master / Champion -> strictly Master 5 (7,500)
+      //    - All other tiers -> drop 5 sub-tiers (minimum Bronze 5 = 0)
+      const resetTrophies = DATA.getCompSeasonResetTrophies
+        ? DATA.getCompSeasonResetTrophies(prevTrophies)
+        : 0;
+      const resetTier = DATA.getCompTier(resetTrophies);
+      save.trophies = resetTrophies;
+      save.compSeasonId = curSeasonId;
+      save.compSeasonMatches = 0;
+
+      // 3. Synchronize Season Pass rollover on the exact same 60-day boundary!
+      ensureSeasonPass();
       persistSave(true);
-      renderProfileUI();
+      syncMyTrophyProfile();
+      refreshAllMenus();
+
+      if (rewardParts.length > 0) {
+        showToast(`SEASON ${sInfo.seasonNo} 시작! [${prevTier.name}] 시즌 보상(${rewardParts.join(' · ')}) 지급 · 배치: ${resetTier.name}`);
+      } else {
+        showToast(`SEASON ${sInfo.seasonNo}이 시작되었습니다! 시작 티어: ${resetTier.name}`);
+      }
     }
   }
 
@@ -5324,7 +5352,7 @@
     const gemTileHtml = rw.gems > 0
       ? `
         <div class="comp-sr-item gems">
-          <img src="assets/icons/ico_gem.svg?v=20261121hd134" alt="보석" class="comp-sr-item-ico" />
+          <img src="assets/icons/ico_gem.svg?v=20261121hd135" alt="보석" class="comp-sr-item-ico" />
           <div class="comp-sr-item-txt">
             <span>보석</span>
             <strong>${rw.gems.toLocaleString('ko-KR')}개</strong>
@@ -6608,7 +6636,8 @@
 
     save.trophies = newTrophies;
     save.compMatches = (save.compMatches || 0) + 1;
-    save.compSeasonWeek = getWeekKey();
+    save.compSeasonMatches = (save.compSeasonMatches || 0) + 1;
+    save.compSeasonId = DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo().seasonId : 's1';
     if (myRank === 1) save.compWins = (save.compWins || 0) + 1;
     if ((m.myScore || 0) > (save.compBestScore || 0)) save.compBestScore = m.myScore || 0;
     save.gold += totalGold;
@@ -11789,6 +11818,7 @@
     }
     setInterval(() => {
       updateWeeklyRankCountdownUI();
+      checkAndAwardCompSeasonReward();
       tickPendingCompMatches();
     }, 1000);
     setInterval(() => {

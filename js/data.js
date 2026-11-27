@@ -704,6 +704,44 @@ window.RUN_DATA = (function () {
     const tier = getCompTier(trophies);
     return (tier && Array.isArray(tier.trophyDeltas)) ? tier.trophyDeltas : COMP_TROPHY_DELTAS;
   }
+
+  // ===================== 60-DAY UNIFIED SEASON (SEASON PASS & COMPETITIVE SYNC) =====================
+  const GAME_SEASON_DAYS = 60;
+  const GAME_SEASON_MS = GAME_SEASON_DAYS * 86400000;
+  const GAME_SEASON_EPOCH_MS = Date.UTC(2026, 10, 20, 15, 0, 0); // 시즌 1 시작: 2026-11-21 00:00 KST (60일 고정!)
+
+  function getGameSeasonInfo(nowMs = Date.now()) {
+    const elapsed = Math.max(0, nowMs - GAME_SEASON_EPOCH_MS);
+    const seasonNo = Math.floor(elapsed / GAME_SEASON_MS) + 1;
+    const seasonId = `s${seasonNo}`;
+    const startsAt = GAME_SEASON_EPOCH_MS + (seasonNo - 1) * GAME_SEASON_MS;
+    const endsAt = startsAt + GAME_SEASON_MS;
+    const remainMs = Math.max(0, endsAt - nowMs);
+    const totalSec = Math.floor(remainMs / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const countdownText = days > 0
+      ? `${days}일 ${pad2(hours)}:${pad2(mins)}:${pad2(secs)}`
+      : `${pad2(hours)}:${pad2(mins)}:${pad2(secs)}`;
+    const daysLeft = Math.max(0, Math.ceil(remainMs / 86400000));
+    return { seasonNo, seasonId, startsAt, endsAt, remainMs, daysLeft, countdownText, durationDays: GAME_SEASON_DAYS };
+  }
+
+  // 시즌 초기화 소프트 리셋 규칙:
+  // - 그랜드 마스터 / 챔피언 -> 무조건 마스터 5 (7,500 트로피)
+  // - 그 외 티어 -> 전 시즌 티어의 세부티어 5단계 하락 (최소 브론즈 5 = 0)
+  function getCompSeasonResetTrophies(prevTrophies = 0) {
+    const t = Math.max(0, Math.floor(Number(prevTrophies) || 0));
+    const prevTier = getCompTier(t);
+    if (prevTier.index >= 6) {
+      return (5 * COMP_DIVS_PER_TIER) * COMP_DIV_STEP; // 마스터 5 (divIndex 25 = 7,500)
+    }
+    const newDivIdx = Math.max(0, prevTier.divIndex - COMP_DIVS_PER_TIER);
+    return newDivIdx * COMP_DIV_STEP;
+  }
   const PROFILE_NAME_COLORS = [
     { id: '#ffffff', name: '스노우 화이트', color: '#ffffff' },
     { id: '#ffe24a', name: '챔피언 골드', color: '#ffe24a' },
@@ -845,8 +883,8 @@ window.RUN_DATA = (function () {
       maxTier: 80,
       bonusXpStep: 500,
       bonusReward: { kind: 'chest', chest: 'diamond', amount: 1, label: '다이아 상자 ×1' },
-      startsAt: Date.UTC(2026, 10, 20, 15, 0, 0),
-      endsAt: Date.UTC(2027, 0, 31, 15, 0, 0),
+      startsAt: GAME_SEASON_EPOCH_MS,
+      endsAt: GAME_SEASON_EPOCH_MS + GAME_SEASON_MS, // 한 시즌 60일 고정 (경쟁전과 동일 시작·종료!)
       skipGemCost: 100,
       goldPriceKrw: 9900,
       productId: 'com.gunhe7.kweathersurvival.goldpass_s1',
@@ -866,8 +904,9 @@ window.RUN_DATA = (function () {
 
   function isPassSkinReleased(sk, nowMs = Date.now()) {
     if (!sk || !sk.seasonExclusive) return true;
-    if (!sk.passSeasonId || sk.passSeasonId !== SEASON_PASS.seasonId) return true; // older season skin -> already released
-    return nowMs >= (SEASON_PASS.endsAt || Infinity);
+    const curS = getGameSeasonInfo(nowMs);
+    if (!sk.passSeasonId || sk.passSeasonId !== curS.seasonId) return true; // 이전 시즌 패스 스킨은 즉시 뽑기 출시!
+    return nowMs >= (curS.endsAt || Infinity);
   }
 
   return {
@@ -876,6 +915,11 @@ window.RUN_DATA = (function () {
     MAX_CHAR_LEVEL,
     WEEKLY_TOP1_GEMS,
     WEEKLY_TOP_REWARDS,
+    GAME_SEASON_DAYS,
+    GAME_SEASON_MS,
+    GAME_SEASON_EPOCH_MS,
+    getGameSeasonInfo,
+    getCompSeasonResetTrophies,
     COMP_MATCH_PLAYERS,
     COMP_MATCH_DURATION,
     COMP_DIVS_PER_TIER,
