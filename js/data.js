@@ -228,7 +228,7 @@ window.RUN_DATA = (function () {
     }
   ];
 
-  // 일일 퀘스트 (매일 초기화 · 완료 시 황금 상자 1개!)
+  // 일일 퀘스트 (매일 초기화 · 완료 시 골드 상자 1개!)
   const DAILY_MISSIONS = [
     { id: 'daily_dist', metric: 'dist', title: '800m 달리기', icon: '', iconKey: 'm_dist', target: 800, unit: 'm', rewardChest: 'gold' },
     { id: 'daily_jumps', metric: 'jumps', title: '점프 35회 성공', icon: '', iconKey: 'm_jump', target: 35, unit: '회', rewardChest: 'gold' },
@@ -392,7 +392,7 @@ window.RUN_DATA = (function () {
     }
   ];
 
-  // 4종 상자 정의 (나무·은: 골드 구매 | 황금 40보석 · 다이아 100보석 | 뽑기권 교환 비율 포함!)
+  // 4종 상자 정의 (나무·실버: 골드 구매 | 골드 40보석 · 다이아 100보석 | 뽑기권 교환 비율 포함!)
   const CHESTS = {
     wood: {
       id: 'wood',
@@ -412,7 +412,7 @@ window.RUN_DATA = (function () {
     },
     silver: {
       id: 'silver',
-      name: '은 상자',
+      name: '실버 상자',
       icon: 'assets/chests/chest_silver_0.png',
       accent: '#82c8ff',
       glow: 'rgba(112, 206, 255, 0.6)',
@@ -428,7 +428,7 @@ window.RUN_DATA = (function () {
     },
     gold: {
       id: 'gold',
-      name: '황금 상자',
+      name: '골드 상자',
       icon: 'assets/chests/chest_gold_0.png',
       accent: '#ffd845',
       glow: 'rgba(255, 214, 62, 0.72)',
@@ -461,18 +461,18 @@ window.RUN_DATA = (function () {
   };
   const CHEST_ORDER = ['wood', 'silver', 'gold', 'diamond'];
 
-  // 7일 연속 출석 보상 (나무 → 은 → 황금 → 7일차 다이아 상자!)
+  // 7일 연속 출석 보상 (나무 → 실버 → 골드 → 7일차 다이아 상자!)
   const ATTENDANCE_REWARDS = [
     { day: 1, label: '나무 상자', chest: 'wood', gold: 0, gems: 0, booster: null },
-    { day: 2, label: '은 상자', chest: 'silver', gold: 0, gems: 0, booster: null },
+    { day: 2, label: '실버 상자', chest: 'silver', gold: 0, gems: 0, booster: null },
     { day: 3, label: '나무 상자 + 100G', chest: 'wood', gold: 100, gems: 0, booster: null },
-    { day: 4, label: '황금 상자', chest: 'gold', gold: 0, gems: 0, booster: null },
-    { day: 5, label: '은 상자 + 보석 2개', chest: 'silver', gold: 0, gems: 2, booster: null },
-    { day: 6, label: '황금 상자 + 보석 3개', chest: 'gold', gold: 0, gems: 3, booster: null },
+    { day: 4, label: '골드 상자', chest: 'gold', gold: 0, gems: 0, booster: null },
+    { day: 5, label: '실버 상자 + 보석 2개', chest: 'silver', gold: 0, gems: 2, booster: null },
+    { day: 6, label: '골드 상자 + 보석 3개', chest: 'gold', gold: 0, gems: 3, booster: null },
     { day: 7, label: '다이아 상자', chest: 'diamond', gold: 0, gems: 0, booster: null }
   ];
 
-  // 업적 시스템 (10종 — 난이도별 은 / 황금 / 다이아 상자 지급!)
+  // 업적 시스템 (10종 — 난이도별 실버 / 골드 / 다이아 상자 지급!)
   const ACHIEVEMENTS = [
     { id: 'dist_500', icon: '', iconKey: 'm_dist', title: '첫 걸음마', desc: '단일 주행 500m 도달', metric: 'bestDistanceM', target: 500, rewardChest: 'silver' },
     { id: 'dist_1500', icon: '', iconKey: 'm_dist', title: '도심 마라토너', desc: '단일 주행 1,500m 도달', metric: 'bestDistanceM', target: 1500, rewardChest: 'gold' },
@@ -823,13 +823,13 @@ window.RUN_DATA = (function () {
       return { score, kind: 'chest', chest: 'diamond', amount: 1, label: '다이아 상자 ×1', tier: 'mythic', tag: '대보상' };
     }
     if (step % 10 === 0) {
-      return { score, kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1', tier: 'gold', tag: '특급' };
+      return { score, kind: 'chest', chest: 'gold', amount: 1, label: '골드 상자 ×1', tier: 'gold', tag: '특급' };
     }
     if (step === 5) {
       return { score, kind: 'chest', chest: 'silver', amount: 1, label: '실버 상자 ×1', tier: 'silver', tag: '마일스톤' };
     }
     if (step % 5 === 0) {
-      return { score, kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1', tier: 'gold', tag: '마일스톤' };
+      return { score, kind: 'chest', chest: 'gold', amount: 1, label: '골드 상자 ×1', tier: 'gold', tag: '마일스톤' };
     }
 
     const cycle = step % 4;
@@ -854,7 +854,7 @@ window.RUN_DATA = (function () {
     if (step === 8) {
       return { score, kind: 'chest', chest: 'silver', amount: 1, label: '실버 상자 ×1', tier: 'silver', tag: '상자' };
     }
-    return { score, kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1', tier: 'gold', tag: '상자' };
+    return { score, kind: 'chest', chest: 'gold', amount: 1, label: '골드 상자 ×1', tier: 'gold', tag: '상자' };
   }
 
   // 보석으로 구매하는 골드 패키지 (보석 10개 ~ 1,000개 구간 · 브롤스타즈 상점 스타일!)
@@ -893,7 +893,7 @@ window.RUN_DATA = (function () {
       } else if (t % 10 === 0) {
         free = { kind: 'ticket', amount: 2, label: '뽑기권 ×2' };
       } else if (t % 5 === 0) {
-        free = { kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1' };
+        free = { kind: 'chest', chest: 'gold', amount: 1, label: '골드 상자 ×1' };
       } else if (t % 3 === 0) {
         const g = 10 + Math.floor(t / 6) * 5;
         free = { kind: 'gems', amount: g, label: `보석 ${g}개` };
@@ -919,7 +919,7 @@ window.RUN_DATA = (function () {
         const g = 35 + Math.floor(t / 8) * 10;
         gold = { kind: 'gems', amount: g, label: `보석 ${g}개` };
       } else if (t % 3 === 0) {
-        gold = { kind: 'chest', chest: 'gold', amount: 1, label: '황금 상자 ×1' };
+        gold = { kind: 'chest', chest: 'gold', amount: 1, label: '골드 상자 ×1' };
       } else if (t % 2 === 0) {
         const tk = t >= 50 ? 2 : 1;
         gold = { kind: 'ticket', amount: tk, label: `뽑기권 ×${tk}` };

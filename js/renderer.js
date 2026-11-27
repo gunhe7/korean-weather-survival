@@ -85,10 +85,11 @@ window.RunRenderer = (function () {
   const SPRITE_URL_MAP = {};
   const sprites = {};
 
+  const CHEST_VER = '20261121hd151';
   CHEST_TIERS.forEach((tier) => {
     for (let f = 0; f < 8; f++) {
       const key = `chest_${tier}_${f}`;
-      SPRITE_URL_MAP[key] = `assets/chests/${key}.png?v=${SPRITE_VER}`;
+      SPRITE_URL_MAP[key] = `assets/chests/${key}.png?v=${CHEST_VER}`;
     }
   });
   CHAR_SHEET_SKINS.forEach((sk) => {
@@ -111,6 +112,7 @@ window.RunRenderer = (function () {
     SPRITE_URL_MAP[`fx_booster_${bf}`] = `assets/chars/fx_booster_${bf}.png?v=20261121hd105`;
   }
   DESIGN_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/design/${key}.png?v=${SPRITE_VER}`; });
+  SPRITE_URL_MAP['ui_chest'] = `assets/design/ui_chest.png?v=${CHEST_VER}`;
   SPRITE_URL_MAP['ui_fever'] = 'assets/design/ui_fever.png?v=20261121hd103';
   ATLAS_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/atlas/${key}.png?v=${SPRITE_VER}`; });
   WORLD_SPRITES.forEach((key) => { SPRITE_URL_MAP[key] = `assets/world/${key}.png?v=${SPRITE_VER}`; });

@@ -92,7 +92,7 @@
     return getTodayKey();
   }
 
-  const ASSET_VER = '20261121hd56';
+  const ASSET_VER = '20261121hd151';
   const ICONS = window.UIIcons;
 
   function uiIcon(key, size = 'sm', extraClass = '') {
@@ -2153,7 +2153,7 @@
       el.chestRewardRarity.style.color = '#7ef6ff';
       el.chestRewardVisual.innerHTML = uiIcon('gem', 'xl', 'rw-big-emoji');
       el.chestRewardName.textContent = `+${rw.amount} 다이아`;
-      el.chestRewardSub.innerHTML = uiText('희귀 보석 재화 획득! 스킨 뽑기(200보석) · 황금/다이아 상자에 사용하세요!', 'xs');
+      el.chestRewardSub.innerHTML = uiText('희귀 보석 재화 획득! 스킨 뽑기(200보석) · 골드/다이아 상자에 사용하세요!', 'xs');
     } else if (rw.kind === 'skin') {
       const rar = DATA.SKIN_RARITIES[rw.rarity] || DATA.SKIN_RARITIES.rare;
       const ownerChar = getCharDef(rw.skin.charId);
@@ -2192,7 +2192,7 @@
     // Update live pity badge after roll
     if (rw.tierId === 'gold') {
       const rem = DATA.CHESTS.gold.pityTarget - (save.pity.gold || 0);
-      el.chestPityNote.textContent = `다음 황금 상자 영웅+ 천장까지 ${rem}회 (${save.pity.gold || 0}/${DATA.CHESTS.gold.pityTarget})`;
+      el.chestPityNote.textContent = `다음 골드 상자 영웅+ 천장까지 ${rem}회 (${save.pity.gold || 0}/${DATA.CHESTS.gold.pityTarget})`;
     } else if (rw.tierId === 'diamond') {
       const rem = DATA.CHESTS.diamond.pityTarget - (save.pity.diamond || 0);
       el.chestPityNote.textContent = `다음 다이아 상자 전설 천장까지 ${rem}회 (${save.pity.diamond || 0}/${DATA.CHESTS.diamond.pityTarget})`;
@@ -2258,7 +2258,7 @@
         <h4>인게임 상자 드랍 &amp; 천장 시스템</h4>
         <ul class="prob-rules">
           <li><strong>달리기 중 상자 등장:</strong> 나무(56%) &gt; 은(27%) &gt; 황금(13%) &gt; 다이아(4%) 비율로 등장하며 획득 시 상자 보관함에 자동 저장!</li>
-          <li><strong>${uiIcon('crown', 'xs')} 황금 상자 천장 (10회):</strong> 영웅 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong>)</li>
+          <li><strong>${uiIcon('crown', 'xs')} 골드 상자 천장 (10회):</strong> 영웅 이상 스킨 미획득 시 10회차 확정! (현재 <strong>${gPity} / 10회</strong>)</li>
           <li><strong>${uiIcon('gem', 'xs')} 다이아 상자 천장 (15회):</strong> 전설 스킨 미획득 시 15회차 확정! (현재 <strong>${dPity} / 15회</strong>)</li>
         </ul>
       </div>
@@ -10042,7 +10042,7 @@
 
     const gPity = save.pity.gold || 0;
     const dPity = save.pity.diamond || 0;
-    if (el.pityGoldChip) el.pityGoldChip.innerHTML = `${uiIcon('crown', 'xs')} 황금 천장 ${gPity}/10`;
+    if (el.pityGoldChip) el.pityGoldChip.innerHTML = `${uiIcon('crown', 'xs')} 골드 천장 ${gPity}/10`;
     if (el.pityDiamondChip) el.pityDiamondChip.innerHTML = `${uiIcon('gem', 'xs')} 다이아 천장 ${dPity}/15`;
 
     const grid = el.bsQuestGrid;
@@ -10050,7 +10050,7 @@
     grid.innerHTML = '';
 
     if (currentQuestSubtab === 'daily') {
-      if (el.questResetLabel) el.questResetLabel.textContent = '일일 퀘스트 · 매일 초기화 · 완료 시 황금 상자';
+      if (el.questResetLabel) el.questResetLabel.textContent = '일일 퀘스트 · 매일 초기화 · 완료 시 골드 상자';
       const prog = save.dailyMissions.progress || {};
       const claimed = save.dailyMissions.claimed || {};
       DATA.DAILY_MISSIONS.forEach((m) => {
@@ -10124,7 +10124,7 @@
         }));
       });
     } else if (currentQuestSubtab === 'ach') {
-      if (el.questResetLabel) el.questResetLabel.textContent = '영구 업적 · 달성 시 은 / 황금 / 다이아 상자 지급';
+      if (el.questResetLabel) el.questResetLabel.textContent = '영구 업적 · 달성 시 실버 / 골드 / 다이아 상자 지급';
       DATA.ACHIEVEMENTS.forEach((a) => {
         const cur = Math.min(a.target, getAchievementMetricValue(a.metric));
         const pct = Math.min(100, (cur / a.target) * 100);
@@ -11061,7 +11061,7 @@
       sec.innerHTML = `
         <div class="bs-shop-sec-head chests">
           <span class="bs-shop-sec-title">상자 상점</span>
-          <span class="bs-shop-sec-sub">${uiText('나무·은 상자는 골드, 황금(40보석)·다이아(100보석)는 보석 구매 · 보관함에서 뽑기권 교환 가능', 'xs')}</span>
+          <span class="bs-shop-sec-sub">${uiText('나무·실버 상자는 골드, 골드(40보석)·다이아(100보석)는 보석 구매 · 보관함에서 뽑기권 교환 가능', 'xs')}</span>
         </div>
       `;
       const grid = document.createElement('div');
@@ -11195,7 +11195,7 @@
       sec.innerHTML = `
         <div class="bs-shop-sec-head gems">
           <span class="bs-shop-sec-title">${uiIcon('gem', 'sm')} 보석 상점</span>
-          <span class="bs-shop-sec-sub">${uiText('100보석 = ₩1,000 정가 · 스킨 뽑기(200보석) · 골드 · 황금/다이아 상자 구매에 사용!', 'xs')}</span>
+          <span class="bs-shop-sec-sub">${uiText('100보석 = ₩1,000 정가 · 스킨 뽑기(200보석) · 골드 · 골드/다이아 상자 구매에 사용!', 'xs')}</span>
         </div>
       `;
       const grid = document.createElement('div');
