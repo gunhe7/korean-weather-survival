@@ -5,6 +5,9 @@
   const ONLINE = window.OnlineService;
   const LIVE_WEATHER = window.LiveWeather;
 
+  // Hide OnlineService from global window after private capture so DevTools console cannot call cloud/board write APIs directly.
+  try { delete window.OnlineService; } catch { try { window.OnlineService = undefined; } catch {} }
+
   const SAVE_KEY = 'kr_weather_runner_save_v1';
   const SAVE_BACKUP_KEY = 'kr_weather_runner_save_v1_backup';
   const ACTIVE_AUTH_KEY = 'kr_weather_active_auth_v2';
@@ -127,15 +130,92 @@
   }
 
   // ===================== PERSISTENT PER-ACCOUNT SAVE DATA (LOCAL + FIREBASE CLOUD) =====================
+  const tamperedLocalSlots = new Set();
+
+  function hashSaveFnv(str, seed) {
+    let h = seed >>> 0;
+    const s = String(str || '');
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h.toString(16).padStart(8, '0');
+  }
+
+  function computeSaveIntegritySig(s) {
+    if (!s || typeof s !== 'object') return '';
+    const auth = s.auth && typeof s.auth === 'object' ? s.auth : {};
+    const chars = Array.isArray(s.unlockedChars) ? s.unlockedChars.slice().sort().join(',') : '';
+    const skins = Array.isArray(s.unlockedSkins) ? s.unlockedSkins.slice().sort().join(',') : '';
+    const lvObj = s.charLevels && typeof s.charLevels === 'object' ? s.charLevels : {};
+    const lv = Object.keys(lvObj).sort().map((k) => `${k}:${Math.floor(Number(lvObj[k]) || 1)}`).join(',');
+    const cb = s.chestBag && typeof s.chestBag === 'object' ? s.chestBag : {};
+    const bag = ['wood', 'silver', 'gold', 'diamond'].map((k) => Math.floor(Number(cb[k]) || 0)).join(',');
+    const sp = s.seasonPass && typeof s.seasonPass === 'object' ? s.seasonPass : {};
+    const canonical = [
+      String(auth.uid || ''),
+      String(auth.provider || 'guest'),
+      Math.floor(Number(s.gold) || 0),
+      Math.floor(Number(s.gems) || 0),
+      Math.floor(Number(s.trophies) || 0),
+      Math.floor(Number(s.bestScore) || 0),
+      Math.floor(Number(s.compBestScore) || 0),
+      Math.floor(Number(s.gachaTickets) || 0),
+      Math.floor(Number(s.nickChangeTickets) || 0),
+      Math.floor(Number(s.nickChangesUsed) || 0),
+      Math.floor(Number(s.mileage) || 0),
+      Math.floor(Number(s.playCount) || 0),
+      chars,
+      skins,
+      lv,
+      bag,
+      `${sp.goldUnlocked ? 1 : 0}:${Math.floor(Number(sp.xp) || 0)}`
+    ].join('|');
+    return `s1_${hashSaveFnv('KWS_S1:' + canonical, 0x811c9dc5)}${hashSaveFnv('KWS_S2:' + canonical, 0x9e3779b1)}`;
+  }
+
   function parseStorageJson(key) {
     try {
       const str = localStorage.getItem(key);
       if (!str) return null;
       const parsed = JSON.parse(str);
-      return parsed && typeof parsed === 'object' ? parsed : null;
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (typeof parsed._sig === 'string' && parsed._sig) {
+        const expected = computeSaveIntegritySig(parsed);
+        if (parsed._sig !== expected) {
+          tamperedLocalSlots.add(key);
+          return null;
+        }
+        delete parsed._sig;
+      }
+      tamperedLocalSlots.delete(key);
+      return parsed;
     } catch {
       return null;
     }
+  }
+
+  function clampSaveInt(val, min, max, fallback = 0) {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, Math.floor(n)));
+  }
+
+  function sanitizeColorHexOrRainbow(raw) {
+    const s = String(raw || '').trim();
+    if (s === 'rainbow') return 'rainbow';
+    if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
+    return '#ffffff';
+  }
+
+  function sanitizePlatformClass(raw) {
+    const s = String(raw || '').trim().toLowerCase();
+    return ['pc', 'android', 'ios', 'ipad', 'ai'].includes(s) ? s : 'pc';
+  }
+
+  function sanitizePlatformBadgeLabel(raw) {
+    const s = String(raw || '').trim();
+    return ['PC', 'Android', 'iOS', 'iPad', 'AI'].includes(s) ? s : 'PC';
   }
 
   const RANK_FRAME_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -246,6 +326,13 @@
       mergedLevels.umbrella_master = raw.charLevels.basic;
     }
     delete mergedLevels.basic;
+    Object.keys(mergedLevels).forEach((k) => {
+      if (!validIds.has(k)) {
+        delete mergedLevels[k];
+      } else {
+        mergedLevels[k] = clampSaveInt(mergedLevels[k], 1, DATA.MAX_CHAR_LEVEL || 5, 1);
+      }
+    });
 
     const toSafeArray = (v) => (Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []));
     const rawUnlocked = toSafeArray(raw.unlockedChars).filter((id) => validIds.has(id));
@@ -255,39 +342,54 @@
     const rawDaily = raw.dailyMissions && raw.dailyMissions.date === today ? raw.dailyMissions : def.dailyMissions;
     const rawWeekly = raw.weeklyMissions && raw.weeklyMissions.week === week ? raw.weeklyMissions : def.weeklyMissions;
     const rawDrops = raw.dailyWoodChestDrops && raw.dailyWoodChestDrops.date === today ? raw.dailyWoodChestDrops : def.dailyWoodChestDrops;
+    const rawBag = raw.chestBag && typeof raw.chestBag === 'object' ? raw.chestBag : {};
+    const rawPity = raw.pity && typeof raw.pity === 'object' ? raw.pity : {};
+    const rawBoosters = raw.boosters && typeof raw.boosters === 'object' ? raw.boosters : {};
 
     return {
       ...def,
       ...raw,
-      gold: typeof raw.gold === 'number' && Number.isFinite(raw.gold) ? Math.max(0, Math.floor(raw.gold)) : def.gold,
-      gems: typeof raw.gems === 'number' && Number.isFinite(raw.gems) ? Math.max(0, Math.floor(raw.gems)) : 0,
+      gold: clampSaveInt(raw.gold, 0, 50000000, def.gold),
+      gems: clampSaveInt(raw.gems, 0, 5000000, 0),
       unlockedChars: rawUnlocked,
       selectedChar: migratedSelected,
       charLevels: mergedLevels,
       unlockedSkins: toSafeArray(raw.unlockedSkins).filter((id) => typeof id === 'string'),
       equippedSkins: raw.equippedSkins && typeof raw.equippedSkins === 'object' ? { ...raw.equippedSkins } : {},
-      chestBag: { wood: 0, silver: 0, gold: 0, diamond: 0, ...(raw.chestBag || {}) },
-      gachaTickets: typeof raw.gachaTickets === 'number' && Number.isFinite(raw.gachaTickets) ? Math.max(0, Math.floor(raw.gachaTickets)) : 0,
-      nickChangeTickets: typeof raw.nickChangeTickets === 'number' && Number.isFinite(raw.nickChangeTickets) ? Math.max(0, Math.floor(raw.nickChangeTickets)) : 0,
-      nickChangesUsed: typeof raw.nickChangesUsed === 'number' && Number.isFinite(raw.nickChangesUsed) ? Math.max(0, Math.floor(raw.nickChangesUsed)) : 0,
-      mileage: typeof raw.mileage === 'number' && Number.isFinite(raw.mileage) ? Math.max(0, Math.floor(raw.mileage)) : 0,
+      chestBag: {
+        wood: clampSaveInt(rawBag.wood, 0, 100000, 0),
+        silver: clampSaveInt(rawBag.silver, 0, 100000, 0),
+        gold: clampSaveInt(rawBag.gold, 0, 100000, 0),
+        diamond: clampSaveInt(rawBag.diamond, 0, 100000, 0)
+      },
+      gachaTickets: clampSaveInt(raw.gachaTickets, 0, 50000, 0),
+      nickChangeTickets: clampSaveInt(raw.nickChangeTickets, 0, 1000, 0),
+      nickChangesUsed: clampSaveInt(raw.nickChangesUsed, 0, 10000, 0),
+      mileage: clampSaveInt(raw.mileage, 0, 1000000, 0),
       gachaHistory: toSafeArray(raw.gachaHistory).filter((x) => x && typeof x === 'object').slice(0, 50),
-      pity: { gold: 0, diamond: 0, ...(raw.pity || {}) },
-      dailyWoodChestDrops: { date: today, count: Number(rawDrops.count) || 0 },
-      boosters: { ...def.boosters, ...(raw.boosters || {}) },
-      trophies: typeof raw.trophies === 'number' && Number.isFinite(raw.trophies) ? Math.max(0, Math.floor(raw.trophies)) : 0,
-      compMatches: typeof raw.compMatches === 'number' && Number.isFinite(raw.compMatches) ? Math.max(0, Math.floor(raw.compMatches)) : 0,
-      compWins: typeof raw.compWins === 'number' && Number.isFinite(raw.compWins) ? Math.max(0, Math.floor(raw.compWins)) : 0,
-      compBestScore: typeof raw.compBestScore === 'number' && Number.isFinite(raw.compBestScore) ? Math.max(0, Math.floor(raw.compBestScore)) : 0,
+      pity: {
+        gold: clampSaveInt(rawPity.gold, 0, 1000, 0),
+        diamond: clampSaveInt(rawPity.diamond, 0, 1000, 0)
+      },
+      dailyWoodChestDrops: { date: today, count: clampSaveInt(rawDrops.count, 0, 500, 0) },
+      boosters: {
+        norway: clampSaveInt(rawBoosters.norway, 0, 100000, 0),
+        shield: clampSaveInt(rawBoosters.shield, 0, 100000, 0),
+        boost: clampSaveInt(rawBoosters.boost, 0, 100000, 0)
+      },
+      trophies: clampSaveInt(raw.trophies, 0, 50000, 0),
+      compMatches: clampSaveInt(raw.compMatches, 0, 1000000, 0),
+      compWins: clampSaveInt(raw.compWins, 0, 1000000, 0),
+      compBestScore: clampSaveInt(raw.compBestScore, 0, 4999990, 0),
       compSeasonId: typeof raw.compSeasonId === 'string' && raw.compSeasonId ? raw.compSeasonId : (DATA.getGameSeasonInfo ? DATA.getGameSeasonInfo().seasonId : 's1'),
-      compSeasonMatches: typeof raw.compSeasonMatches === 'number' && Number.isFinite(raw.compSeasonMatches) ? Math.max(0, Math.floor(raw.compSeasonMatches)) : Math.max(0, Math.floor(Number(raw.compMatches) || 0)),
+      compSeasonMatches: clampSaveInt(raw.compSeasonMatches !== undefined ? raw.compSeasonMatches : raw.compMatches, 0, 1000000, 0),
       pendingCompMatches: Array.isArray(raw.pendingCompMatches) ? raw.pendingCompMatches.filter((m) => m && m.id && !m.claimed).slice(-1) : [],
-      bestScore: typeof raw.bestScore === 'number' && Number.isFinite(raw.bestScore) ? Math.max(0, Math.floor(raw.bestScore)) : 0,
-      bestYear: typeof raw.bestYear === 'number' && Number.isFinite(raw.bestYear) ? Math.max(1, Math.floor(raw.bestYear)) : 1,
-      bestDistanceM: typeof raw.bestDistanceM === 'number' && Number.isFinite(raw.bestDistanceM) ? Math.max(0, Math.floor(raw.bestDistanceM)) : 0,
-      totalCoinsEver: typeof raw.totalCoinsEver === 'number' && Number.isFinite(raw.totalCoinsEver) ? Math.max(0, Math.floor(raw.totalCoinsEver)) : 0,
-      maxDodgeComboEver: typeof raw.maxDodgeComboEver === 'number' && Number.isFinite(raw.maxDodgeComboEver) ? Math.max(0, Math.floor(raw.maxDodgeComboEver)) : 0,
-      playCount: typeof raw.playCount === 'number' && Number.isFinite(raw.playCount) ? Math.max(0, Math.floor(raw.playCount)) : 0,
+      bestScore: clampSaveInt(raw.bestScore, 0, 4999990, 0),
+      bestYear: clampSaveInt(raw.bestYear, 1, 999, 1),
+      bestDistanceM: clampSaveInt(raw.bestDistanceM, 0, 10000000, 0),
+      totalCoinsEver: clampSaveInt(raw.totalCoinsEver, 0, 1000000000, 0),
+      maxDodgeComboEver: clampSaveInt(raw.maxDodgeComboEver, 0, 1000000, 0),
+      playCount: clampSaveInt(raw.playCount, 0, 1000000, 0),
       attendance: { ...def.attendance, ...(raw.attendance || {}) },
       dailyMissions: {
         date: today,
@@ -332,7 +434,7 @@
         return {
           avatarCharId: validAvId,
           avatarSkinId: typeof pr.avatarSkinId === 'string' ? pr.avatarSkinId : null,
-          nameColor: typeof pr.nameColor === 'string' && pr.nameColor ? pr.nameColor : '#ffffff',
+          nameColor: sanitizeColorHexOrRainbow(pr.nameColor),
           nameFrame: activeFrame,
           unlockedFrames: rawFrames,
           frameExpires: cleanExpires
@@ -343,11 +445,11 @@
         const spDm = sp.dailyMissions && sp.dailyMissions.date === today ? sp.dailyMissions : def.seasonPass.dailyMissions;
         return {
           seasonId: 's1',
-          xp: typeof sp.xp === 'number' && Number.isFinite(sp.xp) ? Math.max(0, Math.floor(sp.xp)) : 0,
+          xp: clampSaveInt(sp.xp, 0, 1000000, 0),
           goldUnlocked: Boolean(sp.goldUnlocked),
           claimedFree: sp.claimedFree && typeof sp.claimedFree === 'object' ? { ...sp.claimedFree } : {},
           claimedGold: sp.claimedGold && typeof sp.claimedGold === 'object' ? { ...sp.claimedGold } : {},
-          bonusClaimed: typeof sp.bonusClaimed === 'number' && Number.isFinite(sp.bonusClaimed) ? Math.max(0, Math.floor(sp.bonusClaimed)) : 0,
+          bonusClaimed: clampSaveInt(sp.bonusClaimed, 0, 10000, 0),
           dailyMissions: {
             date: today,
             progress: { runs: 0, dist: 0, coins: 0, jumps: 0, dodges: 0, ...(spDm.progress || {}) },
@@ -445,8 +547,10 @@
     }
     try {
       const slotKey = getAccountSaveKey(save.auth || activeAuth);
-      const json = JSON.stringify(save);
+      const sig = computeSaveIntegritySig(save);
+      const json = JSON.stringify({ ...save, _sig: sig });
       localStorage.setItem(slotKey, json);
+      tamperedLocalSlots.delete(slotKey);
       if (slotKey === GUEST_SAVE_KEY) {
         localStorage.setItem(SAVE_KEY, json);
         localStorage.setItem(SAVE_BACKUP_KEY, json);
@@ -3524,16 +3628,18 @@
 
   function applyNameColorStyle(node, nameColor) {
     if (!node) return;
-    const isRainbow = nameColor === 'rainbow';
+    const safeColor = sanitizeColorHexOrRainbow(nameColor);
+    const isRainbow = safeColor === 'rainbow';
     node.classList.toggle('nick-rainbow', isRainbow);
-    node.style.color = isRainbow ? '' : (nameColor || '#ffffff');
+    node.style.color = isRainbow ? '' : safeColor;
   }
 
   function renderNameplateHtml(nickname, nameFrame, nameColor, sizeClass = 'sm', extraPlainClass = '') {
     const safeNick = escapeNickHtml(nickname || '날씨러너');
-    const isRainbow = nameColor === 'rainbow';
-    const isDefaultWhite = !isRainbow && (!nameColor || /^#(?:fff|ffffff)$/i.test(String(nameColor).trim()));
-    const colorAttr = (isRainbow || isDefaultWhite) ? '' : `style="color:${escapeNickHtml(nameColor)};"`;
+    const safeColor = sanitizeColorHexOrRainbow(nameColor);
+    const isRainbow = safeColor === 'rainbow';
+    const isDefaultWhite = !isRainbow && safeColor === '#ffffff';
+    const colorAttr = (isRainbow || isDefaultWhite) ? '' : `style="color:${safeColor};"`;
     const rainbowCls = isRainbow ? ' nick-rainbow' : '';
     const frameMeta = getNameFrameMeta(nameFrame);
     if (frameMeta && frameMeta.img) {
@@ -4576,7 +4682,12 @@
       const cloudTs = Number(cloudData && cloudData.cloudUpdatedAt) || 0;
 
       if (cloudData) {
-        const merged = mergeCrossDeviceSaves(cloudData, save, { ...auth, loggedIn: true });
+        const slotKey = getAccountSaveKey(auth);
+        const wasLocalTampered = tamperedLocalSlots.has(slotKey);
+        const merged = wasLocalTampered
+          ? hydrateSaveData(cloudData, { ...auth, loggedIn: true })
+          : mergeCrossDeviceSaves(cloudData, save, { ...auth, loggedIn: true });
+        if (wasLocalTampered) tamperedLocalSlots.delete(slotKey);
         const savedNick = (cloudData.auth && cloudData.auth.nickname) || (save.auth && save.auth.nickname) || auth.nickname;
         merged.auth = { ...auth, loggedIn: true, nickname: savedNick };
         save = merged;
@@ -4586,7 +4697,7 @@
         const afterSig = getSaveVisualSig(save);
         const cloudSig = getSaveVisualSig(hydrateSaveData(cloudData, merged.auth));
         const localChanged = afterSig !== beforeSig;
-        const needPushUp = afterSig !== cloudSig || localTsBefore > cloudTs;
+        const needPushUp = !wasLocalTampered && (afterSig !== cloudSig || localTsBefore > cloudTs);
 
         persistSave(false, { localOnly: true, keepTimestamp: !needPushUp });
         if (needPushUp) {
@@ -6840,7 +6951,7 @@
 
   async function sendCompDuoChatMessage(rawText) {
     if (compDuoState.status !== 'ready' || !compDuoState.partyId) return;
-    const text = String(rawText || '').trim().slice(0, 60);
+    const text = String(rawText || '').trim().replace(/[<>\x00-\x1f\x7f]/g, '').slice(0, 60);
     if (!text) return;
     const myUid = getMyFriendUid() || 'me';
     const nowTs = (ONLINE && ONLINE.getCompServerNow) ? ONLINE.getCompServerNow() : Date.now();
@@ -7392,8 +7503,8 @@
     }
     const avInfo = getProfileAvatarInfo({ avatarCharId: p.profileCharId || p.charId, avatarSkinId: p.profileSkinId !== undefined ? p.profileSkinId : p.skinId }, p.charId, p.skinId, p.isMe);
     const tInfo = DATA.getCompTier(p.trophies || 0);
-    const platCls = !p.isHuman ? 'ai' : (p.platform || 'pc');
-    const platLbl = !p.isHuman ? 'AI' : (p.platformLabel || 'PC');
+    const platCls = !p.isHuman ? 'ai' : sanitizePlatformClass(p.platform);
+    const platLbl = !p.isHuman ? 'AI' : escapeNickHtml(sanitizePlatformBadgeLabel(p.platformLabel));
     return `
       <div class="comp-slot ready${p.isMe ? ' me' : ''}">
         <div class="comp-slot-av-wrap">
@@ -8788,8 +8899,8 @@
         const dCls = dVal > 0 ? 'up' : (dVal < 0 ? 'down' : 'flat');
         const avInfo = getProfileAvatarInfo({ avatarCharId: p.charId, avatarSkinId: p.skinId }, p.charId, p.skinId, p.isMe);
         const pTier = DATA.getCompTier(p.isMe ? newTrophies : (p.trophies || 0));
-        const platCls = !p.isHuman ? 'ai' : (p.platform || 'pc');
-        const platLbl = !p.isHuman ? 'AI' : (p.platformLabel || 'PC');
+        const platCls = !p.isHuman ? 'ai' : sanitizePlatformClass(p.platform);
+        const platLbl = !p.isHuman ? 'AI' : escapeNickHtml(sanitizePlatformBadgeLabel(p.platformLabel));
         const teamCls = is2v2 ? (isAllySide ? ' team-ally' : ' team-enemy') : '';
         return `
           <div class="comp-res-row${p.isMe ? ' me' : ''}${teamCls}">
@@ -9659,7 +9770,7 @@
     if (el.rankLastWinner) {
       const lastChamp = !isTodayMode && (weekInfo.prevSeasonWeekNo || 0) >= 1 && prevRes && prevRes.board && prevRes.board[0];
       el.rankLastWinner.classList.toggle('hidden', !lastChamp);
-      if (lastChamp) el.rankLastWinner.innerHTML = uiText(`${weekInfo.prevWeekLabel || '지난주'} 1위 ${lastChamp.nickname}`, 'xs');
+      if (lastChamp) el.rankLastWinner.innerHTML = uiText(`${weekInfo.prevWeekLabel || '지난주'} 1위 ${escapeNickHtml(lastChamp.nickname)}`, 'xs');
     }
 
     renderRankPodium(board, false);
@@ -9701,20 +9812,21 @@
       const row = document.createElement('div');
       const topClass = rank === 1 ? ' top1' : (rank === 2 ? ' top2' : (rank === 3 ? ' top3' : ''));
       const subMeta = isTodayMode && entry.weatherTag
-        ? `${entry.weatherTag} · ${(entry.dist || 0).toLocaleString('ko-KR')}m`
+        ? `${escapeNickHtml(entry.weatherTag)} · ${(entry.dist || 0).toLocaleString('ko-KR')}m`
         : `${entry.year || 1}년 차 · ${(entry.dist || 0).toLocaleString('ko-KR')}m`;
       const topRw = rewardTable[rank];
       const topPrizeTag = (!isTodayMode && topRw)
         ? `<span class="rank-top1-prize">${rank === 1 ? uiIcon('crown', 'xs') : ''} ${topRw.gems.toLocaleString('ko-KR')}${uiIcon('gem', 'xs')}</span>`
         : (isTodayMode && rank <= 3 ? `<span class="rank-top1-prize today">오늘 ${rank}위</span>` : '');
       const rowNameHtml = renderNameplateHtml(entry.nickname, entry.nameFrame, entry.nameColor, 'sm');
+      const safeProvCls = entry.provider === 'google' || entry.provider === 'apple' ? entry.provider : 'guest';
       row.className = `rank-row${topClass}${entry.isMe ? ' me' : ''}`;
       row.innerHTML = `
         <div class="rank-medal">${rank}</div>
         <img src="${avInfo.src}" alt="" class="rank-row-avatar" style="${avInfo.filter ? `filter:${avInfo.filter};` : ''}" />
         <div class="rank-row-info">
           <div class="rank-row-name">
-            <span class="prov-chip mini ${entry.provider || 'guest'}">${provHtml}</span>
+            <span class="prov-chip mini ${safeProvCls}">${provHtml}</span>
             ${rowNameHtml}
             ${entry.isMe ? '<span class="item-badge equipped">ME</span>' : ''}
             ${topPrizeTag}

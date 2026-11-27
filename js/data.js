@@ -963,7 +963,19 @@ window.RUN_DATA = (function () {
     return nowMs >= (curS.endsAt || Infinity);
   }
 
-  return {
+  function deepFreeze(obj) {
+    if (!obj || typeof obj !== 'object' || Object.isFrozen(obj)) return obj;
+    Object.freeze(obj);
+    Object.keys(obj).forEach((k) => {
+      const val = obj[k];
+      if (val && typeof val === 'object' && !Object.isFrozen(val)) {
+        deepFreeze(val);
+      }
+    });
+    return obj;
+  }
+
+  return deepFreeze({
     SEASON_DURATION,
     YEAR_DURATION,
     MAX_CHAR_LEVEL,
@@ -1018,5 +1030,5 @@ window.RUN_DATA = (function () {
     getCharEffectiveStats,
     getSkinById,
     getSkinsForChar
-  };
+  });
 })();

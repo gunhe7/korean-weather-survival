@@ -1,0 +1,275 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "user_saves": {
+      ".read": false,
+      ".write": false,
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.exists()",
+        ".validate": "newData.hasChildren(['gold', 'gems', 'bestScore', 'trophies', 'cloudUpdatedAt'])",
+
+        "gold": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000000 && (!data.exists() || !data.isNumber() || newData.val() <= data.val() + 500000)"
+        },
+        "gems": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5000000 && (!data.exists() || !data.isNumber() || newData.val() <= data.val() + 50000)"
+        },
+        "trophies": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000 && (!data.exists() || !data.isNumber() || newData.val() <= data.val() + 500)"
+        },
+        "bestScore": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 5000000"
+        },
+        "bestYear": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999"
+        },
+        "bestDistanceM": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000"
+        },
+        "totalCoinsEver": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000000"
+        },
+        "maxDodgeComboEver": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+        },
+        "playCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+        },
+        "compMatches": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+        },
+        "compWins": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+        },
+        "compBestScore": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 5000000"
+        },
+        "compSeasonMatches": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+        },
+        "gachaTickets": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000 && (!data.exists() || !data.isNumber() || newData.val() <= data.val() + 500)"
+        },
+        "nickChangeTickets": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000 && (!data.exists() || !data.isNumber() || newData.val() <= data.val() + 50)"
+        },
+        "nickChangesUsed": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
+        },
+        "mileage": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+        },
+        "selectedChar": {
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "cloudUpdatedAt": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "charLevels": {
+          "$charId": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5"
+          }
+        },
+        "chestBag": {
+          "wood": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+          "silver": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+          "gold": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+          "diamond": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" }
+        },
+        "boosters": {
+          "norway": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+          "shield": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+          "boost": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" }
+        },
+        "pity": {
+          "gold": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" },
+          "diamond": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" }
+        },
+        "seasonPass": {
+          "xp": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000" },
+          "goldUnlocked": { ".validate": "newData.isBoolean()" },
+          "bonusClaimed": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" }
+        },
+        "profile": {
+          "nameColor": {
+            ".validate": "newData.isString() && (newData.val() === 'rainbow' || newData.val().matches(/^#[0-9a-fA-F]{6}$/))"
+          },
+          "nameFrame": {
+            ".validate": "newData.isString() && (newData.val() === 'none' || newData.val() === 'rank_1' || newData.val() === 'rank_2' || newData.val() === 'rank_3')"
+          }
+        },
+        "auth": {
+          "uid": {
+            ".validate": "newData.isString() && newData.val() === $uid"
+          },
+          "provider": {
+            ".validate": "newData.isString() && (newData.val() === 'google' || newData.val() === 'apple')"
+          },
+          "nickname": {
+            ".validate": "newData.isString() && newData.val().length <= 12 && !newData.val().contains('<') && !newData.val().contains('>')"
+          },
+          "email": {
+            ".validate": "newData.isString() && newData.val().length <= 120"
+          }
+        }
+      }
+    },
+
+    "weekly_boards": {
+      ".read": false,
+      ".write": false,
+      "$weekKey": {
+        ".read": true,
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && newData.exists() && (!data.exists() || !data.child('score').isNumber() || newData.child('score').val() >= data.child('score').val())",
+          ".validate": "newData.hasChildren(['uid', 'nickname', 'provider', 'score', 'updatedAt']) && newData.child('uid').val() === $uid && (newData.child('provider').val() === 'google' || newData.child('provider').val() === 'apple') && newData.child('score').isNumber() && newData.child('score').val() > 0 && newData.child('score').val() < 5000000 && newData.child('nickname').isString() && newData.child('nickname').val().length >= 1 && newData.child('nickname').val().length <= 12 && !newData.child('nickname').val().contains('<') && !newData.child('nickname').val().contains('>') && newData.child('updatedAt').isNumber()",
+
+          "email": { ".validate": false },
+          "photoURL": { ".validate": false },
+          "trophies": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000 && (!data.exists() || !data.isNumber() || newData.val() <= data.val() + 1000)"
+          },
+          "wins": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+          },
+          "matches": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+          },
+          "bestCompScore": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 5000000"
+          },
+          "bestScore": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 5000000"
+          },
+          "realScore": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 5000000"
+          },
+          "dist": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000"
+          },
+          "year": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999"
+          },
+          "nameColor": {
+            ".validate": "newData.isString() && (newData.val() === 'rainbow' || newData.val().matches(/^#[0-9a-fA-F]{6}$/))"
+          },
+          "nameFrame": {
+            ".validate": "newData.isString() && (newData.val() === 'none' || newData.val() === 'rank_1' || newData.val() === 'rank_2' || newData.val() === 'rank_3')"
+          },
+          "platform": {
+            ".validate": "newData.isString() && (newData.val() === 'pc' || newData.val() === 'android' || newData.val() === 'ios' || newData.val() === 'ipad' || newData.val() === 'ai')"
+          },
+          "platformLabel": {
+            ".validate": "newData.isString() && (newData.val() === 'PC' || newData.val() === 'Android' || newData.val() === 'iOS' || newData.val() === 'iPad' || newData.val() === 'AI')"
+          },
+          "weatherTag": {
+            ".validate": "newData.isString() && newData.val().length <= 24 && !newData.val().contains('<') && !newData.val().contains('>')"
+          },
+          "cityName": {
+            ".validate": "newData.isString() && newData.val().length <= 12 && !newData.val().contains('<') && !newData.val().contains('>')"
+          },
+          "charId": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "profileCharId": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "skinId": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "profileSkinId": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "friendKey": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)"
+          },
+          "chatMsgs": {
+            "$msgIdx": {
+              ".validate": "newData.hasChildren(['id', 't', 'm']) && newData.child('id').isString() && newData.child('id').val().length <= 32 && newData.child('t').isNumber() && newData.child('m').isString() && newData.child('m').val().length <= 60 && !newData.child('m').val().contains('<') && !newData.child('m').val().contains('>')"
+            }
+          }
+        }
+      }
+    },
+
+    "weekly_boards_v2": {
+      ".read": false,
+      ".write": false,
+      "$weekKey": {
+        ".read": true,
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && newData.exists() && (!data.exists() || !data.child('score').isNumber() || newData.child('score').val() >= data.child('score').val())",
+          ".validate": "newData.hasChildren(['uid', 'nickname', 'provider', 'score', 'updatedAt']) && newData.child('uid').val() === $uid && (newData.child('provider').val() === 'google' || newData.child('provider').val() === 'apple') && newData.child('score').isNumber() && newData.child('score').val() > 0 && newData.child('score').val() < 5000000 && newData.child('nickname').isString() && newData.child('nickname').val().length >= 1 && newData.child('nickname').val().length <= 12 && !newData.child('nickname').val().contains('<') && !newData.child('nickname').val().contains('>') && newData.child('updatedAt').isNumber()",
+
+          "email": { ".validate": false },
+          "photoURL": { ".validate": false },
+          "trophies": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000 && (!data.exists() || !data.isNumber() || newData.val() <= data.val() + 1000)"
+          },
+          "wins": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+          },
+          "matches": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+          },
+          "bestCompScore": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 5000000"
+          },
+          "bestScore": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 5000000"
+          },
+          "realScore": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 5000000"
+          },
+          "dist": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000"
+          },
+          "year": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999"
+          },
+          "nameColor": {
+            ".validate": "newData.isString() && (newData.val() === 'rainbow' || newData.val().matches(/^#[0-9a-fA-F]{6}$/))"
+          },
+          "nameFrame": {
+            ".validate": "newData.isString() && (newData.val() === 'none' || newData.val() === 'rank_1' || newData.val() === 'rank_2' || newData.val() === 'rank_3')"
+          },
+          "platform": {
+            ".validate": "newData.isString() && (newData.val() === 'pc' || newData.val() === 'android' || newData.val() === 'ios' || newData.val() === 'ipad' || newData.val() === 'ai')"
+          },
+          "platformLabel": {
+            ".validate": "newData.isString() && (newData.val() === 'PC' || newData.val() === 'Android' || newData.val() === 'iOS' || newData.val() === 'iPad' || newData.val() === 'AI')"
+          },
+          "weatherTag": {
+            ".validate": "newData.isString() && newData.val().length <= 24 && !newData.val().contains('<') && !newData.val().contains('>')"
+          },
+          "cityName": {
+            ".validate": "newData.isString() && newData.val().length <= 12 && !newData.val().contains('<') && !newData.val().contains('>')"
+          },
+          "charId": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "profileCharId": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "skinId": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "profileSkinId": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "friendKey": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)"
+          },
+          "chatMsgs": {
+            "$msgIdx": {
+              ".validate": "newData.hasChildren(['id', 't', 'm']) && newData.child('id').isString() && newData.child('id').val().length <= 32 && newData.child('t').isNumber() && newData.child('m').isString() && newData.child('m').val().length <= 60 && !newData.child('m').val().contains('<') && !newData.child('m').val().contains('>')"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,42 +1,13 @@
-# 🏆 실제 유저 실시간 온라인 랭킹 서버 연결 가이드 (무료 · 3분 완성)
+# 실시간 온라인 랭킹 & 데이터베이스 보안 설정 가이드
 
-현재 게임은 **가짜 봇/NPC를 모두 제거하고 실제 유저 기록만 표시**합니다.  
-GitHub Pages는 정적 웹 호스팅이므로, **서로 다른 스마트폰·PC의 모든 실제 유저 점수를 실시간으로 공유**하려면 무료 **Firebase Realtime Database** 주소 1줄만 연결하면 됩니다!
+이 프로젝트는 **Firebase Realtime Database**를 사용하여 로그인한 실제 유저(Google/Apple)의 주간 랭킹, 오늘의 날씨 랭킹, 트로피 랭킹, 친구 및 경쟁전 매칭 데이터를 동기화합니다.
 
----
+> **보안 주의**: 인증 없이 쓰기를 허용하는 규칙(`".write": "!data.exists() || ..."`)은 타인 계정 변조 및 데이터 오염 위험이 있으므로 절대 사용하지 마세요.
 
-## 1단계. Firebase 무료 프로젝트 & Realtime Database 생성 (2분)
-1. [Firebase 콘솔](https://console.firebase.google.com/)에 구글 계정으로 로그인 → **프로젝트 만들기** 클릭
-2. 왼쪽 메뉴 **빌드 → Realtime Database → 데이터베이스 만들기** 클릭
-3. 위치 선택: **`싱가포르 (asia-southeast1)`** (한국에서 가장 빠름!)
-4. 보안 규칙은 일단 **잠금 모드**로 생성 후, 상단 **규칙(Rules)** 탭에 아래 규칙을 붙여넣고 **게시** 클릭:
+## 보안 규칙 게시 방법
 
-```json
-{
-  "rules": {
-    "weekly_boards": {
-      "$weekKey": {
-        ".read": true,
-        "$uid": {
-          ".write": "!data.exists() || newData.child('score').val() >= data.child('score').val()",
-          ".validate": "newData.hasChildren(['uid', 'nickname', 'score', 'updatedAt']) && newData.child('uid').val() === $uid && newData.child('score').isNumber() && newData.child('score').val() > 0 && newData.child('score').val() < 5000000 && newData.child('nickname').isString() && newData.child('nickname').val().length <= 12"
-        }
-      }
-    }
-  }
-}
-```
-> 위 규칙 덕분에 누구나 실시간 순위를 읽고 본인 최고 점수를 등록할 수 있지만, **기존 기록을 삭제하거나 비정상 점수(500만점 이상)를 조작할 수는 없습니다.**
+1. [Firebase 콘솔](https://console.firebase.google.com/) -> **빌드 -> Realtime Database -> 규칙(Rules)** 탭으로 이동합니다.
+2. 저장소 루트의 `database.rules.json` 파일 전체 내용을 그대로 복사해 붙여넣고 **게시(Publish)** 버튼을 클릭합니다.
+3. Cloud Firestore를 사용하는 경우에도 저장소 루트의 `firestore.rules`(전체 접근 거부)를 함께 게시하여 테스트 모드 노출을 차단하세요.
 
----
-
-## 2단계. 게임에 DB 주소 1줄 붙여넣기 (30초)
-1. Firebase Realtime Database 화면 상단에 표시되는 URL을 복사합니다.  
-   (예: `https://korean-weather-survival-default-rtdb.asia-southeast1.firebasedatabase.app`)
-2. `js/online.js` 파일 10번째 줄의 `DEFAULT_FIREBASE_DB_URL`에 붙여넣거나, 저에게 그 URL을 알려주시면 바로 적용·배포해 드립니다!
-
-```js
-const DEFAULT_FIREBASE_DB_URL = 'https://여기에-복사한-주소-붙여넣기.firebasedatabase.app';
-```
-
-연결 즉시 모든 스마트폰의 랭킹 화면이 **`● LIVE 서버`**로 전환되며, 전 세계 실제 유저들의 주간 점수가 5초마다 실시간 반영되고 매주 월요일 00:00(KST) 실제 1위 유저에게 **💎 500 보석**이 자동 지급됩니다!
+자세한 인증·도메인·API 키 제한 절차는 `AUTH_SETUP.md`를 참고하세요.

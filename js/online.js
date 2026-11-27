@@ -9,12 +9,13 @@ window.OnlineService = (function () {
   const WEEKLY_REWARD_GEMS = (window.RUN_DATA && window.RUN_DATA.WEEKLY_TOP1_GEMS) || 5000;
 
   // ===================== FIREBASE PROJECT CONFIG (korean-weather-survival) =====================
-  const FIREBASE_CONFIG = Object.assign({
+  const TRUSTED_RTDB_URL = 'https://korean-weather-survival-default-rtdb.asia-southeast1.firebasedatabase.app';
+  const FIREBASE_CONFIG = Object.freeze({
     apiKey: 'AIzaSyD7w_0nqhqVcbP5iu4SlAtovLXWumy6h6w',
     authDomain: 'korean-weather-survival.firebaseapp.com',
-    databaseURL: 'https://korean-weather-survival-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL: TRUSTED_RTDB_URL,
     projectId: 'korean-weather-survival'
-  }, window.KWEATHER_FIREBASE_CONFIG || {});
+  });
 
   let fbApp = null;
   let fbAuth = null;
@@ -237,9 +238,54 @@ window.OnlineService = (function () {
     return s.startsWith('gst_') || s.startsWith('goo_') || s.startsWith('app_') || s.startsWith('guest_') || s.startsWith('season_');
   }
 
+  function clampInt(v, min, max, fallback = 0) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, Math.floor(n)));
+  }
+
   function sanitizeNickname(raw, fallback = '날씨러너') {
-    const clean = String(raw || '').trim().replace(/[<>]/g, '').slice(0, 12);
+    const clean = String(raw || '').trim().replace(/[<>\x00-\x1f\x7f]/g, '').slice(0, 12);
     return clean || fallback;
+  }
+
+  function sanitizeSafeText(raw, maxLen = 24) {
+    return String(raw || '').trim().replace(/[<>\x00-\x1f\x7f]/g, '').slice(0, maxLen);
+  }
+
+  function sanitizeNameColor(raw) {
+    const s = String(raw || '').trim();
+    if (s === 'rainbow') return 'rainbow';
+    if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
+    return '#ffffff';
+  }
+
+  const ALLOWED_NAME_FRAMES = new Set(['none', 'rank_1', 'rank_2', 'rank_3']);
+  function sanitizeNameFrame(raw) {
+    const s = String(raw || '').trim();
+    return ALLOWED_NAME_FRAMES.has(s) ? s : 'none';
+  }
+
+  const ALLOWED_PLATFORMS = new Set(['pc', 'android', 'ios', 'ipad', 'ai']);
+  const ALLOWED_PLATFORM_LABELS = new Set(['PC', 'Android', 'iOS', 'iPad', 'AI']);
+  function sanitizePlatformId(raw) {
+    const s = String(raw || '').trim().toLowerCase();
+    return ALLOWED_PLATFORMS.has(s) ? s : 'pc';
+  }
+  function sanitizePlatformLabel(raw) {
+    const s = String(raw || '').trim();
+    return ALLOWED_PLATFORM_LABELS.has(s) ? s : 'PC';
+  }
+
+  async function assertOwnAuthedUid(uid, waitAuth = true) {
+    const cleanUid = String(uid || '').trim();
+    if (!cleanUid) return false;
+    const auth = ensureFirebaseAuth();
+    if (!auth) return false;
+    if (!auth.currentUser && waitAuth) {
+      await waitForAuthReady(3500);
+    }
+    return Boolean(auth.currentUser && auth.currentUser.uid === cleanUid);
   }
 
   function getProviderMeta(provider) {
@@ -494,12 +540,11 @@ window.OnlineService = (function () {
 
   // ===================== FIREBASE REALTIME DB HELPERS =====================
   function getDbUrl() {
-    const url = (window.KWEATHER_ONLINE_CONFIG && window.KWEATHER_ONLINE_CONFIG.firebaseDbUrl) || FIREBASE_CONFIG.databaseURL || '';
-    return String(url).trim().replace(/\/+$/, '');
+    return String(TRUSTED_RTDB_URL || FIREBASE_CONFIG.databaseURL || '').trim().replace(/\/+$/, '');
   }
 
   function hasRemoteDb() {
-    return /^https?:\/\//i.test(getDbUrl());
+    return /^https:\/\//i.test(getDbUrl());
   }
 
   async function buildAuthedUrl(path, forceRefreshToken = false, waitAuth = true) {
@@ -520,10 +565,105 @@ window.OnlineService = (function () {
     };
   }
 
+  function sanitizeCloudSavePayload(uid, saveData) {
+    const cleanUid = String(uid || '').trim();
+    const src = saveData && typeof saveData === 'object' ? { ...saveData } : {};
+    delete src._sig;
+
+    const rawAuth = src.auth && typeof src.auth === 'object' ? { ...src.auth } : {};
+    // Strip unnecessary PII (email, photoURL) before persisting to RTDB; Firebase Auth already manages these.
+    delete rawAuth.email;
+    delete rawAuth.photoURL;
+    rawAuth.uid = cleanUid;
+    rawAuth.provider = rawAuth.provider === 'apple' ? 'apple' : 'google';
+    rawAuth.nickname = sanitizeNickname(rawAuth.nickname, '날씨러너');
+    src.auth = rawAuth;
+
+    src.gold = clampInt(src.gold, 0, 50000000, 0);
+    src.gems = clampInt(src.gems, 0, 5000000, 0);
+    src.trophies = clampInt(src.trophies, 0, 50000, 0);
+    src.bestScore = clampInt(src.bestScore, 0, 4999990, 0);
+    src.bestYear = clampInt(src.bestYear, 1, 999, 1);
+    src.bestDistanceM = clampInt(src.bestDistanceM, 0, 10000000, 0);
+    src.totalCoinsEver = clampInt(src.totalCoinsEver, 0, 1000000000, 0);
+    src.maxDodgeComboEver = clampInt(src.maxDodgeComboEver, 0, 1000000, 0);
+    src.playCount = clampInt(src.playCount, 0, 1000000, 0);
+    src.compMatches = clampInt(src.compMatches, 0, 1000000, 0);
+    src.compWins = clampInt(src.compWins, 0, 1000000, 0);
+    src.compBestScore = clampInt(src.compBestScore, 0, 4999990, 0);
+    src.compSeasonMatches = clampInt(src.compSeasonMatches, 0, 1000000, 0);
+    src.gachaTickets = clampInt(src.gachaTickets, 0, 50000, 0);
+    src.nickChangeTickets = clampInt(src.nickChangeTickets, 0, 1000, 0);
+    src.nickChangesUsed = clampInt(src.nickChangesUsed, 0, 10000, 0);
+    src.mileage = clampInt(src.mileage, 0, 1000000, 0);
+    src.selectedChar = sanitizeSafeText(src.selectedChar || 'umbrella_master', 40) || 'umbrella_master';
+
+    if (src.charLevels && typeof src.charLevels === 'object') {
+      const cleanLv = {};
+      Object.keys(src.charLevels).forEach((k) => {
+        cleanLv[k] = clampInt(src.charLevels[k], 1, 5, 1);
+      });
+      src.charLevels = cleanLv;
+    }
+    if (src.chestBag && typeof src.chestBag === 'object') {
+      src.chestBag = {
+        wood: clampInt(src.chestBag.wood, 0, 100000, 0),
+        silver: clampInt(src.chestBag.silver, 0, 100000, 0),
+        gold: clampInt(src.chestBag.gold, 0, 100000, 0),
+        diamond: clampInt(src.chestBag.diamond, 0, 100000, 0)
+      };
+    }
+    if (src.boosters && typeof src.boosters === 'object') {
+      src.boosters = {
+        norway: clampInt(src.boosters.norway, 0, 100000, 0),
+        shield: clampInt(src.boosters.shield, 0, 100000, 0),
+        boost: clampInt(src.boosters.boost, 0, 100000, 0)
+      };
+    }
+    if (src.pity && typeof src.pity === 'object') {
+      src.pity = {
+        gold: clampInt(src.pity.gold, 0, 1000, 0),
+        diamond: clampInt(src.pity.diamond, 0, 1000, 0)
+      };
+    }
+    if (src.profile && typeof src.profile === 'object') {
+      src.profile = {
+        ...src.profile,
+        nameColor: sanitizeNameColor(src.profile.nameColor),
+        nameFrame: sanitizeNameFrame(src.profile.nameFrame)
+      };
+    }
+    if (src.seasonPass && typeof src.seasonPass === 'object') {
+      src.seasonPass = {
+        ...src.seasonPass,
+        xp: clampInt(src.seasonPass.xp, 0, 1000000, 0),
+        goldUnlocked: Boolean(src.seasonPass.goldUnlocked),
+        bonusClaimed: clampInt(src.seasonPass.bonusClaimed, 0, 10000, 0)
+      };
+    }
+    if (src.dailyWeatherRank && typeof src.dailyWeatherRank === 'object') {
+      src.dailyWeatherRank = {
+        ...src.dailyWeatherRank,
+        cityName: sanitizeSafeText(src.dailyWeatherRank.cityName || '서울', 12) || '서울',
+        weatherTag: sanitizeSafeText(src.dailyWeatherRank.weatherTag || '', 24)
+      };
+    }
+    src.cloudUpdatedAt = Number(src.cloudUpdatedAt) || Date.now();
+    return src;
+  }
+
   // ===================== CROSS-DEVICE PER-USER CLOUD SAVE (/user_saves/{uid}.json) =====================
   async function loadCloudUserSave(uid) {
     if (!uid || !hasRemoteDb()) {
       return { ok: false, data: null, status: 0, hasToken: false, error: 'no_db' };
+    }
+    const isOwn = await assertOwnAuthedUid(uid, true);
+    if (!isOwn) {
+      lastCloudSyncOk = false;
+      lastCloudSyncStatus = 403;
+      lastCloudSyncError = 'uid_mismatch';
+      notifyCloudSyncStatus();
+      return { ok: false, data: null, status: 403, hasToken: false, error: 'uid_mismatch' };
     }
     const path = `${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -569,12 +709,14 @@ window.OnlineService = (function () {
     if (!uid || !saveData || !hasRemoteDb()) {
       return { ok: false, status: 0, hasToken: false, error: 'no_db' };
     }
-    const updatedAt = Number(saveData.cloudUpdatedAt) || Date.now();
-    const payload = JSON.stringify({ ...saveData, cloudUpdatedAt: updatedAt });
-    const path = `${RTDB_SAVES_ROOT}/${encodeURIComponent(uid)}.json`;
+    const cleanUid = String(uid).trim();
+    const cleanSave = sanitizeCloudSavePayload(cleanUid, saveData);
+    const updatedAt = cleanSave.cloudUpdatedAt;
+    const payload = JSON.stringify(cleanSave);
+    const path = `${RTDB_SAVES_ROOT}/${encodeURIComponent(cleanUid)}.json`;
 
     // Fast synchronous keepalive path for pagehide / visibilitychange so mobile/desktop browsers never abort before token await!
-    if (useKeepalive && cachedIdToken && cachedIdTokenUid === uid && (Date.now() - cachedIdTokenAt) < 50 * 60 * 1000) {
+    if (useKeepalive && cachedIdToken && cachedIdTokenUid === cleanUid && (!fbAuth || !fbAuth.currentUser || fbAuth.currentUser.uid === cleanUid) && (Date.now() - cachedIdTokenAt) < 50 * 60 * 1000) {
       try {
         const fastUrl = `${getDbUrl()}${path}?auth=${encodeURIComponent(cachedIdToken)}`;
         fetch(fastUrl, {
@@ -587,6 +729,11 @@ window.OnlineService = (function () {
       } catch {
         return { ok: false, status: 0, hasToken: true, error: 'keepalive_error' };
       }
+    }
+
+    const isOwn = await assertOwnAuthedUid(cleanUid, !useKeepalive);
+    if (!isOwn) {
+      return { ok: false, status: 403, hasToken: false, error: 'uid_mismatch' };
     }
 
     const maxAttempts = useKeepalive ? 1 : 2;
@@ -653,7 +800,7 @@ window.OnlineService = (function () {
     // STRICT RULE: 게스트 유저는 랭킹에 절대 등록/표시되지 않음!
     if (!isRankedProvider(entry.provider) || isLegacyUnverifiedUid(entry.uid)) return null;
 
-    const scoreVal = Math.max(0, Math.floor(Number(entry.score) || 0));
+    const scoreVal = clampInt(entry.score, 0, 4999990, 0);
     if (scoreVal <= 0) return null;
 
     const info = getWeekInfo();
@@ -662,15 +809,15 @@ window.OnlineService = (function () {
       uid: String(entry.uid),
       nickname: sanitizeNickname(entry.nickname, '날씨러너'),
       provider: entry.provider,
-      charId: entry.charId || 'umbrella_master',
-      skinId: entry.skinId || null,
-      profileCharId: entry.profileCharId || entry.charId || 'umbrella_master',
-      profileSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : (entry.skinId || null),
-      nameColor: typeof entry.nameColor === 'string' ? entry.nameColor.slice(0, 24) : '#ffffff',
-      nameFrame: typeof entry.nameFrame === 'string' ? entry.nameFrame.slice(0, 16) : 'none',
+      charId: sanitizeSafeText(entry.charId || 'umbrella_master', 40) || 'umbrella_master',
+      skinId: entry.skinId ? sanitizeSafeText(entry.skinId, 60) : null,
+      profileCharId: sanitizeSafeText(entry.profileCharId || entry.charId || 'umbrella_master', 40) || 'umbrella_master',
+      profileSkinId: entry.profileSkinId !== undefined ? (entry.profileSkinId ? sanitizeSafeText(entry.profileSkinId, 60) : null) : (entry.skinId ? sanitizeSafeText(entry.skinId, 60) : null),
+      nameColor: sanitizeNameColor(entry.nameColor),
+      nameFrame: sanitizeNameFrame(entry.nameFrame),
       score: scoreVal,
-      dist: Math.max(0, Math.floor(Number(entry.dist) || 0)),
-      year: Math.max(1, Math.floor(Number(entry.year) || 1)),
+      dist: clampInt(entry.dist, 0, 10000000, 0),
+      year: clampInt(entry.year, 1, 999, 1),
       updatedAt: Date.now()
     };
 
@@ -696,7 +843,7 @@ window.OnlineService = (function () {
     all[weekKey] = wk;
     writeLocalBoards(all);
 
-    if (hasRemoteDb()) {
+    if (hasRemoteDb() && (await assertOwnAuthedUid(cleanEntry.uid, true))) {
       const bodyStr = JSON.stringify(wk[cleanEntry.uid]);
       const targets = [
         `${RTDB_BOARD_ROOT}/${encodeURIComponent(weekKey)}/${encodeURIComponent(cleanEntry.uid)}.json`,
@@ -772,6 +919,10 @@ window.OnlineService = (function () {
       .slice(0, 100)
       .map((entry, idx) => ({
         ...entry,
+        nickname: sanitizeNickname(entry.nickname, '날씨러너'),
+        nameColor: sanitizeNameColor(entry.nameColor),
+        nameFrame: sanitizeNameFrame(entry.nameFrame),
+        score: clampInt(entry.score, 0, 4999990, 0),
         rank: idx + 1,
         isMe: Boolean(myUid && entry.uid === myUid)
       }));
@@ -808,7 +959,7 @@ window.OnlineService = (function () {
     if (!entry || !entry.uid) return null;
     if (!isRankedProvider(entry.provider) || isLegacyUnverifiedUid(entry.uid)) return null;
 
-    const scoreVal = Math.max(0, Math.floor(Number(entry.score) || 0));
+    const scoreVal = clampInt(entry.score, 0, 4999990, 0);
     if (scoreVal <= 0) return null;
 
     const dayInfo = getKstDayInfo();
@@ -818,17 +969,17 @@ window.OnlineService = (function () {
       uid: String(entry.uid),
       nickname: sanitizeNickname(entry.nickname, '날씨러너'),
       provider: entry.provider,
-      charId: entry.charId || 'umbrella_master',
-      skinId: entry.skinId || null,
-      profileCharId: entry.profileCharId || entry.charId || 'umbrella_master',
-      profileSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : (entry.skinId || null),
-      nameColor: typeof entry.nameColor === 'string' ? entry.nameColor.slice(0, 24) : '#ffffff',
-      nameFrame: typeof entry.nameFrame === 'string' ? entry.nameFrame.slice(0, 16) : 'none',
-      cityName: String(entry.cityName || '서울').slice(0, 8),
-      weatherTag: String(entry.weatherTag || '').slice(0, 20),
+      charId: sanitizeSafeText(entry.charId || 'umbrella_master', 40) || 'umbrella_master',
+      skinId: entry.skinId ? sanitizeSafeText(entry.skinId, 60) : null,
+      profileCharId: sanitizeSafeText(entry.profileCharId || entry.charId || 'umbrella_master', 40) || 'umbrella_master',
+      profileSkinId: entry.profileSkinId !== undefined ? (entry.profileSkinId ? sanitizeSafeText(entry.profileSkinId, 60) : null) : (entry.skinId ? sanitizeSafeText(entry.skinId, 60) : null),
+      nameColor: sanitizeNameColor(entry.nameColor),
+      nameFrame: sanitizeNameFrame(entry.nameFrame),
+      cityName: sanitizeSafeText(entry.cityName || '서울', 12) || '서울',
+      weatherTag: sanitizeSafeText(entry.weatherTag || '', 24),
       score: scoreVal,
-      dist: Math.max(0, Math.floor(Number(entry.dist) || 0)),
-      year: Math.max(1, Math.floor(Number(entry.year) || 1)),
+      dist: clampInt(entry.dist, 0, 10000000, 0),
+      year: clampInt(entry.year, 1, 999, 1),
       updatedAt: Date.now()
     };
 
@@ -859,7 +1010,7 @@ window.OnlineService = (function () {
     }
     writeLocalDailyBoards(all);
 
-    if (hasRemoteDb()) {
+    if (hasRemoteDb() && (await assertOwnAuthedUid(cleanEntry.uid, true))) {
       const bodyStr = JSON.stringify(dk[cleanEntry.uid]);
       const targets = [
         `${RTDB_BOARD_ROOT}/${encodeURIComponent(remoteBucket)}/${encodeURIComponent(cleanEntry.uid)}.json`,
@@ -935,6 +1086,12 @@ window.OnlineService = (function () {
       .slice(0, 100)
       .map((entry, idx) => ({
         ...entry,
+        nickname: sanitizeNickname(entry.nickname, '날씨러너'),
+        nameColor: sanitizeNameColor(entry.nameColor),
+        nameFrame: sanitizeNameFrame(entry.nameFrame),
+        cityName: sanitizeSafeText(entry.cityName || '서울', 12) || '서울',
+        weatherTag: sanitizeSafeText(entry.weatherTag || '', 24),
+        score: clampInt(entry.score, 0, 4999990, 0),
         rank: idx + 1,
         isMe: Boolean(myUid && entry.uid === myUid)
       }));
@@ -978,17 +1135,17 @@ window.OnlineService = (function () {
       uid: String(entry.uid),
       nickname: sanitizeNickname(entry.nickname, '날씨러너'),
       provider: entry.provider || 'guest',
-      charId: entry.charId || 'umbrella_master',
-      skinId: entry.skinId || null,
-      profileCharId: entry.profileCharId || entry.charId || 'umbrella_master',
-      profileSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : (entry.skinId || null),
-      nameColor: typeof entry.nameColor === 'string' ? entry.nameColor.slice(0, 24) : '#ffffff',
-      nameFrame: typeof entry.nameFrame === 'string' ? entry.nameFrame.slice(0, 16) : 'none',
-      trophies: Math.max(0, Math.floor(Number(entry.trophies) || 0)),
-      wins: Math.max(0, Math.floor(Number(entry.wins) || 0)),
-      matches: Math.max(0, Math.floor(Number(entry.matches) || 0)),
-      bestCompScore: Math.max(0, Math.floor(Number(entry.bestCompScore) || 0)),
-      bestScore: Math.max(0, Math.floor(Number(entry.bestScore) || 0)),
+      charId: sanitizeSafeText(entry.charId || 'umbrella_master', 40) || 'umbrella_master',
+      skinId: entry.skinId ? sanitizeSafeText(entry.skinId, 60) : null,
+      profileCharId: sanitizeSafeText(entry.profileCharId || entry.charId || 'umbrella_master', 40) || 'umbrella_master',
+      profileSkinId: entry.profileSkinId !== undefined ? (entry.profileSkinId ? sanitizeSafeText(entry.profileSkinId, 60) : null) : (entry.skinId ? sanitizeSafeText(entry.skinId, 60) : null),
+      nameColor: sanitizeNameColor(entry.nameColor),
+      nameFrame: sanitizeNameFrame(entry.nameFrame),
+      trophies: clampInt(entry.trophies, 0, 50000, 0),
+      wins: clampInt(entry.wins, 0, 1000000, 0),
+      matches: clampInt(entry.matches, 0, 1000000, 0),
+      bestCompScore: clampInt(entry.bestCompScore, 0, 4999990, 0),
+      bestScore: clampInt(entry.bestScore, 0, 4999990, 0),
       updatedAt: Date.now()
     };
 
@@ -1052,9 +1209,9 @@ window.OnlineService = (function () {
           skinId: raw.skinId || null,
           profileCharId: raw.profileCharId || raw.charId || 'umbrella_master',
           profileSkinId: raw.profileSkinId !== undefined ? raw.profileSkinId : (raw.skinId || null),
-          nameColor: typeof raw.nameColor === 'string' && raw.nameColor ? raw.nameColor : '#ffffff',
-          nameFrame: typeof raw.nameFrame === 'string' && raw.nameFrame ? raw.nameFrame : 'none',
-          trophies: hasTrophyField ? rawTrophies : 0,
+          nameColor: sanitizeNameColor(raw.nameColor),
+          nameFrame: sanitizeNameFrame(raw.nameFrame),
+          trophies: hasTrophyField ? clampInt(rawTrophies, 0, 50000, 0) : 0,
           wins: Math.max(0, Math.floor(Number(raw.wins) || 0)),
           matches: Math.max(0, Math.floor(Number(raw.matches) || 0)),
           bestCompScore: Math.max(0, Math.floor(Number(raw.bestCompScore) || 0)),
@@ -1096,18 +1253,20 @@ window.OnlineService = (function () {
         if (raw.skinId !== undefined) prev.skinId = raw.skinId || null;
         if (raw.profileCharId) prev.profileCharId = raw.profileCharId;
         if (raw.profileSkinId !== undefined) prev.profileSkinId = raw.profileSkinId;
-        if (typeof raw.nameColor === 'string' && raw.nameColor && raw.nameColor !== '#ffffff') {
-          prev.nameColor = raw.nameColor;
+        const cleanCol = sanitizeNameColor(raw.nameColor);
+        if (cleanCol !== '#ffffff') {
+          prev.nameColor = cleanCol;
         }
-        if (typeof raw.nameFrame === 'string' && raw.nameFrame && raw.nameFrame !== 'none') {
-          prev.nameFrame = raw.nameFrame;
+        const cleanFr = sanitizeNameFrame(raw.nameFrame);
+        if (cleanFr !== 'none') {
+          prev.nameFrame = cleanFr;
         }
       } else {
-        if ((!prev.nameColor || prev.nameColor === '#ffffff') && typeof raw.nameColor === 'string' && raw.nameColor) {
-          prev.nameColor = raw.nameColor;
+        if (!prev.nameColor || prev.nameColor === '#ffffff') {
+          prev.nameColor = sanitizeNameColor(raw.nameColor);
         }
-        if ((!prev.nameFrame || prev.nameFrame === 'none') && typeof raw.nameFrame === 'string' && raw.nameFrame) {
-          prev.nameFrame = raw.nameFrame;
+        if (!prev.nameFrame || prev.nameFrame === 'none') {
+          prev.nameFrame = sanitizeNameFrame(raw.nameFrame);
         }
       }
       if (rawTs > prev.updatedAt) prev.updatedAt = rawTs;
@@ -1236,7 +1395,14 @@ window.OnlineService = (function () {
 
   async function writeCompBoardNode(bucket, uid, payloadBuilder, opts = {}) {
     if (!bucket || !uid || !hasRemoteDb()) return { ok: false, data: null, status: 0 };
-    const cacheKey = `${bucket}:${uid}`;
+    const cleanUid = String(uid).trim();
+    if (!opts.keepalive) {
+      const isOwn = await assertOwnAuthedUid(cleanUid, true);
+      if (!isOwn) return { ok: false, data: null, status: 403 };
+    } else if (fbAuth && fbAuth.currentUser && fbAuth.currentUser.uid !== cleanUid) {
+      return { ok: false, data: null, status: 403 };
+    }
+    const cacheKey = `${bucket}:${cleanUid}`;
     let curScore = Math.max(Number(COMP_QUEUE_REV_CACHE[cacheKey]) || 0, Number(opts.minScore) || 0);
     if (curScore <= 0 && !opts.keepalive) {
       const prev = await fetchBoardNodeRemote(bucket, uid);
@@ -1473,27 +1639,27 @@ window.OnlineService = (function () {
     const nick = sanitizeNickname(playerInfo.nickname, '날씨러너');
     const cleanChat = Array.isArray(duoPatch.chatMsgs)
       ? duoPatch.chatMsgs
-          .filter((x) => x && typeof x.m === 'string' && x.m.trim())
+          .filter((x) => x && typeof x.m === 'string' && sanitizeSafeText(x.m, 60))
           .slice(-16)
           .map((x) => ({
-            id: String(x.id || '').slice(0, 32),
+            id: sanitizeSafeText(x.id || '', 32),
             t: Math.max(0, Math.floor(Number(x.t) || Date.now())),
-            m: String(x.m).trim().slice(0, 60)
+            m: sanitizeSafeText(x.m, 60)
           }))
       : null;
     return writeCompBoardNode(RTDB_COMP_DUO_BUCKET, uid, () => ({
       provider: playerInfo.provider,
       nickname: nick,
-      charId: playerInfo.charId || 'umbrella_master',
-      skinId: playerInfo.skinId || null,
-      profileCharId: playerInfo.profileCharId || playerInfo.charId || 'umbrella_master',
-      profileSkinId: playerInfo.profileSkinId !== undefined ? playerInfo.profileSkinId : (playerInfo.skinId || null),
-      trophies: Math.max(0, Math.floor(Number(playerInfo.trophies) || 0)),
-      platform: plat.id || 'pc',
-      platformLabel: plat.label || 'PC',
+      charId: sanitizeSafeText(playerInfo.charId || 'umbrella_master', 40) || 'umbrella_master',
+      skinId: playerInfo.skinId ? sanitizeSafeText(playerInfo.skinId, 60) : null,
+      profileCharId: sanitizeSafeText(playerInfo.profileCharId || playerInfo.charId || 'umbrella_master', 40) || 'umbrella_master',
+      profileSkinId: playerInfo.profileSkinId !== undefined ? (playerInfo.profileSkinId ? sanitizeSafeText(playerInfo.profileSkinId, 60) : null) : (playerInfo.skinId ? sanitizeSafeText(playerInfo.skinId, 60) : null),
+      trophies: clampInt(playerInfo.trophies, 0, 50000, 0),
+      platform: sanitizePlatformId(plat.id),
+      platformLabel: sanitizePlatformLabel(plat.label),
       status: duoPatch.status || 'idle', // 'idle' | 'inviting' | 'ready' | 'play_ready' | 'queueing' | 'declined'
-      targetUid: String(duoPatch.targetUid || ''),
-      partyId: String(duoPatch.partyId || ''),
+      targetUid: sanitizeSafeText(duoPatch.targetUid || '', 64),
+      partyId: sanitizeSafeText(duoPatch.partyId || '', 64),
       ...(cleanChat ? { chatMsgs: cleanChat } : {}),
       updatedClientAt: Date.now()
     }), { keepalive: Boolean(duoPatch.keepalive) });
@@ -1577,9 +1743,13 @@ window.OnlineService = (function () {
           .filter((p) => p && p.uid && !p.cancelled && isRankedProvider(p.provider))
           .map((p) => ({
             ...p,
+            nickname: sanitizeNickname(p.nickname, '날씨러너'),
+            platform: sanitizePlatformId(p.platform),
+            platformLabel: sanitizePlatformLabel(p.platformLabel),
+            trophies: clampInt(p.trophies, 0, 50000, 0),
             score: typeof p.realScore === 'number'
-              ? Math.max(0, Math.floor(p.realScore))
-              : Math.max(0, Math.floor(Number(p.score) || 0)),
+              ? clampInt(p.realScore, 0, 4999990, 0)
+              : clampInt(p.score, 0, 4999990, 0),
             pose: (p.pose && typeof p.pose === 'object') ? p.pose : null
           }))
           .slice(0, 4);
@@ -1597,9 +1767,9 @@ window.OnlineService = (function () {
       nickname: sanitizeNickname((playerMeta && playerMeta.nickname) || cached.nickname || '날씨러너', '날씨러너'),
       charId: (playerMeta && playerMeta.charId) || cached.charId || 'umbrella_master',
       skinId: (playerMeta && playerMeta.skinId !== undefined) ? playerMeta.skinId : (cached.skinId || null),
-      trophies: Math.max(0, Math.floor(Number((playerMeta && playerMeta.trophies) ?? cached.trophies) || 0)),
-      platform: (playerMeta && playerMeta.platform) || cached.platform || detectClientPlatform().id,
-      platformLabel: (playerMeta && playerMeta.platformLabel) || cached.platformLabel || detectClientPlatform().label,
+      trophies: clampInt((playerMeta && playerMeta.trophies) ?? cached.trophies, 0, 50000, 0),
+      platform: sanitizePlatformId((playerMeta && playerMeta.platform) || cached.platform || detectClientPlatform().id),
+      platformLabel: sanitizePlatformLabel((playerMeta && playerMeta.platformLabel) || cached.platformLabel || detectClientPlatform().label),
       team: (playerMeta && playerMeta.team !== undefined) ? (Number(playerMeta.team) === 1 ? 1 : 0) : (cached.team || 0)
     };
     COMP_ROOM_META_CACHE[`${roomId}:${cleanUid}`] = { uid: cleanUid, ...meta };
@@ -1823,8 +1993,8 @@ window.OnlineService = (function () {
       skinId: raw.skinId || null,
       profileCharId: raw.profileCharId || raw.charId || 'umbrella_master',
       profileSkinId: raw.profileSkinId !== undefined ? raw.profileSkinId : (raw.skinId || null),
-      nameColor: typeof raw.nameColor === 'string' ? raw.nameColor.slice(0, 24) : '#ffffff',
-      nameFrame: typeof raw.nameFrame === 'string' ? raw.nameFrame.slice(0, 16) : 'none',
+      nameColor: sanitizeNameColor(raw.nameColor),
+      nameFrame: sanitizeNameFrame(raw.nameFrame),
       links: sanitizeFriendLinks(raw.links),
       updatedAt: Math.max(0, Math.floor(Number(raw.updatedAt) || 0))
     };
@@ -1921,15 +2091,15 @@ window.OnlineService = (function () {
       nickname: sanitizeNickname(entry.nickname, '날씨러너'),
       provider: entry.provider || 'guest',
       score: Math.min(4999990, Math.max(1, Math.floor(revScore))),
-      bestScore: Math.max(0, Math.floor(Number(entry.bestScore) || 0)),
-      trophies: Math.max(0, Math.floor(Number(entry.trophies) || 0)),
-      wins: Math.max(0, Math.floor(Number(entry.wins) || 0)),
-      charId: entry.charId || 'umbrella_master',
-      skinId: entry.skinId || null,
-      profileCharId: entry.profileCharId || entry.charId || 'umbrella_master',
-      profileSkinId: entry.profileSkinId !== undefined ? entry.profileSkinId : (entry.skinId || null),
-      nameColor: typeof entry.nameColor === 'string' ? entry.nameColor.slice(0, 24) : '#ffffff',
-      nameFrame: typeof entry.nameFrame === 'string' ? entry.nameFrame.slice(0, 16) : 'none',
+      bestScore: clampInt(entry.bestScore, 0, 4999990, 0),
+      trophies: clampInt(entry.trophies, 0, 50000, 0),
+      wins: clampInt(entry.wins, 0, 1000000, 0),
+      charId: sanitizeSafeText(entry.charId || 'umbrella_master', 40) || 'umbrella_master',
+      skinId: entry.skinId ? sanitizeSafeText(entry.skinId, 60) : null,
+      profileCharId: sanitizeSafeText(entry.profileCharId || entry.charId || 'umbrella_master', 40) || 'umbrella_master',
+      profileSkinId: entry.profileSkinId !== undefined ? (entry.profileSkinId ? sanitizeSafeText(entry.profileSkinId, 60) : null) : (entry.skinId ? sanitizeSafeText(entry.skinId, 60) : null),
+      nameColor: sanitizeNameColor(entry.nameColor),
+      nameFrame: sanitizeNameFrame(entry.nameFrame),
       links: mergedLinks,
       updatedAt: Date.now()
     });
@@ -1942,6 +2112,9 @@ window.OnlineService = (function () {
 
     if (!canRemote) {
       return { ok: true, syncedOnline: false, node: normalizeFriendNode(node), rev: node.score, reason: 'local_only' };
+    }
+    if (!(await assertOwnAuthedUid(uid, true))) {
+      return { ok: false, syncedOnline: false, node: normalizeFriendNode(node), rev: node.score, status: 403, reason: 'uid_mismatch' };
     }
 
     const targets = [
@@ -2053,7 +2226,7 @@ window.OnlineService = (function () {
     return { friends, incoming, outgoing, mergedMyLinks, remoteRev: remoteSelf ? (remoteSelf.score || 0) : 0 };
   }
 
-  return {
+  return Object.freeze({
     WEEKLY_REWARD_GEMS,
     FIREBASE_CONFIG,
     hasFirebaseAuth,
@@ -2066,6 +2239,11 @@ window.OnlineService = (function () {
     getKstDayInfo,
     getProviderMeta,
     sanitizeNickname,
+    sanitizeNameColor,
+    sanitizeNameFrame,
+    sanitizePlatformId,
+    sanitizePlatformLabel,
+    sanitizeSafeText,
     signInWithOAuth,
     signInWithAppleEmail,
     checkRedirectLoginResult,
@@ -2107,5 +2285,5 @@ window.OnlineService = (function () {
     findUserInFriendsDir,
     computeFriendLists,
     onBoardUpdate
-  };
+  });
 })();
