@@ -2262,13 +2262,16 @@ window.RunRenderer = (function () {
       ctx.lineWidth = 1.1;
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
       ctx.stroke();
+      const warnTxt = (attack.totalCount || 1) > 1
+        ? `우박 ${attack.stoneIdx || 1}/${attack.totalCount}! 우산 펴기!`
+        : '우박 낙하! 우산 펴기!';
       ctx.font = '900 10.5px "Paperlogy", sans-serif';
       ctx.textAlign = 'center';
       ctx.lineWidth = 2.6;
       ctx.strokeStyle = '#09152e';
-      ctx.strokeText('우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
+      ctx.strokeText(warnTxt, bx + bw / 2, by + 16);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText('우박 낙하! 우산 펴기!', bx + bw / 2, by + 16);
+      ctx.fillText(warnTxt, bx + bw / 2, by + 16);
     } else if (attack.phase === 'fall') {
       // Animate smoothly across uploaded frames 0..6 as the hailstone plunges down-left!
       const prog = Math.max(0, Math.min(1, Number(attack.progress) || 0));
@@ -2816,7 +2819,7 @@ window.RunRenderer = (function () {
 
     // Glowing cyan Timing Seal Ring while fresh umbrella hail-parry window is active!
     if (!dead && hailAimActive && umbrellaOn && umbrellaParryTimer > 0) {
-      const uRatio = Math.max(0, Math.min(1, umbrellaParryTimer / 3.5));
+      const uRatio = Math.max(0, Math.min(1, umbrellaParryTimer / 1.65));
       const uR = isProne ? 25 : Math.round(scaleHeight * 0.56);
       const uCy = cy - (isProne ? 14 : scaleHeight * 0.48);
       ctx.save();
@@ -3891,8 +3894,13 @@ window.RunRenderer = (function () {
       ctx.restore();
     }
 
-    // Corona Virus Timed Rush Attack & Sky Hailstone Drop Attack!
+    // Corona Virus Timed Rush Attack & Multi-Hailstone Volley + Deflected Hail FX!
     drawCovidAttack(ctx, run.covidAttack, run.playerX, run.playerY, t);
+    if (Array.isArray(run.hailEffects) && run.hailEffects.length) {
+      for (let hi = 0; hi < run.hailEffects.length; hi++) {
+        drawHailAttack(ctx, run.hailEffects[hi], run.playerX, run.playerY, t);
+      }
+    }
     drawHailAttack(ctx, run.hailAttack, run.playerX, run.playerY, t);
 
     // Dynamic High-Speed Wind Momentum Streaks (ramps smoothly as speed climbs past 220 px/s!)
