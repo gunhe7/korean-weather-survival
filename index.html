@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd158" />
+  <link rel="manifest" href="manifest.json?v=20261121hd159" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
@@ -17,7 +17,7 @@
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
   <link rel="preload" as="image" href="assets/home_bg.jpg?v=20261121hd156" />
-  <link rel="stylesheet" href="style.css?v=20261121hd158" />
+  <link rel="stylesheet" href="style.css?v=20261121hd159" />
 </head>
 <body>
   <div id="mobile-app" class="is-home-bg">
@@ -1522,6 +1522,18 @@
             <span id="weather-alert-title" class="weather-alert-title">폭우</span>
           </div>
         </div>
+
+        <!-- Arcade / Brawl Stars Style 3-2-1-GO Start & Resume Countdown Overlay -->
+        <div id="run-countdown-overlay" class="rcd-overlay hidden" aria-live="assertive" aria-label="시작 카운트다운">
+          <div class="rcd-dim" aria-hidden="true"></div>
+          <div class="rcd-wrap">
+            <div id="rcd-label" class="rcd-label">출발 준비!</div>
+            <div class="rcd-num-box">
+              <div id="rcd-ring" class="rcd-ring" aria-hidden="true"></div>
+              <div id="rcd-num" class="rcd-num">3</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 2v2 Live Teammate Spectate HUD (Shown when player dies while teammate is still running!) -->
@@ -2243,19 +2255,19 @@
   <script src="js/data.js?v=20261121hd156"></script>
   <script src="js/ui-icons.js?v=20261121hd156"></script>
   <script src="js/weather-live.js?v=20261121hd156"></script>
-  <script src="js/audio.js?v=20261121hd158"></script>
+  <script src="js/audio.js?v=20261121hd159"></script>
   <script src="js/studio-intro.js?v=20261121hd156"></script>
   <script src="js/online.js?v=20261121hd156"></script>
   <script src="js/renderer.js?v=20261121hd156"></script>
-  <script src="js/game.js?v=20261121hd158"></script>
+  <script src="js/game.js?v=20261121hd159"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       let swReloading = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (swReloading) return;
         try {
-          if (sessionStorage.getItem('kws_sw_ver') === 'hd158') return;
-          sessionStorage.setItem('kws_sw_ver', 'hd158');
+          if (sessionStorage.getItem('kws_sw_ver') === 'hd159') return;
+          sessionStorage.setItem('kws_sw_ver', 'hd159');
         } catch {}
         swReloading = true;
         location.reload();

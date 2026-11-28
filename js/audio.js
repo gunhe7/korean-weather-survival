@@ -1214,14 +1214,29 @@ window.SFX = (function () {
       });
     },
     compStartGo() {
-      // Punchy Brawl-style START! battle horn + curtain tear swoosh
-      playNoiseBurst({ bufType: 'white', dur: 0.26, filterType: 'bandpass', startFreq: 1100, endFreq: 3600, Q: 1.2, gainVal: 0.14, attack: 0.015 });
+      // Punchy Brawl-style READY / curtain tear swoosh
+      playNoiseBurst({ bufType: 'white', dur: 0.24, filterType: 'bandpass', startFreq: 1000, endFreq: 3200, Q: 1.2, gainVal: 0.13, attack: 0.015 });
       [
-        [523.25, 0.00, 0.11, 'triangle', 0.085],
-        [659.25, 0.07, 0.11, 'triangle', 0.085],
-        [783.99, 0.14, 0.12, 'triangle', 0.09],
-        [1046.5, 0.21, 0.28, 'triangle', 0.10],
-        [523.25, 0.21, 0.26, 'sawtooth', 0.045]
+        [523.25, 0.00, 0.11, 'triangle', 0.08],
+        [659.25, 0.07, 0.11, 'triangle', 0.08],
+        [783.99, 0.14, 0.16, 'triangle', 0.085]
+      ].forEach(([f, d, dur, t, g]) => tone(f, dur, t, g, d));
+    },
+    countdownTick(num = 3) {
+      // Crisp arcade 3 -> 2 -> 1 escalating beat
+      const freq = num === 1 ? 783.99 : (num === 2 ? 659.25 : 587.33);
+      tone(freq, 0.14, 'triangle', 0.095, 0);
+      tone(freq * 0.5, 0.11, 'sine', 0.065, 0);
+      playNoiseBurst({ bufType: 'white', dur: 0.04, filterType: 'highpass', startFreq: 2400, endFreq: 1800, Q: 1.0, gainVal: 0.055, attack: 0.003 });
+    },
+    countdownGo() {
+      // Energetic GO! takeoff fanfare
+      playNoiseBurst({ bufType: 'white', dur: 0.22, filterType: 'bandpass', startFreq: 1200, endFreq: 3800, Q: 1.1, gainVal: 0.14, attack: 0.01 });
+      [
+        [523.25, 0.00, 0.26, 'sawtooth', 0.045],
+        [783.99, 0.00, 0.26, 'triangle', 0.08],
+        [1046.5, 0.00, 0.34, 'triangle', 0.105],
+        [1318.5, 0.06, 0.28, 'sine',     0.072]
       ].forEach(([f, d, dur, t, g]) => tone(f, dur, t, g, d));
     },
     compMatchFinish(outcome = 'win', isKo = false) {

@@ -1110,6 +1110,10 @@
     orbBarShield: document.getElementById('orb-bar-shield'),
     btnLandscapeRun: document.getElementById('btn-landscape-run'),
     btnPauseRun: document.getElementById('btn-pause-run'),
+    runCountdownOverlay: document.getElementById('run-countdown-overlay'),
+    rcdLabel: document.getElementById('rcd-label'),
+    rcdNum: document.getElementById('rcd-num'),
+    rcdRing: document.getElementById('rcd-ring'),
 
     pauseOverlay: document.getElementById('pause-overlay'),
     btnResumeRun: document.getElementById('btn-resume-run'),
@@ -7864,11 +7868,11 @@
 
     compIntroTimers.push(setTimeout(() => {
       if (compIntroSeq !== seq) return;
-      if (el.compIntroVsBadge) el.compIntroVsBadge.textContent = 'START!';
+      if (el.compIntroVsBadge) el.compIntroVsBadge.textContent = 'READY!';
       el.compIntroOverlay.classList.remove('phase-enter');
       el.compIntroOverlay.classList.add('phase-go');
       try { SFX.compStartGo(); } catch {}
-    }, 1820));
+    }, 1660));
 
     compIntroTimers.push(setTimeout(() => {
       if (compIntroSeq !== seq) return;
@@ -7876,12 +7880,12 @@
       if (typeof onEnterTrack === 'function') onEnterTrack();
       el.compIntroOverlay.classList.remove('phase-go');
       el.compIntroOverlay.classList.add('phase-wipe');
-    }, 2220));
+    }, 2040));
 
     compIntroTimers.push(setTimeout(() => {
       if (compIntroSeq !== seq) return;
       el.compIntroOverlay.className = 'bs-vs-overlay hidden';
-    }, 2680));
+    }, 2500));
   }
 
   function computeCompOutcomeSummary(participants, compMode, myTeam, myScoreFallback = 0) {
@@ -8408,6 +8412,7 @@
         run.active = false;
         run = null;
         paused = false;
+        cancelRunCountdown();
         releaseAllControlButtons();
         if (el.pauseOverlay) el.pauseOverlay.classList.add('hidden');
         if (el.gameoverOverlay) el.gameoverOverlay.classList.add('hidden');
@@ -8451,12 +8456,12 @@
         finished: false
       };
 
-      // Brawl Stars style full-screen VS battle intro -> diagonal curtain wipe into the running track!
+      // Brawl Stars style full-screen VS battle intro -> diagonal curtain wipe -> 3,2,1 countdown into the track!
       playCompStartTransition(matchCfg, () => {
         const startNowMs = Date.now();
         matchCfg.startedAt = startNowMs;
         matchCfg.endsAt = startNowMs + dur * 1000;
-        startRun({ mode: 'competitive', compMatch: matchCfg, fromCompIntro: true });
+        startRun({ mode: 'competitive', compMatch: matchCfg, fromCompIntro: true, countdownDelayMs: 260 });
       });
     };
 
@@ -11885,6 +11890,109 @@
     }
   }
 
+  let runCountdownSeq = 0;
+  let runCountdownTimers = [];
+  let runCountdownActive = false;
+
+  function cancelRunCountdown() {
+    runCountdownSeq += 1;
+    runCountdownActive = false;
+    runCountdownTimers.forEach((id) => clearTimeout(id));
+    runCountdownTimers = [];
+    if (el.runCountdownOverlay) {
+      el.runCountdownOverlay.className = 'rcd-overlay hidden';
+    }
+  }
+
+  function startRunCountdown(opts = {}) {
+    cancelRunCountdown();
+    if (!run || !run.active) return;
+    if (!el.runCountdownOverlay || !el.rcdNum) {
+      paused = false;
+      SFX.setAmbientPaused(false);
+      if (opts && typeof opts.onGo === 'function') opts.onGo();
+      return;
+    }
+
+    const seq = runCountdownSeq;
+    const labelTxt = (opts && opts.label) || '출발 준비!';
+    const delayMs = Math.max(0, Number(opts && opts.delayMs) || 0);
+    const stepMs = 680;
+
+    runCountdownActive = true;
+    paused = true;
+    releaseAllControlButtons();
+    SFX.setAmbientPaused(true);
+
+    const triggerTick = (stepCls, text, playSfx) => {
+      if (runCountdownSeq !== seq || !run || !run.active) return;
+      if (el.rcdLabel) el.rcdLabel.textContent = labelTxt;
+      el.runCountdownOverlay.className = `rcd-overlay ${stepCls}`;
+      el.rcdNum.textContent = text;
+      el.rcdNum.classList.remove('pop');
+      if (el.rcdRing) el.rcdRing.classList.remove('pop');
+      void el.rcdNum.offsetWidth;
+      el.rcdNum.classList.add('pop');
+      if (el.rcdRing) el.rcdRing.classList.add('pop');
+      if (typeof playSfx === 'function') {
+        try { playSfx(); } catch {}
+      }
+    };
+
+    runCountdownTimers.push(setTimeout(() => {
+      triggerTick('step-3', '3', () => SFX.countdownTick(3));
+    }, delayMs));
+
+    runCountdownTimers.push(setTimeout(() => {
+      triggerTick('step-2', '2', () => SFX.countdownTick(2));
+    }, delayMs + stepMs));
+
+    runCountdownTimers.push(setTimeout(() => {
+      triggerTick('step-1', '1', () => SFX.countdownTick(1));
+    }, delayMs + stepMs * 2));
+
+    runCountdownTimers.push(setTimeout(() => {
+      if (runCountdownSeq !== seq || !run || !run.active) return;
+      runCountdownActive = false;
+      paused = false;
+      lastTs = performance.now();
+      SFX.setAmbientPaused(false);
+      if (run.compMatch && !run.compMatch.finished && (run.elapsed || 0) < 0.05) {
+        const goNow = Date.now();
+        const dur = run.compMatch.duration || 60;
+        run.compMatch.startedAt = goNow;
+        run.compMatch.endsAt = goNow + dur * 1000;
+      }
+      if (opts && typeof opts.onGo === 'function') opts.onGo();
+      triggerTick('step-go', 'GO!', () => SFX.countdownGo());
+    }, delayMs + stepMs * 3));
+
+    runCountdownTimers.push(setTimeout(() => {
+      if (runCountdownSeq !== seq) return;
+      el.runCountdownOverlay.className = 'rcd-overlay hidden';
+    }, delayMs + stepMs * 3 + 480));
+  }
+
+  function openPauseOverlay(playSound = false) {
+    if (!run || !run.active) return false;
+    if (run.gameMode === 'competitive') return false;
+    cancelRunCountdown();
+    paused = true;
+    releaseAllControlButtons();
+    SFX.setAmbientPaused(true);
+    syncPauseModalForMode();
+    el.pauseOverlay.classList.remove('hidden');
+    if (playSound) SFX.click();
+    return true;
+  }
+
+  function resumeRunWithCountdown(playSound = false) {
+    if (!run || !run.active) return;
+    if (playSound) SFX.click();
+    el.pauseOverlay.classList.add('hidden');
+    startRunCountdown({ label: '이어서 하기!', delayMs: 40 });
+  }
+
   function startRun(opts = {}) {
     const isTutorial = Boolean(opts && opts.isTutorial);
     const gameMode = isTutorial ? 'normal' : ((opts && opts.mode) || selectedGameMode || 'normal');
@@ -12122,6 +12230,8 @@
     if (el.compSpectateHud) el.compSpectateHud.classList.add('hidden');
     if (el.mobileControls) el.mobileControls.classList.remove('hidden');
     if (el.compRunHud) el.compRunHud.classList.toggle('hidden', !run.compMatch);
+    if (el.btnPauseRun) el.btnPauseRun.classList.toggle('hidden', run.gameMode === 'competitive');
+    cancelRunCountdown();
     updateCompPendingPill();
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
     el.pauseOverlay.classList.add('hidden');
@@ -12170,10 +12280,10 @@
 
     SFX.startBgm();
     SFX.setBgmMode(startFever > 0 ? 'fever' : 'run');
-    SFX.setAmbientPaused(false);
     SFX.setWeatherAmbient(initWeatherEv);
-    SFX.seasonUp();
-    if (!isTutorial) {
+
+    const showOpeningBanner = () => {
+      if (!run || !run.active || isTutorial) return;
       if (run.compMatch) {
         const is2v2 = run.compMatch.compMode === '2v2';
         showRunBanner(
@@ -12191,6 +12301,21 @@
       } else {
         showRunBanner(`${ch.name} 출발`, 2200, 'gold', '1년 차 봄');
       }
+    };
+
+    if (!isTutorial) {
+      const startLabel = run.compMatch
+        ? (run.compMatch.compMode === '2v2' ? '2대2 경쟁전 시작!' : '1대1 경쟁전 시작!')
+        : (twMods ? '오늘의 날씨 출발!' : '출발 준비!');
+      const delayMs = (opts && typeof opts.countdownDelayMs === 'number') ? opts.countdownDelayMs : 80;
+      startRunCountdown({
+        label: startLabel,
+        delayMs,
+        onGo: showOpeningBanner
+      });
+    } else {
+      SFX.setAmbientPaused(false);
+      SFX.seasonUp();
     }
     updateRunHud(true);
   }
@@ -12438,6 +12563,7 @@
     if (!run) return;
     run.jumpHeld = false;
     run.gliding = false;
+    if (paused) return;
     // Variable Jump Height: releasing Jump early smoothly trims upward arc for surgical control!
     if (run.vy < -155 && run.springLaunchTimer <= 0) {
       run.vy *= 0.62;
@@ -14707,6 +14833,7 @@
     run.dying = false;
     run.dead = true;
     run.spectatingAlly = false;
+    cancelRunCountdown();
     releaseAllControlButtons();
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
@@ -14824,7 +14951,9 @@
     }
     releaseAllControlButtons();
     clearTutorialHighlights();
+    cancelRunCountdown();
     cancelCompTransitions();
+    if (el.btnPauseRun) el.btnPauseRun.classList.remove('hidden');
     if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
     if (el.viewRun) el.viewRun.classList.remove('is-tutorial-run');
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
@@ -16465,11 +16594,8 @@
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         releaseAllControlButtons();
-        if (run && run.active && !paused) {
-          paused = true;
-          SFX.setAmbientPaused(true);
-          syncPauseModalForMode();
-          el.pauseOverlay.classList.remove('hidden');
+        if (run && run.active && run.gameMode !== 'competitive' && (!paused || runCountdownActive)) {
+          openPauseOverlay(false);
         }
         if (ONLINE && save && save.auth && save.auth.loggedIn && ONLINE.isRankedProvider(save.auth.provider) && save.auth.uid && cloudHydratedUid === save.auth.uid) {
           try { ONLINE.saveCloudUserSave(save.auth.uid, save, true); } catch {}
@@ -16538,20 +16664,11 @@
     bindControlButton(el.btnToggleMask, toggleMask, () => {}, { isToggle: true });
 
     el.btnPauseRun.addEventListener('click', () => {
-      if (!run || !run.active) return;
-      SFX.click();
-      paused = true;
-      releaseAllControlButtons();
-      SFX.setAmbientPaused(true);
-      syncPauseModalForMode();
-      el.pauseOverlay.classList.remove('hidden');
+      openPauseOverlay(true);
     });
 
     el.btnResumeRun.addEventListener('click', () => {
-      SFX.click();
-      paused = false;
-      SFX.setAmbientPaused(false);
-      el.pauseOverlay.classList.add('hidden');
+      resumeRunWithCountdown(true);
     });
 
     el.btnQuitHome.addEventListener('click', () => {
@@ -16634,12 +16751,6 @@
       if (!run || !run.active) return;
       if (e.repeat) return;
       if (run.spectatingAlly) {
-        if (e.code === 'Escape') {
-          paused = !paused;
-          SFX.setAmbientPaused(paused);
-          if (paused) syncPauseModalForMode();
-          el.pauseOverlay.classList.toggle('hidden', !paused);
-        }
         return;
       }
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
@@ -16659,10 +16770,12 @@
         el.btnToggleMask.classList.add('pressed');
         toggleMask();
       } else if (e.code === 'Escape') {
-        paused = !paused;
-        SFX.setAmbientPaused(paused);
-        if (paused) syncPauseModalForMode();
-        el.pauseOverlay.classList.toggle('hidden', !paused);
+        if (run.gameMode === 'competitive') return;
+        if (el.pauseOverlay && !el.pauseOverlay.classList.contains('hidden')) {
+          resumeRunWithCountdown(true);
+        } else {
+          openPauseOverlay(true);
+        }
       }
     });
 
