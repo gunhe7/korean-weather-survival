@@ -207,6 +207,28 @@ window.RUN_DATA = (function () {
       desc: '하이리스크·하이리턴 생존형! 연속 회피로 보호막을 끊임없이 생성합니다.',
       tag: '연속 회피 5회 시 보호막 자동 생성',
       colors: { top: '#d93232', outer: '#b82222', pants: '#2a2a33', shoes: '#362720', hat: null }
+    },
+    {
+      id: 'mask_master',
+      name: '마기꾼',
+      tier: '상시 마스크 · 면역',
+      icon: '',
+      spriteKey: 'maskman_idle_0',
+      animSkin: 'maskman',
+      animFrames: 4,
+      runFrames: 8,
+      avatar: 'assets/chars/port_maskman.png?v=20261121hd160',
+      auraType: 'maskman',
+      price: 5000,
+      baseHp: 5,
+      goldMult: 1.18,
+      scoreMult: 1.22,
+      alwaysMask: true,
+      passiveName: '상시 마스크 착용',
+      passiveDesc: '모든 상황에서 마스크를 상시 착용! 마스크 버튼 없이도 황사·미세먼지·코로나 돌진을 자동 차단합니다.',
+      desc: '언제나 마스크를 완벽하게 착용한 수수께끼 러너! 황사와 코로나 바이러스를 별도 조작 없이 자동 방어합니다.',
+      tag: '상시 마스크 유지 · 마스크 버튼 제거 · 코로나·황사 자동 차단',
+      colors: { top: '#ede8ff', outer: '#7c4dff', pants: '#1f1c2e', shoes: '#5b38c9', hat: null }
     }
   ];
 

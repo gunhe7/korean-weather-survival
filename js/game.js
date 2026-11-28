@@ -10678,7 +10678,8 @@
     long_padding: '오토 기어',
     short_sleeve: '쾌청 캔슬',
     iced_americano: '3단·스톰프',
-    fashionista: '회피 실드'
+    fashionista: '회피 실드',
+    mask_master: '상시 마스크'
   };
 
   function getCharShortSkill(ch) {
@@ -10686,6 +10687,7 @@
   }
 
   function getCharSpriteVer(animSkin) {
+    if (animSkin === 'maskman') return '20261121hd160';
     return '20261121hd156';
   }
 
@@ -11015,6 +11017,9 @@
     }
     if (charId === 'iced_americano') {
       return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 4L6 10h4v4H6l6 6 6-6h-4v-4h4z" fill="#fff5c0" stroke="#2a1400" stroke-width="2" stroke-linejoin="round"/></svg>';
+    }
+    if (charId === 'mask_master') {
+      return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="6" y="7" width="12" height="10" rx="3" fill="#ffffff" stroke="#2a1400" stroke-width="2.2"/><path d="M6 10c-2 0-3 .8-3 2s1 2 3 2M18 10c2 0 3 .8 3 2s-1 2-3 2M9 11h6M9 14h6" fill="none" stroke="#2a1400" stroke-width="1.9" stroke-linecap="round"/></svg>';
     }
     return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V6l7-3z" fill="#fff5c0" stroke="#2a1400" stroke-width="2.2" stroke-linejoin="round"/></svg>';
   }
@@ -12104,7 +12109,7 @@
       umbrellaParryTimer: 0,
       umbrellaCooldown: 0,
       umbrellaBrokenTimer: 0,
-      maskOn: false,
+      maskOn: Boolean(ch && ch.alwaysMask && !isTutorial),
       maskActiveTimer: 0,
       maskParryTimer: 0,
       maskCooldown: 0,
@@ -12229,6 +12234,7 @@
     if (el.compDuoReqBanner) el.compDuoReqBanner.classList.add('hidden');
     if (el.compSpectateHud) el.compSpectateHud.classList.add('hidden');
     if (el.mobileControls) el.mobileControls.classList.remove('hidden');
+    if (el.btnToggleMask) el.btnToggleMask.classList.toggle('hidden', Boolean(ch && ch.alwaysMask && !isTutorial));
     if (el.compRunHud) el.compRunHud.classList.toggle('hidden', !run.compMatch);
     if (el.btnPauseRun) el.btnPauseRun.classList.toggle('hidden', run.gameMode === 'competitive');
     cancelRunCountdown();
@@ -12444,6 +12450,8 @@
 
   function toggleMask() {
     if (!run || !run.active || paused) return;
+    const chMaskCheck = getCharDef(run.charId);
+    if (chMaskCheck && chMaskCheck.alwaysMask && !run.isTutorial) return;
     if (run.isTutorial && run.tut && run.tut.waitAction) {
       const wa = run.tut.waitAction;
       if (wa === 'mask_on' && !run.maskOn) {
@@ -13269,7 +13277,12 @@
       }
     }
 
-    if (run.maskOn) {
+    if (ch && ch.alwaysMask && !run.isTutorial) {
+      // 마기꾼 패시브: 모든 상황에서 마스크 상시 착용 유지 (자동 해제 없음)
+      run.maskOn = true;
+      run.maskActiveTimer = 0;
+      run.dustExposeTimer = 0;
+    } else if (run.maskOn) {
       run.maskActiveTimer = Math.max(0, run.maskActiveTimer - dt);
       if (run.maskActiveTimer <= 0) {
         run.maskOn = false;
@@ -13622,6 +13635,23 @@
             SFX.guard();
             Renderer.spawnPickupEffect(run.playerX + 14, run.playerY - 30, '#ffe866', true);
             Renderer.spawnFloater('피버! 코로나 격파 +250', '#ffe866', run.playerX + 14, run.playerY - 50);
+          } else if (ch && ch.alwaysMask && !run.isTutorial) {
+            const bonusPts = 200;
+            atk.phase = 'deflected';
+            atk.deflectTimer = 0.55;
+            atk.vx = 290;
+            atk.vy = -270;
+            run.maskOn = true;
+            run.score += Math.round(bonusPts * run.scoreMult);
+            run.feverCharge = Math.min(100, run.feverCharge + 10);
+            if (run.feverCharge >= 100 && run.feverTimer <= 0) {
+              activateFeverMode(ch, false);
+            } else {
+              SFX.guard();
+            }
+            haptic(14);
+            Renderer.spawnPickupEffect(run.playerX + 16, run.playerY - 30, '#c699ff', true);
+            Renderer.spawnFloater(`상시 마스크 차단! +${bonusPts}`, '#d5b3ff', run.playerX + 14, run.playerY - 50);
           } else if (run.maskOn && run.maskParryTimer > 0) {
             const isPerfect = run.maskParryTimer >= 1.65;
             const bonusPts = isPerfect ? 350 : 250;
@@ -14526,14 +14556,15 @@
       !run.hailAttack.checked &&
       run.feverTimer <= 0
     );
-    const needCovidMask = covidUrgent && !(run.maskOn && run.maskParryTimer > 0);
+    const hasAlwaysMask = Boolean(ch && ch.alwaysMask && !run.isTutorial);
+    const needCovidMask = covidUrgent && !hasAlwaysMask && !(run.maskOn && run.maskParryTimer > 0);
     const needHailUmb = hailUrgent && !(run.umbrellaOn && run.umbrellaParryTimer > 0);
     const needFoldUmb = activeEv === 'gust' && run.umbrellaOn && run.feverTimer <= 0;
     const hudRainNow = activeEv === 'rain' || activeEv === 'flood' || Boolean(twHazHud && (twHazHud.rainActive || twHazHud.floodActive));
     const hudHeatNow = activeEv === 'heat' || Boolean(twHazHud && twHazHud.heatActive);
     const hudDustNow = activeEv === 'dust' || Boolean(twHazHud && twHazHud.dustActive);
     const needOpenUmb = needHailUmb || ((hudRainNow || hudHeatNow) && !run.umbrellaOn && run.feverTimer <= 0);
-    const needOpenMask = hudDustNow && !run.maskOn && run.feverTimer <= 0;
+    const needOpenMask = !hasAlwaysMask && hudDustNow && !run.maskOn && run.feverTimer <= 0;
 
     // 1. Colored Screen-Edge Vignette (instant peripheral weather cue!)
     if (el.weatherEdgeVignette) {
@@ -14954,6 +14985,7 @@
     cancelRunCountdown();
     cancelCompTransitions();
     if (el.btnPauseRun) el.btnPauseRun.classList.remove('hidden');
+    if (el.btnToggleMask) el.btnToggleMask.classList.remove('hidden');
     if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
     if (el.viewRun) el.viewRun.classList.remove('is-tutorial-run');
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');
@@ -16766,6 +16798,8 @@
         el.btnToggleUmbrella.classList.add('pressed');
         toggleUmbrella();
       } else if (e.code === 'KeyE') {
+        const chKeyE = getCharDef(run.charId);
+        if (chKeyE && chKeyE.alwaysMask && !run.isTutorial) return;
         e.preventDefault();
         el.btnToggleMask.classList.add('pressed');
         toggleMask();

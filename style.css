@@ -3241,6 +3241,7 @@ input:focus-visible {
 .tier-hanbok { background: linear-gradient(155deg, #8c7aff 0%, #4b39b8 100%); }
 .tier-skier { background: linear-gradient(155deg, #5ce1ff 0%, #2468c9 100%); }
 .tier-santa { background: linear-gradient(155deg, #ffbe3b 0%, #d95226 100%); }
+.tier-maskman { background: linear-gradient(155deg, #b87dff 0%, #5b28c9 100%); }
 
 .brawl-card.locked .brawl-card-stage {
   filter: saturate(0.45) brightness(0.74);
@@ -3751,6 +3752,9 @@ input:focus-visible {
 }
 .bs-home-stage.tier-santa .bs-spotlight {
   background: radial-gradient(circle, rgba(255, 162, 130, 0.42) 0%, rgba(255, 218, 96, 0.16) 48%, transparent 72%);
+}
+.bs-home-stage.tier-maskman .bs-spotlight {
+  background: radial-gradient(circle, rgba(186, 132, 255, 0.48) 0%, rgba(112, 62, 232, 0.18) 48%, transparent 72%);
 }
 
 @keyframes bsGlowPulse {
@@ -19156,7 +19160,8 @@ input:focus-visible {
 .bs-rcard-main.tier-padding,
 .bs-rcard-main.tier-hanbok,
 .bs-rcard-main.tier-skier,
-.bs-rcard-main.tier-santa {
+.bs-rcard-main.tier-santa,
+.bs-rcard-main.tier-maskman {
   background: radial-gradient(circle at 50% 35%, #5ad6ff 0%, #1994f5 58%, #0e63cf 100%) !important;
 }
 
@@ -19177,7 +19182,8 @@ input:focus-visible {
 .bs-char-arena.tier-padding,
 .bs-char-arena.tier-hanbok,
 .bs-char-arena.tier-skier,
-.bs-char-arena.tier-santa {
+.bs-char-arena.tier-santa,
+.bs-char-arena.tier-maskman {
   background: radial-gradient(ellipse 68% 72% at 50% 48%, #ffd859 0%, #eb7a10 42%, #852b06 80%, #360f03 100%) !important;
 }
 
@@ -19186,7 +19192,8 @@ input:focus-visible {
 .bs-char-arena.tier-padding .bs-char-ribbon,
 .bs-char-arena.tier-hanbok .bs-char-ribbon,
 .bs-char-arena.tier-skier .bs-char-ribbon,
-.bs-char-arena.tier-santa .bs-char-ribbon {
+.bs-char-arena.tier-santa .bs-char-ribbon,
+.bs-char-arena.tier-maskman .bs-char-ribbon {
   background: linear-gradient(180deg, #48ccff 0%, #157de8 100%) !important;
 }
 
@@ -19403,7 +19410,8 @@ input:focus-visible {
 .bs-rcard-main.tier-padding,
 .bs-rcard-main.tier-hanbok,
 .bs-rcard-main.tier-skier,
-.bs-rcard-main.tier-santa {
+.bs-rcard-main.tier-santa,
+.bs-rcard-main.tier-maskman {
   background:
     radial-gradient(ellipse 82% 68% at 50% 42%, #72e0ff 0%, #2496f5 46%, #0e4db5 84%, #082d73 100%) !important;
 }

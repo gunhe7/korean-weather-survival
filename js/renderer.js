@@ -39,7 +39,8 @@ window.RunRenderer = (function () {
     { id: 'cyber_cyan', frames: 4, runFrames: 4, ver: '20261121hd156' },
     { id: 'cyber_violet', frames: 4, runFrames: 8, ver: '20261121hd156' },
     { id: 'catgirl', frames: 4, runFrames: 8, ver: '20261121hd156' },
-    { id: 'hades', frames: 3, runFrames: 4, ver: '20261121hd156' }
+    { id: 'hades', frames: 3, runFrames: 4, ver: '20261121hd156' },
+    { id: 'maskman', frames: 4, runFrames: 8, ver: '20261121hd160' }
   ];
   const CHAR_ANIM_STATES = ['idle', 'run', 'jump', 'fall', 'slide', 'hurt', 'die'];
   const CHAR_VFX_SPRITES = [
@@ -2955,6 +2956,13 @@ window.RunRenderer = (function () {
           ctx.fillStyle = k % 2 === 0 ? '#ffdf47' : '#ff6b6b';
           ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - scaleHeight * 0.42 + oy), 3, 3);
         }
+      } else if (aura === 'maskman') {
+        for (let k = 0; k < 4; k++) {
+          const ox = ((t * 56 + k * 11) % 34);
+          const oy = Math.sin(t * 9 + k * 1.9) * 10;
+          ctx.fillStyle = k % 2 === 0 ? '#b78cff' : '#f2ecff';
+          ctx.fillRect(Math.floor(cx - 14 - ox), Math.floor(cy - scaleHeight * 0.44 + oy), 3, 3);
+        }
       }
     }
 
@@ -2991,8 +2999,8 @@ window.RunRenderer = (function () {
         ctx.drawImage(drawSpr, Math.floor(-drawW / 2), Math.floor(-drawH), drawW, drawH);
       }
 
-      // Uploaded KF94 Mask Sprite OR Mythic Custom Mask (e.g. Hades Purple Mask!)
-      if (maskOn && !dead) {
+      // Uploaded KF94 Mask Sprite OR Mythic Custom Mask (Skip extra mask overlay for characters already wearing a mask in art, e.g. 마기꾼!)
+      if (maskOn && !dead && !(charDef && charDef.alwaysMask)) {
         const customMsk = skinDef && skinDef.customMask ? getSprite(skinDef.customMask) : null;
         const maskSpr = customMsk || getSprite('spr_mask');
         if (maskSpr) {
