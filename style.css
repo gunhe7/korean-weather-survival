@@ -18346,7 +18346,7 @@ input:focus-visible {
 }
 
 /* Narrow Portrait Mobile Fallback */
-@media (max-width: 620px) {
+@media (max-width: 519px) {
   #char-list.bs-roster-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
@@ -19485,19 +19485,13 @@ input:focus-visible {
   z-index: 2;
 }
 
-/* Balanced Centered 3 + 2 Pyramid Grid for 5 Characters (Zero Empty Corner Hole!) */
-@media (min-width: 621px) {
+/* Neat 3-Column Roster Grid (3 per row, 2 clean rows for 6 characters) */
+@media (min-width: 520px) {
   #char-list.bs-roster-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   #char-list .bs-rcard {
-    grid-column: span 2;
-  }
-  #char-list .bs-rcard:nth-child(4) {
-    grid-column: 2 / span 2;
-  }
-  #char-list .bs-rcard:nth-child(5) {
-    grid-column: 4 / span 2;
+    grid-column: auto;
   }
 }
 
@@ -21726,7 +21720,7 @@ input:focus-visible {
 
 .comp-char-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(106px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 

@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd160" />
+  <link rel="manifest" href="manifest.json?v=20261121hd161" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
@@ -17,7 +17,7 @@
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
   <link rel="preload" as="image" href="assets/home_bg.jpg?v=20261121hd156" />
-  <link rel="stylesheet" href="style.css?v=20261121hd160" />
+  <link rel="stylesheet" href="style.css?v=20261121hd161" />
 </head>
 <body>
   <div id="mobile-app" class="is-home-bg">
@@ -2266,8 +2266,8 @@
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (swReloading) return;
         try {
-          if (sessionStorage.getItem('kws_sw_ver') === 'hd160') return;
-          sessionStorage.setItem('kws_sw_ver', 'hd160');
+          if (sessionStorage.getItem('kws_sw_ver') === 'hd161') return;
+          sessionStorage.setItem('kws_sw_ver', 'hd161');
         } catch {}
         swReloading = true;
         location.reload();
