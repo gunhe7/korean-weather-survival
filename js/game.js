@@ -830,6 +830,20 @@
     compMatchGrid: document.getElementById('comp-match-grid'),
     btnCompMatchMinimize: document.getElementById('btn-comp-match-minimize'),
     btnCompMatchCancel: document.getElementById('btn-comp-match-cancel'),
+    compIntroOverlay: document.getElementById('comp-intro-overlay'),
+    compIntroModeTitle: document.getElementById('comp-intro-mode-title'),
+    compIntroModeSub: document.getElementById('comp-intro-mode-sub'),
+    compIntroArena: document.getElementById('comp-intro-arena'),
+    compIntroAllyHead: document.getElementById('comp-intro-ally-head'),
+    compIntroAllyList: document.getElementById('comp-intro-ally-list'),
+    compIntroEnemyHead: document.getElementById('comp-intro-enemy-head'),
+    compIntroEnemyList: document.getElementById('comp-intro-enemy-list'),
+    compIntroVsBadge: document.getElementById('comp-intro-vs-badge'),
+    compFinishOverlay: document.getElementById('comp-finish-overlay'),
+    compFinishKicker: document.getElementById('comp-finish-kicker'),
+    compFinishTitle: document.getElementById('comp-finish-title'),
+    compFinishSub: document.getElementById('comp-finish-sub'),
+    compFinishScores: document.getElementById('comp-finish-scores'),
     btnCompMode1v1: document.getElementById('btn-comp-mode-1v1'),
     btnCompMode2v2: document.getElementById('btn-comp-mode-2v2'),
     compDuoPanel: document.getElementById('comp-duo-panel'),
@@ -7739,6 +7753,252 @@
     if (q.startTimer) { clearInterval(q.startTimer); q.startTimer = null; }
   }
 
+  let compIntroSeq = 0;
+  let compIntroTimers = [];
+  let compIntroActive = false;
+  let compFinishSeq = 0;
+  let compFinishTimers = [];
+  let compFinishActive = false;
+
+  function cancelCompIntroTransition() {
+    compIntroSeq += 1;
+    compIntroActive = false;
+    compIntroTimers.forEach((id) => clearTimeout(id));
+    compIntroTimers = [];
+    if (el.compIntroOverlay) {
+      el.compIntroOverlay.className = 'bs-vs-overlay hidden';
+    }
+  }
+
+  function cancelCompFinishTransition() {
+    compFinishSeq += 1;
+    compFinishActive = false;
+    compFinishTimers.forEach((id) => clearTimeout(id));
+    compFinishTimers = [];
+    if (el.compFinishOverlay) {
+      el.compFinishOverlay.className = 'bs-fin-overlay hidden';
+    }
+  }
+
+  function cancelCompTransitions() {
+    cancelCompIntroTransition();
+    cancelCompFinishTransition();
+  }
+
+  function buildCompIntroFighterHtml(p) {
+    const ch = getCharDef(p && p.charId);
+    const skin = (p && p.skinId && DATA.getSkinById) ? DATA.getSkinById(p.skinId) : null;
+    const anim = getCharAnimSpec(ch, skin);
+    const sprVer = getCharSpriteVer(anim.skin);
+    const heroSrc = (skin && skin.outfitColor)
+      ? getSkinAvatar(ch, skin)
+      : `assets/chars/${anim.skin}_run_0.png?v=${sprVer}`;
+    const heroFilter = getSkinFilter(skin);
+    const auraHtml = (skin && skin.customAuraPrefix)
+      ? `<img src="assets/chars/${skin.customAuraPrefix}_0.png?v=${sprVer}" alt="" class="bs-vs-hero-aura" />`
+      : '';
+    const tInfo = DATA.getCompTier((p && p.trophies) || 0);
+    const platCls = !(p && p.isHuman) ? 'ai' : sanitizePlatformClass(p.platform);
+    const platLbl = !(p && p.isHuman) ? 'AI' : escapeNickHtml(sanitizePlatformBadgeLabel(p.platformLabel));
+    return `
+      <div class="bs-vs-fighter${p && p.isMe ? ' is-me' : ''}">
+        <div class="bs-vs-hero-box">
+          <div class="bs-vs-hero-glow"></div>
+          ${auraHtml}
+          <img src="${heroSrc}" alt="" class="bs-vs-hero-img" style="${heroFilter ? `filter:${heroFilter};` : ''}" />
+        </div>
+        <div class="bs-vs-nameplate">
+          <div class="bs-vs-nick-row">
+            <span class="bs-vs-nick">${escapeNickHtml((p && p.nickname) || '날씨러너')}</span>
+            ${p && p.isMe ? '<span class="comp-me-tag">나</span>' : ''}
+            <span class="comp-plat-badge ${platCls}">${platLbl}</span>
+          </div>
+          <div class="bs-vs-tier-row">
+            <img src="${getTierImgUrl(tInfo)}" alt="${tInfo.name}" class="bs-vs-tier-ico" />
+            <span class="bs-vs-tier-txt" style="color:${tInfo.color}">${tInfo.name} · ${Math.max(0, Math.floor((p && p.trophies) || 0)).toLocaleString('ko-KR')}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function playCompStartTransition(matchCfg, onEnterTrack) {
+    if (!el.compIntroOverlay || !matchCfg) {
+      if (typeof onEnterTrack === 'function') onEnterTrack();
+      return;
+    }
+    cancelCompTransitions();
+    const seq = compIntroSeq;
+    compIntroActive = true;
+
+    const is2v2 = matchCfg.compMode === '2v2';
+    const myTeam = Number(matchCfg.myTeam) === 1 ? 1 : 0;
+    const allPlayers = Array.isArray(matchCfg.participants) ? matchCfg.participants : [];
+    const allies = allPlayers.filter((p) => p && (is2v2 ? (Number(p.team) === 1 ? 1 : 0) === myTeam : p.isMe));
+    const enemies = allPlayers.filter((p) => p && (is2v2 ? (Number(p.team) === 1 ? 1 : 0) !== myTeam : !p.isMe));
+
+    // Preload all participant sprites while the Brawl-style VS splash plays so Frame 1 is butter-smooth!
+    const myCh = getCharDef(save.selectedChar);
+    const mySk = getEquippedSkin(myCh.id);
+    if (Renderer && Renderer.preloadForRun) Renderer.preloadForRun(myCh, mySk, 'spring');
+    allPlayers.forEach((p) => {
+      if (!p || p.isMe) return;
+      const gCh = getCharDef(p.charId);
+      const gSk = p.skinId && DATA.getSkinById ? DATA.getSkinById(p.skinId) : null;
+      if (Renderer && Renderer.preloadGhostChar && gCh) Renderer.preloadGhostChar(gCh, gSk);
+    });
+
+    if (el.compIntroModeTitle) el.compIntroModeTitle.textContent = is2v2 ? '2대2 팀 경쟁전' : '1대1 경쟁전';
+    if (el.compIntroModeSub) el.compIntroModeSub.textContent = `트로피 ${matchCfg.duration || 60}초 생존전`;
+    if (el.compIntroArena) el.compIntroArena.className = `bs-vs-arena ${is2v2 ? 'mode-2v2' : 'mode-1v1'}`;
+    if (el.compIntroAllyHead) el.compIntroAllyHead.textContent = is2v2 ? '우리팀' : '나';
+    if (el.compIntroEnemyHead) el.compIntroEnemyHead.textContent = is2v2 ? '상대팀' : '상대';
+    if (el.compIntroAllyList) el.compIntroAllyList.innerHTML = allies.map((p) => buildCompIntroFighterHtml(p)).join('');
+    if (el.compIntroEnemyList) el.compIntroEnemyList.innerHTML = enemies.map((p) => buildCompIntroFighterHtml(p)).join('');
+    if (el.compIntroVsBadge) el.compIntroVsBadge.textContent = 'VS';
+
+    el.compIntroOverlay.className = 'bs-vs-overlay';
+    void el.compIntroOverlay.offsetWidth;
+    el.compIntroOverlay.classList.add('phase-enter');
+    try { SFX.compVsIntro(); } catch {}
+
+    compIntroTimers.push(setTimeout(() => {
+      if (compIntroSeq !== seq) return;
+      if (el.compIntroVsBadge) el.compIntroVsBadge.textContent = 'START!';
+      el.compIntroOverlay.classList.remove('phase-enter');
+      el.compIntroOverlay.classList.add('phase-go');
+      try { SFX.compStartGo(); } catch {}
+    }, 1820));
+
+    compIntroTimers.push(setTimeout(() => {
+      if (compIntroSeq !== seq) return;
+      compIntroActive = false;
+      if (typeof onEnterTrack === 'function') onEnterTrack();
+      el.compIntroOverlay.classList.remove('phase-go');
+      el.compIntroOverlay.classList.add('phase-wipe');
+    }, 2220));
+
+    compIntroTimers.push(setTimeout(() => {
+      if (compIntroSeq !== seq) return;
+      el.compIntroOverlay.className = 'bs-vs-overlay hidden';
+    }, 2680));
+  }
+
+  function computeCompOutcomeSummary(participants, compMode, myTeam, myScoreFallback = 0) {
+    const is2v2 = compMode === '2v2';
+    const mt = Number(myTeam) === 1 ? 1 : 0;
+    const list = (Array.isArray(participants) ? participants : []).map((p) => ({
+      ...p,
+      team: Number(p.team) === 1 ? 1 : 0,
+      finalScore: Math.max(0, Math.floor(p.isMe ? myScoreFallback : (p.score || 0)))
+    }));
+    let allyTotal = 0;
+    let enemyTotal = 0;
+    if (is2v2) {
+      allyTotal = list.filter((p) => p.team === mt).reduce((s, p) => s + p.finalScore, 0);
+      enemyTotal = list.filter((p) => p.team !== mt).reduce((s, p) => s + p.finalScore, 0);
+    } else {
+      const meObj = list.find((p) => p.isMe);
+      const oppObj = list.find((p) => !p.isMe);
+      allyTotal = meObj ? meObj.finalScore : Math.max(0, Math.floor(myScoreFallback || 0));
+      enemyTotal = oppObj ? oppObj.finalScore : 0;
+    }
+    const outcome = allyTotal > enemyTotal ? 'win' : (allyTotal < enemyTotal ? 'loss' : 'draw');
+    return { allyTotal, enemyTotal, outcome };
+  }
+
+  function playCompFinishTransition(opts, onReveal) {
+    if (!el.compFinishOverlay) {
+      if (typeof onReveal === 'function') onReveal();
+      return;
+    }
+    cancelCompFinishTransition();
+    const seq = compFinishSeq;
+    compFinishActive = true;
+
+    const outcome = (opts && opts.outcome) || 'win';
+    const is2v2 = Boolean(opts && opts.compMode === '2v2');
+    const isKo = Boolean(opts && opts.isKo);
+    const isElim = Boolean(opts && opts.isElim);
+    const fast = Boolean(opts && opts.fast);
+    const allyTotal = Math.max(0, Math.floor((opts && opts.allyTotal) || 0));
+    const enemyTotal = Math.max(0, Math.floor((opts && opts.enemyTotal) || 0));
+    const myScore = Math.max(0, Math.floor((opts && opts.myScore) || allyTotal));
+
+    let themeCls = 'theme-win';
+    let kickerTxt = 'MATCH OVER · 경기 종료';
+    let titleTxt = 'VICTORY!';
+    let subTxt = is2v2 ? '2대2 팀 합산 승리!' : '1대1 경쟁전 승리!';
+
+    if (outcome === 'win') {
+      themeCls = 'theme-win';
+      titleTxt = 'VICTORY!';
+      if (isKo) {
+        kickerTxt = is2v2 ? 'K.O. · 상대 팀 전원 탈락!' : 'K.O. · 상대 탈락!';
+        subTxt = is2v2 ? '상대 팀 점수 돌파 · 즉시 승리 확정!' : '상대 점수 돌파 · 즉시 승리 확정!';
+      } else {
+        kickerTxt = 'MATCH OVER · 경기 종료';
+        subTxt = is2v2 ? '2대2 팀 합산 승리!' : '1대1 경쟁전 승리!';
+      }
+    } else if (outcome === 'loss') {
+      themeCls = 'theme-loss';
+      titleTxt = 'DEFEAT';
+      kickerTxt = isElim ? (is2v2 ? '팀 전원 탈락 · 경기 종료' : '탈락 · 경기 종료') : 'MATCH OVER · 경기 종료';
+      subTxt = is2v2 ? '2대2 팀 경쟁전 패배' : '1대1 경쟁전 패배';
+    } else if (outcome === 'draw') {
+      themeCls = 'theme-draw';
+      titleTxt = 'DRAW!';
+      kickerTxt = 'MATCH OVER · 경기 종료';
+      subTxt = '치열한 접전 · 무승부!';
+    } else {
+      themeCls = 'theme-wait';
+      titleTxt = 'FINISH!';
+      kickerTxt = 'RUN FINISHED · 최종 점수 확정';
+      subTxt = '다른 러너 경기가 끝날 때까지 집계 중...';
+    }
+
+    if (el.compFinishKicker) el.compFinishKicker.textContent = kickerTxt;
+    if (el.compFinishTitle) el.compFinishTitle.textContent = titleTxt;
+    if (el.compFinishSub) el.compFinishSub.textContent = subTxt;
+    if (el.compFinishScores) {
+      if (outcome === 'wait') {
+        el.compFinishScores.innerHTML = `<span class="fin-sc-ally">내 최종 점수 ${myScore.toLocaleString('ko-KR')}점</span>`;
+      } else {
+        const allyLbl = is2v2 ? '우리팀' : '나';
+        const enemyLbl = is2v2 ? '상대팀' : '상대';
+        el.compFinishScores.innerHTML = `
+          <span class="fin-sc-ally">${allyLbl} ${allyTotal.toLocaleString('ko-KR')}점</span>
+          <span class="fin-sc-vs">VS</span>
+          <span class="fin-sc-enemy">${enemyLbl} ${enemyTotal.toLocaleString('ko-KR')}점</span>
+        `;
+      }
+      el.compFinishScores.classList.remove('hidden');
+    }
+
+    el.compFinishOverlay.className = `bs-fin-overlay ${themeCls}`;
+    void el.compFinishOverlay.offsetWidth;
+    el.compFinishOverlay.classList.add('phase-slam');
+    try { SFX.compMatchFinish(outcome, isKo); } catch {}
+
+    const wipeAt = fast ? 920 : 1220;
+    compFinishTimers.push(setTimeout(() => {
+      if (compFinishSeq !== seq) return;
+      el.compFinishOverlay.classList.remove('phase-slam');
+      el.compFinishOverlay.classList.add('phase-wipe');
+    }, wipeAt));
+
+    compFinishTimers.push(setTimeout(() => {
+      if (compFinishSeq !== seq) return;
+      if (typeof onReveal === 'function') onReveal();
+    }, wipeAt + 260));
+
+    compFinishTimers.push(setTimeout(() => {
+      if (compFinishSeq !== seq) return;
+      compFinishActive = false;
+      el.compFinishOverlay.className = 'bs-fin-overlay hidden';
+    }, wipeAt + 580));
+  }
+
   function cancelCompetitiveMatchmaking(silent = false) {
     if (compQueueState) {
       const prev = compQueueState;
@@ -7848,6 +8108,7 @@
   }
 
   async function startCompetitiveMatchmaking(opts = {}) {
+    if (compIntroActive || compFinishActive) return;
     if (run && run.active) {
       SFX.hit();
       showToast('진행 중인 경기가 끝난 뒤 경쟁전 매칭을 시작할 수 있습니다.');
@@ -8131,84 +8392,72 @@
         ONLINE.joinCompActiveRoom(q.roomId, { ...q.myQueueInfo, team: myTeamVal }).catch(() => {});
       }
 
-      SFX.seasonUp();
-      const inSkirmishRun = Boolean(run && run.active);
-      if (!inSkirmishRun) {
-        closeBrowsingModalsForCompLaunch();
-        openCompMatchOverlay();
+      clearCompQueueTimers(q);
+      compQueueState = null;
+      if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
+      updateCompOwQueueBarUI();
+
+      const inSkirmishRun = Boolean(run && run.active && run.gameMode !== 'competitive');
+      if (inSkirmishRun) {
+        const bankedCoins = Math.max(0, Math.floor(run.coinsCollected || 0));
+        if (bankedCoins > 0) {
+          save.gold += bankedCoins;
+          save.totalCoinsEver = (save.totalCoinsEver || 0) + bankedCoins;
+          persistSave(false);
+        }
+        run.active = false;
+        run = null;
+        paused = false;
+        releaseAllControlButtons();
+        if (el.pauseOverlay) el.pauseOverlay.classList.add('hidden');
+        if (el.gameoverOverlay) el.gameoverOverlay.classList.add('hidden');
+        showToast(`${modeLabel} 경쟁전 매칭 완료! (진행 중 코인 자동 저장)`);
       } else {
-        showToast(`${modeLabel} 경쟁전 매칭 완료! 3초 후 자동 입장합니다 (획득 코인 자동 저장)`);
+        closeBrowsingModalsForCompLaunch();
       }
 
-      let sec = 3;
-      const tick = () => {
-        if (q.cancelled || compQueueState !== q) return;
-        q.launchSecLeft = sec;
-        updateCompOwQueueBarUI();
-        if (sec > 0) {
-          if (el.compMatchStatus) el.compMatchStatus.textContent = `${modeLabel} 매칭 완료! ${sec}초 후 경기 시작`;
-          SFX.click();
-          sec -= 1;
-        } else {
-          clearCompQueueTimers(q);
-          compQueueState = null;
-          if (el.compMatchOverlay) el.compMatchOverlay.classList.add('hidden');
-          updateCompOwQueueBarUI();
+      if (is2v2 && activePartyId && activePartnerUid) {
+        compDuoState.myPlayReady = false;
+        compDuoState.partnerPlayReady = false;
+        syncCompDuoNow('ready');
+      }
 
-          if (run && run.active && run.gameMode !== 'competitive') {
-            const bankedCoins = Math.max(0, Math.floor(run.coinsCollected || 0));
-            if (bankedCoins > 0) {
-              save.gold += bankedCoins;
-              save.totalCoinsEver = (save.totalCoinsEver || 0) + bankedCoins;
-              persistSave(false);
-            }
-            run.active = false;
-            run = null;
-            paused = false;
-            releaseAllControlButtons();
-            if (el.pauseOverlay) el.pauseOverlay.classList.add('hidden');
-            if (el.gameoverOverlay) el.gameoverOverlay.classList.add('hidden');
-          }
-
-          if (is2v2 && activePartyId && activePartnerUid) {
-            compDuoState.myPlayReady = false;
-            compDuoState.partnerPlayReady = false;
-            syncCompDuoNow('ready');
-          }
-
-          const dur = DATA.COMP_MATCH_DURATION || 60;
-          const nowMs = Date.now();
-          const matchCfg = {
-            compMode,
-            myTeam: myTeamVal,
-            hadFriendDuo: Boolean(activePartyId),
-            roomId: q.roomId,
-            safeUid: q.safeUid,
-            online: q.online,
-            myMeta: {
-              provider: myAuth.provider,
-              nickname: myNick,
-              charId: myChar.id,
-              skinId: mySkin ? mySkin.id : null,
-              trophies: myTrophies,
-              team: myTeamVal,
-              platform: myPlat.id,
-              platformLabel: myPlat.label
-            },
-            duration: dur,
-            startedAt: nowMs,
-            endsAt: nowMs + dur * 1000,
-            participants: q.players.slice(0, totalSlots).map((p) => ({ ...p, score: 0, finished: false })),
-            syncTimer: 0,
-            pollTimer: 0,
-            lastRank: 1,
-            finished: false
-          };
-          startRun({ mode: 'competitive', compMatch: matchCfg });
-        }
+      const dur = DATA.COMP_MATCH_DURATION || 60;
+      const initNowMs = Date.now();
+      const matchCfg = {
+        compMode,
+        myTeam: myTeamVal,
+        hadFriendDuo: Boolean(activePartyId),
+        roomId: q.roomId,
+        safeUid: q.safeUid,
+        online: q.online,
+        myMeta: {
+          provider: myAuth.provider,
+          nickname: myNick,
+          charId: myChar.id,
+          skinId: mySkin ? mySkin.id : null,
+          trophies: myTrophies,
+          team: myTeamVal,
+          platform: myPlat.id,
+          platformLabel: myPlat.label
+        },
+        duration: dur,
+        startedAt: initNowMs,
+        endsAt: initNowMs + dur * 1000,
+        participants: q.players.slice(0, totalSlots).map((p) => ({ ...p, score: 0, finished: false })),
+        syncTimer: 0,
+        pollTimer: 0,
+        lastRank: 1,
+        finished: false
       };
-      tick();
-      q.startTimer = setInterval(tick, 900);
+
+      // Brawl Stars style full-screen VS battle intro -> diagonal curtain wipe into the running track!
+      playCompStartTransition(matchCfg, () => {
+        const startNowMs = Date.now();
+        matchCfg.startedAt = startNowMs;
+        matchCfg.endsAt = startNowMs + dur * 1000;
+        startRun({ mode: 'competitive', compMatch: matchCfg, fromCompIntro: true });
+      });
     };
 
     const applyQueueSnapshot = async (entries, serverNow) => {
@@ -9184,8 +9433,19 @@
         m.settled = true;
         dirty = true;
         if (activeWaitMatchId === m.id && el.compWaitOverlay && !el.compWaitOverlay.classList.contains('hidden')) {
-          SFX.yearUp();
-          showCompFinalResultModal(m);
+          const sum = computeCompOutcomeSummary(m.participants, m.compMode || '1v1', m.myTeam, m.myScore || 0);
+          playCompFinishTransition({
+            outcome: sum.outcome,
+            isKo: Boolean(m.earlyVictory),
+            isElim: false,
+            compMode: m.compMode || '1v1',
+            allyTotal: sum.allyTotal,
+            enemyTotal: sum.enemyTotal,
+            myScore: m.myScore || 0,
+            fast: true
+          }, () => {
+            showCompFinalResultModal(m);
+          });
         } else {
           SFX.seasonUp();
           showToast('경쟁전 경기가 종료되었습니다! 하단 알림을 눌러 결과를 확인하세요.');
@@ -9382,9 +9642,8 @@
       if (ko.mySideWonEarly) {
         cm.finished = true;
         cm.earlyVictory = true;
+        cm.finishReason = 'ko';
         (cm.participants || []).forEach((p) => { p.finished = true; });
-        SFX.yearUp();
-        showToast(cm.compMode === '2v2' ? '상대 팀 점수 돌파! 즉시 승리 확정!' : '상대 점수 돌파! 즉시 승리 확정!');
         if (isSpec) {
           finishCompAllySpectate(false);
         } else {
@@ -9398,10 +9657,7 @@
     if (isSpec) {
       if ((specAllyPart && specAllyPart.finished) || run.elapsed >= (cm.duration || 60)) {
         const allyDoneEarly = Boolean(specAllyPart && specAllyPart.finished && run.elapsed < (cm.duration || 60) - 0.8);
-        if (allyDoneEarly) {
-          showToast(`팀원 [${specAllyPart.nickname}] 경기가 종료되었습니다!`);
-        }
-        SFX.yearUp();
+        cm.finishReason = allyDoneEarly ? 'elim' : 'timeup';
         finishCompAllySpectate(false);
       }
       return;
@@ -9410,7 +9666,7 @@
     // Complete 60-second sprint!
     if (run.elapsed >= (cm.duration || 60)) {
       cm.finished = true;
-      SFX.yearUp();
+      cm.finishReason = 'timeup';
       finishRunGameOver();
     }
   }
@@ -9559,7 +9815,13 @@
     const dur = cm.duration || 60;
     const wallRemSec = cm.endsAt ? Math.max(0, Math.min(dur, (cm.endsAt - now) / 1000)) : Math.max(0, dur - (run.elapsed || 0));
     const remSec = Math.max(0, wallRemSec);
-    const othersStillRunning = remSec > 1.2 && (cm.participants || []).some((p) => !p.isMe && !p.finished);
+    const koNow = getCompKnockoutState(cm.participants, cm.compMode || '1v1', cm.myTeam);
+    const knockoutAlreadyDecided = (run.elapsed || 0) >= 0.8 && (koNow.mySideWonEarly || koNow.enemySideWonEarly);
+    if (koNow.mySideWonEarly) cm.earlyVictory = true;
+    const othersStillRunning = !knockoutAlreadyDecided && remSec > 1.2 && (cm.participants || []).some((p) => !p.isMe && !p.finished);
+    if (!othersStillRunning) {
+      (cm.participants || []).forEach((p) => { p.finished = true; });
+    }
     const matchRecord = {
       id: `cm_${now}_${Math.floor(Math.random() * 999)}`,
       compMode: cm.compMode || '1v1',
@@ -9593,8 +9855,9 @@
       return;
     }
 
-    // If player explicitly left mid-match or exited 2v2 spectate early, return cleanly to comp lobby behind wait/result UI
+    // If player explicitly left mid-match or exited 2v2 spectate early, return immediately to comp lobby behind wait/result UI
     if (leftEarly || fromSpectateLeave) {
+      cancelCompTransitions();
       run = null;
       paused = false;
       if (el.compSpectateHud) el.compSpectateHud.classList.add('hidden');
@@ -9603,25 +9866,66 @@
       el.gameoverOverlay.classList.add('hidden');
       el.viewRun.classList.add('hidden');
       switchTab('comp');
-    }
 
-    if (!othersStillRunning) {
-      // Survived full 60s or all rivals already finished -> immediate Overwatch Progress screen!
-      showCompFinalResultModal(matchRecord);
+      if (!othersStillRunning) {
+        showCompFinalResultModal(matchRecord);
+        return;
+      }
+
+      save.pendingCompMatches = [matchRecord];
+      persistSave(true);
+      activeWaitMatchId = matchRecord.id;
+      renderCompWaitModal(matchRecord);
+      if (el.compWaitOverlay) el.compWaitOverlay.classList.remove('hidden');
+      updateCompPendingPill();
+      updateCompLobbyMatchStateUI();
+      if (leftEarly) {
+        showToast(`나간 시점 점수(${lockedScore.toLocaleString('ko-KR')}점) 반영! 모든 참가자가 끝날 때까지 결과를 기다립니다.`);
+      }
       return;
     }
 
-    // Wait for ALL 8 players to finish (works identically for early death AND mid-match leave!)
+    // Persist pending record immediately before playing the Brawl Stars match-over transition so closing mid-splash never loses rewards!
     save.pendingCompMatches = [matchRecord];
-    persistSave(true);
-    activeWaitMatchId = matchRecord.id;
-    renderCompWaitModal(matchRecord);
-    if (el.compWaitOverlay) el.compWaitOverlay.classList.remove('hidden');
-    updateCompPendingPill();
-    updateCompLobbyMatchStateUI();
-    if (leftEarly) {
-      showToast(`나간 시점 점수(${lockedScore.toLocaleString('ko-KR')}점) 반영! 모든 참가자가 끝날 때까지 결과를 기다립니다.`);
+    persistSave(false, { localOnly: true });
+
+    const finishSummary = computeCompOutcomeSummary(matchRecord.participants, matchRecord.compMode, matchRecord.myTeam, lockedScore);
+    const isKoFinish = Boolean(matchRecord.earlyVictory && finishSummary.outcome === 'win');
+    const isElimFinish = cm.finishReason === 'elim' || (!matchRecord.earlyVictory && cm.finishReason !== 'timeup');
+
+    if (!othersStillRunning) {
+      // Brawl Stars style VICTORY / DEFEAT / DRAW slam + diagonal curtain wipe -> Overwatch Result Screen!
+      playCompFinishTransition({
+        outcome: finishSummary.outcome,
+        isKo: isKoFinish,
+        isElim: isElimFinish,
+        compMode: matchRecord.compMode,
+        allyTotal: finishSummary.allyTotal,
+        enemyTotal: finishSummary.enemyTotal,
+        myScore: lockedScore
+      }, () => {
+        showCompFinalResultModal(matchRecord);
+      });
+      return;
     }
+
+    // Player died while rivals are still running -> Brawl Stars FINISH! slam + wipe -> Waiting Screen!
+    playCompFinishTransition({
+      outcome: 'wait',
+      isKo: false,
+      isElim: true,
+      compMode: matchRecord.compMode,
+      allyTotal: finishSummary.allyTotal,
+      enemyTotal: finishSummary.enemyTotal,
+      myScore: lockedScore
+    }, () => {
+      persistSave(true);
+      activeWaitMatchId = matchRecord.id;
+      renderCompWaitModal(matchRecord);
+      if (el.compWaitOverlay) el.compWaitOverlay.classList.remove('hidden');
+      updateCompPendingPill();
+      updateCompLobbyMatchStateUI();
+    });
   }
 
   function leaveCompetitiveRunEarly() {
@@ -11806,6 +12110,11 @@
     el.runCanvasWrap.classList.toggle('fever-active', startFever > 0);
     el.mudOverlay.classList.add('hidden');
     hideWeatherCenterAlert();
+    if (!(opts && opts.fromCompIntro)) {
+      cancelCompTransitions();
+    } else {
+      cancelCompFinishTransition();
+    }
     el.gameoverOverlay.classList.add('hidden');
     if (el.compResultOverlay) el.compResultOverlay.classList.add('hidden');
     if (el.compWaitOverlay) el.compWaitOverlay.classList.add('hidden');
@@ -14515,6 +14824,7 @@
     }
     releaseAllControlButtons();
     clearTutorialHighlights();
+    cancelCompTransitions();
     if (el.tutRunHud) el.tutRunHud.classList.add('hidden');
     if (el.viewRun) el.viewRun.classList.remove('is-tutorial-run');
     if (el.tutCompleteOverlay) el.tutCompleteOverlay.classList.add('hidden');

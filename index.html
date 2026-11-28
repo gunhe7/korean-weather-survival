@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#0d2147" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=20261121hd21" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png?v=20261121hd21" />
-  <link rel="manifest" href="manifest.json?v=20261121hd157" />
+  <link rel="manifest" href="manifest.json?v=20261121hd158" />
   <title>한국 날씨에서 살아남기</title>
   <link rel="preload" as="image" href="assets/studio/yagun_left.png?v=20261121hd59" />
   <link rel="preload" as="image" href="assets/studio/yagun_right.png?v=20261121hd59" />
@@ -17,7 +17,7 @@
   <link rel="preload" as="image" href="assets/logo.png" />
   <link rel="preload" as="font" type="font/ttf" href="assets/fonts/Paperlogy-9Black.ttf" crossorigin />
   <link rel="preload" as="image" href="assets/home_bg.jpg?v=20261121hd156" />
-  <link rel="stylesheet" href="style.css?v=20261121hd157" />
+  <link rel="stylesheet" href="style.css?v=20261121hd158" />
 </head>
 <body>
   <div id="mobile-app" class="is-home-bg">
@@ -981,6 +981,56 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ================= BRAWL STARS STYLE COMPETITIVE MATCH START VS INTRO TRANSITION ================= -->
+    <div id="comp-intro-overlay" class="bs-vs-overlay hidden" role="dialog" aria-modal="true" aria-label="경쟁전 경기 시작 전환">
+      <div class="bs-vs-curtain bs-vs-curtain-left" aria-hidden="true">
+        <div class="bs-vs-stripes"></div>
+      </div>
+      <div class="bs-vs-curtain bs-vs-curtain-right" aria-hidden="true">
+        <div class="bs-vs-stripes"></div>
+      </div>
+      <div class="bs-vs-seam" aria-hidden="true"></div>
+      <div class="bs-vs-flash" aria-hidden="true"></div>
+
+      <div class="bs-vs-stage">
+        <div class="bs-vs-mode-ribbon">
+          <span id="comp-intro-mode-title" class="bs-vs-mode-main">1대1 경쟁전</span>
+          <span id="comp-intro-mode-sub" class="bs-vs-mode-sub">트로피 60초 생존전</span>
+        </div>
+
+        <div id="comp-intro-arena" class="bs-vs-arena mode-1v1">
+          <div class="bs-vs-side ally">
+            <div id="comp-intro-ally-head" class="bs-vs-team-pill ally">우리팀</div>
+            <div id="comp-intro-ally-list" class="bs-vs-fighters"></div>
+          </div>
+
+          <div class="bs-vs-center" aria-hidden="true">
+            <div class="bs-vs-starburst"></div>
+            <div id="comp-intro-vs-badge" class="bs-vs-badge">VS</div>
+          </div>
+
+          <div class="bs-vs-side enemy">
+            <div id="comp-intro-enemy-head" class="bs-vs-team-pill enemy">상대팀</div>
+            <div id="comp-intro-enemy-list" class="bs-vs-fighters"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= BRAWL STARS STYLE COMPETITIVE MATCH FINISH / KO TRANSITION ================= -->
+    <div id="comp-finish-overlay" class="bs-fin-overlay hidden" role="status" aria-live="assertive" aria-label="경쟁전 경기 종료 전환">
+      <div class="bs-fin-backdrop" aria-hidden="true"></div>
+      <div class="bs-fin-rays" aria-hidden="true"></div>
+      <div class="bs-fin-flash" aria-hidden="true"></div>
+      <div class="bs-fin-card">
+        <div id="comp-finish-kicker" class="bs-fin-kicker">MATCH OVER · 경기 종료</div>
+        <div id="comp-finish-title" class="bs-fin-title">VICTORY!</div>
+        <div id="comp-finish-sub" class="bs-fin-sub">상대 전원 탈락 · 완승!</div>
+        <div id="comp-finish-scores" class="bs-fin-scores hidden"></div>
+      </div>
+      <div class="bs-fin-curtain" aria-hidden="true"></div>
     </div>
 
     <!-- ================= 2v2 FRIEND DUO INVITE MODAL ================= -->
@@ -2193,19 +2243,19 @@
   <script src="js/data.js?v=20261121hd156"></script>
   <script src="js/ui-icons.js?v=20261121hd156"></script>
   <script src="js/weather-live.js?v=20261121hd156"></script>
-  <script src="js/audio.js?v=20261121hd156"></script>
+  <script src="js/audio.js?v=20261121hd158"></script>
   <script src="js/studio-intro.js?v=20261121hd156"></script>
   <script src="js/online.js?v=20261121hd156"></script>
   <script src="js/renderer.js?v=20261121hd156"></script>
-  <script src="js/game.js?v=20261121hd157"></script>
+  <script src="js/game.js?v=20261121hd158"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       let swReloading = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (swReloading) return;
         try {
-          if (sessionStorage.getItem('kws_sw_ver') === 'hd157') return;
-          sessionStorage.setItem('kws_sw_ver', 'hd157');
+          if (sessionStorage.getItem('kws_sw_ver') === 'hd158') return;
+          sessionStorage.setItem('kws_sw_ver', 'hd158');
         } catch {}
         swReloading = true;
         location.reload();

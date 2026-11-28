@@ -1202,6 +1202,66 @@ window.SFX = (function () {
       slideTone(420, 1680, 0.26, 'triangle', 0.085);
       [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.16, 'triangle', 0.085, i * 0.055 + 0.1));
     },
+    compVsIntro() {
+      // Brawl-style diagonal curtain whoosh + heavy VS impact slam + comic brass power fifth
+      playNoiseBurst({ bufType: 'pink', dur: 0.34, filterType: 'bandpass', startFreq: 340, midFreq: 1650, endFreq: 900, Q: 1.4, gainVal: 0.18, attack: 0.12 });
+      slideTone(210, 560, 0.28, 'triangle', 0.055, 0.02);
+      // Impact at 0.34s
+      slideTone(148, 46, 0.36, 'sine', 0.18, 0.34);
+      playNoiseBurst({ bufType: 'pink', dur: 0.24, delay: 0.34, filterType: 'lowpass', startFreq: 1800, endFreq: 260, Q: 0.9, gainVal: 0.24, attack: 0.008 });
+      [293.66, 440.0, 587.33, 880.0].forEach((f, i) => {
+        tone(f, 0.32, i < 2 ? 'sawtooth' : 'triangle', i < 2 ? 0.048 : 0.068, 0.35 + i * 0.018);
+      });
+    },
+    compStartGo() {
+      // Punchy Brawl-style START! battle horn + curtain tear swoosh
+      playNoiseBurst({ bufType: 'white', dur: 0.26, filterType: 'bandpass', startFreq: 1100, endFreq: 3600, Q: 1.2, gainVal: 0.14, attack: 0.015 });
+      [
+        [523.25, 0.00, 0.11, 'triangle', 0.085],
+        [659.25, 0.07, 0.11, 'triangle', 0.085],
+        [783.99, 0.14, 0.12, 'triangle', 0.09],
+        [1046.5, 0.21, 0.28, 'triangle', 0.10],
+        [523.25, 0.21, 0.26, 'sawtooth', 0.045]
+      ].forEach(([f, d, dur, t, g]) => tone(f, dur, t, g, d));
+    },
+    compMatchFinish(outcome = 'win', isKo = false) {
+      if (isKo) {
+        // Dramatic KO impact thump + crisp referee whistle flourish
+        slideTone(160, 48, 0.32, 'sine', 0.18, 0);
+        playNoiseBurst({ bufType: 'pink', dur: 0.24, filterType: 'lowpass', startFreq: 1900, endFreq: 300, Q: 1.0, gainVal: 0.22, attack: 0.006 });
+      }
+      const d0 = isKo ? 0.14 : 0.02;
+      if (outcome === 'win') {
+        [
+          [523.25, d0 + 0.00, 0.13, 'triangle', 0.085],
+          [659.25, d0 + 0.09, 0.13, 'triangle', 0.085],
+          [783.99, d0 + 0.18, 0.15, 'triangle', 0.092],
+          [1046.5, d0 + 0.28, 0.44, 'triangle', 0.105],
+          [783.99, d0 + 0.28, 0.42, 'sine',     0.065],
+          [1318.5, d0 + 0.36, 0.36, 'sine',     0.062]
+        ].forEach(([f, d, dur, t, g]) => tone(f, dur, t, g, d));
+      } else if (outcome === 'loss') {
+        slideTone(135, 52, 0.34, 'sine', 0.14, 0);
+        [
+          [392.0,  d0 + 0.00, 0.16, 'sawtooth', 0.055],
+          [349.23, d0 + 0.13, 0.16, 'sawtooth', 0.055],
+          [311.13, d0 + 0.26, 0.18, 'sawtooth', 0.058],
+          [261.63, d0 + 0.40, 0.38, 'triangle', 0.08]
+        ].forEach(([f, d, dur, t, g]) => tone(f, dur, t, g, d));
+      } else if (outcome === 'draw') {
+        [
+          [587.33, d0 + 0.00, 0.13, 'triangle', 0.075],
+          [587.33, d0 + 0.14, 0.13, 'triangle', 0.075],
+          [783.99, d0 + 0.28, 0.30, 'triangle', 0.085]
+        ].forEach(([f, d, dur, t, g]) => tone(f, dur, t, g, d));
+      } else {
+        // 'wait' (own run finished while others still running)
+        [
+          [659.25, d0 + 0.00, 0.12, 'triangle', 0.078],
+          [880.0,  d0 + 0.11, 0.24, 'triangle', 0.085]
+        ].forEach(([f, d, dur, t, g]) => tone(f, dur, t, g, d));
+      }
+    },
     wishLaunch() {
       // Genshin-style airy celestial comet whoosh + shimmering starry chime rise
       playNoiseBurst({ bufType: 'pink', dur: 0.78, filterType: 'bandpass', startFreq: 320, midFreq: 1450, endFreq: 780, Q: 1.6, gainVal: 0.16, attack: 0.14 });
